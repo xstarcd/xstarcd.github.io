@@ -1,2 +1,4 @@
-# xstarcd.github.io
-XStar's Wiki
+
+# XStar's Wiki
+## http://xstarcd.github.io/
+## http://w.gdu.me/
