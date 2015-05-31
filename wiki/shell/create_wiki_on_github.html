@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>在github上建立Vimwiki</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>在github上建立Vimwiki</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">准备工作</a>
+<li><a href="#toc_0.2">建立Wiki</a>
+<ul>
+<li><a href="#toc_0.2.1">GitHub Pages种类</a>
+<ul>
+<li><a href="#toc_0.2.1.1">User &amp; Organization Pages</a>
+<li><a href="#toc_0.2.1.2">Project Pages</a>
+</ul>
+<li><a href="#toc_0.2.2">建立页面仓库</a>
+<li><a href="#toc_0.2.3">创建页面</a>
+</ul>
+<li><a href="#toc_0.3">使用git发布Wiki</a>
+<li><a href="#toc_0.4">绑定自定义域名</a>
+<li><a href="#toc_0.5">其它</a>
+<ul>
+<li><a href="#toc_0.5.1">git.conf内容</a>
+<li><a href="#toc_0.5.2">设置密码缓存</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+参考:
+
+<ul>
+<li>
+如何搭建一个独立博客——简明Github Pages与Hexo教程: <a href="http://cnfeat.com/2014/05/10/2014-05-11-how-to-build-a-blog/">http://cnfeat.com/2014/05/10/2014-05-11-how-to-build-a-blog/</a>
+
+<li>
+git - 简明指南: <a href="http://rogerdudler.github.io/git-guide/index.zh.html">http://rogerdudler.github.io/git-guide/index.zh.html</a>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.1">准备工作</h2>
+
+<ul>
+<li>
+申请域名(可选，没有域名使用username.github.io方式访问)
+
+<li>
+在github.com注册用户
+
+<li>
+本地生成sshey:
+
+<ul>
+<li>
+命令:<code>ssh-keygen -t rsa -C "说明信息"</code>
+
+<li>
+会提示输入passphrase(密码)，这个密码会在你提交项目时使用，如果为空的话提交项目时则不用输入;
+
+<li>
+完成后在~/.ssh/目录中生成两个文件：id_rsa(私钥)和id_rsa.pub(公钥，用于设置到github中)。
+
+<li>
+设置本地~/.ssh/config配置可定制ssh key路径
+<pre>
+Host github.com
+    Hostname github.com
+    User git
+    Identityfile /your_path/git_rsa
+</pre>
+
+</ul>
+<li>
+添加SSH Key到GitHub:
+
+<ul>
+<li>
+登陆github系统，点击右上角的 Account Settings—-&gt;SSH Public keys —-&gt; add another public keys
+
+<li>
+把你本地生成的密钥(~/ssh/id_rsa.pub)内容复制到里面（key文本框中），点击 add key 就ok了。
+
+</ul>
+<li>
+测试登录:<code>ssh -T git@github.com</code>，若成功会显示：
+<pre>
+Hi xstarcd! You've successfully authenticated, but GitHub does not provide shell access.
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">建立Wiki</h2>
+
+<ul>
+<li>
+GitHub Pages Basics: <a href="https://help.github.com/categories/github-pages-basics/">https://help.github.com/categories/github-pages-basics/</a>
+
+</ul>
+
+<h3 id="toc_0.2.1">GitHub Pages种类</h3>
+
+<p>
+与GitHub建立好链接之后，就可以方便的使用它提供的Pages服务，GitHub Pages分两种:
+</p>
+<ul>
+<li>
+用户&amp;组织页面：User &amp; Organization Pages
+
+<li>
+项目页面：Project Pages
+
+<li>
+详细说明:<a href="https://help.github.com/articles/user-organization-and-project-pages/">https://help.github.com/articles/user-organization-and-project-pages/</a>
+
+</ul>
+
+<h4 id="toc_0.2.1.1">User &amp; Organization Pages</h4>
+
+<ul>
+<li>
+用户&amp;组织页面存放在一个特定的仓库中，专用于GitHub页页文件。创库必须以GitHub用户名建立，如: <code>atmos/atmos.github.io</code>
+
+<li>
+每个git用户只能建立一个。
+
+<li>
+<code>master</code>分支将用于生成和发布到站点。
+
+<li>
+页面建立成功后，可用如下形式访问：
+
+<ul>
+<li>
+<code>http(s)://&lt;username&gt;.github.io</code>
+
+<li>
+<code>http(s)://www.yourdomain.com</code> (使用CNAME方式绑定自定义域名)
+
+</ul>
+</ul>
+
+<h4 id="toc_0.2.1.2">Project Pages</h4>
+
+<ul>
+<li>
+Creating Project Pages manually:<a href="https://help.github.com/articles/creating-project-pages-manually/">https://help.github.com/articles/creating-project-pages-manually/</a>
+
+<li>
+与用户&amp;组织页面不同，项目页面与项目存放在同一仓库中。
+
+<li>
+访问形式：
+
+<ul>
+<li>
+个人帐户项目页: <code>http(s)://&lt;username&gt;.github.io/&lt;projectname&gt;</code>
+
+<li>
+组织项目页：<code>http(s)://&lt;orgname&gt;.github.io/&lt;projectname&gt;</code>
+
+</ul>
+<li>
+与用户&amp;组织页有少许差别：
+
+<ul>
+<li>
+使用<code>gh-pages</code>分支建立和发布项目页站点；
+
+<li>
+项目页站点URL要多一级项目名称；
+
+<li>
+自定义404页面仅在使用自定义域名时有效，否则使用用户&amp;组织页的404页面。
+
+</ul>
+</ul>
+
+<h3 id="toc_0.2.2">建立页面仓库</h3>
+
+<ol>
+<li>
+登录后系统，在github首页，点击页面右下角<code>「New Repository」</code>建立仓库；
+
+<li>
+填写如下项目信息，点击<code>「Create Repository」</code>完成创建。
+
+<ul>
+<li>
+project name：xstarcd.github.io
+
+<li>
+description：XStar's Wiki
+
+</ul>
+<li>
+注意：
+
+<ul>
+<li>
+Github Pages的Repository名字是特定的，比如我Github账号是xstarcd，那么我Github Pages Repository名字就是<code>xstarcd.github.io</code>。
+
+<li>
+Wiki或Blog:branch设置为:master
+
+<li>
+项目页面:branch设置为:gh-pages
+
+</ul>
+</ol>
+
+<h3 id="toc_0.2.3">创建页面</h3>
+
+<ul>
+<li>
+<code>/index.html</code>
+<pre>
+&lt;html&gt;
+&lt;head&gt;
+&lt;!--meta http-equiv="refresh" content="0; url=/wiki/" /--&gt;
+&lt;title&gt;XStar's Wiki&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;a href="/wiki/"&gt;XStar's Wiki&lt;/a&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+
+<li>
+测试访问: <a href="http://xstarcd.github.io">http://xstarcd.github.io</a> ，应该可以看到站点首页了。
+
+</ul>
+
+<h2 id="toc_0.3">使用git发布Wiki</h2>
+
+<p>
+Vimwiki是在本地用Vim进行Wiki编辑和页面生成，将Vimwiki生成目录做为git仓库来push到GitHub中，即可达到Wiki发布的目的。
+</p>
+
+<pre class="brush:bash">
+# 从github clone到本地
+git clone git@github.com:xstarcd/xstarcd.github.io.git
+git branch  # 查看分支列表
+git pull    # 更新本地仓库至最新更新
+git checkout master # 切换至master分支
+
+# 设置本地git配置
+git config user.email 'xstarcd@users.noreply.github.com'
+git config user.name 'xstarcd'
+git config push.default simple
+git config -l
+#git config -e  # 直接编辑配置文件
+# git config --global --unset credential.helper #删除设置
+
+# 更新README.md到本地仓库
+cat &gt;README.md &lt;&lt;EOF
+# XStar's Wiki 
+## http://xstarcd.github.io/
+## http://w.gdu.me/
+EOF
+git add README.md
+
+# 将建立wiki子目录，将Vimwiki html生成目录指向wiki子目录(设置方式见Vimwiki说明)，并执行页面生成
+# ...
+# 将wiki子目录添加至本地仓库
+#git add *
+git add wiki
+
+# 提交至本地仓库
+git commit -m 'first commit'
+
+# 查看状态和变更
+git status
+
+# 推送更新到github
+# git push -u origin master
+git push 
+
+# 查看日志，添加tag
+git log
+git tag 1.0.0 &lt;提交ID前10位字符&gt; # 创建一个1.0.0的标签
+</pre>
+
+<p>
+完成即可使用 <a href="http://xstarcd.github.io/wiki/">http://xstarcd.github.io/wiki/</a> 来访问Wiki。
+</p>
+
+<h2 id="toc_0.4">绑定自定义域名</h2>
+
+<ul>
+<li>
+参考
+
+<ul>
+<li>
+Setting up a custom domain with GitHub Pages: <a href="https://help.github.com/articles/setting-up-a-custom-domain-with-github-pages/">https://help.github.com/articles/setting-up-a-custom-domain-with-github-pages/</a>
+
+<li>
+Adding a CNAME file to your repository:<a href="https://help.github.com/articles/adding-a-cname-file-to-your-repository/">https://help.github.com/articles/adding-a-cname-file-to-your-repository/</a>
+
+<li>
+Tips for configuring a CNAME record with your DNS provider
+
+<li>
+关于自定义域名处理规则：<a href="https://help.github.com/articles/about-custom-domains-for-github-pages-sites">https://help.github.com/articles/about-custom-domains-for-github-pages-sites</a>
+
+</ul>
+<li>
+添加<code>/CNAME</code>文件(只能添加一个域名)
+<pre>
+w.gdu.me
+</pre>
+
+<li>
+设置域名解析
+
+<ul>
+<li>
+在DNS服务器中，添加域名CNAME记录，指向<code>username.github.io</code>,如：
+
+<li>
+w.gdu.me -&gt; xstarcd.github.io
+
+</ul>
+<li>
+设置一个www子域名
+
+<ul>
+<li>
+如果你设置了顶级域名(如:example.com)和www子域名(如：www.example.com)，GitHub服务器将自动进行两个域名的重定向：
+
+<li>
+如果CNAME文件中设置的是<code>example.com</code>，则<code>www.example.com</code>自动重定向到<code>example.com</code>；
+
+<li>
+如果CNAME文件中设置的是<code>www.example.com</code>，则<code>example.com</code>自动重定向到<code>www.example.com</code>；
+
+<li>
+你也许希望能够指定非www的子域名进行重定向，这仅能用于"User and Organization Pages"，不适用于项目页。
+
+</ul>
+<li>
+自定义域名重定向规则
+
+</ul>
+<table>
+<tr>
+<th>
+类型
+</th>
+<th>
+GitHub主机地址
+</th>
+<th>
+重定向规则
+</th>
+<th>
+自定义域名范例
+</th>
+</tr>
+<tr>
+<td>
+User Pages site
+</td>
+<td>
+username.github.io
+</td>
+<td rowspan="2">
+自动重定向到CNAME中设置的自定义域名
+</td>
+<td>
+user.example.com
+</td>
+</tr>
+<tr>
+<td>
+Organization Pages site
+</td>
+<td>
+orgname.github.io
+</td>
+<td>
+org.example.com
+</td>
+</tr>
+<tr>
+<td>
+Project Pages site owned by a user account
+</td>
+<td>
+username.github.io/projectname
+</td>
+<td>
+自动重定向到含子路径的、User Pages site指定的自定义域名:user.example.com/projectname
+</td>
+<td>
+project.example.com
+</td>
+</tr>
+<tr>
+<td>
+Project Pages site owned by an organization
+</td>
+<td>
+orgname.github.io/projectname
+</td>
+<td>
+自动重定向到含子路径的、Project Pages site指定的自定义域名:org.example.com/projectname
+</td>
+<td>
+project.example.com
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+域名CNAME文件范例
+
+</ul>
+
+<p>
+atmos.github.io仓库的CNAME文件中设置为：<code>www.atmos.com</code>。
+</p>
+
+<ol>
+<li>
+User Pages站点: atmos.github.io -&gt; www.atmos.org
+
+<li>
+Project Pages站点: atmos.github.io/warden-github -&gt; www.atmos.org/warden-github
+
+<li>
+注意：Project Pages站点继承所有者的User Pages站点的域名
+
+</ol>
+
+<p>
+emoji仓库CNAME设置为<code>emoji.muan.co</code>，所有者为<code>muan</code>，其User Pages仓库CNAME设置为<code>muan.co</code>。
+</p>
+
+<p>
+其Project Pages站点<code>muan.github.io/emoji</code>重定向到<code>muan.co/emoji</code>，并且<code>emoji.muan.co</code>也可用。
+</p>
+
+
+<h2 id="toc_0.5">其它</h2>
+
+<h3 id="toc_0.5.1">git.conf内容</h3>
+<pre class="brush:bash">
+[core]
+        repositoryformatversion = 0
+        filemode = true
+        bare = false
+        logallrefupdates = true
+        ignorecase = true
+[user]
+        email = xstarcd@users.noreply.github.com
+        name = xstarcd
+[remote "origin"]
+        url = git@github.com:xstarcd/github.io.git
+        fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+        remote = origin
+        merge = refs/heads/master
+[color]
+        ui = true
+</pre>
+
+<h3 id="toc_0.5.2">设置密码缓存</h3>
+
+<p>
+如果使用https方式clone仓库，每次push时均需求输入用户名和密码，可使用credential helper记录、并自动告诉GitHub用户名和密码(需要Git 1.7.10以上版本)。
+</p>
+<pre>
+git config --global credential.helper wincred
+</pre>
+
+<p>
+保存文件：~/.git-credentials
+</p>
+
+<ul>
+<li>
+<a href="http://git-scm.com/docs/git-credential-store">http://git-scm.com/docs/git-credential-store</a>
+<pre>
+git config credential.helper 'store [options]'
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
