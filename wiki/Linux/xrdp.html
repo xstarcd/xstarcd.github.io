@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>xrdp安装配置方法</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">xrdp安装配置方法</a>
+</ul>
+</div>
+
+<h1 id="toc_1">xrdp安装配置方法</h1>
+
+<ol>
+<li>
+如果是debian系发行版，可以设置好源后直接<code>apt-get install xrdp</code>，如果是RedHat系发行版，可以到这里下载安装包
+
+<li>
+xrdp依赖于pam和openssl-del，编译前需要先安装pam-devel和openssl-devel这两个包
+
+<li>
+下载好xrdp的安装包后，用tar -xvzf 解压，进入解压出来的目录用root帐号执行make ，然后执行make install
+
+<li>
+xrdp需要vncserver，所以还要安装vncserver
+
+<li>
+准备好后，可以通过解压出来的目录下的instfiles目录下的xrdp-control.sh脚本启动xrdp:<code>xrdp-control.sh start</code>
+
+<li>
+可以把此脚本添加到/etc/rc.d/init.d/中，让它开机自动运行。
+
+<li>
+启动好xrdp，就可以通过客户端的rdp client 连接到服务器上，win下可以用mstsc，linux下可以用rdesktop或者krdp。module 选择为：sesman-Xvnc
+
+<li>
+xrdp的配置文档在/etc/xrdp目录下的xrdp.ini和sesman.ini
+
+<ul>
+<li>
+xrdp.ini 关键部分在globals
+<pre class="brush:bash">
+[globals]
+bitmap_cache=yes       #位图缓存
+bitmap_compression=yes #位图压缩
+port=3389              #监听端口
+crypt_level=low        #加密程度（low为40位，high为128位，medium为双40位）
+channel_code=1         #不知道是什么
+</pre>
+
+<li>
+sesman.ini
+<pre class="brush:bash">
+[Globals]
+ListenAddress=127.0.0.1      #监听ip地址(默认即可)
+ListenPort=3350              #监听端口(默认即可)
+EnableUserWindowManager=1    #1为开启,可让用户自定义自己的启动脚本
+UserWindowManager=startwm.sh
+DefaultWindowManager=startwm.sh
+
+[Security]
+AllowRootLogin=1              #允许root登陆
+MaxLoginRetry=4               #最大重试次数
+TerminalServerUsers=tSUSErs   #允许连接的用户组(如果不存在则默认全部用户允许连接)
+TerminalServerAdmins=tsadmins #允许连接的超级用户(如果不存在则默认全部用户允许连接)
+
+[Sessions]
+MaxSessions=10           #最大会话数
+KillDisconnected=0       #是否立即关闭断开的连接(如果为1,则断开连接后会自动注销)
+IdleTimeLimit=0          #空闲会话时间限制(0为没有限制)
+DisconnectedTimeLimit=0  #断开连接的存活时间(0为没有限制)
+
+[Logging]
+LogFile=./sesman.log     #登陆日志文件
+LogLevel=DEBUG           #登陆日志记录等级(级别分别为,core,error,warn,info,debug)
+EnableSyslog=0           #是否开启日志
+SyslogLevel=DEBUG        #系统日志记录等级
+</pre>
+
+</ul>
+</ol>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Kvm虚拟机部署方案</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Kvm虚拟机部署方案</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">解决方案选择</a>
+<li><a href="#toc_0.2">软件包安装</a>
+<li><a href="#toc_0.3">虚拟系统安装</a>
+<li><a href="#toc_0.4">libvirt+qemu-kvm环境搭建</a>
+<ul>
+<li><a href="#toc_0.4.1">开启TCP侦听</a>
+<li><a href="#toc_0.4.2">登录libvirt服务方法</a>
+<li><a href="#toc_0.4.3">相关目录说明</a>
+<li><a href="#toc_0.4.4">建立存储池</a>
+<li><a href="#toc_0.4.5">导入虚拟磁盘</a>
+<li><a href="#toc_0.4.6">注册虚拟磁盘</a>
+<li><a href="#toc_0.4.7">配置网络</a>
+<ul>
+<li><a href="#toc_0.4.7.1">配置libvirt网络</a>
+<li><a href="#toc_0.4.7.2">修改网卡配置文件</a>
+<li><a href="#toc_0.4.7.3">Iptables策略需求</a>
+<li><a href="#toc_0.4.7.4">重启networking</a>
+</ul>
+<li><a href="#toc_0.4.8">建立虚拟机</a>
+<li><a href="#toc_0.4.9">拷贝虚拟机</a>
+</ul>
+<li><a href="#toc_0.5">带串口的虚拟机</a>
+<li><a href="#toc_0.6">维护可用资源</a>
+<li><a href="#toc_0.7">参考资料</a>
+<li><a href="#toc_0.8">脚注</a>
+<li><a href="#toc_0.9">其他</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+Auther: WangJl,YuanXing
+
+<li>
+Create: 2011-01-31
+
+<li>
+Update: 2013-12-06
+
+</ul>
+
+
+<h2 id="toc_0.1">解决方案选择</h2>
+<ul>
+<li>
+虚拟机选择
+
+<ul>
+<li>
+Openvz 性能最好，但因为是使用操作系统内核，chroot至不同的os的非硬件虚拟机，不支持windows，所以不考虑。
+
+<li>
+qemu是最强大的虚拟机/仿真器，和kvm项目合并之后，是目前唯一一个被集成到 Linux 内核的 hypervisor 解决方案，也已被红帽收购，是未来linux虚拟机的主流方案。
+
+<li>
+xen历史悠久，性能比kvm略好，但因为没进入主流内核，网上普遍认为风险较高且不易管理。［1］
+
+</ul>
+</ul>
+
+<p>
+综上所述：KVM is absolutely your best option For enterprise-ready, production-critical, supported deployments of Virtualization stacks built upon Ubuntu Servers.[9]
+</p>
+
+<ul>
+<li>
+Libvirt管理
+
+</ul>
+<p>
+libvirt管理qemu-kvm，libvirt是目前通用的虚拟机管理接口标准，除了vmware之外的所有虚拟机均支持此标准，所以我们的虚拟机主要使用此接口管理。［5］
+</p>
+
+<p>
+<img src="../img/virtual_libvirt.gif" alt="有无libvirt管理的虚拟化比较">
+</p>
+
+<p>
+涉及的几个概念：
+</p>
+
+<ol>
+<li>
+Domain：虚拟机的一个运行实例，简单的理解，就是一个虚拟机虚拟出来的操作系统。它的叫法可是多种多样：instance，guest OS，virsual machine，其实都指的同一个概念。
+
+<li>
+Hypervisor：指的就是虚拟机本身，比如qemu, kvm, xen...
+
+<li>
+libvirt 由几个不同的部分组成，其中包括应用程序编程接口 (API) 库、一个守护进程 (libvirtd)，以及一个默认命令行实用工具 (virsh)，libvirtd守护进程负责对虚拟机的管理工作，在用各种工具对虚拟机进行管理的时候，这个守护进程一定要跑起来，而且这个进程可以分为两种，一种是root权限的libvirtd，一种是普通用户权限的libvirtd，前者权限大，可以虚拟计算机的各种设备。
+
+<li>
+开启root权限的libvirtd守护进程要以root身份去运行：sudo libvirtd --daemon
+
+</ol>
+
+<ul>
+<li>
+虚拟串口问题
+
+</ul>
+<p>
+实际使用中发现libvirt会把串口视为终端，导致使用了串口的windows门禁系统无法启动，虽然可以物理host usb转串口转接线，但不能达到门禁需要的波特率，无法识别电子锁，所以用screen启动qemu-kvm，将ttyS0映射为windows门禁的com1口。
+</p>
+
+<h2 id="toc_0.2">软件包安装</h2>
+
+<ul>
+<li>
+检查机器是否支持硬件虚拟化，以及BIOS中是否开启
+<pre class="brush:bash">
+kvm-ok
+
+#INFO: Your CPU supports KVM extensions
+#INFO: /dev/kvm exists
+#KVM acceleration can be used
+
+# Intel CPU:vmx
+# AMD CPU:svm
+grep -E "vmx|svm" /proc/cpuinfo
+
+# 如果CPU支持，还需要在BIOS打开虚拟化支持。通常，主板默认关闭这个选项
+</pre>
+
+</ul>
+
+<ul>
+<li>
+共需安装24个包
+<pre class="brush:bash">
+#aptitude install qemu-kvm
+#aptitude install libvirt-bin
+sudo apt-get -y install qemu-kvm libvirt-bin bridge-utils
+sudo apt-get -y install pm-utils
+#virt-manager - desktop application For managing virtual machines
+#virt-viewer - Displaying the graphical console of a virtual machine
+#virtinst - Programs to create and clone virtual machines
+#    virt-install: provision new virtual machines
+#    virt-clone: clone existing virtual machines
+#    virt-image: create virtual machines from an image description
+#    virt-convert: convert virtual machines between formats
+#    Homepage: http://virt-manager.et.redhat.com/
+</pre>
+<pre>
+Reading package lists... Done
+Building dependency tree       
+Reading state information... Done
+The following extra packages will be installed:
+  acl cgroup-lite dnsmasq-base ebtables gawk kvm-ipxe libaio1 libapparmor1 libasound2 libasyncns0 libavahi-client3 libavahi-common-data
+  libavahi-common3 libcaca0 libflac8 libjson0 libnetfilter-conntrack3 libnspr4 libnss3 libnuma1 libogg0 libpulse0 librados2 librbd1 libsdl1.2debian
+  libsigsegv2 libsndfile1 libvirt0 libvorbis0a libvorbisenc2 libxenstore3.0 libxml2-utils libyajl1 qemu-common qemu-utils seabios vgabios
+Suggested packages:
+  libasound2-plugins libasound2-python pulseaudio policykit-1 pm-utils radvd lvm2 mol-drivers-macosx openbios-sparc ubuntu-vm-builder uml-utilities
+The following NEW packages will be installed:
+  acl bridge-utils cgroup-lite dnsmasq-base ebtables gawk kvm-ipxe libaio1 libapparmor1 libasound2 libasyncns0 libavahi-client3 libavahi-common-data
+  libavahi-common3 libcaca0 libflac8 libjson0 libnetfilter-conntrack3 libnspr4 libnss3 libnuma1 libogg0 libpulse0 librados2 librbd1 libsdl1.2debian
+  libsigsegv2 libsndfile1 libvirt-bin libvirt0 libvorbis0a libvorbisenc2 libxenstore3.0 libxml2-utils libyajl1 qemu-common qemu-kvm qemu-utils
+  seabios vgabios
+0 upgraded, 40 newly installed, 0 to remove and 0 not upgraded.
+Need to get 11.6 MB of archives.
+After this operation, 40.2 MB of additional disk space will be used.
+</pre>
+
+</ul>
+
+<ul>
+<li>
+安装完成重启系统
+<pre class="brush:bash">
+init 6
+</pre>
+
+</ul>
+
+<ul>
+<li>
+启动libvirt服务
+<pre class="brush:bash">
+/etc/init.d/libvirt-bin start|restart|stop
+</pre>
+
+</ul>
+
+<p>
+Socket文件：/var/run/libvirt/libvirt-sock，需在/etc/libvirt/libvirtd.conf中设定sock访问权限，并将需登录管理界面的用户添加到libvirtd。
+</p>
+
+<p>
+Libvirtd服务默认为unixsocket方式侦听，只能从本地连接、或通过qumu+ssh//方式连接；也可修改/etc/libvirt/libvirtd.conf启用tcp方式。
+</p>
+
+
+<h2 id="toc_0.3">虚拟系统安装</h2>
+
+<p>
+仅使用qemu时，进行虚拟系统的安装(在本地完成安装)。
+</p>
+
+<ul>
+<li>
+在本机创建虚拟硬盘
+<pre class="brush:bash">
+qemu-img create -f qcow2 ./ubuntu-10.04-server-amd64.img 30G
+
+# 虚拟硬盘类型：qcow2（或vmdk、vdi等）
+# 虚拟硬盘文件：ubuntu-10.04-server-amd64.img
+# 虚拟硬盘大小：30GB（缺少自增涨）
+</pre>
+
+<li>
+在本机完成虚拟系统安装
+
+<ul>
+<li>
+qemu-kvm启动参数
+<pre class="brush:bash">
+kvm -monitor stdio -vga std -m 256 -localtime -hda /data/vm/ ubuntu-10.04-server-amd64.img \
+-cdrom /backup/iso/ubuntu-10.04-server-i386.iso -boot d -net nic,macaddr=00:ab:ab:ab:00:02 -smp 2
+
+# -monitor stdio：分配qemu控制台（用于内存调整、vnc启动等在线管理，可不启用控制台）
+# -vga std：使用标准输出做为控制台（需要Xwindow，默认参数）。
+# -localtime：使用主机时区(也可指定为utc)。
+# -m 256：分配256M内存
+# -cdrom：光盘iso路径
+# -had xxxx：虚拟硬盘路径
+# -boot d：从第二硬盘启动（光驱，c为第一硬盘）
+# -net nic,vlan=0：各虚拟机内部互联网络参数(nic是网卡型号)
+</pre>
+
+<li>
+安装界面下按F4，选择“Install a minimal virtual machine” mode，安装为虚拟机优化的jeos版本ubuntu
+
+</ul>
+<li>
+启动测试
+<pre class="brush:bash">
+qemu  -m 256 -localtime -hda /data/vm/ ubuntu-10.04-server-amd64.img -boot c -net nic,macaddr=00:ab:ab:ab:00:02 \
+-net tap,ifname=tap0,script=no,downscript=no -smp 2
+
+# -net nic,macaddr=00:ab:ab:ab:00:02            #指定网卡型号及、MAC地址（否则所有虚拟网卡为相同MAC）
+# -net tap,ifname=tap0,script=no,downscript=no  #指网桥接口名称tap0，script、downscript为虚拟机启动、停止时执行的脚本
+# -smp 2                                        #cpu的个数2
+</pre>
+
+</ul>
+
+<h2 id="toc_0.4">libvirt+qemu-kvm环境搭建</h2>
+
+<p>
+此处为全手工配置libvirt的所有xml文件，也可使用virt-manager创建和管理xml文件。
+</p>
+
+<h3 id="toc_0.4.1">开启TCP侦听</h3>
+<ul>
+<li>
+/etc/default/libvirt-bin
+<pre class="brush:bash">
+start_libvirtd="yes"
+libvirtd_opts="-d -l"
+</pre>
+
+<li>
+sasl认证(<a href="http://libvirt.org/auth.html)">http://libvirt.org/auth.html)</a>
+
+<ul>
+<li>
+/etc/libvirt-bin/libvir-bin.conf
+<pre class="brush:bash">
+listen_tls = 0           # 禁用tls
+listen_tcp = 1           # 启用tcp侦听
+tcp_port = "16509"       # tcp端口
+listen_addr = "0.0.0.0"  # tcp侦听IP
+auth_unix_ro = "none"
+auth_unix_rw = "none"
+auth_tcp = "sasl"        # tcp登录认证方式,"none"为不使用认证
+log_level = 3
+log_outputs="3:syslog:libvirtd"
+
+max_clients = 1024        # 最大总的连接客户数1024
+min_workers = 50          # libvirtd启动时，初始的工作线程数目
+max_workers = 200         # 同上，最大数目
+max_requests = 1000       # 最大同时支持的RPC调用，必须大于等于max_workers
+max_client_requests = 200 # 每个客户端支持的最大连接数
+</pre>
+
+<li>
+sasl配置
+<pre class="brush:bash">
+# 安装sasl2-bin
+apt-get install sasl2-bin
+#To enable saslauthd, edit /etc/default/saslauthd and set START=yes
+
+# 添加用户
+saslpasswd2 -a libvirt yuanxing
+#列出用户
+sasldblistusers2 -f /etc/libvirt/passwd.db
+# yuanxing@kvmsrv: userPassword，注意：登录时用户名要包含@kvmsrv
+#删除用户
+saslpasswd2 -a libvirt -d yuanxing
+</pre>
+
+</ul>
+</ul>
+<li>
+修改VNC监听地址，让远程可以登录:/etc/libvirt/qemu.conf
+<pre>
+vnc_listen = "0.0.0.0"
+</pre>
+
+
+<h3 id="toc_0.4.2">登录libvirt服务方法</h3>
+<pre class="brush:bash">
+virsh -c qemu:///system                         # 本地登录libvirt控制台
+virsh -c qemu+ssh://root@172.17.20.20/system    # ssh远程登录libvirt控制台
+virsh -c qemu+tcp://172.17.20.20:16509/system   # tcp远程登录libvirt控制台
+virt-manager -c qemu+tcp://172.17.20.20:16509/system # 运行libvirt图形管理界面
+virt-manager -c qemu+ssh://root@172.17.20.20/system
+</pre>
+
+<h3 id="toc_0.4.3">相关目录说明</h3>
+
+<ul>
+<li>
+基本配置目录：/etc/libvirt/
+<pre class="brush:bash">
+├── libvirtd.conf   #libvritd配置
+├── lxc.conf        #openVZ配置
+├── qemu.conf       #qemu配置
+├── qemu            #qemu相关目录
+│   ├── networks    #虚拟网络(网桥)定义、及自动启动设置
+│   │   ├── autostart
+│   │   │   ├── network0.xml -&gt; /etc/libvirt/qemu/networks/network0.xml
+│   │   │   └── network100.xml -&gt; /etc/libvirt/qemu/networks/network100.xml
+│   │   ├── default.xml #默认，用于NAT模式
+│   │   ├── network0.xml
+│   │   └── network100.xml
+│   ├── ubuntu1004-template.xml #虚拟机定义文件
+        ...
+│   └── windows2003-test.xml
+└── storage     #存储目录定义
+    ├── autostart
+    │   ├── default.xml -&gt; /etc/libvirt/storage/default.xml
+    │   └── vm.xml -&gt; /etc/libvirt/storage/vm.xml
+    ├── default.xml
+    └── vm.xml      #用户自定义的存储目录，指向/data/libvirt/images
+</pre>
+
+</ul>
+
+<ul>
+<li>
+运行状态目录：/var/lib/libvirt/
+<pre class="brush:bash">
+├── boot
+├── images      #默认存储目录
+├── network
+│   ├── network0.xml
+│   └── network100.xml
+└── qemu        #socket目录(未知)
+    ├── ubuntu1004-template.monitor
+    └── windows2003-ftp.monitor
+</pre>
+
+</ul>
+
+<ul>
+<li>
+运行标识文件目录：/var/run/libvirt
+<pre class="brush:bash">
+├── libvirt-sock        #libvirtd守护unix-socket
+├── libvirt-sock-ro
+├── network
+│   ├── network0.pid    #dhcp(dnsmasq)进程id
+│   └── network100.pid
+└── qemu
+</pre>
+
+</ul>
+
+<ul>
+<li>
+用户数据目录：/data/libvirt
+<pre class="brush:bash">
+/data/libvirt/images      #存储
+/data/libvirt/qemu-script #qemu手工启动脚本
+</pre>
+
+</ul>
+
+<h3 id="toc_0.4.4">建立存储池</h3>
+<ul>
+<li>
+vm.xml
+<pre class="brush:xml">
+&lt;pool type='dir'&gt;
+  &lt;name&gt;vm&lt;/name&gt;
+  &lt;uuid&gt;5098558a-42d2-9cec-ca69-b2c018073b2f&lt;/uuid&gt;
+  &lt;capacity&gt;144021958656&lt;/capacity&gt;
+  &lt;allocation&gt;17130102784&lt;/allocation&gt;
+  &lt;available&gt;126891855872&lt;/available&gt;
+  &lt;source&gt;
+  &lt;/source&gt;
+  &lt;target&gt;
+    &lt;path&gt;/data/vm&lt;/path&gt;
+    &lt;permissions&gt;
+    &lt;mode&gt;0700&lt;/mode&gt;
+    &lt;owner&gt;0&lt;/owner&gt;
+    &lt;group&gt;0&lt;/group&gt;
+    &lt;/permissions&gt;
+  &lt;/target&gt;
+&lt;/pool&gt;
+</pre>
+
+<li>
+导入vm.xml
+<pre class="brush:bash">
+virsh -c qemu:///system pool-create vm.xml   # 编辑后需导入、并启用生效
+virsh -c qemu:///system pool-define vm.xml   # 编辑后导入(不启用)
+</pre>
+
+</ul>
+
+<h3 id="toc_0.4.5">导入虚拟磁盘</h3>
+<p>
+将前面创建的虚拟磁盘移动进存储池的目录：
+</p>
+<pre class="brush:bash">
+mv windows2003.img /data/libvirt/images
+</pre>
+
+<h3 id="toc_0.4.6">注册虚拟磁盘</h3>
+<ul>
+<li>
+windows2003.xml
+<pre class="brush:xml">
+&lt;volume&gt;
+  &lt;name&gt;windows2003.img&lt;/name&gt;
+  &lt;key&gt;/data/vm/windows2003.img&lt;/key&gt;
+        &lt;source&gt;
+        &lt;/source&gt;
+        &lt;capacity&gt;32212254720&lt;/capacity&gt;
+        &lt;allocation&gt;2887913472&lt;/allocation&gt;
+        &lt;target&gt;
+    &lt;path&gt;/data/vm/windows2003.img&lt;/path&gt;
+    &lt;format type='qcow2'/&gt;
+    &lt;permissions&gt;
+    &lt;mode&gt;0644&lt;/mode&gt;
+    &lt;owner&gt;1000&lt;/owner&gt;
+    &lt;group&gt;1000&lt;/group&gt;
+    &lt;/permissions&gt;
+  &lt;/target&gt;
+&lt;/volume&gt;
+</pre>
+
+<li>
+导入：<code>virsh -c qemu:///system vol-create-from windows2003.xml</code>
+
+</ul>
+
+<h3 id="toc_0.4.7">配置网络</h3>
+<h4 id="toc_0.4.7.1">配置libvirt网络</h4>
+<ul>
+<li>
+default.xml
+<pre class="brush:bash">
+&lt;network&gt;
+  &lt;name&gt;default&lt;/name&gt;
+  &lt;uuid&gt;3be6d4fa-72c4-667b-64ae-85f954f1b2bf&lt;/uuid&gt;
+  &lt;forward mode='nat'/&gt;
+  &lt;bridge name='virbr0' stp='on' delay='0' /&gt;
+  &lt;ip address='192.168.122.1' netmask='255.255.255.0'&gt;
+    &lt;dhcp&gt;
+      &lt;range start='192.168.122.2' end='192.168.122.254' /&gt;
+    &lt;/dhcp&gt;
+  &lt;/ip&gt;
+&lt;/network&gt;
+</pre>
+
+<li>
+network1.xml
+
+<ul>
+<li>
+重要：如果/etc/network/interfaces中配置有和virbr1同名的网桥，ip需要一致，否则libvirt启动网络时会出错（如果不相同，偶尔会用/etc/network/interfaces中的配置覆盖，而不是报错）
+<pre class="brush:bash">
+&lt;network&gt;
+  &lt;name&gt;network0&lt;/name&gt;
+  &lt;uuid&gt;fa145462-6176-11e3-9423-4437e653aadb&lt;/uuid&gt;
+  &lt;forward mode='route'/&gt;
+  &lt;bridge name='virbr1' stp='off' delay='0' /&gt;
+  &lt;ip address="172.17.20.20" netmask="255.255.255.0"&gt;
+  &lt;/ip&gt;
+&lt;/network&gt;
+</pre>
+
+</ul>
+<li>
+network1在/etc/network/interfaces中配置:
+<pre>
+auto eth0
+iface eth0 inet manual
+
+auto virbr1
+iface virbr1 inet static
+    address 172.17.20.20
+    network 172.17.20.0
+    netmask 255.255.255.0
+    broadcast 172.17.20.255
+    gateway 172.17.20.1
+    bridge_ports eth0
+    bridge_stp off
+    bridge_fd 0
+    bridge_maxwait 0
+</pre>
+
+<li>
+network100.xml
+<pre class="brush:bash">
+&lt;network&gt;
+  &lt;name&gt;network100&lt;/name&gt;
+  &lt;uuid&gt;4480c84f-370c-113e-cae8-ff501c13b0db&lt;/uuid&gt;
+  &lt;forward mode='route'/&gt;
+  &lt;bridge name='virbr2' stp='off' delay='0' /&gt;
+  &lt;ip address='192.168.100.7' netmask='255.255.255.0'&gt;
+  &lt;/ip&gt;
+&lt;/network&gt;
+</pre>
+
+<li>
+导入(待修改改/etc/network/interfaces后)
+<pre class="brush:bash">
+virsh -c qemu:///system net-create network1.xml
+virsh -c qemu:///system net-autostart network1
+virsh -c qemu:///system net-create network100.xml
+# 导入而不启动
+virsh -c qemu:///system net-define network0.xml
+</pre>
+
+<li>
+注意：
+
+<ol>
+<li>
+因为libvirt将网桥与真实网卡连接的部分尚未实现，所以需手工用设置或修改网络配置。
+
+<li>
+确定libvirt已经将网桥建立之后，才能添加网桥，否则libvirt中会处理出错。
+
+</ol>
+</ul>
+
+<h4 id="toc_0.4.7.2">修改网卡配置文件</h4>
+
+<p>
+编辑双网卡网络配置文件(/etc/network/interfaces)[7]
+</p>
+
+<p>
+网络由libvirt管理，/etc/network/interfaces只负责网桥启动后将eth0连上网桥，可选为在/etc/network/interfaces中为网桥指定ip，但此ip需和libvirt网络配置文件中同网桥定义的ip一致。
+</p>
+<ul>
+<li>
+基本配置
+<pre class="brush:bash">
+auto eth0
+iface eth0 inet manual
+
+auto virbr0
+iface virbr0 inet static
+        address 172.17.20.20
+        network 172.17.20.0
+        netmask 255.255.255.0
+        broadcast 172.17.20.255
+        gateway 172.17.20.1
+        bridge_ports eth0
+        bridge_stp off
+        bridge_fd 0
+        bridge_maxwait 0
+
+</pre>
+<pre class="brush:bash">
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet manual   #将eth0设置成匿名模式的桥接设备
+    up ifconfig $IFACE 0.0.0.0 up
+
+auto eth2
+iface eth1 inet manual   #将eth1设置成匿名模式的桥接设备
+    up ifconfig $IFACE 0.0.0.0 up
+
+##################################
+#通常配置网桥的做法如下，比如是静态ip：
+#auto virbr1
+#iface virbr1 inet static
+#        address 192.168.0.214
+#        netmask 255.255.255.0
+#        gateway 192.168.0.1
+#        bridge_ports eth1
+#auto virbr2
+#iface virbr2 inet static
+#        address 192.168.100.214
+#        netmask 255.255.255.0
+#        bridge_ports eth2
+
+auto virbr1
+iface virbr1 inet manual    #[7][8]
+    #不写下面这一句则以libvirt中的网络配置参数为准，若libvirt未正常启动或网络配置有误，则无法连上服务
+    up /sbin/ifconfig virbr1 192.168.0.7/24
+
+    up /sbin/route add default gw  192.168.0.1
+    post-up /usr/sbin/brctl addif virbr1 eth0   #自动将eth0添加至网桥
+    pre-down /usr/sbin/brctl delif virbr1 eth0
+
+auto virbr2
+iface virbr2 inet manual
+    up /sbin/ifconfig virbr2 192.168.100.7/24 #同virbr1
+    post-up /usr/sbin/brctl addif virbr2 eth2
+    pre-down /usr/sbin/brctl delif virbr2 eth2
+</pre>
+
+</ul>
+
+<ul>
+<li>
+进阶配置
+<pre class="brush:bash">
+    #   为防止libvirt启动失败，在eth0上也配置ip，并在成功启动后修改为使用virbr1的路由（此时
+    #   eth0接到virbr1网桥上，从外部已不能联通），virbr1关闭时，将eth0从virbr1取下，并恢复路由
+auto eth0
+iface eth0 inet manual
+    #在eth0和virbr1上都配置ip，之所以用相同ip只是为了方便
+        up ifconfig eth0 192.168.0.7/24 up
+        up route add default gw 192.168.0.1 eth0 || true
+        down ifconfig eth0 down
+
+auto virbr1
+iface virbr1 inet manual
+    #重要：网桥的ip需要和libvirt网络配置中网桥ip一致，否则libvirt启动网络时会出错
+        up ifconfig $IFACE 192.168.0.7/24 up
+    #确保加进网桥之前eth0已经启动，因为eth0只能连接一个网络设备中，所以加入网桥后，相当于从外部网
+    #络物理断开，不能再连接外部网络，但此时所有到192.168.0.0/24的路由仍然通过eth0，所以网络不能
+    #接通，所以在下一步将eth0上的路由全部切换到virbr1。另：此时如果有同网桥内的虚拟网卡为混杂模式，
+    #可以借道把eth0的数据转发出去。
+        up ifconfig eth0 192.168.0.7/24 up
+        post-up brctl addif $IFACE eth0
+
+    #修改路由，使192.168.0.0/24网段和默认路由从eth0切换到virbr1，执行后eth0上的路由事实上已经完全清除
+        post-up route add default gw 192.168.0.1 dev $IFACE
+        post-up route delete -net 192.168.0.0/24 dev eth0 || true
+        post-up route delete default gw 192.168.0.1 dev eth0 || true
+
+    #重置eth0的默认路由，用route add可能会重复添加路由，多次/etc/init.d/networking restart之后会混乱
+        pre-down brctl delif $IFACE eth0
+        pre-down ifconfig eth0 down
+        pre-down ifconfig eth0 192.168.0.7/24 up
+        pre-down route add default gw 192.168.0.1 dev eth0 || true
+        down ifconfig $IFACE down
+
+################################
+#同virbr1
+################################
+auto eth2
+iface eth2 inet manual
+        up ifconfig eth2 192.168.100.7/24 up
+        down ifconfig eth2 down
+
+auto virbr2
+iface virbr2 inet manual
+        up ifconfig $IFACE 192.168.100.7/24 up
+        up ifconfig eth2 192.168.100.7/24 up
+
+        post-up brctl addif $IFACE eth2
+        post-up route delete -net 192.168.100.0/24 dev eth2 || true
+
+        pre-down ifconfig eth2 down
+        pre-down ifconfig eth2 192.168.100.7/24 up
+
+        pre-down brctl delif $IFACE eth2
+        down ifconfig $IFACE down
+        #post-down ifconfig eth2 192.168.100.7/24 up
+</pre>
+
+</ul>
+
+<h4 id="toc_0.4.7.3">Iptables策略需求</h4>
+
+<pre class="brush:bash">
+iptables -A FORWARD -i virbr1 -j ACCEPT
+iptables -A FORWARD -i virbr2 -s "192.168.100.0/24" -d "192.168.100.0/24" -j ACCEPT
+iptables -A FORWARD -m limit --limit 5/min -j LOG --log-prefix "IPTABLES_FORWARD_NOMATCH:" --log-level 7
+
+# 另一种将允许所有桥类型端口转发的方式：
+iptables -I FORWARD -m physdev --physdev-is-bridged -j ACCEPT
+
+# 或不将FORWARD流量交给iptables管理：
+#Alternatively, prevent bridged traffic from being processed by iptables rules. 
+#In /etc/sysctl.conf append the following lines:
+net.bridge.bridge-nf-call-ip6tables = 0
+net.bridge.bridge-nf-call-iptables = 0
+net.bridge.bridge-nf-call-arptables = 0
+
+#Reload the kernel parameters configured with sysctl
+sysctl -p /etc/sysctl.conf
+</pre>
+
+<h4 id="toc_0.4.7.4">重启networking</h4>
+
+<ul>
+<li>
+重启networking使设置生效
+<pre class="brush:bash">
+/etc/init.d/networking restart
+</pre>
+
+</ul>
+
+<ul>
+<li>
+注意：如果网桥在libvirt启动其之前先启动，libvirt网络不能配置成功，需要先手工删除系统建立的网桥，并按此顺序再操作一遍
+<pre class="brush:bash">
+ifconfig virbr2 down
+brctl delbr virbr2
+virsh -c qemu:///system net-start network100
+/etc/init.d/networking restart
+</pre>
+
+</ul>
+
+<h3 id="toc_0.4.8">建立虚拟机</h3>
+<ul>
+<li>
+windows2003.xml
+<pre class="brush:xml">
+&lt;domain type='kvm'&gt;
+  &lt;name&gt;windows2003-template&lt;/name&gt;
+  &lt;uuid&gt;149b5acd-3cb3-5ba9-4468-125941c8a730&lt;/uuid&gt;
+  &lt;memory&gt;376832&lt;/memory&gt;
+  &lt;currentMemory&gt;376832&lt;/currentMemory&gt;
+  &lt;vcpu&gt;1&lt;/vcpu&gt;
+  &lt;os&gt;
+        &lt;type arch='x86_64' machine='pc-0.12'&gt;hvm&lt;/type&gt;
+        &lt;boot dev='hd'/&gt;
+  &lt;/os&gt;
+  &lt;features&gt;
+        &lt;acpi/&gt;
+        &lt;apic/&gt;
+        &lt;pae/&gt;
+  &lt;/features&gt;
+  &lt;clock offset='localtime'/&gt;
+  &lt;on_poweroff&gt;destroy&lt;/on_poweroff&gt;
+  &lt;on_reboot&gt;restart&lt;/on_reboot&gt;
+  &lt;on_crash&gt;restart&lt;/on_crash&gt;
+  &lt;devices&gt;
+        &lt;emulator&gt;/usr/bin/kvm&lt;/emulator&gt;
+        &lt;disk type='file' device='disk'&gt;
+          &lt;driver name='qemu' type='qcow2'/&gt;
+          &lt;source file='/data/vm/windows2003.img'/&gt;
+          &lt;target dev='hda' bus='ide'/&gt;
+        &lt;/disk&gt;
+        &lt;interface type='network'&gt;
+          &lt;mac address='52:54:00:23:03:d0'/&gt;
+          &lt;source network='network0'/&gt;
+        &lt;/interface&gt;
+        &lt;input type='tablet' bus='usb'/&gt;
+        &lt;input type='mouse' bus='ps2'/&gt;
+        &lt;graphics type='vnc' port='-1' autoport='yes'/&gt;
+        &lt;video&gt;
+          &lt;model type='vga' vram='9216' heads='1'/&gt;
+        &lt;/video&gt;
+  &lt;/devices&gt;
+&lt;/domain&gt;
+</pre>
+
+<li>
+导入：<code>virsh -c qemu:///system create windows2003.xml</code>
+
+</ul>
+
+<h3 id="toc_0.4.9">拷贝虚拟机</h3>
+<ul>
+<li>
+克隆卷:
+
+</ul>
+<p>
+<code>virsh -c qemu:///system vol-clone --pool vm windows2003.img windows2003-doorcontrol.img</code>
+</p>
+
+<ul>
+<li>
+创建虚拟机配置文件：
+
+</ul>
+<p>
+然后将原虚拟机xml复制成windows2003-doorcontrol.xml，并修改uuid、虚拟机名称等信息。
+</p>
+<ul>
+<li>
+创建:
+
+</ul>
+<p>
+<code>virsh -c qemu:///system create windows2003-doorcontrol.xml</code>
+</p>
+
+
+
+<h2 id="toc_0.5">带串口的虚拟机</h2>
+
+<p>
+门禁系统管理软件需使用串口与门禁终端联机，而因libvirt启动与windows的串口冲突，并且将usb转串口线host给windows之后发现，无法达到通讯所需速率，所以使用screen直接启动qemu-kvm用作门禁管理终端。
+</p>
+
+<p>
+之所以不使用start-stop-daemon是因为考虑连接控制终端的需要。
+</p>
+
+<ul>
+<li>
+权限:需要kvm用户组以启动
+<pre class="brush:bash">
+useradd vmuser -G kvm
+</pre>
+
+</ul>
+
+<ul>
+<li>
+创建虚拟机
+<pre class="brush:bash">
+virsh -c qemu:///system shutdown windows2003-template
+virsh -c qemu:///system vol-clone --pool vm windows2003.img windows2003-doorcontrol.img
+chown vmuser: /data/vm/windows2003-doorcontrol.img
+</pre>
+
+</ul>
+
+<ul>
+<li>
+需建立以下三个可执行脚本
+
+<ul>
+<li>
+/data/libvirt/qemu-script/network0-up
+<pre class="brush:bash">
+#!/bin/bash
+ifconfig $1 0.0.0.0
+brctl addif virbr1 $1
+</pre>
+
+<li>
+/data/libvirt/qemu-script/network0-down
+<pre class="brush:bash">
+#!/bin/bash
+brctl delif virbr1 $1
+</pre>
+
+<li>
+/usr/local/bin/windows2003-doorcontrol
+<pre class="brush:bash">
+#!/bin/bash
+
+IMAGE=/data/libvirt/images/windows2003-doorcontrol.img
+networkscript="/data/libvirt/qemu-script/network0-up"
+downscript="/data/libvirt/qemu-script/network0-down"
+
+doorcontrol=`screen -ls | grep windows2003-doorcontrol | awk '{print $1}'`
+echo $doorcontrol
+
+if [ `echo $doorcontrol | awk '{print NF}'` -gt 1 ];then
+   echo warning:too many windows2003-doorcontrol opened!
+   screen -ls
+elif [ `echo $doorcontrol | awk '{print NF}'` = 1 ];then
+   screen -r ${doorcontrol}
+else
+   screen -S windows2003-doorcontrol kvm -rtc base=localtime -hda $IMAGE \
+   -serial /dev/ttyS0 -vnc none -net nic,macaddr=52:54:00:63:6a:5e \
+   -net tap,ifname=tap0,script=$networkscript,downscript=$downscript \
+   -monitor stdio -m 512 -runas vmuser
+fi
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+说明
+
+<ul>
+<li>
+VNC启用
+
+<ul>
+<li>
+以上命令将物理串口ttyS0赋给windows的com1，-vnc none将vnc server启动，但不可使用状态，在控制台(需-monitor stdio参数开启)中使用change vnc 命令开启，如：
+<pre>
+change vnc :1 可将其开启接受任何ip的连接5901
+change vnc password xxxxx 将vnc连接密码设置为xxxxx
+change vnc none 将vnc关闭
+注:script、downscript默认是:/etc/kvm-ifup和/etc/kvm-ifdown
+</pre>
+
+</ul>
+<li>
+启动时添加参数
+<pre class="brush:bash">
+-monitor stdio #启动虚拟机控制台
+-vnc host:port #使用vnc代替sdl作为显示界面
+               #host:允许连接的主机
+               #port:5900+port即为VNC的端口号
+               #例：-vnc :1 表示任意主机可以连接端口5901的vnc
+-serial
+               #为支持串口，ubuntu host系统中需做以下设置：
+               #1、grub启动参数中添加 console=/dev/ttyS0
+               #2、/etc/init/中cp tty1.conf ttyS0.conf
+               #修改其中一行为：
+               #exec /sbin/getty -L /dev/ttyS0 38400 vt100
+               #http://www.mail-archive.com/qemu-devel@nongnu.org/msg12508.html
+</pre>
+
+</ul>
+</ul>
+
+
+<h2 id="toc_0.6">维护可用资源</h2>
+<ul>
+<li>
+tap创建脚本: <a href="http://forum.ubuntu.org.cn/viewtopic.php?t=221600">http://forum.ubuntu.org.cn/viewtopic.php?t=221600</a>
+
+<li>
+qemu-x86_64是模拟执行本地程序的程序
+<pre>
+qemu-system-x86_64是用于操作系统的程序，其他类推，例：
+模拟执行64位cpu执行ls命令: qemu-x86_64 -L / /bin/ls
+模拟64位cpu执行os:    qemu-system-x86_64 /opt/vmware/windows_xp.img
+</pre>
+
+<li>
+手动配置网桥（用于调试）
+<pre class="brush:bash">
+ifconfig eth0 0.0.0.0      #物理网口(设为0.0.0.0后，再绑定至网桥，则网桥使用eth0 MAC)
+ifconfig tap0 0.0.0.0      #虚拟网口，用作网桥的一个接口 (libvirt中命名：vnet0/1)
+brctl addbr br0            #建立网桥，用于虚拟网卡、物理网卡的互联
+brctl addif br0 eth0       #绑定物理接口至网桥
+brctl addif br0 tap0       #绑定虚拟接口至网桥
+ifconfig br0 192.168.0.214 #为网桥设定IP地址
+brctl show                 #查看网桥
+brctl showmacs br0         #查看网桥上所有mac地址列表
+# 把网桥做为一个网络设备，而eth0、tap0均是该设备上的一个端口。
+</pre>
+
+<li>
+bugfix:/etc/init/libvirt-bin.conf
+
+<ul>
+<li>
+此问题在Ubuntu 12.04.3中已修正。
+<pre class="brush:bash">
+#将
+exec /usr/sbin/libvirtd -d
+#修改为：
+script
+    . /etc/default/libvirt-bin
+    echo $start_libvirtd &gt; /tmp/1
+    [ "$start_libvirtd" = "yes" ]&amp;&amp;/usr/sbin/libvirtd ${libvirtd_opts}
+end script
+</pre>
+
+</ul>
+<li>
+ubuntu启用串口[10]
+<pre class="brush:bash">
+cat &gt; /etc/init/ttyS0.conf &lt;&lt;EOF
+# ttyS0 - getty
+#
+# This service maintains a getty on ttyS0 from the point the system is
+# started until it is shut down again.
+
+start on stopped rc RUNLEVEL=[2345]
+stop on runlevel [!2345]
+
+respawn
+exec /sbin/getty -L 115200 ttyS0 vt220
+EOF
+
+#可选，启动时增加grub参数
+vim /etc/default/grub
+GRUB_CMDLINE_LINUX="console=tty0 console=ttyS0,115200n8"
+</pre>
+
+<li>
+静态压缩磁盘文件
+
+</ul>
+<p>
+<code>qemu-img convert -c -f qcow2 -O qcow2 ubuntu1004-template.img ubuntu1004-template_copy.img</code>
+</p>
+<ul>
+<li>
+ssh代理模式
+
+</ul>
+<p>
+<code>ssh -o "ProxyCommand=connect -S 127.0.0.1:2021 192.168.100.253 22" dfjsb@192.168.100.253</code>
+</p>
+<ul>
+<li>
+nfs+kerberos
+
+<ul>
+<li>
+nfs-kernel-server: <a href="http://linuxappfinder.com/package/nfs-kernel-server">http://linuxappfinder.com/package/nfs-kernel-server</a>
+<pre>
+必须搭dns,建立反向解析:http://blog.csdn.net/zhxue123/archive/2009/07/06/4324840.aspx
+nfs server接到客户端的mount时，会先客户的IP做反解成域名，用域名(注意是用域名而不是ＩＰ)去和/etc/exports做比较，如果匹配不成功会失败。
+而我做了域名反解后，并没有更新/etc/exports内的IP为域名。所以匹配不到对应的域名，自然就出现mount: 192.168.1.172:/nfs/mp3/mp3files failed, reason given by server: Permission denied的错误了。
+之前用IP没有问题是因为在域名不能反解的时候还是用IP去匹配的
+</pre>
+
+<li>
+未完成
+<pre>
+kerberos:
+krb5_newrealm
+krb5-kdc krb5-admin-server openbsd-inetd inet-superserver krb5-admin-server krb5-kdc-ldap krb5-doc
+
+1010下面的bug，要先安装krb5-kdc，执行kdb5_util create -s，建立库之后再安装krb5-admin-server,再执行krb5_newrealm，创建acl
+
+注意:krb5.keytab必须安装在需要用kerberos验证的服务器上，而不是kdc上
+http://web.mit.edu/kerberos/krb5-1.4/krb5-1.4.3/doc/krb5-install/The-Keytab-File.html
+http://www.likewise.com/products/likewise_enterprise/kerberos-linux-ssh.php
+krb5-user krb5-config
+</pre>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.7">参考资料</h2>
+<ul>
+<li>
+qemu控制台
+
+<ul>
+<li>
+<a href="http://en.wikibooks.org/wiki/QEMU/Monitor">http://en.wikibooks.org/wiki/QEMU/Monitor</a>
+
+</ul>
+<li>
+qemu控制台和libvirt功能的对应(如savevm==snapshot-create)
+
+<ul>
+<li>
+<a href="https://wiki.edubuntu.org/VirtFeatureVerification">https://wiki.edubuntu.org/VirtFeatureVerification</a>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.8">脚注</h2>
+
+<ul>
+<li class="done0">
+各种虚拟机的比较 : <a href="http://www.fuwuqiweihu.com/xen-kvm-vmware-hyperv-compare/">http://www.fuwuqiweihu.com/xen-kvm-vmware-hyperv-compare/</a>
+
+<li class="done0">
+bridge的详细说明 : <a href="http://www.linuxfoundation.org/collaborate/workgroups/networking/bridge">http://www.linuxfoundation.org/collaborate/workgroups/networking/bridge</a>
+
+<li class="done0">
+ubuntu 帮助文件的相关说明 :less /usr/share/doc/ifupdown/examples/bridge
+
+<li class="done0">
+fedora12 虚拟化指南 : <a href="http://docs.fedoraproject.org/zh-CN/Fedora/12/html/Virtualization_Guide/index.html">http://docs.fedoraproject.org/zh-CN/Fedora/12/html/Virtualization_Guide/index.html</a>
+
+<li class="done0">
+libvirt虚拟化库指南 : <a href="http://www.ibm.com/developerworks/cn/linux/l-libvirt/">http://www.ibm.com/developerworks/cn/linux/l-libvirt/</a>
+
+<li class="done0">
+ubuntu wiki : <a href="http://wiki.ubuntu.org.cn/UbuntuHelp:KVM/Installation">http://wiki.ubuntu.org.cn/UbuntuHelp:KVM/Installation</a>
+
+<li class="done0">
+man interfaces : if-[options].d中是所有接口都会执行的脚本，针对单个接口，在/etc/network/interfaces中配置，iface *** manual表示用脚本配置
+
+<li class="done0">
+另一种常见做法是eth0和桥都使用独立ip和mac，经测试，这样需要将虚拟机网卡设置为混杂，没开虚拟机的情况下主机网络无法联通,极不推荐
+
+<li class="done0">
+ubuntu wiki: <a href="https://help.ubuntu.com/community/Kqemu">https://help.ubuntu.com/community/Kqemu</a>
+
+<li>
+[10] ubuntu wiki: <a href="https://help.ubuntu.com/community/SerialConsoleHowto">https://help.ubuntu.com/community/SerialConsoleHowto</a>
+
+</ul>
+
+
+<h2 id="toc_0.9">其他</h2>
+
+<ul>
+<li>
+Ubuntu-virt工具
+
+<ul>
+<li>
+需安装ubuntu-virt工具
+<pre class="brush:bash">
+# ubuntu-virt-server - Common packages necessary for hosting virtual machines
+#     Depends: cpu-checker ipxe-qemu kvm-ipxe libseccomp1 libspice-server1 libxen-4.2 msr-tools
+#     qemu-keymaps qemu-kvm qemu-system-common qemu-system-x86 seabios vgabios
+# ubuntu-virt-mgmt - Common packages useful for managing virtual machines graphically
+#     Depends: virt-manager, python-vm-builder, virt-viewer
+
+apt-get install ubuntu-virt-server
+apt-get install ubuntu-virt-mgmt
+apt-get install kvm libvirt-bin
+apt-get install bridge-utils
+</pre>
+
+<li>
+虚拟机创建脚本
+<pre class="brush:bash">
+#!/bin/sh
+vm_name=$1
+vm_img="/var/kvm/vm/${vm_name}.qcow2"
+qemu-img create -f qcow2 $vm_img 8G
+virt-install \
+     --name $vm_name \
+     --ram 2000 \
+     --disk path=$vm_img,format=qcow2 \
+     --accelerate \
+     --network network=default,model=virtio \
+     --cdrom /var/kvm/iso/ubuntu-12.04.2-server-i386.iso \
+     --boot cdrom \
+     --vnc 
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+qemu工具
+
+</ul>
+<p>
+qemu是一个仿真器，即可用于来宾操作系统的虚拟化，也可以作为完整的机器仿真器使用，运行使用主机 CPU 或其他 CPU 架构的操作系统。
+</p>
+
+<p>
+qemu 支持两种操作模式：用户模式仿真和系统模式仿真。
+</p>
+<ol>
+<li>
+用户模式仿真 允许一个 CPU 构建的进程在另一个 CPU 上执行（执行主机 CPU 指令的动态翻译并相应地转换 Linux 系统调用）。
+
+<li>
+系统模式仿真 允许对整个系统进行仿真，包括处理器和配套的外围设备，这时就应该使用root权限的libvirtd。
+<pre class="brush:bash">
+# qemu相关的命令：
+
+# 创建一个名为disk.img的128M大小的qcow格式的磁盘映像文件，这个文件充当来宾操作系统的硬盘。
+qemu-img create -f qcow disk.img 128M  
+
+# -hda指定磁盘映像文件，-cdrom指定光盘镜像文件，-boot指定从哪里引导系统，d是从CD-ROM引导，c表示从硬盘引导
+qemu -hda disk.img -cdrom /root/cflinux-1.0.iso -boot d  
+
+# 开始启动来宾操作系统
+qemu -hda disk.img  
+</pre>
+
+</ol>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

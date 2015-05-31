@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>rsyslog_logrotate</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">rsyslogd服务器及负载均衡</a>
+<li><a href="#toc_2">rsyslog和logrotate服务</a>
+<ul>
+<li><a href="#toc_2.1">rsyslog服务</a>
+<li><a href="#toc_2.2">rsyslog配置文件</a>
+<li><a href="#toc_2.3">配置范例</a>
+<li><a href="#toc_2.4">远程发送接收配置</a>
+<ul>
+<li><a href="#toc_2.4.1">配置例1</a>
+<li><a href="#toc_2.4.2">配置例2</a>
+</ul>
+<li><a href="#toc_2.5">logrotate服务</a>
+<ul>
+<li><a href="#toc_2.5.1">logrotate启动方式</a>
+<li><a href="#toc_2.5.2">配置logrotate</a>
+</ul>
+<li><a href="#toc_2.6">PHP客户端</a>
+<li><a href="#toc_2.7">rsyslogv7</a>
+<ul>
+<li><a href="#toc_2.7.1">安装</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1"><a href="rsyslogd_lvs_test.html">rsyslogd服务器及负载均衡</a></h1>
+
+<h1 id="toc_2">rsyslog和logrotate服务</h1>
+
+<ul>
+<li>
+参考：
+
+<ul>
+<li>
+<a href="http://www.lampbo.org/others/opensource/rsyslog-config-file-detail.html">http://www.lampbo.org/others/opensource/rsyslog-config-file-detail.html</a>
+
+<li>
+<a href="http://bangerlee.blog.chinaunix.net/uid-10540984-id-2609837.html">http://bangerlee.blog.chinaunix.net/uid-10540984-id-2609837.html</a>
+
+</ul>
+</ul>
+
+<p>
+rsyslog 是一个 syslogd 的多线程增强版。现在Fedora和Ubuntu, rhel6默认的日志系统都是rsyslog了。
+</p>
+
+<p>
+rsyslog负责写入日志, logrotate负责备份和删除旧日志, 以及更新日志文件
+</p>
+
+<h2 id="toc_2.1">rsyslog服务</h2>
+
+<pre class="brush:bash">
+# 安装
+yum install rsyslog rsyslog-mysql logrotate
+
+# 查看当前rsyslog服务的状态
+/etc/init.d/rsyslog status
+
+# 在centos6中, rsyslog服务默认是开机启动的，我们先看一下它的进程::
+ps -ef | grep rsyslogd | grep -v grep
+root      1343    1  0 12:09 ?        00:00:00 /sbin/rsyslogd -c 4
+
+#注意，这里的服务名是rsyslog!
+chkconfig –list | grep rsyslog
+rsyslog         0:off   1:off   2:on    3:on    4:on    5:on    6:off
+</pre>
+
+<p>
+从上面命令的输出结果看到rsyslog执行时使用的参数是-c 4.
+</p>
+
+<p>
+它的意思是指定rsyslog运行(兼容)的版本号, 这个参数必须是第一个参数, 当然也可以省略, 默认为-c0, (命令行兼容sysklogd)
+</p>
+
+<p>
+这个参数是在文件/etc/sysconfig/rsyslog中指定:
+</p>
+<pre class="brush:bash">
+# Options to syslogd
+# syslogd options are deprecated since rsyslog v3
+# if you want to use them, switch to compatibility mode 2 by "-c 2"
+SYSLOGD_OPTIONS="-c 4"
+</pre>
+
+<ul>
+<li>
+rsyslog接收日志延迟问题
+
+</ul>
+
+<p>
+<a href="http://www.sectop.com/?p=105">http://www.sectop.com/?p=105</a>
+</p>
+
+<p>
+rsyslog处理大量日志接收时，总是会延迟，说有dns解析的问题。然后man了下rsyslogd，发现有-Q -x参数可以屏蔽dns解析。改下启动脚本:
+</p>
+<pre class="brush:bash">
+SYSLOGD_OPTIONS="-c 5 -Q -x"
+</pre>
+
+<h2 id="toc_2.2">rsyslog配置文件</h2>
+
+<ul>
+<li>
+配置文件的基本信息(/etc/rsyslog.conf)
+
+</ul>
+
+<p>
+配置文件中有很多内容, 但最主要的是指定需要记录哪些服务和需要记录什么等级的信息:
+</p>
+
+<pre class="brush:bash">
+#rsyslog v3 config file
+# if you experience problems, check
+# http://www.rsyslog.com/troubleshoot for assistance
+
+#### MODULES ####    加载 模块
+$ModLoad imuxsock.so  –&gt; 模块名  # provides support for local system logging (e.g. via logger command) 本地系统日志
+$ModLoad imklog.so               # provides kernel logging support (previously done by rklogd)
+#$ModLoad immark.so              # provides –MARK– message capability
+
+# Provides UDP syslog reception
+# 允许514端口接收使用UDP协议转发过来的日志
+$ModLoad imudp.so
+$UDPServerRun 514
+
+# Provides TCP syslog reception
+# 允许514端口接收使用TCP协议转发过来的日志
+$ModLoad imtcp.so
+$InputTCPServerRun 514
+
+#### GLOBAL DIRECTIVES ####
+# 定义日志格式默认模板
+# Use default timestamp format
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+# File syncing capability is disabled by default. This feature is usually not required,
+# not useful and an extreme performance hit
+#$ActionFileEnableSync on
+
+$IncludeConfig /etc/rsyslog.d/*.conf  # 加入/etc/rsyslog.d下配置文件,如：/etc/rsyslog.d/50-default.conf
+
+#### RULES ####
+# Log all kernel messages to the console.
+# Logging much else clutters up the screen.
+#kern.*                                                 /dev/console    关于内核的所有日志都放到/dev/console(控制台)
+# Log anything (except mail) of level info or higher.
+# Don't log private authentication messages!
+# 记录所有日志类型的info级别以及大于info级别的信息到/var/log/messages，但是mail邮件信息，authpriv验证方面的信息和cron时间任务相关的信息除外
+*.info;mail.none;authpriv.none;cron.none                /var/log/messages
+# The authpriv file has restricted access.
+# authpriv验证相关的所有信息存放在/var/log/secure
+authpriv.*                                              /var/log/secure
+# Log all the mail messages in one place.
+# 邮件的所有信息存放在/var/log/maillog; 这里有一个-符号,表示是使用异步的方式记录, 因为日志一般会比较大
+mail.*                                                  -/var/log/maillog
+# Log cron stuff
+# 计划任务有关的信息存放在/var/log/cron
+cron.*                                                  /var/log/cron
+# Everybody gets emergency messages
+# 记录所有的大于等于emerg级别信息, 以wall方式发送给每个登录到系统的人
+*.emerg                          *          #  *代表所有在线用户
+# Save news errors of level crit and higher in a special file.
+# 记录uucp,news.crit等存放在/var/log/spooler
+uucp,news.crit                                          /var/log/spooler
+# Save boot messages also to boot.log     启动的相关信息
+local7.*                                                /var/log/boot.log
+#:rawmsg, contains, "sdns_log" @@192.168.56.7:10514
+#:rawmsg, contains, "sdns_log" ~
+# ### begin forwarding rule ###  转发规则
+# The statement between the begin … end define a SINGLE forwarding
+# rule. They belong together, do NOT split them. If you create multiple
+# forwarding rules, duplicate the whole block!
+# Remote Logging (we use TCP for reliable delivery)
+#
+# An on-disk queue is created for this action. If the remote host is
+# down, messages are spooled to disk and sent when it is up again.
+#$WorkDirectory /var/spppl/rsyslog # where to place spool files
+#$ActionQueueFileName fwdRule1 # unique name prefix for spool files
+#$ActionQueueMaxDiskSpace 1g   # 1gb space limit (use as much as possible)
+#$ActionQueueSaveOnShutdown on # save messages to disk on shutdown
+#$ActionQueueType LinkedList   # run asynchronously
+#$ActionResumeRetryCount -1    # infinite retries if host is down
+# remote host is: name/ip:port, e.g. 192.168.0.1:514, port optional
+#*.* @@remote-host:514                    # @@表示通过tcp协议发送  @表示通过udp进行转发
+#local3.info  @@localhost:514
+#local3.info -/var/log/ipwall/messages.log
+#local7.*                                 # @@192.168.56.7:514
+# ### end of the forwarding rule ###
+</pre>
+
+<ul>
+<li>
+配置格式
+
+</ul>
+
+<pre class="brush:bash">
+# 日志设备(类型).(连接符号)日志级别            日志处理方式(action)
+*.info;mail.none;authpriv.none;cron.none   /var/log/messages
+</pre>
+
+<ul>
+<li>
+日志设备(可以理解为日志类型)
+
+</ul>
+
+<table>
+<tr>
+<td>
+日志设备/类型
+</td>
+<td>
+说明
+</td>
+</tr>
+<tr>
+<td>
+auth
+</td>
+<td>
+–pam产生的日志
+</td>
+</tr>
+<tr>
+<td>
+authpriv
+</td>
+<td>
+–ssh,ftp等登录信息的验证信息
+</td>
+</tr>
+<tr>
+<td>
+cron
+</td>
+<td>
+–时间任务相关
+</td>
+</tr>
+<tr>
+<td>
+kern
+</td>
+<td>
+–内核
+</td>
+</tr>
+<tr>
+<td>
+lpr
+</td>
+<td>
+–打印
+</td>
+</tr>
+<tr>
+<td>
+mail
+</td>
+<td>
+–邮件
+</td>
+</tr>
+<tr>
+<td>
+mark(syslog)
+</td>
+<td>
+–rsyslog服务内部的信息,时间标识
+</td>
+</tr>
+<tr>
+<td>
+news
+</td>
+<td>
+–新闻组
+</td>
+</tr>
+<tr>
+<td>
+user
+</td>
+<td>
+–用户程序产生的相关信息
+</td>
+</tr>
+<tr>
+<td>
+uucp
+</td>
+<td>
+–unix to unix copy, unix主机之间相关的通讯
+</td>
+</tr>
+<tr>
+<td>
+local 1~7
+</td>
+<td>
+–自定义的日志设备
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+日志级别
+
+</ul>
+
+<p>
+从上到下，级别从低到高，记录的信息越来越少
+详细的可以查看手册: man 3 syslog
+</p>
+
+<table>
+<tr>
+<td>
+级别
+</td>
+<td>
+说明
+</td>
+<td>
+级别值
+</td>
+</tr>
+<tr>
+<td>
+debug
+</td>
+<td>
+–有调式信息的，日志信息最多
+</td>
+<td>
+7
+</td>
+</tr>
+<tr>
+<td>
+info
+</td>
+<td>
+–一般信息的日志，最常用
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+notice
+</td>
+<td>
+–最具有重要性的普通条件的信息
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+warning
+</td>
+<td>
+–警告级别
+</td>
+<td>
+4
+</td>
+</tr>
+<tr>
+<td>
+err
+</td>
+<td>
+–错误级别，阻止某个功能或者模块不能正常工作的信息
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+crit
+</td>
+<td>
+–严重级别，阻止整个系统或者整个软件不能正常工作的信息
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+alert
+</td>
+<td>
+–需要立刻修改的信息
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+emerg
+</td>
+<td>
+–内核崩溃等严重信息
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+none
+</td>
+<td>
+–什么都不记录
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+连接符号
+
+</ul>
+<table>
+<tr>
+<td>
+连接符号
+</td>
+<td>
+说明
+</td>
+</tr>
+<tr>
+<td>
+.xxx
+</td>
+<td>
+表示大于等于xxx级别的信息
+</td>
+</tr>
+<tr>
+<td>
+.=xxx
+</td>
+<td>
+表示等于xxx级别的信息
+</td>
+</tr>
+<tr>
+<td>
+.!xxx
+</td>
+<td>
+表示在xxx之外的等级的信息
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+日志处理方式Actions
+<pre class="brush:bash">
+# 记录到普通文件或设备文件
+*.*     /var/log/file.log   # 绝对路径
+*.*     /dev/pts/0
+
+# 测试:
+# logger 命令用于产生日志
+logger -p local3.info 'KadeFor is testing the rsyslog and logger'
+
+
+# 转发到远程
+*.* @192.168.0.1            # 使用UDP协议转发到192.168.0.1的514(默认)端口
+*.* @@192.168.0.1:10514     # 使用TCP协议转发到192.168.0.1的10514(默认)端口
+
+# 发送给用户(需要在线才能收到)
+*.*   root
+*.*   root,kadefor,up01     # 使用,号分隔多个用户
+*.*   *                     # *号表示所有在线用户
+
+# 忽略,丢弃
+local3.*   ~                # 忽略所有local3类型的所有级别的日志
+
+# 执行脚本
+local3.*    ^/tmp/a.sh      # ^号后跟可执行脚本或程序的绝对路径
+# 日志内容可以作为脚本的第一个参数.
+# 可用来触发报警
+</pre>
+
+</ul>
+
+<ul>
+<li>
+注意
+
+</ul>
+
+<p>
+<strong>日志记录的顺序有先后关系！</strong>
+</p>
+
+<h2 id="toc_2.3">配置范例</h2>
+
+<ul>
+<li>
+一个标准简单的配置文件
+<pre class="brush:bash">
+*.info;mail.none;authpriv.none;cron.none      /var/log/messages
+authpriv.*                                    /var/log/secure
+mail.*                                        /var/log/maillog
+cron.*                                        /var/log/cron
+*.emerg                                       *
+uucp,news.crit                                /var/log/spooler
+local7.*                                      /var/log/boot.log
+</pre>
+
+</ul>
+
+<ul>
+<li>
+实例: 指定日志文件, 或者终端
+<pre class="brush:bash">
+grep local3 /etc/rsyslog.conf
+#local3.*                                      /var/log/local3.log
+
+/etc/init.d/rsyslog reload
+#Reloading system logger...                       [  OK  ]
+
+logger -t 'LogTest' -p local3.info 'KadeFor is testing the rsyslog and logger'
+
+cat /var/log/local3.log
+# Jun 10 04:55:52 kadefor LogTest: KadeFor is testing the rsyslog and logger
+# 自己实验日志发送给某个终端
+</pre>
+
+</ul>
+
+<ul>
+<li>
+实例: 过滤特定的日志到文件, 忽略(丢弃)包含某个字符串的日志
+<pre class="brush:bash">
+# 过滤日志, 由:号开头
+:msg, contains, "error" /var/log/error.log
+:msg, contains, "error" ~         # 忽略包含error的日志
+:msg, contains, "user nagios"   ~
+:msg, contains, "user kadefor"   ~
+:msg, contains, "module-alsa-sink.c: ALSA woke us up to write new data to the device, but there was actually nothing to write" ~
+local3.*    ~
+# PS.
+&amp;   ~       # 忽略所有的日志
+</pre>
+
+</ul>
+
+<p>
+把包含'oracle'的日志保存在/var/log/oracle.log
+</p>
+
+<ul>
+<li>
+实例: 使用模板来定义日志格式
+<pre class="brush:bash">
+$template myFormat,"%rawmsg%n"
+$ActionFileDefaultTemplate myFormat
+
+#如果不要$ActionFileDefaultTemplate myFormat这一行, 就需要像这样来使用模板:
+#在日志文件后添加模板名, 并用;号分隔
+$template myFormat,"%rawmsg%n"
+
+# The authpriv file has restricted access.
+authpriv.*      /var/log/secure;myFormat
+# Log all the mail messages in one place.
+mail.*          /var/log/maillog;myFormat
+# Log cron stuff
+cron.*          /var/log/cron;myFormat
+# Everybody gets emergency messages
+*.emerg         *
+# Save news errors of level crit and higher in a special file.
+uucp,news.crit  /var/log/spooler;myFormat
+# Save boot messages also to boot.log
+local7.*        /var/log/boot.log;myFormat
+</pre>
+
+</ul>
+
+<ul>
+<li>
+实例: remote log 远程发送与接收
+<pre class="brush:bash">
+# 只要在rsyslog.conf中加入
+*.* @192.168.0.10
+*.* @192.168.0.10:10514     # 带端口号
+*.* @@192.168.0.10          # TCP
+</pre>
+
+</ul>
+
+<p>
+但是没有定义保存在远程的哪一个文件啊?
+</p>
+
+<p>
+其实保存在什么文件, 那是远程日志服务器接收到日志之后它自己的事情了.
+</p>
+
+<p>
+注意：如果要修改为非514的端口, 需要设置SElinux。
+</p>
+
+<h2 id="toc_2.4">远程发送接收配置</h2>
+
+<h3 id="toc_2.4.1">配置例1</h3>
+
+<ul>
+<li>
+Client(send)
+<pre class="brush:bash">
+local3.*   @@192.0.2.1:10514
+# if you need to forward to other systems as well, just add additional config lines:
+# *.*      @@other-server.example.net:10514
+
+# Log anything (except mail) of level info or higher.
+# Don't log private authentication messages!
+*.info;mail.none;authpriv.none;cron.none      /var/log/messages
+# The authpriv file has restricted access.
+authpriv.*                                    /var/log/secure
+# Log all the mail messages in one place.
+mail.*                                        /var/log/maillog
+# Log cron stuff
+cron.*                                        /var/log/cron
+# Everybody gets emergency messages
+*.emerg                                       *
+# Save news errors of level crit and higher in a special file.
+uucp,news.crit                                /var/log/spooler
+# Save boot messages also to boot.log
+local7.*                                      /var/log/boot.log
+</pre>
+
+</ul>
+
+<ul>
+<li>
+Server(receive)
+<pre class="brush:bash">
+# for TCP use:
+$modload imtcp
+$InputTCPServerRun 10514
+# for UDP use:
+$modload imudp
+$UDPServerRun 514
+
+# Log anything (except mail) of level info or higher.
+# Don't log private authentication messages!
+*.info;mail.none;authpriv.none;cron.none      /var/log/messages
+# The authpriv file has restricted access.
+authpriv.*                                    /var/log/secure
+# Log all the mail messages in one place.
+mail.*                                        /var/log/maillog
+# Log cron stuff
+cron.*                                        /var/log/cron
+# Everybody gets emergency messages
+*.emerg                                       *
+# Save news errors of level crit and higher in a special file.
+uucp,news.crit                                /var/log/spooler
+# Save boot messages also to boot.log
+local7.*                                      /var/log/boot.log
+local3.*    /var/log/local3.log     # 测试用
+</pre>
+
+</ul>
+
+<h3 id="toc_2.4.2">配置例2</h3>
+
+<ul>
+<li>
+配置服务端(接收)
+<pre class="brush:bash">
+# /etc/rsyslog.conf
+
+#在文件开始加上，同时确保514端口能够被客户端用tcp访问
+$ModLoad imtcp.so           # needs to be done just once #使用tcp方式
+$InputTCPMaxSessions 500    # tcp接收连接数为500个
+$InputTCPServerRun 514      # tcp接收信息的端口
+$template logformat,"%TIMESTAMP:::date-mysql% %FROMHOST-IP%%msg%n"   # 定义一个名为logformat模板, 为信息加上日志时间
+$template DynFile,"/var/log/tlog%$year%%$month%%$day%.log"           # 定义日志文件的名称，按照年月日
+:rawmsg, contains, "sdns_log" ?DynFile;logformat     # 把rawmsg(也可以使用msg)日志中包含sdns_log标志的信息写到DynFile定义的日志文件里
+:rawmsg, contains, "sdns_log"  ~                     # 这个表示丢弃包含sdns_log标志的信息, 一般都加上它, 以免多个日志文件记录重复的日志
+</pre>
+
+</ul>
+
+<ul>
+<li>
+配置客户端(发送)
+<pre class="brush:bash">
+# /etc/rsyslog.conf
+
+#在文件开始加上
+#把包含sdns_log的信息通过tcp发到192.168.1.2 @@表示tcp @表示udp
+:rawmsg, contains, "sdns_log"       @@192.168.1.2       # 默认514端口
+
+#这个表示丢弃包含sdns_log标志的信息,防止这个信息写到本机的/var/log/message
+:rawmsg, contains, "sdns_log"       ~
+</pre>
+
+</ul>
+
+<ul>
+<li>
+测试
+
+</ul>
+<p>
+在客户端上执行，观察服务端/var/log/目录里是否有tlog*日志产生。
+</p>
+
+<pre class="brush:bash">
+logger -p user.info "sdns_log 34334"
+</pre>
+
+<ul>
+<li>
+补充
+
+</ul>
+<p>
+如果要把不同服务器发送过来的日志保存到不同的文件, 可以这样操作:
+</p>
+
+<pre class="brush:bash">
+:fromhost-ip, isequal, "192.168.0.160" /var/log/host160.log
+:FROMHOST-IP, isequal, "192.168.0.161" /var/log/host161.log
+:FROMHOST-IP, startswith, "192.168.1." /var/log/network1.log
+:FROMHOST-IP, startswith, "192.168.2." /var/log/network2.log
+</pre>
+
+<ul>
+<li>
+练习
+
+<ol>
+<li>
+实现把ssh服务的日志自定义保存到/var/log/newsshd.log (先不做)
+
+<li>
+mail日志保存在远程日志服务器/var/log/newmail.log
+
+<li>
+过滤日志, 如果日志包含有"daydayup", 则执行脚本/tmp/a.sh，脚本内容:
+<pre class="brush:bash">
+#!/bin/bash
+echo  "KO::**1" &gt; /dev/tty2
+</pre>
+
+</ol>
+</ul>
+
+<h2 id="toc_2.5">logrotate服务</h2>
+
+<p>
+rotate 轮换,日志切换
+</p>
+
+<p>
+logrotate是一个日志管理程序，用来把旧的日志文件删除（备份），并创建新的日志文件，这个过程称为"转储"。我们可以根据日志的大小，或者根据其使用的天数来转储。
+</p>
+
+<h3 id="toc_2.5.1">logrotate启动方式</h3>
+
+<p>
+logrotate 的执行由crond服务实现。在/etc/cron.daily目录中，有个文件logrotate，它实际上是个shell script，用来启动logrotate。logrotate程序每天由cron在指定的时间（/etc/crontab）启动。
+</p>
+
+<p>
+因此，使用ps是无法查看到logrotate的。如果它没有起来，就要查看一下crond服务有没有在运行。
+</p>
+
+<p>
+在执行logrotate时，需要指定其配置文件/etc/logrotate.conf
+</p>
+
+<p>
+这个配置文件的注释写得很清楚，没有必要再罗嗦了。只想强调下面这行，它的作用包含存放在/etc/logrotate.d目录下面的配置文件，不可或缺。如果你安装了一个新的服务，它的日志转储的规则可以建立一个专门的配置文件，放在/etc/logrotate.d下面。它其实也因为下面的这句话，在 logrotate服务启动时被读取。
+</p>
+
+<p>
+每个存放在/etc/logrotate.d目录里的文件，都有上面格式的配置信息。在{}中定义的规则，如果与logrotate.conf中的冲突，以/etc/logrotatate.d/中的文件定义的为准。
+</p>
+
+<p>
+logrotate启动脚本放在 /etc/cron.daily/logrotate 中，可人工执行命令进行测试：
+</p>
+<pre class="brush:bash">
+/usr/sbin/logrotate -f /etc/logrotate.conf
+</pre>
+
+<p>
+dateext表示转储文件会以日期来结束*
+</p>
+
+<h3 id="toc_2.5.2">配置logrotate</h3>
+
+
+<ul>
+<li>
+logrotate选项说明
+
+</ul>
+
+<p>
+日志文件匹配规则中，不要使用<code>/var/log/news/*</code>，这会匹配已经切换过的日志，应使用<code>/var/log/news/*.log</code>。
+</p>
+
+<table>
+<tr>
+<th>
+选项
+</th>
+<th>
+用途
+</th>
+</tr>
+<tr>
+<td>
+nocompress,compress
+</td>
+<td>
+不压缩,压缩
+</td>
+</tr>
+<tr>
+<td>
+delaycompress
+</td>
+<td>
+不压缩前一个截断的文件（需要与compress一起用）
+</td>
+</tr>
+<tr>
+<td>
+daily,weekly,monthly
+</td>
+<td>
+每天/周/月轮转一次
+</td>
+</tr>
+<tr>
+<td>
+copytruncate
+</td>
+<td>
+清空原有文件，而不是创建一个新文件
+</td>
+</tr>
+<tr>
+<td>
+create 0644 root utmp
+</td>
+<td>
+新建日志文件，权限、属主、组
+</td>
+</tr>
+<tr>
+<td>
+ifempty
+</td>
+<td>
+即使用空文件也转储
+</td>
+</tr>
+<tr>
+<td>
+notifempty
+</td>
+<td>
+日志文件为空不进行转储
+</td>
+</tr>
+<tr>
+<td>
+olddir &lt;dir&gt;
+</td>
+<td>
+转储后的日志存放目录，必须和当前日志文件在同一个文件系统
+</td>
+</tr>
+<tr>
+<td>
+rotate 5
+</td>
+<td>
+保留最近的5个日志文件
+</td>
+</tr>
+<tr>
+<td>
+minisize 1M
+</td>
+<td>
+必须大于1MB才会转转
+</td>
+</tr>
+<tr>
+<td>
+size 50M
+</td>
+<td>
+超过50MB后轮转日志
+</td>
+</tr>
+<tr>
+<td>
+mail www@my.org
+</td>
+<td>
+轮换后的把日志发给邮箱
+</td>
+</tr>
+<tr>
+<td>
+missingok
+</td>
+<td>
+如果日志文件不存在，不报错
+</td>
+</tr>
+<tr>
+<td>
+prerotate,endscript
+</td>
+<td>
+在logrotate之前执行的命令，如<code>/usr/bin/charrt -a /var/log/logfile</code>
+</td>
+</tr>
+<tr>
+<td rowspan="4">
+postrotate,endscript
+</td>
+<td>
+在logrotate之后执行的命令，如<code>/usr/bin/charrt +a /var/log/logfile</code>
+</td>
+</tr>
+<tr>
+<td>
+<code>/bin/kill -HUP $(/bin/cat /var/run/rsyslogd.pid 2&gt;/dev/null) &amp;&gt;/dev/null</code>
+</td>
+</tr>
+<tr>
+<td>
+<code>/usr/bin/killall -HUP httpd</code>
+</td>
+</tr>
+<tr>
+<td>
+<code>[ -f /var/run/nginx.pid ] &amp;&amp; kill -USR1 $(cat /var/run/nginx.pid)</code>
+</td>
+</tr>
+<tr>
+<td>
+sharedscripts
+</td>
+<td>
+共享脚本，表示切换时只执行一次脚本
+</td>
+</tr>
+<tr>
+<td>
+dateext
+</td>
+<td>
+增加日期作为后缀，不然会是一串无意义的数字
+</td>
+</tr>
+<tr>
+<td>
+dateformat .%s
+</td>
+<td>
+切换后文件名，必须配合dateext使用
+</td>
+</tr>
+</table>
+
+
+<ul>
+<li>
+/etc/logrotate.conf
+<pre class="brush:bash">
+# see "man logrotate" for details
+# rotate log files weekly
+weekly          #–每周轮转一次
+# keep 4 weeks worth of backlogs
+rotate 4        #–保留四个
+# create new (empty) log files after rotating old ones
+create          #–rotate后，创建一个新的空文件
+# uncomment this if you want your log files compressed
+#compress       #–默认是不压缩的
+# RPM packages drop log rotation information into this directory
+include /etc/logrotate.d    #–这个目录下面配置文件生效
+
+# no packages own wtmp - we'll rotate them here
+/var/log/wtmp {         #–定义/var/log/wtmp这个日志文件
+    monthly                 #–每月轮转一次，取代了上面的全局设定的每周轮转一次
+    minsize 1M              #–定义日志必须要大于1M大小才会去轮转
+    create 0664 root utmp   #–新的日志文件的权限，属主，属主
+    rotate 1                #–保留一个，取代了上面的全局设定的保留四个
+}
+
+/var/log/btmp {
+    missingok       #-如果日志丢失, 不报错
+    monthly
+    create 0600 root utmp
+    rotate 1
+}
+</pre>
+
+</ul>
+
+<ul>
+<li>
+logrotate.conf范例
+<pre class="brush:bash">
+# sample logrotate configuration file
+compress     # 全局设置, 压缩
+
+/var/log/messages {
+    rotate 5     # 保留5份日志
+    weekly       # 每周轮换一次
+    postrotate   # 轮换之后重启syslogd服务
+    /usr/bin/killall -HUP syslogd
+    # rhel6中为:/bin/kill -HUP `cat /var/run/syslogd.pid 2&gt; /dev/null` 2&gt; /dev/null || true
+    # 可查看/etc/logrotate.d/下的配置文件
+    endscript
+}
+
+"/var/log/httpd/access.log" /var/log/httpd/error.log {   #  指定多个文件, 如果有特殊字符需要用单引号
+    rotate 5
+    mail www@my.org
+    size 100k        # 超过100k后切换日志, 并把老的日志发送邮件给www@my.org
+    sharedscripts    # 共享脚本.下面的postrotate脚本只运行一次.
+    postrotate
+    /usr/bin/killall -HUP httpd
+    endscript
+}
+
+/var/log/news/* {    # 少用通配符, 因会它会包括已经切换过的日志, 要用的话最好在*号后加上扩展名, 如*.log
+    monthly
+    rotate 2
+    olddir /var/log/news/old
+    missingok
+    postrotate
+    kill -HUP 'cat /var/run/inn.pid'
+    endscript
+    nocompress
+}
+
+/var/log/ipwall/messages.log {   #日志路径一定要和rsyslog定义的日志文件路径一致
+    rotate 65535             #滚动65535次
+    create 0777 syslog adm   #设置权限，方便windows连接samba服务器
+    compress                 #采用压缩
+    size 50M                 #文件大小50M以上的分割日志
+    dateext
+    dateformat .%s           #定义文件切割后的文件名，必须配合dateext使用
+
+    #posrotate/endscript这段脚本使rsyslog程序重新读取配置文件，程序释放对messages.log文件持有的文件描述符
+    postrotate
+    /bin/kill -HUP $(/bin/cat /var/run/rsyslogd.pid 2&gt;/dev/null) &amp;&gt;/dev/null
+    endscript
+}
+</pre>
+
+<li>
+强制轮转
+<pre class="brush:bash">
+logrotate -f /etc/logrotate.conf     # –强制轮转
+logrotate -vf /etc/logrotate.conf    # –再加一个-v参数查看轮转的过程
+
+logger -t 'aaaa' 'bbbbbb'            #–在日志里加一个内容tag和内容
+tail /var/log/messages
+# Jun 12 20:34:22 kadefor aaaa: bbbbbb
+</pre>
+
+<li>
+/etc/logrotate.d/syslog
+<pre class="brush:bash">
+/var/log/messages /var/log/secure /var/log/maillog /var/log/spooler /var/log/boot.log /var/log/cron {
+    sharedscripts   #–表示切换时脚本只执行一次
+    postrotate      #–表示rotate后执行的脚本
+    /bin/kill -HUP `cat /var/run/syslogd.pid 2&gt; /dev/null` 2&gt; /dev/null || true
+    /bin/kill -HUP `cat /var/run/rsyslogd.pid 2&gt; /dev/null` 2&gt; /dev/null || true
+    endscript       #–表示脚本结束
+}
+</pre>
+
+</ul>
+
+<ul>
+<li>
+定制命名
+
+</ul>
+<p>
+logrotate命名方式确实太单调了，默认通过数字后缀来分割，支持时间格式函数格式，但是只支持 %Y %m %d %s这4个函数，由于logrotate确实不支持“小时:分钟”这样的函数。
+</p>
+
+<p>
+无奈只有写了个脚本把%s的秒数换算成日期+时刻这样的惯用格式，并且我们把日志文件按日期分类到各个文件夹里。我们在 /etc/rsyslog.d/rename.sh 创建一个文件，注意更改执行权限 chmod 755 /etc/rsyslog.d/rename.sh。
+</p>
+
+<pre class="brush:bash">
+#!/bin/bash
+/usr/sbin/logrotate /etc/logrotate.conf
+cd /var/log/ipwall
+/bin/ls | /usr/bin/awk -F'.' '/log.*gz/{system("mv "$0" `date -d \"@"$3"\" +%y-%m-%d_%H-%M`.gz")}'
+/bin/ls *gz | /usr/bin/awk -F"_" 'NR==1{i=$1;system("mkdir -p "i"")}{if($1==i)system("mv "$0" "i"")}'
+</pre>
+
+<ul>
+<li>
+删除最早的日志文件
+
+</ul>
+<p>
+防火墙上网日志记录要求最大化保存日志，没有设置rotate回滚次数，上面的脚本按照日期把日志保存到文件夹内，下面的脚本是当磁盘空间接近饱和的时候删除最早那天的日志文件夹，我们在 chmod 755 /etc/rsyslog.d/delbak.sh 创建更更改权限。
+</p>
+
+<pre class="brush:bash">
+#!/bin/bash
+SPACE=$(df /var/log/ipwall | awk 'NR==2{print $4}')
+SP=20000000
+cd /var/log/ipwall
+[ $SPACE -le $SP ] &amp;&amp; ls -d */ | awk 'NR==1{system("rm -rf "$0"")}'
+</pre>
+
+<ul>
+<li>
+crontab -e
+<pre class="brush:bash">
+*  * * * * . /etc/profile;/etc/rsyslog.d/rename.sh
+10 0 * * * /etc/rsyslog.d/delbak.sh
+</pre>
+
+</ul>
+
+<h2 id="toc_2.6">PHP客户端</h2>
+
+<p>
+PHP语言编写的一个简单的syslog客户端，通过UDP协议，直接将日志消息发送给 rsyslogd日志服务。
+</p>
+
+<p>
+<a href="http://xmgu2008.blog.163.com/blog/static/1391223802010518115219906/">http://xmgu2008.blog.163.com/blog/static/1391223802010518115219906/</a>
+</p>
+
+<pre class="brush:php">
+function mgsyslog($level,$msg)
+{
+    $server="192.168.120.67";
+    $port=518;
+    $facility=1;
+    $pid=posix_getpid();
+    $process="PHP[${pid}]";
+    $actualtime = time();
+    $month      = date("M", $actualtime);
+    $day        = substr("  ".date("j", $actualtime), -2);
+    $hhmmss     = date("H:i:s", $actualtime);
+    $timestamp  = $month." ".$day." ".$hhmmss;
+    $hostname=gethostname();
+    $pri    = "&lt;".($facility*8 + $level)."&gt;";
+    $header = $timestamp." ".$hostname;
+    $message = substr($pri.$header." ".$process.": ".$msg, 0, 1024);
+
+    $fp = fsockopen("udp://".$server, $port, $errno, $errstr);
+    if ($fp)
+    {
+        fwrite($fp, $message);
+        fclose($fp);
+        return true;
+    }
+    return false;
+}
+</pre>
+
+
+<h2 id="toc_2.7">rsyslogv7</h2>
+
+<p>
+rsyslogd v7: <a href="http://www.rsyslog.com/">http://www.rsyslog.com/</a>
+</p>
+
+<h3 id="toc_2.7.1">安装</h3>
+
+<ul>
+<li>
+CentOS: <a href="http://rpms.adiscon.com/v7-stable/">http://rpms.adiscon.com/v7-stable/</a>
+<pre>
+http://rpms.adiscon.com/v7-stable/rsyslog.repo
+
+[rsyslog_v7]
+name=Adiscon CentOS-$releasever - local packages for $basearch
+baseurl=http://rpms.adiscon.com/v7-stable/epel-$releasever/$basearch
+enabled=1
+gpgcheck=0
+gpgkey=http://rpms.adiscon.com/RPM-GPG-KEY-Adiscon
+protect=1
+
+yum search rsyslog
+
+[root@localhost yum.repos.d]# rpm -qs rsyslog-7.2.6-3.el6.i686
+</pre>
+
+<li>
+Ubuntu
+<pre>
+To use our repository, follow these steps:
+
+    Install our PGP Key into your apt system
+
+    sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com AEF0CF8E
+    gpg --export --armor AEF0CF8E | sudo apt-key add -
+
+    Edit your /etc/apt/sources.list and add these lines to the end
+
+    For Ubuntu (12) Precise
+    # Adiscon repository
+    deb http://ubuntu.adiscon.com/v7-devel precise/
+    deb-src http://ubuntu.adiscon.com/v7-devel precise/
+
+    For Ubuntu (13) Quantal
+    # Adiscon repository
+    deb http://ubuntu.adiscon.com/v7-devel quantal/
+    deb-src http://ubuntu.adiscon.com/v7-devel quantal/
+
+    Once done perform these commands to update your apt cache and install the latest rsyslog version
+
+    sudo apt-get update &amp;&amp; sudo apt-get upgrade
+
+    If you receive a message like this while upgrading follow these steps below:
+
+    The following packages have been kept back:
+    rsyslog
+    0 upgraded, 0 newly installed, 0 to remove and 1 not upgraded.
+
+    sudo apt-get install rsyslog
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

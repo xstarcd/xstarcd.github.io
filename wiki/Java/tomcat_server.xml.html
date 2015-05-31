@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>tomcat server.xml配置</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>tomcat server.xml配置</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">配置元素介绍</a>
+<ul>
+<li><a href="#toc_0.1.1">&lt;Server&gt;元素</a>
+<li><a href="#toc_0.1.2">&lt;Service&gt;元素</a>
+<li><a href="#toc_0.1.3">&lt;Engine&gt;元素</a>
+<li><a href="#toc_0.1.4">&lt;Host&gt;元素</a>
+<li><a href="#toc_0.1.5">&lt;Context&gt;元素</a>
+<li><a href="#toc_0.1.6">&lt;Connector&gt;元素</a>
+</ul>
+<li><a href="#toc_0.2">tomcat的优化配置</a>
+<ul>
+<li><a href="#toc_0.2.1">精简Tomcat和配置文件</a>
+<li><a href="#toc_0.2.2">连接器优化</a>
+<li><a href="#toc_0.2.3">配置实例</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="http://blog.csdn.net/yuanxuegui2008/article/details/6056754">http://blog.csdn.net/yuanxuegui2008/article/details/6056754</a>
+
+<li>
+<a href="http://blog.csdn.net/herrapfel/article/details/1717081">http://blog.csdn.net/herrapfel/article/details/1717081</a>
+
+</ul>
+
+<table>
+<tr>
+<th>
+元素名
+</th>
+<th>
+属性
+</th>
+<th>
+解释
+</th>
+</tr>
+<tr>
+<td rowspan="2">
+server
+</td>
+<td>
+port
+</td>
+<td>
+指定一个端口，这个端口负责监听关闭tomcat 的请求
+</td>
+</tr>
+<tr>
+<td>
+shutdown
+</td>
+<td>
+指定向端口发送的命令字符串
+</td>
+</tr>
+<tr>
+<td>
+service
+</td>
+<td>
+name
+</td>
+<td>
+指定service 的名字
+</td>
+</tr>
+<tr>
+<td rowspan="7">
+Connector ( 表示客户端和service 之间的连接)
+</td>
+<td>
+port
+</td>
+<td>
+指定服务器端要创建的端口号，并在这个断口监听来自客户端的请求
+</td>
+</tr>
+<tr>
+<td>
+minProcessors
+</td>
+<td>
+服务器启动时创建的处理请求的线程数
+</td>
+</tr>
+<tr>
+<td>
+maxProcessors
+</td>
+<td>
+最大可以创建的处理请求的线程数
+</td>
+</tr>
+<tr>
+<td>
+enableLookups
+</td>
+<td>
+如果为true ，则可以通过调用request.getRemoteHost() 进行DNS 查询来得到远程客户端的实际主机名，若为false 则不进行DNS 查询，而是返回其ip 地址
+</td>
+</tr>
+<tr>
+<td>
+redirectPort
+</td>
+<td>
+指定服务器正在处理http 请求时收到了一个SSL 传输请求后重定向的端口号
+</td>
+</tr>
+<tr>
+<td>
+acceptCount
+</td>
+<td>
+指定当所有可以使用的处理请求的线程数都被使用时，可以放到处理队列中的请求数，超过这个数的请求将不予处理
+</td>
+</tr>
+<tr>
+<td>
+connectionTimeout
+</td>
+<td>
+指定超时的时间数( 以毫秒为单位)
+</td>
+</tr>
+<tr>
+<td>
+Engine ( 表示指定service 中的请求处理机，接收和处理来自Connector 的请求)
+</td>
+<td>
+defaultHost
+</td>
+<td>
+指定缺省的处理请求的主机名，它至少与其中的一个host 元素的name 属性值是一样的
+</td>
+</tr>
+<tr>
+<td rowspan="3">
+Context ( 表示一个web 应用程序，通常为WAR 文件，关于WAR 的具体信息见servlet 规范)
+</td>
+<td>
+docBase
+</td>
+<td>
+应用程序的路径或者是WAR 文件存放的路径
+</td>
+</tr>
+<tr>
+<td>
+path
+</td>
+<td>
+表示此web 应用程序的url 的前缀，这样请求的url 为<a href="http://localhost:8080/path/">http://localhost:8080/path/</a> ****
+</td>
+</tr>
+<tr>
+<td>
+reloadable
+</td>
+<td>
+这个属性非常重要，如果为true ，则tomcat 会自动检测应用程序的/WEB-INF/lib 和/WEB-INF/classes 目录的变化，自动装载新的应用程序，我们可以在不重起tomcat 的情况下改变应用程序
+</td>
+</tr>
+<tr>
+<td rowspan="3">
+host ( 表示一个虚拟主机 )
+</td>
+<td>
+name
+</td>
+<td>
+指定主机名
+</td>
+</tr>
+<tr>
+<td>
+appBase
+</td>
+<td>
+应用程序基本目录，即存放应用程序的目录
+</td>
+</tr>
+<tr>
+<td>
+unpackWARs
+</td>
+<td>
+如果为true ，则tomcat 会自动将WAR 文件解压，否则不解压，直接从WAR 文件中运行应用程序
+</td>
+</tr>
+<tr>
+<td rowspan="4">
+Logger ( 表示日志，调试和错误信息)
+</td>
+<td>
+className
+</td>
+<td>
+指定logger 使用的类名，此类必须实现org.apache.catalina.Logger 接口
+</td>
+</tr>
+<tr>
+<td>
+prefix
+</td>
+<td>
+指定log 文件的前缀
+</td>
+</tr>
+<tr>
+<td>
+suffix
+</td>
+<td>
+指定log 文件的后缀
+</td>
+</tr>
+<tr>
+<td>
+timestamp
+</td>
+<td>
+如果为true ，则log 文件名中要加入时间，如下例:localhost_log.2001-10-04.txt
+</td>
+</tr>
+<tr>
+<td>
+Realm ( 存放用户名，密码及role 的数据库)
+</td>
+<td>
+className
+</td>
+<td>
+指定Realm 使用的类名，此类必须实现org.apache.catalina.Realm 接口
+</td>
+</tr>
+<tr>
+<td rowspan="3">
+Valve ( 功能与Logger 差不多，其prefix 和suffix 属性解释和Logger 中的一样)
+</td>
+<td>
+className
+</td>
+<td>
+指定Valve 使用的类名，如用org.apache.catalina.valves.AccessLogValve 类可以记录应用程序的访问信息
+</td>
+</tr>
+<tr>
+<td>
+directory
+</td>
+<td>
+指定log 文件存放的位置
+</td>
+</tr>
+<tr>
+<td>
+pattern
+</td>
+<td>
+有两个值，common 方式记录远程主机名或ip 地址，用户名，日期，第一行请求的字符串，HTTP 响应代码，发送的字节数。combined 方式比common 方式记录的值更多
+</td>
+</tr>
+</table>
+
+<h2 id="toc_0.1">配置元素介绍</h2>
+
+<h3 id="toc_0.1.1">&lt;Server&gt;元素</h3>
+
+<p>
+它代表整个容器,是Tomcat实例的顶层元素.由org.apache.catalina.Server接口来定义。它包含一个&lt;Service&gt;元素。并且它不能做为任何元素的子元素。
+</p>
+<pre class="brush:xml">
+&lt;Server port ="8005" shutdown ="SHUTDOWN" debug ="0"&gt;
+</pre>
+
+<ul>
+<li>
+className指定实现org.apache.catalina.Server接口的类.默认值为: org.apache.catalina.core.StandardServer
+
+<li>
+port指定Tomcat监听shutdown命令端口.终止服务器运行时,必须在Tomcat服务器所在的机器上发出shutdown命令.该属性是必须的.
+
+<li>
+shutdown指定终止Tomcat服务器运行时,发给Tomcat服务器的shutdown监听端口的字符串.该属性必须设置
+
+</ul>
+
+<h3 id="toc_0.1.2">&lt;Service&gt;元素</h3>
+
+<p>
+该元素由org.apache.catalina.Service接口定义,它包含一个&lt;Engine&gt;元素,以及一个或多个&lt;Connector&gt;,这些Connector元素共享用同一个Engine元素
+</p>
+<pre class="brush:xml">
+&lt;Service name="Catalina"&gt;
+    &lt;Service name="Apache"&gt;
+</pre>
+
+<ul>
+<li>
+第一个&lt;Service&gt;处理所有直接由Tomcat服务器接收的web客户请求
+
+<li>
+第二个&lt;Service&gt;处理所有由Apahce服务器转发过来的Web客户请求
+
+<ul>
+<li>
+className 指定实现org.apahce.catalina.Service接口的类.默认为:org.apahce.catalina.core.StandardService
+
+<li>
+name定义Service的名字
+
+</ul>
+</ul>
+
+<h3 id="toc_0.1.3">&lt;Engine&gt;元素</h3>
+
+<p>
+每个Service元素只能有一个Engine元素.元素处理在同一个&lt;Service&gt;中所有&lt;Connector&gt;元素接收到的客户请求.由org.apahce.catalina.Engine接口定义.
+</p>
+<pre class="brush:xml">
+&lt;Engine name="Catalina" defaultHost="localhost" debug="0"&gt;
+</pre>
+<ul>
+<li>
+className指定实现Engine接口的类,默认值为StandardEngine
+
+<li>
+defaultHost指定处理客户的默认主机名,在&lt;Engine&gt;中的&lt;Host&gt;子元素中必须定义这一主机
+
+<li>
+name定义Engine的名字
+
+<li>
+在&lt;Engine&gt;可以包含如下元素&lt;Logger&gt;, &lt;Realm&gt;, &lt;Value&gt;, &lt;Host&gt;
+
+</ul>
+
+<h3 id="toc_0.1.4">&lt;Host&gt;元素</h3>
+
+<p>
+它由Host接口定义.一个Engine元素可以包含多个&lt;Host&gt;元素.每个&lt;Host&gt;的元素定义了一个虚拟主机.它包含了一个或多个Web应用.
+</p>
+<pre class="brush:xml">
+&lt;Host name="localhost" debug="0" appBase="webapps" unpackWARs="true" autoDeploy="true"&gt;
+</pre>
+<ul>
+<li>
+className指定实现Host接口的类.默认值为StandardHost
+
+<li>
+appBase指定虚拟主机的目录,可以指定绝对目录,也可以指定相对于&lt;CATALINA_HOME&gt;的相对目录.如果没有此项,默认为&lt;CATALINA_HOME&gt;/webapps
+
+<li>
+autoDeploy如果此项设为true,表示Tomcat服务处于运行状态时,能够监测appBase下的文件,如果有新有web应用加入进来,会自运发布这个WEB应用
+
+<li>
+unpackWARs如果此项设置为true,表示把WEB应用的WAR文件先展开为开放目录结构后再运行.如果设为false将直接运行为WAR文件
+
+<li>
+alias指定主机别名,可以指定多个别名
+
+<li>
+deployOnStartup如果此项设为true,表示Tomcat服务器启动时会自动发布appBase目录下所有的Web应用
+
+<li>
+如果Web应用中的server.xml没有相应的&lt;Context&gt;元素,将采用Tomcat默认的Context
+
+<li>
+name定义虚拟主机的名字
+
+<li>
+在&lt;Host&gt;元素中可以包含如下子元素:&lt;Logger&gt;, &lt;Realm&gt;, &lt;Value&gt;, &lt;Context&gt;
+
+</ul>
+
+<h3 id="toc_0.1.5">&lt;Context&gt;元素</h3>
+
+<p>
+它由Context接口定义.是使用最频繁的元素.每个&lt;Context元素代表了运行在虚拟主机上的单个Web应用.一个&lt;Host&gt;可以包含多个&lt;Context&gt;元素.每个web应用有唯一的一个相对应的Context代表web应用自身.servlet容器为第一个web应用创建一个
+ServletContext对象.
+</p>
+<pre class="brush:xml">
+&lt;Context path="/sample" docBase="sample" debug="0" reloadbale="true"&gt;
+</pre>
+<ul>
+<li>
+className指定实现Context的类,默认为StandardContext类
+
+<li>
+path指定访问Web应用的URL入口,注意/myweb,而不是myweb了事
+
+<li>
+reloadable如果这个属性设为true, Tomcat服务器在运行状态下会监视在WEB-INF/classes和Web-INF/lib目录CLASS文件的改动.如果监视到有class文件被更新,服务器自重新加载Web应用
+
+<li>
+cookies指定是否通过Cookies来支持Session,默认值为true
+
+<li>
+useNaming指定是否支持JNDI,默认值为了true
+
+<li>
+在&lt;Context&gt;元素中可以包含如下元素:&lt;Logger&gt;, &lt;Realm&gt;, &lt;Resource&gt;, &lt;ResourceParams&gt;
+
+</ul>
+
+<h3 id="toc_0.1.6">&lt;Connector&gt;元素</h3>
+
+<p>
+由Connector接口定义.&lt;Connector&gt;元素代表与客户程序实际交互的给件,它负责接收客户请求,以及向客户返回响应结果.
+</p>
+<pre class="brush:xml">
+&lt;Connector port="8080" maxThread="50" minSpareThreads="25" maxSpareThread="75"
+    enableLookups="false" redirectPort="8443" acceptCount="100" debug="0"
+    connectionTimeout="20000" disableUploadTimeout="true" /&gt;
+&lt;Connection port="8009" enableLookups="false" redirectPort="8443" debug="0" protocol="AJP/1.3" /&gt;
+</pre>
+<ul>
+<li>
+第一个Connector元素定义了一个HTTP Connector,它通过8080端口接收HTTP请求;
+
+<li>
+第二个Connector元素定义了一个JD Connector,它通过8009端口接收由其它服务器转发过来的请求.
+
+<li>
+Connector元素共用属性
+
+<ul>
+<li>
+className指定实现Connector接口的类
+
+<li>
+enableLookups如果设为true,表示支持域名解析,可以把IP地址解析为主机名.WEB应用中调用request.getRemoteHost方法返回客户机主机名.默认值为true
+
+<li>
+redirectPort指定转发端口.如果当前端口只支持non-SSL请求,在需要安全通信的场命,将把客户请求转发至SSL的redirectPort端口
+
+</ul>
+<li>
+HttpConnector元素的属性
+
+<ul>
+<li>
+className实现Connector的类
+
+<li>
+port设定Tcp/IP端口,默认值为8080,如果把8080改成80,则只要输入<code>http://localhost</code>即可，因为TCP/IP的默认端口是80
+
+<li>
+address如果服务器有二个以上ip地址,此属性可以设定端口监听的ip地址.默认情况下,端口会监听服务器上所有的ip地址
+
+<li>
+bufferSize设定由端口创建的输入流的缓存大小.默认值为2048byte
+
+<li>
+protocol设定Http协议,默认值为HTTP/1.1
+
+<li>
+maxThreads设定在监听端口的线程的最大数目,这个值也决定了服务器可以同时响应客户请求的最大数目.默认值为200
+
+<li>
+acceptCount设定在监听端口队列的最大客户请求数量,默认值为10.如果队列已满,客户必须等待.
+
+<li>
+connectionTimeout定义建立客户连接超时的时间.如果为-1,表示不限制建立客户连接的时间
+
+</ul>
+<li>
+JkConnector的属性
+
+<ul>
+<li>
+className实现Connector的类
+
+<li>
+port设定AJP端口号
+
+<li>
+protocol必须设定为AJP/1.3
+
+</ul>
+</ul>
+
+<h2 id="toc_0.2">tomcat的优化配置</h2>
+
+<h3 id="toc_0.2.1">精简Tomcat和配置文件</h3>
+<ul>
+<li>
+删除不需要的管理应用和帮助应用，提高tomcat安全性。
+
+<ul>
+<li>
+删除webapps下所有文件:<code>rm –fr $CATALINA_HOME/webapps/*</code>
+
+<li>
+删除server/wenapps下所有文件:<code>rm –fr $CATALINA_HOME/server/webapps/*</code>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+精简sever.xml配置文件
+
+<ul>
+<li>
+使用tomcat发布版本中的最小配置文件，提高性能，如果有功能上的需求，在逐个的加入功能配置。
+
+<li>
+备份原来的server.xml为server.xml_bak:<code>mv server.xml server.xml_bak</code>
+
+<li>
+复制server-minimal.xml为server.xml:<code>cp server-minimal.xml server.xml</code>
+
+</ul>
+</ul>
+
+<h3 id="toc_0.2.2">连接器优化</h3>
+
+<p>
+在<code>$CATALINA_HOME/conf/server.xml</code>配置文件中的Connetctor节点，和连接数相关的参数配置和优化。
+</p>
+
+<ul>
+<li>
+maxThreads
+
+</ul>
+<p>
+Tomcat使用线程来处理接收的每个请求。这个值表示Tomcat可创建的最大的线程数。默认值200。 可以根据机器的时期性能和内存大小调整，一般可以在400-500。最大可以在800左右。
+</p>
+
+<ul>
+<li>
+acceptCount
+
+</ul>
+<p>
+指定当所有可以使用的处理请求的线程数都被使用时，可以放到处理队列中的请求数，超过这个数的请求将不予处理。默认值10。 
+</p>
+
+<ul>
+<li>
+minSpareThreads
+
+</ul>
+<p>
+Tomcat初始化时创建的线程数。默认值4。 
+</p>
+
+<ul>
+<li>
+maxSpareThreads
+
+</ul>
+<p>
+一旦创建的线程超过这个值，Tomcat就会关闭不再需要的socket线程。默认值50。 
+</p>
+
+<ul>
+<li>
+enableLookups 
+
+</ul>
+<p>
+是否反查域名，默认值为true。为了提高处理能力，应设置为false 
+</p>
+
+<ul>
+<li>
+connnectionTimeout
+
+</ul>
+<p>
+网络连接超时，默认值20000，单位：毫秒。设置为0表示永不超时，这样设置有隐患的。通常可设置为30000毫秒。(本系统由于与后台系统接口超时时间较长，使用设置为60000) 
+</p>
+
+<ul>
+<li>
+maxKeepAliveRequests 
+
+</ul>
+<p>
+保持请求数量，默认值100。 
+</p>
+
+<ul>
+<li>
+bufferSize
+
+</ul>
+<p>
+输入流缓冲大小，默认值2048 bytes。 
+</p>
+
+<ul>
+<li>
+compression
+
+</ul>
+<p>
+压缩传输，取值on/off/force，默认值off。
+</p>
+
+<p>
+其中和最大连接数相关的参数为maxThreads和acceptCount。如果要加大并发连接数，应同时加大这两个参数。web server允许的最大连接数还受制于操作系统的内核参数设置，通常Windows是2000个左右，Linux是1000个左右。 
+</p>
+
+<ul>
+<li>
+Tomcat中如何禁止和允许列目录下的文件 
+
+</ul>
+
+<p>
+在$CATALINA_HOME/conf/web.xml中，把listings参数设置成false即可，如下： 
+</p>
+<pre class="brush:xml">
+    &lt;servlet&gt;
+        &lt;servlet-name&gt;default&lt;/servlet-name&gt;
+        &lt;servlet-class&gt;org.apache.catalina.servlets.DefaultServlet&lt;/servlet-class&gt;
+        &lt;init-param&gt;
+            &lt;param-name&gt;debug&lt;/param-name&gt;
+            &lt;param-value&gt;0&lt;/param-value&gt;
+        &lt;/init-param&gt;
+        &lt;init-param&gt;
+            &lt;param-name&gt;listings&lt;/param-name&gt;
+            &lt;param-value&gt;false&lt;/param-value&gt;
+        &lt;/init-param&gt;
+        &lt;load-on-startup&gt;1&lt;/load-on-startup&gt;
+    &lt;/servlet&gt;
+</pre>
+
+<h3 id="toc_0.2.3">配置实例</h3>
+
+<p>
+修改配置文件：$CATALINA_HOME/conf/server.xml
+</p>
+
+<ul>
+<li>
+AJP的连接
+<pre class="brush:xml">
+    &lt;Connector port="8009"
+               maxTreads="500" minSpareThreads="10" maxSpareThreads="50"
+               acceptCount="50" connectionTimeout="60000"
+               enableLookups="false" redirectPort="8443" protocol="AJP/1.3" /&gt;
+</pre>
+
+</ul>
+ 
+<ul>
+<li>
+通用连接
+<pre class="brush:xml">
+    &lt;Connector port="8080"
+           maxTreads="500" minSpareThreads="10" maxSpareThreads="50"
+           acceptCount="50" connectionTimeout="60000"
+           enableLookups="false" redirectPort="8443" protocol="AJP/1.3"
+           compression="on"
+           compressionMinSize="2048"
+           noCompressionUserAgents="gozilla, traviata"
+           compressableMimeType="text/html,text/xml"/&gt;
+</pre>
+
+</ul>
+ 
+<ul>
+<li>
+主机和应用配置
+<pre class="brush:xml">
+     &lt;Host name="localhost" appBase=""
+       unpackWARs="true" autoDeploy="true"
+       xmlValidation="false" xmlNamespaceAware="false"&gt;
+        &lt;Context path="" docBase="/www/xxxx/site/web" reloadable="true" debug="0"/&gt;
+     &lt;/Host&gt;
+</pre>
+
+</ul>
+
+<ul>
+<li>
+优化JVM
+
+</ul>
+
+<p>
+Tomcat默认可以使用的内存为128MB,Windows下,在文件{tomcat_home}/bin/catalina.bat，Unix下，在文件$CATALINA_HOME/bin/catalina.sh的前面，增加如下设置： 
+</p>
+<pre class="brush:bash">
+JAVA_OPTS="$JAVA_OPTS -Xms[初始化内存大小] -Xmx[可以使用的最大内存]"
+# 或设置环境变量
+export JAVA_OPTS="$JAVA_OPTS -Xms[初始化内存大小] -Xmx[可以使用的最大内存]
+</pre>
+
+<p>
+一般说来，你应该使用物理内存的 80% 作为堆大小。如果本机上有Apache服务器，可以先折算Apache需要的内存，然后修改堆大小。建议设置为70％；建议设置[初始化内存大小]等于[可以使用的最大内存]，这样可以减少平凡分配堆而降低性能。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

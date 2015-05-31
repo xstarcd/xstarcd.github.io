@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>zookeeper日志及快照</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>zookeeper日志及快照</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">事务日志可视化转换</a>
+<li><a href="#toc_0.2">日志及快照清理</a>
+<ul>
+<li><a href="#toc_0.2.1">文件删除脚本</a>
+</ul>
+<li><a href="#toc_0.3">zkPurgeTxnLog工具</a>
+<li><a href="#toc_0.4">zkCleanup.sh</a>
+<li><a href="#toc_0.5">自动清理配置项</a>
+</ul>
+</ul>
+</div>
+
+
+<h2 id="toc_0.1">事务日志可视化转换</h2>
+
+<pre class="brush:bash">
+#!/bin/sh
+# scriptname: zkLog2txt.sh
+# zookeeper事务日志为二进制格式，使用LogFormatter方法转换为可阅读的日志
+if [ -z "$1" -o "$1" = "-h" ];then
+    echo "Useage: $0 &lt;LogFile&gt; [zkDir]"
+    echo "eg:
+$0 /opt/zpdata/version-2/log.3000002c7 /opt/Timasync/zookeeper \\
+|grep '^7/24/13'|grep -A 10 -B 10 GAEI_AF_NotifyServer|more"
+    exit 0
+fi
+
+#LogFile=/dfs/zpdata/version-2/log.100000001
+LogFile=$1
+zkDir=$2
+[ -z "$zkDir" ] &amp;&amp; zkDir=/opt/zookeeper
+[ ! -f "$LogFile" ] &amp;&amp; echo "LogFile:$LogFile not exist!" &amp;&amp; exit 1
+[ ! -d "$zkDir" ] &amp;&amp; echo "zkDir:$zkDir not exist!" &amp;&amp; exit 1
+[ ! -d "$zkDir/lib" ] &amp;&amp; echo "zkDir:$zkDir/lib not exist!" &amp;&amp; exit 1
+
+#java -cp $zkDir/zookeeper.jar:$zkDir/lib/slf4j-api-1.6.1.jar:$zkDir/lib/slf4j-log4j12-1.6.1.jar:$zkDir/lib/log4j-1.2.15.jar \
+#org.apache.zookeeper.server.LogFormatter "$LogFile"
+
+JAVA_OPTS="$JAVA_OPTS -Djava.ext.dirs=$zkDir:$zkDir/lib"
+java $JAVA_OPTS org.apache.zookeeper.server.LogFormatter "$LogFile"
+</pre>
+
+<p>
+查看zookeeper日志的方法：在zookeeper主机上执行 zkLog2txt.sh &lt;zk日志文件&gt;，如下：
+</p>
+<pre class="brush:bash">
+zkLog2txt.sh /hadoop/zookeeper/version-2/log.a00000001 /opt/zookeeper|more
+</pre>
+
+<h2 id="toc_0.2">日志及快照清理</h2>
+
+<p>
+zookeeper主要存放了两类文件，一个是snapshot和log,前者是内存数的快照，后者类似mysql的binlog，将所有与修改数据相关的操作记录在log中，两类文件的目录可在配置文件中指定。
+</p>
+
+<ul>
+<li>
+参考: 
+
+<ul>
+<li>
+ZooKeepr日志清理: <a href="http://blog.csdn.net/xiaolang85/article/details/21184293">http://blog.csdn.net/xiaolang85/article/details/21184293</a>
+
+<li>
+zookeeper 存储之文件格式分析: <a href="http://blog.csdn.net/pwlazy/article/details/8080626">http://blog.csdn.net/pwlazy/article/details/8080626</a>
+
+</ul>
+</ul>
+
+<p>
+正常运行过程中，ZK会不断地把快照数据和事务日志输出到这两个目录，并且如果没有人为操作的话，ZK自己是不会清理这些文件的，需要管理员来清理，这里介绍4种清理日志的方法。在这4种方法中，推荐使用第一种方法，对于运维人员来说，将日志清理工作独立出来，便于统一管理也更可控。毕竟zk自带的一些工具并不怎么给力，这里是社区反映的两个问题：
+</p>
+<ul>
+<li>
+<a href="https://issues.apache.org/jira/browse/ZOOKEEPER-957">https://issues.apache.org/jira/browse/ZOOKEEPER-957</a>
+
+<li>
+<a href="http://zookeeper-user.578899.n2.nabble.com/PurgeTxnLog-td6304244.html">http://zookeeper-user.578899.n2.nabble.com/PurgeTxnLog-td6304244.html</a>
+
+</ul>
+
+<h3 id="toc_0.2.1">文件删除脚本</h3>
+
+<p>
+第一种，也是运维人员最常用的，写一个删除日志脚本，每天定时执行即可：
+</p>
+<pre class="brush:bash">
+#!/bin/bash 
+#snapshot file dir 
+dataDir=/home/yinshi.nc/test/zk_data/version-2 
+#tran log dir 
+dataLogDir=/home/yinshi.nc/test/zk_log/version-2 
+#zk log dir 
+logDir=/home/yinshi.nc/test/logs 
+#Leave 66 files 
+count=66 
+count=$[$count+1] 
+ls -t $dataLogDir/log.* | tail -n +$count | xargs rm -f 
+ls -t $dataDir/snapshot.* | tail -n +$count | xargs rm -f 
+ls -t $logDir/zookeeper.log.* | tail -n +$count | xargs rm -f 
+</pre>
+ 
+<p>
+以上这个脚本定义了删除对应两个目录中的文件，保留最新的66个文件，可以将他写到crontab中，设置为每天凌晨2点执行一次就可以了。
+</p>
+
+<h2 id="toc_0.3">zkPurgeTxnLog工具</h2>
+
+<p>
+第二种，使用ZK的工具类PurgeTxnLog，它的实现了一种简单的历史文件清理策略，可以在这里看一下他的使用方法：<a href="http://zookeeper.apache.org/doc/r3.4.3/api/index.html">http://zookeeper.apache.org/doc/r3.4.3/api/index.html</a>
+</p>
+
+<p>
+可以指定要清理的目录和需要保留的文件数目，简单使用如下：
+</p>
+<pre class="brush:bash">
+java -cp zookeeper.jar:lib/slf4j-api-1.6.1.jar:lib/slf4j-log4j12-1.6.1.jar:lib/log4j-1.2.15.jar:conf \
+org.apache.zookeeper.server.PurgeTxnLog &lt;dataDir&gt; &lt;snapDir&gt; -n &lt;count&gt; 
+</pre>
+
+<h2 id="toc_0.4">zkCleanup.sh</h2>
+
+<p>
+第三种，对于上面这个Java类的执行，ZK自己已经写好了脚本，在bin/zkCleanup.sh中，所以直接使用这个脚本也是可以执行清理工作的。
+</p>
+<pre class="brush:bash">
+/usr/lib/zookeeper/bin/zkCleanup.sh /hadoop/zookeeper/version-2/ 5
+</pre>
+
+<h2 id="toc_0.5">自动清理配置项</h2>
+
+<p>
+第四种，从3.4.0开始，zookeeper提供了自动清理snapshot和事务日志的功能，通过配置 <code>autopurge.snapRetainCount</code> 和 <code>autopurge.purgeInterval</code> 这两个参数能够实现定时清理了。这两个参数都是在zoo.cfg中配置的：
+</p>
+<pre class="brush:bash">
+# 指定清理频率，单位是小时，默认是0，表示不开启自己清理功能。
+autopurge.purgeInterval=6
+
+# 和上面的参数搭配使用，指定需要保留的文件数目，默认是保留3个。
+autopurge.snapRetainCount=5
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

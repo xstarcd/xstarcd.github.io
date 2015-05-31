@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>free-查看内存</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>free-查看内存</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Linux查看内存(free buffer cache)</a>
+<ul>
+<li><a href="#toc_0.1.1">free输出内容说明</a>
+<li><a href="#toc_0.1.2">手动释放缓存</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+
+<h2 id="toc_0.1">Linux查看内存(free buffer cache)</h2>
+
+<p>
+来源: <a href="http://elf8848.iteye.com/blog/1995638">http://elf8848.iteye.com/blog/1995638</a>
+</p>
+
+<h3 id="toc_0.1.1">free输出内容说明</h3>
+ 
+<p>
+Linux下如何查内存信息，如内存总量、已使用量、可使用量。
+</p>
+
+<p>
+经常使用Windows操作系统的朋友，已经习惯了如果空闲的内存较多，心里比较踏实。
+</p>
+
+<p>
+当使用Linux时，可能觉的Linux物理内存很快被用光（如频繁存取文件后），当程序结束后内存没有被释放。空闲内存少的可怜，心里总不踏实。
+</p>
+
+<p>
+Linux操作系统的内存管理方式与Windows不同，Linux会尽量多的利用内存，让尽可能多的内存参与工作(做cache)以提高性能。
+</p>
+
+<p>
+所以你看到的空闲内存总是很小，当你的程序需要更多内存时，Linux系统会把做cache的内存还给你，让你来运行你的程序。
+</p>
+
+<pre>
+free -m
+             total       used       free     shared    buffers     cached
+Mem:         15868       7456       8412          0        537       5483
+-/+ buffers/cache:       1435      14433
+Swap:        32767          0      32767
+</pre>
+
+<ul>
+<li>
+free -m ：查看内存情况，单位为MB。
+
+<li>
+total 内存总数
+
+<li>
+used 已经使用的内存数（我的程序使用内存数量+系统缓存使用的内数量）
+
+<li>
+free 空闲的物理内存数（是真正的空闲，未被任何程序占用）
+
+<li>
+shared 多个进程共享的内存总额
+
+<li>
+buffers 磁盘缓存（Buffer Cache）的大小（是块设备的读写缓冲区，可提高系统I/O调用的性能）
+
+<li>
+cached  磁盘缓存（Page Cache）的大小（文件系统的cache，可提高系统I/O调用的性能）
+
+<li>
+-buffers/cache 表示已被我们的程序使用的内存数，计算方法：<code>used - buffers - cached</code>
+
+<li>
++buffers/cache 表示还可已被我使用的内存数，计算方法：<code>free + buffers + cached</code>
+
+<li>
+操作系统目前可用内存总量=<code>free + buffers + cached</code>，如上可用内存总量为：8412+537+5483=14432MB
+
+</ul>
+
+<p>
+共享内存（Shared memory），主要用于在UNIX 环境下不同进程之间共享数据，是进程间通信的一种方法，一般的应用程序不会申请使用共享内存。
+</p>
+
+<p>
+buffers是用来给块设备做的缓冲大小、用来存储目录里面有什么内容、权限等等；
+</p>
+
+<p>
+cached用来给文件做缓冲，用来记忆我们打开的文件。
+</p>
+
+<p>
+即使你的程序运行结束后，Cache Memory也不会自动释放。
+</p>
+
+<p>
+这就会导致你在Linux系统中程序频繁读写文件后，你会发现可用物理内存(free)会很少。
+</p>
+
+<p>
+其实这缓存内存(Cache Memory)在你需要使用内存的时候会自动释放，所以你不必担心没有内存可用。
+</p>
+
+<p>
+如果你希望手动去释放Cache Memory也是有办法的。
+</p>
+
+<h3 id="toc_0.1.2">手动释放缓存</h3>
+
+<p>
+/proc是一个虚拟文件系统，我们可以通过对它的读写操作做为与kernel实体间进行通信的一种手段。也就是说可以通过修改/proc中的文件，来对当前kernel的行为做出调整。那么我们可以通过调整<code>/proc/sys/vm/drop_caches</code>来释放内存。操作如下：
+</p>
+
+<pre class="brush:bash">
+#查看默认值
+cat /proc/sys/vm/drop_caches
+
+# 先手动执行sync命令，sync 命令将所有未写的系统缓冲区写到磁盘中，包含已修改的 i-node、已延迟的块 I/O 和读写映射文件。
+sync
+
+#将/proc/sys/vm/drop_caches值设为3
+echo 3 &gt; /proc/sys/vm/drop_caches
+cat /proc/sys/vm/drop_caches
+3
+</pre>
+
+<p>
+再来运行free命令。可以看出来有效的释放了buffer和cache。
+</p>
+
+<p>
+有关/proc/sys/vm/drop_caches的用法在下面进行了说明：
+</p>
+<pre>
+/proc/sys/vm/drop_caches (since Linux 2.6.16)
+Writing to this file causes the kernel to drop clean caches,dentries and inodes from memory, causing that memory to become free.
+To free pagecache, use echo 1 &gt; /proc/sys/vm/drop_caches;
+to free dentries and inodes, use echo 2 &gt; /proc/sys/vm/drop_caches;
+to free pagecache, dentries and inodes, use echo 3 &gt; /proc/sys/vm/drop_caches.
+Because this is a non-destructive operation and dirty objects are not freeable, the user should run sync first
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

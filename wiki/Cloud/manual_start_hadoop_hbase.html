@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>手工启动hadoop/hbase</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>手工启动hadoop/hbase</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">hadoop脚本说明</a>
+<li><a href="#toc_0.2">hbase脚本说明</a>
+<li><a href="#toc_0.3">手工启动</a>
+<ul>
+<li><a href="#toc_0.3.1">手工启动dfs</a>
+<li><a href="#toc_0.3.2">手工启动mapreduce</a>
+<li><a href="#toc_0.3.3">手工启动zookeeper</a>
+<li><a href="#toc_0.3.4">手工启动hbase</a>
+</ul>
+<li><a href="#toc_0.4">其它技巧</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">hadoop脚本说明</h2>
+<pre class="brush:bash">
+hadoop            #hadoop命令行工具脚本
+
+hadoop-config.sh  #配置载入及命令行参数解析脚本，被所有hadoop脚本引用，../libexec/hadoop-config.sh(优先)
+
+hadoop-daemon.sh  #以后台方式运行一个hadoop command
+                  #Usage: hadoop-daemon.sh [--config &lt;conf-dir&gt;] [--hosts hostlistfile] (start|stop) &lt;hadoop-command&gt; &lt;args...&gt;
+                  # start步骤:
+                  # 1.载入配置及命令行参数
+                  # 2.日志回滚
+                  # 3.若设置了HADOOP_MASTER(host:path where hadoop code should be rsync'd from)，用rsync从HADOOP_MASETR同步
+                  # 4.调用本地hadoop命令后台运行hadoop服务，并生成pid文件
+                  # nohup nice -n $HADOOP_NICENESS "$HADOOP_PREFIX"/bin/hadoop \
+                  # --config $HADOOP_CONF_DIR $command "$@" &gt; "$log" 2&gt;&amp;1 &lt; /dev/null &amp;
+                  # echo $! &gt; $pid
+                  # stop步骤：根据pid文件kill进程
+
+hadoop-daemons.sh # 在所有slave主机上运行hadoop command
+                  # usage="Usage: hadoop-daemons.sh [--config confdir] [--hosts hostlistfile] [start|stop] command args..."
+                  # 执行方式(调用slaves.sh脚本来逐个远程执行hadoop-daemon.sh：
+                  # exec "$bin/slaves.sh" --config $HADOOP_CONF_DIR cd "$HADOOP_HOME" \; 
+                  # "$bin/hadoop-daemon.sh" --config $HADOOP_CONF_DIR "$@"
+
+rcc               # The Hadoop record compiler
+
+slaves.sh         # Run a shell command on all slave hosts.
+                  # Usage: slaves.sh [--config confdir] command...(后面所有内容都会作为command执行)
+
+start-all.sh      # Start all hadoop daemons.  Run this on master node.
+                  # 简单地调用start-dfs.sh和start-mapred.sh来启动dfs和mapreduce。
+
+start-balancer.sh # Start balancer daemon.
+
+start-dfs.sh
+                  # Start hadoop dfs daemons.
+                  # Optinally upgrade or rollback dfs state.
+                  # Run this on master node.
+                  # Usage: start-dfs.sh [-upgrade|-rollback]
+                  #"$bin"/hadoop-daemon.sh --config $HADOOP_CONF_DIR start namenode $nameStartOpt
+                  #"$bin"/hadoop-daemons.sh --config $HADOOP_CONF_DIR start datanode $dataStartOpt
+                  #"$bin"/hadoop-daemons.sh --config $HADOOP_CONF_DIR --hosts masters start secondarynamenode
+
+start-jobhistoryserver.sh  # Start hadoop job history daemons.  Run this on node where history server need to run
+
+start-mapred.sh            # Start hadoop map reduce daemons.  Run this on master node.
+                           # "$bin"/hadoop-daemon.sh --config $HADOOP_CONF_DIR start jobtracker
+                           # "$bin"/hadoop-daemons.sh --config $HADOOP_CONF_DIR start tasktracker
+
+stop-all.sh                # Stop all hadoop daemons.  Run this on master node.
+stop-balancer.sh           # Stop balancer daemon.
+                           # Run this on the machine where the balancer is running
+stop-dfs.sh                # Stop hadoop DFS daemons.  Run this on master node.
+stop-jobhistoryserver.sh   # Stop hadoop job history daemon.  Run this on the node where history server is running
+stop-mapred.sh             # Stop hadoop map reduce daemons.  Run this on master node.
+task-controller            # 这是一个二进制的可执行文件
+                           # Usage: task-controller user good-local-dirs command command-args
+</pre>
+
+<h2 id="toc_0.2">hbase脚本说明</h2>
+<pre class="brush:bash">
+get-active-master.rb    # Prints the hostname of the machine running the active master.(hbase-jruby)
+graceful_stop.sh        # Move regions off a server then stop it.  Optionally restart and reload.
+                        # Turn off the balancer before running this script.
+
+hbase                   # The hbase command script.
+
+hbase-config.sh         # hbase配置载入及命令行参数解析，被其它脚本引用
+hbase-daemon.sh         # 以后台方式运行一个hbase command
+                        # Usage: hbase-daemon.sh [--config &lt;conf-dir&gt; (start|stop|restart) &lt;hbase-command&gt; &lt;args...&gt;
+
+hbase-daemons.sh        # 在所有slave主机上运行hbase command
+                        # Usage: hbase-daemons.sh [--config &lt;hbase-confdir&gt;] [--hosts regionserversfile] [start|stop] command args...
+
+hbase-jruby             # hbase-jruby环境
+hirb.rb                 # Run the java magic include and import basic HBase types that will help ease hbase hacking.
+
+local-master-backup.sh  # This is used for starting multiple masters on the same machine.
+                        # run it from hbase-dir/ just like 'bin/hbase'
+                        # Supports up to 10 masters (limitation = overlapping ports)
+
+local-regionservers.sh  # This is used for starting multiple regionservers on the same machine.
+                        # run it from hbase-dir/ just like 'bin/hbase'
+                        # Supports up to 100 regionservers (limitation = overlapping ports)
+
+master-backup.sh        # Run a shell command on all backup master hosts.
+
+region_mover.rb         # Moves regions. Will confirm region access in current location and will
+                        # not move a new region until successful confirm of region loading in new
+                        # location. Presumes balancer is disabled when we run (not harmful if its
+                        # on but this script and balancer will end up fighting each other).
+                        # Does not work for case of multiple regionservers all running on the
+                        # one node.
+                        # Usage: region_mover.rb [options] load|unload &lt;hostname&gt;
+
+regionservers.sh        # Run a shell command on all regionserver hosts.
+
+region_status.rb        # View the current status of all regions on an HBase cluster.  This is
+                        # predominantly used to determined if all the regions in META have been
+                        # onlined yet on startup.
+                        # To use this script, run:
+                        #  ${HBASE_HOME}/bin/hbase org.jruby.Main region_status.rb [wait] [--table &lt;table_name&gt;]
+
+rolling-restart.sh      # 逐个重启动hbase进程?
+                        # Usage: rolling-restart.sh [--config &lt;hbase-confdir&gt;] [--rs-only] [--master-only] [--graceful]
+
+start-hbase.sh          # Start hadoop hbase daemons.Run this on master node.
+stop-hbase.sh           # Stop hadoop hbase daemons.  Run this on master node.
+zookeepers.sh
+</pre>
+
+<h2 id="toc_0.3">手工启动</h2>
+
+<p>
+登录到各master/slave节点，逐台启动对应的服务进程。
+</p>
+
+<h3 id="toc_0.3.1">手工启动dfs</h3>
+
+<pre class="brush:bash">
+#在master上启动namenode
+./hadoop-daemon.sh start namenode
+
+# 在各台slave上启动datenode
+./hadoop-daemon.sh start datanode
+
+# 在master backup上启动secondarynamenode
+
+./hadoop-daemon.sh start secondarynamenode
+
+# 检查dfs运行状态
+./hadoop dfsadmin -report
+# 也可访问dfs的web页面查看
+# http://serviceIp:50070
+
+# 重新balancer(可选)
+# 其实集群自己会balancer，当然也可以手动balancer，不然在繁忙时段最好避免。
+./hadoop balancer
+</pre>
+
+<h3 id="toc_0.3.2">手工启动mapreduce</h3>
+
+<pre class="brush:bash">
+# 在master上启动jobtracker
+./hadoop-daemon.sh start jobtracker
+
+# 在各台slave上启动tasktracker
+./hadoop-daemon.sh start tasktracker
+
+# 检查mapreduce运行状态
+#http://serviceIp:50030
+</pre>
+
+<h3 id="toc_0.3.3">手工启动zookeeper</h3>
+
+<pre class="brush:bash">
+# 在各zk节点启动zookeeper
+./zkServer.sh start
+
+# 检查zookeeper工作状态
+./zkServer.sh status
+
+# 刚运行时会报错:Error contacting service. It is probably not running.
+# 等待zk节点竞选完成后进入工作状态，Mode: leader/follower
+</pre>
+
+<h3 id="toc_0.3.4">手工启动hbase</h3>
+
+<pre class="brush:bash">
+# 在master上启动master
+./hbase-daemon.sh start master
+
+# 在各台slave上启动regionsrv
+./hbase-daemon.sh start regionserver
+
+# 在master主机发起启动所有backup-master
+./hbase-daemons.sh start master-backup
+# 或者在对应backup-master主机启动
+./hbase-daemon.sh start master --backup
+
+# 查看hbase运行状态
+# 也可访问hbase的web界面查看
+#http://serviceIp:60010/master.jsp
+#http://serviceIp:60030/regionserver.jsp
+#http://serviceIp:60010/zk.jsp
+
+hbase shell
+#hbase(main):001:0&gt; status
+#3 servers, 0 dead, 77.0000 average load
+</pre>
+
+
+<h2 id="toc_0.4">其它技巧</h2>
+
+
+<ul>
+<li>
+通过管道向 hadoop put 文件
+<pre calss="brush:bash">
+# 普通put
+bin/hadoop fs -put localfile $hdfsFile  
+bin/hadoop fs -put localfiles $hdfsDir 
+
+# 通过管道put
+cd $HADOOP_HOME  
+if bin/hadoop fs -test -d $hdfsFile  
+then  
+    echo "$hdfsFile is a directory" &gt;&amp;2  
+    exit 1  
+fi  
+cat localfileS | bin/hadoop fs -put /dev/fd/0  $hdfsFile  
+if [[ "0 0" == ${PIPESTATUS[*]} ]]  
+then  
+    echo success  
+else  
+    bin/hadoop fs -rm $hdfsFile  
+    echo failed &gt;&amp;2  
+fi    
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

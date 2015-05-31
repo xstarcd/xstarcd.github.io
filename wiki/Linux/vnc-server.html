@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>vnc-server</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">vnc-server</a>
+<ul>
+<li><a href="#toc_1.1">VNC简介</a>
+<li><a href="#toc_1.2">安装VNCServer</a>
+<li><a href="#toc_1.3">配置VNCServer</a>
+<li><a href="#toc_1.4">相关桌面配置</a>
+<li><a href="#toc_1.5">客户端连接及使用</a>
+<li><a href="#toc_1.6">一些常识</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">vnc-server</h1>
+
+<h2 id="toc_1.1">VNC简介</h2>
+
+<p>
+VNC基本上是属于一种显示系统,也就 是说他能将完整的窗口界面通过网络,传输到另一台计算机的屏幕上. Windows服务器中包含的"Terminal Server"、Symantec公司开发的收费软件PCAnywhere、近期流行的Teamviewer、国内的协通XT800、快递通KDT都是属 于这种原理的设计，同时这些软件又在VNC的原理基础上做了各自相应改进，提高了易用性、连通率和可穿透内网（Teamviewer、协通XT800、 KDT）.
+</p>
+
+<ul>
+<li>
+特点
+
+</ul>
+
+<p>
+同样可能远程连入UNIX、Linux进行图形化操作的还有流行的Xmanager，VNC与之相比——两者工作原理不一样，后者是远程连入操作系统， 所有操作在UNIX、Linux主机服务端进行，即使操作过程中"本地电脑与操作主机网络断开”，也不影响操作的顺利进行；而后者（Xmanager）是 通过端口将主机服务器的UI界面引导到本地电脑进行展现，如操作过程出现"本地电脑与操作主机网络断开”，操作将中断失败！如果操作都进行的工作任务非常 重要，不能中断，如ORACLE RAC实施，结果是灾难性的！更重要的是，VNC是免费的、开源的，Xmanager你一定是用的破解注册版的。
+</p>
+
+<ul>
+<li>
+组成部分
+
+</ul>
+
+<p>
+VNC基本上是由两部分组成：一部分是客户端的应用程序(vncviewer)；另外一部分是服务器端的应用程序(vncserver)。VNC的基本 运行原理和一些Windows下的远程控制软件很相象。VNC的服务器端应用程序在UNIX和Linux操作系统中适应性很强，图形用户界面十分友好，看 上去和Windows下的软件界面也很类似。在任何安装了客户端的应用程序(vncviewer)的Linux平台的计算机都能十分方便的和安装了服务器 端的应用程序(vncserver)的计算机相互连接。另外，服务器端 (vncserver)还内建了Java Web接口，这样用户通过服务器端对其他计算机的操作就能通过Netscape显示出来了，这样的操作过程和显示方式比较直观方便。
+</p>
+
+<ul>
+<li>
+命令描述
+
+</ul>
+<table>
+<tr>
+<td>
+vncserver
+</td>
+<td>
+此服务程序必须在主（或遥控）计算机上运行。你只能作为使用者（不需要root身份）使用此项服务。
+</td>
+</tr>
+<tr>
+<td>
+vncviewer
+</td>
+<td>
+本地应用程序，用于远程接入运行vncserver的计算机并显示其环境。你需要知道远程计算机的IP地址和vncserver设定的密码。
+</td>
+</tr>
+<tr>
+<td>
+vncpasswd
+</td>
+<td>
+vncserver的密码设置工具。vncserver服务程序没有设置密码将不能运行（好习惯）。如果你没有设置，运行vncserver时它会提示你输入一个密码。
+</td>
+</tr>
+<tr>
+<td>
+vncconnect
+</td>
+<td>
+告诉vncserver连接到远程一个运行vncviewer的计算机的IP和端口号。这样我就可以避免给其他人一个接入的密码。
+</td>
+</tr>
+<tr>
+<td>
+Xvnc
+</td>
+<td>
+一个vnc"主控”程序，一般来说不需要直接运行。（vncserver和vncviewer实际上是Xvnc的脚本）
+</td>
+</tr>
+</table>
+
+<p>
+查找所有可用的选项，运行：
+</p>
+
+<p>
+Xvnc --help
+</p>
+
+<p>
+出于安全的考虑，一般不建议直接以超级用户帐号运行vncserver程序。如果你需要超级用户的环境，请以一般用户登录后再使用su命令登录到超级用户帐号。
+</p>
+
+<h2 id="toc_1.2">安装VNCServer</h2>
+
+<p>
+首先确认你服务器是否配置了VNCServer，可以在命令行下敲入以下命令查看：
+</p>
+<pre>
+rpm -qa |grep vnc
+vnc-server-4.1.2-14.el5    #返回VNCSEVER服务器端版本说明你已经安装了VNCServer。
+</pre>
+
+<p>
+如果没有安装VNCSEVER，那么从光盘找到安装包进行安装。
+</p>
+
+<p>
+首先将光盘挂载(也叫解压)到某个目录这里是在/var/ftp/pub/下面建立了rhel5-64目录
+</p>
+
+<p>
+mount -o looprhel-server-5.3-x86_64-dvd.iso /var/ftp/pub/rhel5-64/
+</p>
+
+<p>
+然后在/var/ftp/pub/rhel5-64/Server目录下找到vnc-server-4.1.2-14.el5.x86_64.rpm安装包，使用RPM命令直接安装；
+</p>
+
+<p>
+rpm -ivh vnc-server-4.1.2-14.el5.x86_64.rpm
+</p>
+
+<h2 id="toc_1.3">配置VNCServer</h2>
+
+<p>
+启动VNCSever，第一次启动VNCServer会提示输入密码，这里分为管理员账户及普通账户，启动方式略有所不同。
+</p>
+
+<ul>
+<li>
+管理员：
+<pre class="brush:bash">
+vncserver
+
+You will require a password to access yourdesktops.
+
+Password: 123456    #输入vnc 连接密码
+Verify: 123456      #确认vnc密码
+
+xauth: creating new authority file/root/.Xauthority
+New 'localhost.localdomain:1 (root)’desktop is localhost.localdomain:1
+Creating default startup script/root/.vnc/xstartup
+Starting applications specified in/root/.vnc/xstartup
+Log file is/root/.vnc/localhost.localdomain:1.log
+</pre>
+
+</ul>
+
+<ul>
+<li>
+普通用户：
+<pre class="brush:bash">
+su leo        #leo 是用户名
+vncserver
+
+You will require a password to access yourdesktops.
+
+Password: 123456    #输入vnc 连接密码
+Verify: 123456      #确认vnc密码
+
+xauth: creating new authority file /home/leo/.Xauthority
+New 'localhost.localdomain:2 (leo)’ desktopis localhost.localdomain:2
+Creating default startup script /home/leo/.vnc/xstartup
+Starting applications specified in /home/leo/.vnc/xstartup
+Log file is /home/leo/.vnc/localhost.localdomain:2.log
+</pre>
+
+</ul>
+
+<p>
+这里要注意：
+</p>
+<ol>
+<li>
+每个用户都可以启动自己的VNCServer远程桌面
+
+<li>
+同时每个用户可以启动多个VNCServer远程桌面，它们用ip加端口号：ip:1、ip:2、ip:3 来标识、区分
+
+<li>
+使用同一端口会使另外登录的用户自动退出。
+
+<li>
+VNCServer的大部分配置文件及日志文件都在用户home目录下.vnc目录下。
+
+</ol>
+
+<p>
+用户可以自定义启动号码如：
+</p>
+<pre class="brush:bash">
+vncserver :2        #注意:2前面一定要有空格。
+
+A VNC server is already running as :2
+</pre>
+
+<h2 id="toc_1.4">相关桌面配置</h2>
+
+<p>
+RedHat Linux支持两种图形模式：KDE模式和gnome模式。
+</p>
+
+<p>
+你的RH使用的什么图形模式这个一般只有登录到图形界面查看一下才能知道，或者通过ps -A命令列出所有当前运行的程序，看看有没有KDE或者gnome字样来判断一下。
+</p>
+
+<ul>
+<li>
+如果你是gnome桌面，那么你需要修改/root/.vnc/xstartup的配置文件。
+
+</ul>
+
+<pre class="brush:bash">
+#!/bin/sh
+
+# Uncomment the following two lines fornormal desktop:
+
+# unset SESSION_MANAGER        #将此行的注释去掉
+# exec /etc/X11/xinit/xinitrc  #将此行的注释去掉
+
+[ -x /etc/vnc/xstartup ] &amp;&amp; exec/etc/vnc/xstartup
+[ -r $HOME/.Xresources ] &amp;&amp; xrdb$HOME/.Xresources
+xsetroot -solid grey
+vncconfig -iconic &amp;
+xterm -geometry 80×24+10+10 -ls -title "$VNCDESKTOP Desktop" &amp;
+gnome-session gnome           #添加这一句是连接时使用gnome 桌面环境
+twm &amp;
+</pre>
+
+<p>
+设置修改完毕最好是重启一次系统，否则设置不会生效。我采用的方法是杀死VNCServer进程再重运行VNCServer。
+</p>
+
+<pre class="brush:bash">
+vncserver -kill:1      #这里你启动vncserver时是什么端口号要对应上。
+vncserver :1           #重启VNCServer，注意:1前面一定要有空格。
+</pre>
+
+<ul>
+<li>
+设置用户信息及分辨率:/etc/sysconfig/vncservers
+<pre class="brush:bash">
+
+# The VNCServerS variable is a list ofdisplay:user pairs.
+#
+# Uncomment the lines below to start a VNCserver on display :2
+# as my 'myusername’ (adjust this to yourown). You will also
+# need to set a VNC password; run 'manvncpasswd’ to see how
+# to do that.
+#
+# DO NOT RUN THIS SERVICE if your localarea network is
+# untrusted! For a secure way of using VNC,see
+#&lt;URL:http://www.uk.research.att.com/archive/vnc/sshvnc.html &gt;.
+# Use "-nolisten tcp" to prevent Xconnections to your VNC server via TCP.
+# Use "-nohttpd" to prevent web-based VNCclients connecting.
+# Use "-localhost" to prevent remote VNCclients connecting except when
+# doing so through a secure tunnel. See the "-via" option in the
+# `man vncviewer’ manual page.
+VNCSERVERS=”1:root 2:leo”            #此处添加用户，一般只添加一个1:root也就行了。
+VNCSERVERARGS[1]=”-geometry 800×600-nolisten tcp -nohttpd -localhost”
+VNCSERVERARGS[2]=”-geometry 1024×768-nolisten tcp -nohttpd -localhost”
+</pre>
+
+</ul>
+
+<p>
+注意：上面是分别设置的root和leo两个用户的分辨率，注意是用端口号区分的。
+</p>
+
+<p>
+另外也可以通过命令行临时修改分辨率及色深，这种方式重启后就会丢失，这里暂时用不到，命令如下：
+</p>
+<pre class="brush:bash">
+vncserver -geometry 800×600  #设置vncserver的分辨率
+vncserver -depth16           #设置vncserver的色深
+</pre>
+
+<p>
+到这里VNCServer服务器端就配置完成了。
+</p>
+
+<h2 id="toc_1.5">客户端连接及使用</h2>
+
+<ul>
+<li>
+访问方式
+
+<ul>
+<li>
+在linux下，运行vncviewer命令即可，服务器地址的写法形如192.168.1.11:1
+
+<li>
+在windows下，运行windows版本的vncviewer即可，用法与linux下相近。
+
+<li>
+用浏览器（平台无关），作为javaapplet来实现，以形如<a href="http://192.168.1.11:5801">http://192.168.1.11:5801</a> 的方式来启动 （vnc 端口从5800 开始依次类推，一般会是5800，5900）
+
+</ul>
+</ul>
+
+
+<h2 id="toc_1.6">一些常识</h2>
+
+<ul>
+<li>
+修改密码
+
+</ul>
+<p>
+运行vncpasswd即可
+</p>
+<ul>
+<li>
+停止vncserver
+<pre>
+vncserver -kill :1
+vncserver -kill :2
+</pre>
+
+</ul>
+
+<p>
+注意到vncserver只能由启动它的用户来关闭，即时是root也不能关闭其它用户开启的vncserver，只能用kill命令暴力杀死进程。
+</p>
+
+<ul>
+<li>
+稳定性设置
+
+</ul>
+<p>
+vncserver默认在多个客户机连接同一个vncserver的显示端口时，vncserver端口旧连接，而为新连接服务，可通过-dontdisconnect拒绝新连接请求而保持旧的连接。
+</p>
+
+<ul>
+<li>
+同一个显示器可以连接多个客户机
+
+</ul>
+<p>
+vncserver -alwaysshared
+</p>
+
+<ul>
+<li>
+重启服务
+<pre>
+service vncserver restart
+</pre>
+
+</ul>
+
+<ul>
+<li>
+让系统启动时自动启动VNCServer。
+
+</ul>
+
+<p>
+使用VNC连接登录到RedHat Linux图形界面，点击"系统”——"管理”——"服务器设置”——"服务”，在"后台服务”中找到VNCServer后勾选它，点击保存即可。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

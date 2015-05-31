@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>dd</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>dd</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">语法说明</a>
+<li><a href="#toc_0.2">使用dd来备份还原mbr,分区表</a>
+<li><a href="#toc_0.3">DD做硬盘速度测试</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">语法说明</h2>
+
+<pre>
+dd if="input_file" of="outptu_file" bs="block_size" / count="number"
+</pre>
+<ul>
+<li>
+参数
+<pre>
+if ：就是 input file 啰～也可以是装置喔！
+of ：就是 output file 喔～也可以是装置；
+bs ：规划的一个 block 的大小，如果没有设定时，预设是 512 bytes
+count：多少个 bs 的意思。
+</pre>
+
+</ul>
+
+<ul>
+<li>
+范例
+<pre class="brush:bash">
+# 范例一：将 /etc/passwd 备份到 /tmp/passwd.back 当中
+dd if=/etc/passwd of=/tmp/passwd.back
+3+1 records in
+3+1 records out
+
+ll /etc/passwd /tmp/passwd.back
+-rw-r--r-- 1 root root 1746 Aug 25 14:16 /etc/passwd
+-rw-r--r-- 1 root root 1746 Aug 29 16:57 /tmp/passwd.back
+# 仔细的看一下，我的 /etc/passwd 文件大小为 1746 bytes，因为我没有设定 bs ，
+# 所以预设是 512 bytes 为一个单位，因此，上面那个 3+1 表示有 3 个完整的
+# 512 bytes，以及未满 512 bytes 的另一个 block 的意思啦！
+# 事实上，感觉好像是 cp 这个指令啦～
+
+# 范例二：备份 /dev/hda 的 MBR
+dd if=/dev/hda of=/tmp/mbr.back bs=512 count=1
+
+1+0 records in
+1+0 records out
+# 这就得好好瞭解一下啰～我们知道整颗硬盘的 MBR 为 512 bytes，
+# 就是放在硬盘的第一个 sector 啦，因此，我可以利用这个方式来将
+# MBR 内的所有资料都纪录下来，真的很厉害吧！ ^_^
+
+# 范例三：将整个 /dev/hda1 partition 备份下来。
+dd if=/dev/hda1 of=/some/path/filenaem
+# 这个指令很厉害啊！将整个 partition 的内容全部备份下来～
+# 后面接的 of 必须要不是在 /dev/hda1 的目录内啊～否则，怎么读也读不完～
+# 这个动作是很有效用的，如果改天你必须要完整的将整个 partition 的内容填回去，
+# 则可以利用 dd if=/some/file of=/dev/hda1 来将资料写入到硬盘当中。
+# 如果想要整个硬盘备份的话，就类似 Norton 的 ghost 软体一般，
+# 由 disk 到 disk ，嘿嘿～利用 dd 就可以啦～厉害厉害！
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">使用dd来备份还原mbr,分区表</h2>
+
+<p>
+原文： <a href="http://forum.ubuntu.org.cn/viewtopic.php?f=169&amp;t=270612">http://forum.ubuntu.org.cn/viewtopic.php?f=169&amp;t=270612</a>
+</p>
+<pre class="brush:bash">
+# 备份mbr
+dd if=/dev/sda of=/backup/mbr.img bs=512 count=1
+
+# 还原mbr
+dd if=/backup/mbr.img of=/dev/sda bs=446 count=1
+
+# 还原分区表,跳过mbr
+dd if=/backup/mbr.img of=/dev/sda bs=66 skip=446 count=1
+
+# 此外,dd还可以克隆整个硬盘和分区,不论你的文件系统是什么类型都可以,但是由于速度较慢,一般不建议这么做,克隆U盘倒是很推荐,另外还可以转换光盘为ISO
+# 克隆硬盘
+dd if=/dev/sda of=/sda.img
+
+# 克隆分区
+dd if=/dev/sda1 of=/sda1/img
+
+# 制作光盘镜像
+dd if=/dev/cdrom of=/cdrom.iso
+</pre>
+
+<h2 id="toc_0.3">DD做硬盘速度测试</h2>
+
+
+<ul>
+<li>
+测试合理的块大小
+<pre class="brush:bash">
+dd if=/dev/zero bs=1024 count=1000000 of=/data/1Gb.file
+dd if=/dev/zero bs=2048 count=500000 of=/data/1Gb.file
+dd if=/dev/zero bs=4096 count=250000 of=/data/1Gb.file  
+dd if=/dev/zero bs=8192 count=125000 of=/data/1Gb.file
+</pre>
+
+<li>
+分别测试读、写速度
+<pre class="brush:bash">
+dd if=/dev/zero of=/data/1Gb.file bs=1024 count=1000000
+dd if=/data/1Gb.file bs=64k | dd of=/dev/null
+</pre>
+
+</ul>
+<table>
+<tr>
+<th>
+机器
+</th>
+<th>
+读
+</th>
+<th>
+写
+</th>
+</tr>
+<tr>
+<td>
+笔记本(ASUS F6ve,SATAII)
+</td>
+<td>
+152MB/s
+</td>
+<td>
+56MB/s
+</td>
+</tr>
+<tr>
+<td>
+HPDL360G5,df2game(SAS)
+</td>
+<td>
+426MB/s
+</td>
+<td>
+188MB/s
+</td>
+</tr>
+<tr>
+<td>
+HPDL360G5,df2db(SAS,Raid5)
+</td>
+<td>
+431MB/s
+</td>
+<td>
+139MB/s
+</td>
+</tr>
+<tr>
+<td>
+DELL1850,s1.db(SCSI,Raid0?)
+</td>
+<td>
+286MB/s
+</td>
+<td>
+99.7MB/s
+</td>
+</tr>
+<tr>
+<td>
+DELL1850,s1.game(SCSI,Raid0?)
+</td>
+<td>
+251MB/s
+</td>
+<td>
+84.3MB/s
+</td>
+</tr>
+<tr>
+<td>
+hpDL360G3(SCSI,Raid1?)
+</td>
+<td>
+157MB/s
+</td>
+<td>
+32.2MB/s
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+长时间备份时用strace测速
+<pre class="brush:bash">
+dd if=/dev/sda1 of=/dev/sdb1 bs=8M
+</pre>
+
+</ul>
+
+<p>
+最开始的时候未指定bs的大小，默认只有512字节，经过约30小时的等待后，测速发现只有1M/s，后中断该过程，改为bs=8M
+</p>
+
+<p>
+应用服务器未安装stat包，补充测速的方法：
+</p>
+<pre class="brush:bash">
+time strace -o strace.log -p 11929
+# 运行一段时间后ctrl+c终止
+
+# 统计write出现的次数
+grep -c write starace.log
+echo "次数*8/time得到的时间" |bc
+</pre>
+<p>
+即为估算的每秒复制的速度。
+30个小时后备份结束
+</p>
+<pre>
+249999+1 records in
+249999+1 records out
+2097150257664 bytes (2.1 TB) copied, 130468 s, 16.1 MB/s
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

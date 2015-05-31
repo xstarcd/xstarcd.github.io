@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>grub rescue救援模式的处理</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">grub rescue救援模式的处理</a>
+<ul>
+<li><a href="#toc_1.1">简要版本解决办法</a>
+<ul>
+<li><a href="#toc_1.1.1">Grub2的运行模式</a>
+<li><a href="#toc_1.1.2">修复操作说明</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">grub rescue救援模式的处理</h1>
+
+<h2 id="toc_1.1">简要版本解决办法</h2>
+
+<ol>
+<li>
+ls查看已有分区
+
+<li>
+ls (hd0,6)可以看到里面有GRUB目录
+
+<li>
+set命令查看当前的变量，发现都是hd0,7
+
+<li>
+set root=(hd0,6)
+
+<li>
+set prefix=(hd0,6)/grub
+
+<li>
+insmod normal
+
+<li>
+normal
+
+</ol>
+
+<p>
+每次开机都这么折腾一遍太麻烦，怎么办呢？解决办法：
+</p>
+
+<ol>
+<li>
+sudo update-grub
+
+<li>
+sudo grub-install /dev/sda
+
+</ol>
+
+<h3 id="toc_1.1.1">Grub2的运行模式</h3>
+
+<ul>
+<li>
+Grub2中的运行模式，有了些许变化：
+
+</ul>
+
+<table>
+<tr>
+<td>
+Normal
+</td>
+<td>
+也就是常规模式，包括了菜单界面与控制台，即是 Grub 传统版的默认模式。
+</td>
+</tr>
+<tr>
+<td>
+Rescue
+</td>
+<td>
+这个是受限模式，比如 Grub 没有能找到 root 设备，就会进入这种模式。
+</td>
+</tr>
+</table>
+
+<p>
+通常，我们可以在 normal 模式下输入 'rescue' 即可进入 rescue 模式；在 rescue 模式下输入 'normal' 即可进入 normal 模式。
+</p>
+
+<p>
+可是，通常后一种情况，需要我们做些一个相关设置才可以进入菜单：
+</p>
+<pre class="brush:bash">
+set
+ root=(hd0,1)            # 指定根分区为第一个磁盘，里面包含了 grub.cfg
+ set prefex=/boot/grub   # 指定路径前缀，以构成菜单文件字符串'(hd0,1)/boot/grub/grub.cfg'(通常也不需要修改)
+</pre>
+
+<p>
+然后输入 'normal' 就可以换回常规的菜单模式了。
+</p>
+
+<ul>
+<li>
+在rescue救援模式下只有很少的命令可以用：
+
+</ul>
+
+<table>
+<tr>
+<td>
+set
+</td>
+<td>
+查看环境变量，这里可以查看启动路径和分区。
+</td>
+</tr>
+<tr>
+<td>
+ls
+</td>
+<td>
+查看设备
+</td>
+</tr>
+<tr>
+<td>
+insmod
+</td>
+<td>
+加载模块
+</td>
+</tr>
+<tr>
+<td>
+root
+</td>
+<td>
+指定用于启动系统的分区,在救援模式下设置grub启动分区
+</td>
+</tr>
+<tr>
+<td>
+prefix
+</td>
+<td>
+设定grub启动路径
+</td>
+</tr>
+</table>
+
+<h3 id="toc_1.1.2">修复操作说明</h3>
+
+<p>
+我的linux在调整分区后，出现了grub rescue&gt;
+</p>
+
+<p>
+这表示grub2的配置文件坏了，由于分区调整或分区UUID改变造成GRUB2不能正常启动，从而进入修复模式（grub rescue)也称救援模式。
+</p>
+
+<ul>
+<li>
+确认boot目录位置
+
+</ul>
+
+<pre class="brush:bash">
+# ls查看一下设备状态，可使用tab键自动补全，并有各分区提示信息
+grub rescue&gt; ls (hd0,msdos3)
+error: bad filename.
+# 提示：错误的文件名，我在测试时发现必须是后面加一个/
+
+grub rescue&gt; ls (hd0,msdos3)/
+./  ../  lost+found/
+# 通过查看发现在(hd0,msdos1)/下有一个boot目录
+</pre>
+
+<ul>
+<li>
+设置grub的启动分区和路径
+<pre claas="brush:bash">
+set root=(hd0,msdos1)               #设置grub启动分区
+set prefix=(hd0,msdos1)/boot/grub/  #设置grub启动路径
+
+# 查看一下设置情况,直接输入set可以查看root和prefix的配置
+grub rescue&gt; set
+prefix=(hd0,msdos1)/boot/grub
+root=hd0,msdos1
+</pre>
+
+</ul>
+
+<ul>
+<li>
+加载基本模块
+
+</ul>
+
+<pre claas="brush:bash">
+insmod /boot/grub/normal.mod       #加载基本模块
+</pre>
+
+<ul>
+<li>
+进入正常模式
+
+</ul>
+
+<pre claas="brush:bash">
+normal  #进入普通模式，出现菜单，如果加载grub.cfg（错误的）可能出现问题，按shift可以出现菜单，之后按c键进入控制台
+</pre>
+
+<p>
+进入正常模式后就会出现grub&gt;这样的提示符，在这里支持的命令就非常多了。
+</p>
+
+<ul>
+<li>
+引导系统
+
+</ul>
+
+<pre claas="brush:bash">
+set root=(hd0,msdos1)  #设置正常启动分区
+linux /boot/vmlinuz ....  ro text root=/dev/sda1  #加载内核，进入控制台模式
+initrd  /boot/initrd ....  #加载initrd.img
+boot #引导
+</pre>
+
+<ul>
+<li>
+更新grub
+
+</ul>
+
+<pre claas="brush:bash">
+# 进入系统后，先更新grub
+更新：update-grub            #更新
+# 修改grub.cfg后，再执行install
+安装：grub-install /dev/sda  #安装
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

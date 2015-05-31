@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>pmap - 进程的内存使用</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>pmap - 进程的内存使用</h1>
+
+<p>
+来源： <a href="http://kangyang.blog.51cto.com/471772/611459">http://kangyang.blog.51cto.com/471772/611459</a>
+</p>
+
+<p>
+pmap命令可以显示进程的内存映射，使用这个命令可以找出造成内存瓶颈的原因。
+</p>
+
+<p>
+pmap -d PID  # 显示PID为47394进程的内存信息。
+</p>
+
+<pre>
+pmap -d 47394
+
+输出样例：
+
+47394:   /usr/bin/php-cgi
+Address           Kbytes Mode Offset           Device    Mapping
+0000000000400000    2584 r-x-- 0000000000000000 008:00002 php-cgi
+0000000000886000     140 rw--- 0000000000286000 008:00002 php-cgi
+00000000008a9000      52 rw--- 00000000008a9000 000:00000   [ anon ]
+0000000000aa8000      76 rw--- 00000000002a8000 008:00002 php-cgi
+000000000f678000    1980 rw--- 000000000f678000 000:00000   [ anon ]
+000000314a600000     112 r-x-- 0000000000000000 008:00002 ld-2.5.so
+000000314a81b000       4 r---- 000000000001b000 008:00002 ld-2.5.so
+000000314a81c000       4 rw--- 000000000001c000 008:00002 ld-2.5.so
+000000314aa00000    1328 r-x-- 0000000000000000 008:00002 libc-2.5.so
+000000314ab4c000    2048 ----- 000000000014c000 008:00002 libc-2.5.so
+.....
+......
+..
+00002af8d48fd000       4 rw--- 0000000000006000 008:00002 xsl.so
+00002af8d490c000      40 r-x-- 0000000000000000 008:00002 libnss_files-2.5.so
+00002af8d4916000    2044 ----- 000000000000a000 008:00002 libnss_files-2.5.so
+00002af8d4b15000       4 r---- 0000000000009000 008:00002 libnss_files-2.5.so
+00002af8d4b16000       4 rw--- 000000000000a000 008:00002 libnss_files-2.5.so
+00002af8d4b17000 768000 rw-s- 0000000000000000 000:00009 zero (deleted)
+00007fffc95fe000      84 rw--- 00007ffffffea000 000:00000   [ stack ]
+ffffffffff600000    8192 ----- 0000000000000000 000:00000   [ anon ]
+mapped: 933712K    writeable/private: 4304K    shared: 768000K
+</pre>
+<p>
+最后一行非常重要：
+</p>
+
+<ul>
+<li>
+mapped: 933712K 内存映射所占空间大小
+
+<li>
+writeable/private: 4304K 私有地址空间大小
+
+<li>
+shared: 768000K 共享地址空间大小
+
+</ul>
+
+<p>
+相关链接：<a href="http://www.cyberciti.biz/tips/howto-find-memory-used-by-program.html">Linux find the memory used by a program / process using pmap command</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

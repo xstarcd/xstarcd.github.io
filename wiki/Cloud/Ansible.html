@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Ansible自动化运维</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Ansible自动化运维</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">安装</a>
+<li><a href="#toc_0.2">hosts文件</a>
+<li><a href="#toc_0.3">使用</a>
+<li><a href="#toc_0.4">YAML</a>
+<li><a href="#toc_0.5">Playbook</a>
+<li><a href="#toc_0.6">ansible套件中的其他工具</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="http://ansible.com/">http://ansible.com/</a>
+
+<li>
+<a href="https://pypi.python.org/pypi/ansible/">https://pypi.python.org/pypi/ansible/</a>
+
+<li>
+<a href="http://docs.ansible.com/intro_getting_started.html">http://docs.ansible.com/intro_getting_started.html</a>
+
+</ul>
+
+<h2 id="toc_0.1">安装</h2>
+
+<ul>
+<li>
+python方式安装
+<pre class="brush:bash">
+# 安装easy_install
+yum -y install python-setuptools python-devel python-crypto
+
+# 安装pip
+easy_install pip
+
+# 用pip安装ansible
+pip install simplejson paramiko PyYAML Jinja2 httplib2 ansible
+
+# 编译安装ansible
+# https://pypi.python.org/packages/source/a/ansible/ansible-1.5.tar.gz
+</pre>
+
+</ul>
+
+<ul>
+<li>
+安装sshpass
+
+<ul>
+<li>
+<a href="http://sourceforge.net/projects/sshpass/">http://sourceforge.net/projects/sshpass/</a>
+
+<li>
+<a href="http://sourceforge.net/projects/sshpass/files/sshpass/1.05/sshpass-1.05.tar.gz/download">http://sourceforge.net/projects/sshpass/files/sshpass/1.05/sshpass-1.05.tar.gz/download</a>
+<pre class="brush:bash">
+wget http://downloads.sourceforge.net/project/sshpass/sshpass/1.05/sshpass-1.05.tar.gz \
+&amp;&amp; tar xvzf sshpass-1.05.tar.gz \
+&amp;&amp; cd sshpass-1.05 \
+&amp;&amp; ./configure \
+&amp;&amp; make \
+&amp;&amp; make install
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+yum方式安装
+<pre class="brush:bash">
+yum -y install epel-release
+yum -y install ansible sshpass
+</pre>
+<pre>
+ [WARNING]: The version of gmp you have installed has a known issue regarding
+ timing vulnerabilities when used with pycrypto. If possible, you should update
+ it (i.e. yum update gmp).
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">hosts文件</h2>
+
+<pre class="brush:bash">
+# This is the default ansible 'hosts' file.
+#
+# It should live in /etc/ansible/hosts
+#
+#   - Comments begin with the '#' character
+#   - Blank lines are ignored
+#   - Groups of hosts are delimited by [header] elements
+#   - You can enter hostnames or ip addresses
+#   - A hostname/ip can be a member of multiple groups
+
+# Ex 1: Ungrouped hosts, specify before any group headers.
+
+green.example.com
+blue.example.com
+192.168.100.1
+192.168.100.10
+
+# Ex 2: A collection of hosts belonging to the 'webservers' group
+
+[webservers]
+alpha.example.org
+beta.example.org
+192.168.1.100
+192.168.1.110
+
+# If you have multiple hosts following a pattern you can specify
+# them like this:
+
+www[001:006].example.com
+
+[dbservers]
+
+db01.intranet.mydomain.net
+db02.intranet.mydomain.net
+10.25.1.56
+10.25.1.57
+
+# Here's another example of host ranges, this time there are no
+# leading 0s:
+
+db-[99:101]-node.example.com
+</pre>
+<pre>
+* ansible_ssh_host
+  The name of the host to connect to, if different from the alias you wish to give to it.
+* ansible_ssh_port
+  The ssh port number, if not 22
+* ansible_ssh_user
+  The default ssh user name to use.
+* ansible_ssh_pass
+  The ssh password to use (this is insecure, we strongly recommend using --ask-pass or SSH keys)
+* ansible_sudo_pass
+  The sudo password to use (this is insecure, we strongly recommend using --ask-sudo-pass)
+* ansible_sudo_exe (new in version 1.8)
+  The sudo command path.
+* ansible_connection
+  Connection type of the host. Candidates are local, ssh or paramiko.  The default is paramiko before Ansible 1.2, and 'smart' afterwards which detects whether usage of 'ssh' would be feasible based on whether ControlPersist is supported.
+* ansible_ssh_private_key_file
+  Private key file used by ssh.  Useful if using multiple keys and you don't want to use SSH agent.
+* ansible_shell_type
+  The shell type of the target system. By default commands are formatted using 'sh'-style syntax by default. Setting this to 'csh' or 'fish' will cause commands executed on target systems to follow those shell's syntax instead.
+* ansible_python_interpreter
+  The target host python path. This is useful for systems with more
+  than one Python or not located at "/usr/bin/python" such as \*BSD, or where /usr/bin/python
+  is not a 2.X series Python.  We do not use the "/usr/bin/env" mechanism as that requires the remote user's
+  path to be set right and also assumes the "python" executable is named python, where the executable might
+  be named something like "python26".
+* ansible\_\*\_interpreter
+  Works for anything such as ruby or perl and works just like ansible_python_interpreter.
+  This replaces shebang of modules which will run on that host.
+</pre>
+
+<h2 id="toc_0.3">使用</h2>
+
+<ul>
+<li>
+ansible命令最常用的用法 
+
+</ul>
+<p>
+所支持的模块可以使用ansible-doc -l来查看 
+</p>
+<pre class="brush:bash">
+ansible &lt;Host-partten&gt; -m MOE -a 'MOD_ARV'
+</pre>
+
+<pre class="brush:bash">
+# 查看时间
+ansible all -m command -a 'date'
+ansible all -m shell -a 'date'
+
+# 添加用户
+ansible all -m user -a 'name=hadoop comment="ansible add user" uid=1000 passwd="crypted-passwords"'
+
+# 设置挂载NFS共享
+ansible all -m shell -a 'mkdir -p /mnt/Tima;mount -t nfs -o ro 10.224.8.2:/data/share/Tima /mnt/Tima'
+
+# yum安装
+ansible all -m yum -a 'name=rsync state=present'
+
+# sudo为root后执行(-s)
+ansible -o -s all -m shell -a id
+
+# 以指定的admin用户权限执行(-s -U admin)
+ansible -o -s -U admin all -m shell -a id
+
+# 拷贝公钥到主机
+ansible all -m copy -a 'src=/root/.ssh/id_rsa.pub dest=/root'
+# 将公钥追求加到认证文件中
+ansible all -m shell -a 'cat /root/id_rsa.pub &gt;&gt; /root/.ssh/authorized_keys;chmod 400 /root/.ssh/authorized_keys'
+
+# 启动服务
+ansible all -m service -a 'name=vsftpd state=started enable=yes'
+
+# 支撑管道命令raw模块(类似于shell模块)
+ansible all -m raw -a 'ifconfig | grep eth0'
+ansible all -m shell -a 'ifconfig | grep eth0'
+
+# 获取主机信息
+ansible 172.17.51.5 -m setup
+ansible 172.17.51.5 -m setup -a 'filter=ansible_kernel'
+</pre>
+
+<h2 id="toc_0.4">YAML</h2>
+
+<h2 id="toc_0.5">Playbook</h2>
+
+
+
+
+
+<h2 id="toc_0.6">ansible套件中的其他工具</h2>
+
+<ul>
+<li>
+ansible-doc: 模块文档查看器，使用ansible-doc -l 显示所有module列表，使用ansible-doc copy查看copy模块说明
+
+<li>
+ansible-playbook: 配置管理工具
+
+<li>
+ansible-galaxy: 你可以把他理解成ansible的pip，可以从galaxy.ansible.com下载官方收录的playbooks
+
+<li>
+ansible-pull: 支持直接从git下载playbook执行，需要遵循其规定的目录格式，用处不是特别大，可以不关注
+
+<li>
+ansible-vault: 如果你的配置文件中含有敏感信息，你可能并不希望他能被人看到，vault可以帮你加密/解密这个配置文件，高级用法，请参照<a href="http://blog.ansibleworks.com/2014/02/19/ansible-vault/">http://blog.ansibleworks.com/2014/02/19/ansible-vault/</a>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

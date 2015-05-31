@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>find - 文件查找</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>find - 文件查找</h1>
+
+<ul>
+<li>
+历史备份包清理
+<pre class="brush:bash">
+# 查找更新时间在30天以前的文件、并删除这些文件
+find /bak -maxdepth 1 -type f -atime +30 -exec rm -rf {} \;
+# 查找更新时间在30天以前、文件名不包含01.gz字符串的文件，并删除这些文件
+find /bak -maxdepth 1 -type f -atime +30 \( ! -name "*01.gz*" \) -exec rm -rf {} \;
+</pre>
+
+<li>
+多个文件名条件查找
+<pre class="brush:bash">
+# 文件名以.开始、并且排除.目录
+# 注意: ( expr )为表达式，在bash中使用时需使用转义形式\(和\)，并且注意前后的空格。
+find ./ -maxdepth 1 -type d \( -name ".*" -a ! -name "." \)
+
+# 对当前目录下所有一级子目录计算空间占用
+find ./ -maxdepth 1 -type d \( -name ".*" -a ! -name "." \)|xargs -I% du -sh "%"
+</pre>
+
+<li>
+使用find批量修改文件权限
+<pre class="brush:bash">
+cd /data/www/pylogs
+# 先设置所有目录和文件属主为root、权限为755
+chown -R root:root * &amp;&amp; chmod -R 755 *
+
+# 再用find将所有文件设置为644
+find ./ -type f -print0|xargs chmod 644
+
+# 将所有.sh结尾的文件添加可执行权限
+find ./ -type f -name "*.sh" -print0|xargs chmod 755
+</pre>
+
+<li>
+按文件大小查找
+<pre class="brush:bash">
+find / -size +200M
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

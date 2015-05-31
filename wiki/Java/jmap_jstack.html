@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>jamp jstack工具</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>jamp jstack工具</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">jmap、jstack、jps无法连接jvm解决办法</a>
+<ul>
+<li><a href="#toc_0.1.1">背景</a>
+<li><a href="#toc_0.1.2">原因分析</a>
+<ul>
+<li><a href="#toc_0.1.2.1">jstack报错原因</a>
+<li><a href="#toc_0.1.2.2">高版本jps、jstack不能工作原因</a>
+</ul>
+<li><a href="#toc_0.1.3">解决办法</a>
+<ul>
+<li><a href="#toc_0.1.3.1">修改tmpwatch设置</a>
+<li><a href="#toc_0.1.3.2">修改tomcat配置或者升级jdk</a>
+</ul>
+<li><a href="#toc_0.1.4">参考URL</a>
+<li><a href="#toc_0.1.5">另外说明</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+查看指定进程的线程信息：top -Hp 17071
+
+<li>
+JVM系列五:JVM监测&amp;工具[整理中]:<a href="http://www.cnblogs.com/redcreen/archive/2011/05/09/2040977.html">http://www.cnblogs.com/redcreen/archive/2011/05/09/2040977.html</a>
+
+<li>
+jstack
+
+<ul>
+<li>
+jstack 17071 &gt; /tmp/jstack_dump.txt
+
+</ul>
+<li>
+jmap
+
+<ul>
+<li>
+jmap -heap 12341
+
+<li>
+jmap -histo pid &gt;a.log
+
+<li>
+jmap -dump:format=b,file=heap.hprof &lt;pid&gt;
+
+</ul>
+<li>
+jinfo
+
+<li>
+jstat 
+
+<ul>
+<li>
+jstat -printcompilation -h10 &lt;pid&gt; 250 600
+
+</ul>
+</ul>
+
+<h2 id="toc_0.1">jmap、jstack、jps无法连接jvm解决办法</h2>
+
+<p>
+2012-10-19 10:14:35
+</p>
+
+<p>
+转自：<a href="http://klausme.info/archives/225.html">http://klausme.info/archives/225.html</a>
+</p>
+
+<h3 id="toc_0.1.1">背景</h3>
+
+<p>
+在对线上服务器的java应用dump操作时发现，以下报错，不能dump。jps也获取不到java进程的pid。
+</p>
+
+<pre>
+jmap -dump:file=/data/dump/jvm_en.hprof 20176
+
+20176: Unable to open socket file: target process not responding or HotSpot VM not loaded
+The -F option can be used when the target process is not responding
+</pre>
+
+<p>
+重启后，jps可以获得该java进程的pid，jstack也可以dump线程。
+</p>
+
+<p>
+而tomcat:
+</p>
+
+<p>
+jdk1.6.24版本下的，jps、jstack都无法操作
+</p>
+
+<p>
+jdk1.6.18版本可以执行jps、jstack。
+</p>
+
+<h3 id="toc_0.1.2">原因分析</h3>
+
+<p>
+jvm运行时会生成一个目录hsperfdata_\(USER(\)USER是启动java进程的用户)，在linux中默认是/tmp。目录下会有些pid文件，存放jvm进程信息。
+</p>
+
+<p>
+jps、jstack等工具读取/tmp/hsperfdata_$USER下的pid文件获取连接信息。
+</p>
+
+<p>
+XStar:<code>$USER</code>是指当前用户，如果在root下用jstack一个admin用户权限的进程，也会提成这个错误，切换到admin用户下就可以正常工作。
+</p>
+
+<h4 id="toc_0.1.2.1">jstack报错原因</h4>
+
+<p>
+jstack报错：Unable to open socket file。是因为这个java进程的pid文件删除了。
+</p>
+
+<p>
+为什么会被删除呢？这是因为linux操作系统为了防止/tmp目录文件过多，有个删除管理机制：tmpwatch。
+</p>
+
+<p>
+查看关键配置/etc/cron.daily/tmpwatch：
+</p>
+<pre class="brush:bash">
+flags=-umc
+/usr/sbin/tmpwatch "$flags" -x /tmp/.X11-unix -x /tmp/.XIM-unix -x /tmp/.font-unix -x /tmp/.ICE-unix \ 
+-x /tmp/.Test-unix 240 /tmp /usr/sbin/tmpwatch "$flags" 720 /var/tmp 
+for d in /var/{cache/man,catman}/{cat?,X11R6/cat?,local/cat?}; 
+do if [ -d "$d" ];then /usr/sbin/tmpwatch "$flags" -f 720 "$d" fi done
+</pre>
+
+<p>
+系统每天会用tmpwatch命令检查并删除 /tmp 下超过240小时未访问过的文件和目录。
+</p>
+
+<h4 id="toc_0.1.2.2">高版本jps、jstack不能工作原因</h4>
+
+<p>
+这是一个从Java 6 update 21 引入的bug: <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7009828">sunbug 7009828</a>，在Java 6 update 25修复。具体原因是：
+</p>
+
+<p>
+jdk16_21/24开始，jvm启动时产生进程号的临时文件目录优先使用-Djava.io.tmpdir指定的目录，没有指定-Djava.io.tmpdir参数才使用/tmp/hsperfdata_$USER。
+</p>
+
+<p>
+正好tomcat指定了<code>-Djava.io.tmpdir=\({tomcat_home}/tmp/</code>。而jps、jstack从<code>/tmp/hsperfdata_\)USER</code>目录读取不到pid信息，所以才报错。
+</p>
+
+<h3 id="toc_0.1.3">解决办法</h3>
+
+<h4 id="toc_0.1.3.1">修改tmpwatch设置</h4>
+
+<p>
+排查对应的/tmp/hsperfdata_*的目录，让jvm自己来管理，保证jps,jstat等命令可用。
+</p>
+
+<p>
+修改/etc/cron.daily/tmpwatch
+</p>
+<pre class="brush:bash">
+/usr/sbin/tmpwatch "$flags" -x /tmp/hsperfdata_* -x /tmp/.X11-unix -x /tmp/.XIM-unix \
+-x /tmp/.font-unix -x /tmp/.ICE-unix -x /tmp/.Test-unix 240 /tmp
+</pre>
+
+<h4 id="toc_0.1.3.2">修改tomcat配置或者升级jdk</h4>
+
+<ul>
+<li>
+修改tomcat的Djava.io.tmpdir参数，统一使用/tmp目录。
+
+</ul>
+
+<p>
+修改catalina.sh添加:<code>CATALINA_TMPDIR=/tmp</code>，重启tomcat。
+</p>
+
+<ul>
+<li>
+升级jdk到Java 6 update 25.
+
+</ul>
+
+<ul>
+<li>
+其他java程序重启:重启java进程，重新生成pid文件。
+
+</ul>
+
+<h3 id="toc_0.1.4">参考URL</h3>
+
+<ol>
+<li>
+<a href="http://pt.alibaba-inc.com/wp/experience_382/java-long-running-jps-tools-such-as-a-solution-can-not-connect-jvm-2.html">http://pt.alibaba-inc.com/wp/experience_382/java-long-running-jps-tools-such-as-a-solution-can-not-connect-jvm-2.html</a>
+
+<li>
+<a href="http://underlap.blogspot.com/2011/03/java-update-breaks-jps-jconsole-etc.html">http://underlap.blogspot.com/2011/03/java-update-breaks-jps-jconsole-etc.html</a>
+
+</ol>
+
+<h3 id="toc_0.1.5">另外说明</h3>
+
+<ol>
+<li>
+在JDK 64bit 1.7.0_01版本也出现了这个问题。
+
+<li>
+在CentOS6以后，/etc/cron.daily/tmpwatch有所改变
+<pre class="brush:bash">
+#! /bin/sh
+flags=-umc
+/usr/sbin/tmpwatch "$flags" -x /tmp/.X11-unix -x /tmp/.XIM-unix \
+        -x /tmp/.font-unix -x /tmp/.ICE-unix -x /tmp/.Test-unix \
+        -X '/tmp/hsperfdata_*' 10d /tmp
+# 上面`-X '/tmp/hsperfdata_*' 10d /tmp `是新加入的
+/usr/sbin/tmpwatch "$flags" 30d /var/tmp
+for d in /var/{cache/man,catman}/{cat?,X11R6/cat?,local/cat?}; do
+    if [ -d "$d" ]; then
+        /usr/sbin/tmpwatch "$flags" -f 30d "$d"
+    fi
+done
+</pre>
+
+<li>
+CentOS6.5中，tmpwatch包缺省并未安装。
+
+</ol>
+
+<p>
+目录/etc/cron.daily/，这个目录是每天执行一次计划任务的目录，所以说，如果设置了比一天更短的清理时间，它是不起作用的。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

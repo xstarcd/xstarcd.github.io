@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>识别运行在哪种虚拟化上:virt-what</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>识别运行在哪种虚拟化上:virt-what</h1>
+
+<ul>
+<li>
+最直接的方式：直接安装virt-what包来识别。
+<pre>
+yum install virt-what
+</pre>
+
+</ul>
+
+<p>
+原文: <a href="http://www.vpsee.com/2011/01/how-to-detect-if-a-linux-system-running-on-a-virtual-machine/">http://www.vpsee.com/2011/01/how-to-detect-if-a-linux-system-running-on-a-virtual-machine/</a>
+</p>
+
+<ul>
+<li>
+判断 OpenVZ/Xen PV/UML
+
+</ul>
+
+<p>
+判断 OpenVZ/Xen PV/UML 是最容易的，直接检查 /proc 下的相关目录和文件就可以知道，比如 OpenVZ VPS 上会有 /proc/vz 这个文件；Xen PV 虚拟机上会有 /proc/xen/ 这个目录，并且目录下有一些东西；UML 上打印 /proc/cpuinfo 会找到 UML 标志。写了一个简单的 Python 脚本来检测：
+</p>
+<pre class="brush:bash">
+#!/usr/bin/python
+# check if a linux system running on a virtual machine (openvz/xen pv/uml)
+# written by http://www.vpsee.com
+
+import sys, os
+
+def main():
+    if os.getuid() != 0:
+        print "must be run as root"
+        sys.exit(0)
+
+    # check OpenVZ/Virtuozzo
+    if os.path.exists("/proc/vz"):
+        if not os.path.exists("/proc/bc"):
+            print "openvz container"
+        else:
+            print "openvz node"
+
+    # check Xen
+    if os.path.exists("/proc/xen/capabilities"):
+        if (os.path.getsize("/proc/xen/capabilities") &gt; 0):
+            print "xen dom0"
+        else:
+            print "xen domU"
+
+    # check User Mode Linux (UML)
+    f = open("/proc/cpuinfo", "r"); t = f.read(); f.close()
+    if (t.find("UML") &gt; 0):
+        print "uml"
+
+if __name__=="__main__":
+    main()
+</pre>
+
+<ul>
+<li>
+判断 VMware/Xen HVM/KVM
+
+</ul>
+
+<p>
+如果使用的是 VMware/Xen HVM/KVM 这样的全虚拟就更难判断一些，最准确的办法是读取 CPUID 来判断，Xen 源代码下面有一段检测是否是 Xen 的 C 语言代码 tools/misc/xen-detect.c，这段代码提供了一个很好的例子，VPSee 重写了代码，用宏替代了函数，增加了对 VMware 和 KVM 的识别，用 gcc 编译后就可以运行：
+</p>
+
+<pre class="brush:c">
+/*
+ * check if a linux system running on a virtual machine (vmware/xen hvm/kvm)
+ * written by http://www.vpsee.com
+ */
+#include stdio.h
+#include string.h
+
+#define HYPERVISOR_INFO 0x40000000
+
+#define CPUID(idx, eax, ebx, ecx, edx) \
+    asm volatile ( \
+        "test %1,%1 ; jz 1f ; ud2a ; .ascii \"xen\" ; 1: cpuid" \
+        : "=b" (*ebx), "=a" (*eax), "=c" (*ecx), "=d" (*edx) \
+        : "0" (idx) );
+
+int main(void)
+{
+        unsigned int eax, ebx, ecx, edx;
+        char string[13];
+
+        CPUID(HYPERVISOR_INFO, &amp;eax, &amp;ebx, &amp;ecx, &amp;edx);
+        *(unsigned int *)(string+0) = ebx;
+        *(unsigned int *)(string+4) = ecx;
+        *(unsigned int *)(string+8) = edx;
+
+        string[12] = 0;
+        if (strncmp(string, "XenVMMXenVMM", 12) == 0) {
+                printf("xen hvm\n");
+        } else if (strncmp(string, "VMwareVMware", 12) == 0) {
+                printf("vmware\n");
+        } else if (strncmp(string, "KVMKVMKVM", 12) == 0) {
+                printf("kvm\n");
+        } else
+                printf("bare hardware\n");
+
+        return 0;
+}
+</pre>
+
+<ul>
+<li>
+判断 VirtualBox/Virtual PC
+
+</ul>
+
+<p>
+什么？这种家用桌面虚拟机自己装的还会不知道？！如果不知道的话也有办法，在 Linux 下运行 dmidecode 工具然后查找 Manufacturer: innotek GmbH, Manufacturer: Microsoft Corporation 关键字就能对应上 VirtualBox 和 Virtual PC.
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

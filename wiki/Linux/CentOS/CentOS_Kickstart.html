@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>使用Kickstart自动部署CentOS</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">使用Kickstart自动部署CentOS</a>
+<ul>
+<li><a href="#toc_1.1">创建一个Kickstart安装脚本</a>
+<li><a href="#toc_1.2">加载Kickstart安装脚本</a>
+<li><a href="#toc_1.3">进阶使用</a>
+<li><a href="#toc_1.4">其他全自动部署安装操作系统的方式</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">使用Kickstart自动部署CentOS</h1>
+
+
+<p>
+使用kickstart全自动部署系统(1-6,kickstart+PXE): <a href="http://blog.chinaunix.net/uid/27107082/cid-172092-list-1.html">http://blog.chinaunix.net/uid/27107082/cid-172092-list-1.html</a>
+</p>
+
+<p>
+作者: freemouse 日期 2011年10月31日 | 可以转载, 但必须以超链接形式标明文章原始出处和作者信息及版权声明
+</p>
+
+<p>
+网址: <a href="http://www.cnphp.info/quick-install-centos-6-0-with-kickstart.html">http://www.cnphp.info/quick-install-centos-6-0-with-kickstart.html</a>
+</p>
+
+
+<p>
+全自动化部署安装操作系统的应用场合十分广泛。相较于传统的手动安装，省时、省力；同时也能避免出现人为的误操作；在大型系统（如政府部分、企业集团）当中，保证所有服务器的配置、安全设置、文件系统、服务程序的一致性更显得尤为重要。基于此，Red Hat系统下的Kickstart安装脚本应运而生。通过这样一个脚本，linux管理员可以创建统一的自定义系统配置、软件等等。本文中笔者将为各位介绍如何使用Kickstart安装CentOS 6.0。
+</p>
+
+<p>
+在CentOS的安装过程中Kickstart使用脚本文件与其进行交互。这个文件可以放在本地磁盘也可放在网络上。由于使用了标准的Anaconda安装程序；安装脚本与手动操作的权限没什么两样，可以操作磁盘分区、设置网络、密码和用户名等等。
+</p>
+
+<p>
+当然，每台服务器的配置不可能是完全一模一样的（那样直接Ghost就可以了<sup><small>_</small></sup>）。诸如“主机名”、“IP地址”之类的参数。Kickstart的自定义脚本会在需要的时候弹出对话框来提示你这些参数该如何设置。
+</p>
+
+<h2 id="toc_1.1">创建一个Kickstart安装脚本</h2>
+
+<p>
+在CentOS安装完成后，会在root用户的家目录中自动生成一个 /root/anaconda-ks.cfg 配置文件。这个就是Kickstart的安装脚本了。如果需要克隆当前的服务器，完全可以拷贝出来在另一台机子上重复使用。
+</p>
+
+<p>
+也可以直接调用Kickstart配置程序来生成安装脚本。进入CentOS系统，“应用程序”-&gt;“系统工具”下找到Kickstart。按需调用相应的程序，具体如下：
+</p>
+
+<ul>
+<li>
+Basic Configuration （基本设置）
+
+</ul>
+
+<p>
+可以指定root密码、默认语言、键盘设置以及时区等。还可以选择安装系统时的界面（text mode）。以加快安装进程的速度。
+</p>
+
+<ul>
+<li>
+Installation Method （安装方式）
+
+</ul>
+
+<p>
+选择是安装全新操作系统还是升级。不推荐使用Kickstart升级操作系统，因为在升级的过程中会出现很多的交互选项，会比较麻烦。还可以指定安装源（如：CD-ROM、NFS、FTP、HTTP或本地磁盘）
+</p>
+
+<ul>
+<li>
+Boot Loader Options  （启动选项）
+
+</ul>
+
+<p>
+修改启动选项的设置，一般使用默认的就可以了。
+</p>
+
+<ul>
+<li>
+Partition Information （分区设置）
+
+</ul>
+
+<p>
+如果你的服务器上有SAN存储器，需要谨慎操作此选项。在默认情况下，Kickstart脚本会尝试清除SAN存储器中的内容，并将新操作系统安装在上面。
+</p>
+
+<ul>
+<li>
+Network Configuration （网络设置）
+
+</ul>
+
+<p>
+Kickstart默认不会修改网络接口。因为IP地址每台机子都是唯一的。具体需要怎么做，笔者稍候会作出解答<sup><small>_</small></sup>。
+</p>
+
+<ul>
+<li>
+Authentication （认证）
+
+</ul>
+
+<p>
+Kickstart默认使用shadow文件进行密码认证。对于大型系统的部署，可能会用到专用的认证系统。Kickstart支持NIS，LDAP，Kerberos，SMB 和Name Switch Cache。
+</p>
+
+<ul>
+<li>
+Firewall Configuration （防火墙设置）
+
+</ul>
+
+<p>
+可以设置防火墙和SELinux。如果你不喜欢SELinux直接禁用就可以了。如果是最小化安装，建议禁用防火墙稍候再设置。
+</p>
+
+<ul>
+<li>
+Display Configuration （显示设置）
+
+</ul>
+
+<p>
+如果是服务器的话，直接text mode就可以了。
+</p>
+
+<ul>
+<li>
+Package Selection （安装包选择）指定CentOS预安装的软件包。
+
+</ul>
+
+<p>
+Pre-installation Script （预执行脚本） 和 Post-installation Script （延迟执行脚本）定义bash、Perl或Python脚本以供安装脚本使用。
+</p>
+
+<p>
+下面是一个Kickstart安装脚本的示例：
+</p>
+
+<pre class="brush:bash">
+#Kickstart全自动快速部署最小化安装脚本示例
+#Author Freemouse
+#Home  http://www.cnphp.info
+#Source http://www.cnphp.info/quick-install-centos-6-0-with-kickstart.html
+ 
+#禁用防火墙
+firewall --disabled
+#安装操作系统
+install
+#使用光驱为安装源
+cdrom
+repo --name="centos" --baseurl=file:///mnt/source --cost=100
+# Root密码 – 'testpass', 加密
+rootpw --iscrypted $1$pcafN9bo$lueZDdCQMz8fc/brhDa1J1
+#网络设置
+network  --bootproto=static --device=eth0 --gateway=192.168.1.1 --ip=192.168.1.100 --nameserver=1.1.1.2 --netmask=255.255.255.0 --onboot=on
+# 系统认证文件
+auth  --useshadow  --passalgo=sha512 --enablefingerprint
+#text mode 安装
+text
+# 键盘
+keyboard us
+# 语言
+lang zh_CN
+# 禁用SELinux
+selinux --disabled
+# 禁用X Windows
+skipx
+# 日志
+logging --level=info
+# 时区
+timezone  Aisa/Shang_Hai
+# 启动选项
+bootloader --append="crashkernel=auto rhgb quiet" --location=mbr --driveorder="sda"
+# 清除MBR
+zerombr
+# 清除分区表
+clearpart --all
+
+%post
+#在这里添加自定义脚本，以修改IP地址等
+%end
+
+%packages
+@base
+@core
+ 
+@server-policy
+ 
+%end
+</pre>
+
+<h2 id="toc_1.2">加载Kickstart安装脚本</h2>
+
+<p>
+在启动设备中添加ks参数就可以加载Kickstart安装脚本了。也可以在操作系统安装启动画面中按Tab键修改这个参数。修改完毕直接加载就可以了。下面是一些例子：
+</p>
+
+<ul>
+<li>
+ks=<a href="http://example.org/ks.cfg">http://example.org/ks.cfg</a> –从网址中加载Kickstat安装脚本。相对其它方式更简单方便；缺点是无法修改，并且服务器需要联网。
+
+<li>
+ks=cdrom:/ks.cfg – 从光驱中加载Kickstart脚本。需要安装系统的时候，直接刻盘安装即可。
+
+<li>
+从BOOTP/DHCP 启动并从NFS系统中加载安装脚本更快，也更适合大批量部署服务器。
+
+</ul>
+
+<h2 id="toc_1.3">进阶使用</h2>
+
+<p>
+Kickstart的预安装和延迟安装脚本是比较有特色的。例如，之前讲到的IP地址无法自动安装的问题。因为，每台机子IP都是唯一的。这个时候预安装脚本就可以闪亮登场了。编译一段bash或perl代码，在安装系统时交互输入IP地址： 
+</p>
+
+<pre class="brush:bash">
+#!/bin/sh
+#切换到3#终端
+exec &lt; /dev/tty3 &gt; /dev/tty3
+#获取输入
+echo "请输入IP地址："
+read ip
+#查找置顶ip地址
+sed -i "s/1\.1\.1\.111/$ip/" /etc/sysconfig/network-scripts/ifcfg-eth0
+#重新切换回1#终端，完成安装
+exec &lt; /dev/tty1 &gt; /dev/tty1
+</pre>
+
+<h2 id="toc_1.4">其他全自动部署安装操作系统的方式</h2>
+
+<p>
+Kickstart的安装流程和传统的手动安装基本没太大区别。在安装过程中设置服务器基本运行环境。这也造成整个安装过程过于相对较慢。
+</p>
+
+<p>
+单从速度来说，可以使用dd命令来直接拷贝系统镜像。对于家庭用户或小范围拷贝效率会更高<sup><small>_</small></sup>。
+</p>
+
+<pre>
+dd if=/dev/sda of=/media/backup_device/sda_image.img
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

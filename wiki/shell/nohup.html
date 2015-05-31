@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>nohup - 不挂断地运行命令</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>nohup - 不挂断地运行命令</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">语法</a>
+<li><a href="#toc_0.2">输放输出</a>
+<li><a href="#toc_0.3">退出状态</a>
+</ul>
+</ul>
+</div>
+
+<p>
+如果你要在运行一个进程、希望在退出帐户时该进程还不会结束，那么可以使用nohup命令。该命令可以在你退出帐户/关闭终端之后继续运行。nohup就是不挂起的意思(no hang up)。
+</p>
+
+<h2 id="toc_0.1">语法</h2>
+
+<pre>
+nohup Command [ Arg ... ] [　&amp; ]
+</pre>
+
+<p>
+nohup 命令运行由 Command 参数和任何相关的 Arg 参数指定的命令，忽略所有挂断（SIGHUP）信号。在注销后使用 nohup 命令运行后台中的程序。要运行后台中的 nohup 命令，添加 <code>&amp;</code> 到命令的尾部。
+</p>
+
+<h2 id="toc_0.2">输放输出</h2>
+
+<ul>
+<li>
+如果标准输入是终端，重定向到/dev/null；
+
+<li>
+如果标准输出是终端，重定向到'nohup.out'文件，如果当前目前不能创建、重定向到$HOME/nohup.out；
+
+<li>
+如果错误输出是终端，重定向到标准输出。
+
+<li>
+如果要保存输出到文件，在命令中使用重定向即可：
+<pre class="brush:bash">
+nohup command &gt; myout.file 2&gt;&amp;1 &amp;
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">退出状态</h2>
+
+<p>
+该命令返回下列出口值：
+</p>
+
+<ul>
+<li>
+126 可以查找但不能调用 Command 参数指定的命令。
+
+<li>
+127 nohup 命令发生错误或不能查找由 Command 参数指定的命令。
+
+<li>
+否则，nohup 命令的退出状态是 Command 参数指定命令的退出状态。
+
+</ul>
+
+<p>
+另外有两个常用的ftp工具ncftpget和ncftpput，可以实现后台的ftp上传和下载，这样我就可以利用这些命令在后台上传和下载文件了。
+</p>
+
+<p>
+也可以使用<a href="screen.html">screen</a>工具来虚拟一个长期运行的控制台。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

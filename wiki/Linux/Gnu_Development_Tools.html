@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>GNU/Linux Unix下常用研发工具</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>GNU/Linux Unix下常用研发工具</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">编辑器</a>
+<li><a href="#toc_0.2">代码打补丁工具</a>
+<li><a href="#toc_0.3">项目构建工具</a>
+<li><a href="#toc_0.4">版本控制工具</a>
+<li><a href="#toc_0.5">C库</a>
+<li><a href="#toc_0.6">二进制和目标文档处理工具</a>
+<li><a href="#toc_0.7">编译器</a>
+<li><a href="#toc_0.8">源代码调试器</a>
+<li><a href="#toc_0.9">内存管理检查器</a>
+<li><a href="#toc_0.10">调用跟踪器</a>
+<li><a href="#toc_0.11">性能分析器</a>
+</ul>
+</ul>
+</div>
+
+<p>
+<a href="http://blog.csdn.net/rufeng18/article/details/3314137">http://blog.csdn.net/rufeng18/article/details/3314137</a>
+</p>
+
+<h2 id="toc_0.1">编辑器</h2>
+<ul>
+<li>
+vi：老牌编辑器，在各个unix和unix-like平台都能够找到
+
+<li>
+emacs：GNU项目研发的编辑器，功能强大扩展性强，绝对不是个编辑器那么简单
+
+</ul>
+
+<h2 id="toc_0.2">代码打补丁工具</h2>
+<ul>
+<li>
+diff &amp; patch：一对好搭挡，diff用来生成代码补丁，而patch则用来给代码打补丁
+
+</ul>
+
+<h2 id="toc_0.3">项目构建工具</h2>
+<ul>
+<li>
+make(Makefile)：常用的项目构建工具，用一个Makefile就能够从整个项目的代码中构建各个目标
+
+<li>
+autotool(包括Autoconf, Automake 和 Libtool)：方便在您的项目中生成标准的Makefile，为许多自由和开源软件项目所使用
+
+</ul>
+
+<h2 id="toc_0.4">版本控制工具</h2>
+<ul>
+<li>
+cvs：老牌的版本控制工具，适用于集中式版本控制，为许多项目服务过，现在略显疲态
+
+<li>
+subversion：一个为了代替cvs而研发的工具，解决了cvs的一些诟病
+
+<li>
+GNU Arch：GNU项目研发的版本控制工具，属于分布式版本控制工具
+
+<li>
+git：Linus Torvalds为内核版本控制所研发的工具，当然也适用于普通应用程式，也属于分布式版本控制工具
+
+</ul>
+
+<h2 id="toc_0.5">C库</h2>
+<ul>
+<li>
+glibc：GNU项目研发的C库，很庞大和全面，是许多自由和开源软件的基石，熟悉他对您进入linux研发领域很有好处
+
+<li>
+uclibc：为嵌入式系统所研发的C库，比glibc小得多，但是对glibc保持很高的兼容，基于glibc的软件很容易移植到uclibc上
+
+<li>
+newlib：另一个为嵌入式系统所研发的C库
+
+<li>
+diet libc：同样是为嵌入式系统所研发的C库
+
+</ul>
+
+<h2 id="toc_0.6">二进制和目标文档处理工具</h2>
+<ul>
+<li>
+binutils：GNU项目所研发的二进制和目标文档处理工具包，包括多种研发过程所需的工具：连接器、汇编器、一系列的二进制和目标文档处理工具更有一个性能分析器。您一般很少直接用到他们，但常常间接用到他们。
+
+</ul>
+
+<h2 id="toc_0.7">编译器</h2>
+<ul>
+<li>
+gcc：GNU项目所研发的万能编译器，他支持的语言包括C、C++、Objective-C、Fortran、Java和Ada，他支持的处理器包括i386、MIPS、ARM、PowerPC、IA64等等，此外您还能够为他添加其他语言前端和其他处理器后端。gcc性能不俗，还支持交叉编译，为这个星球;)许多软件项目所采用。
+
+</ul>
+
+<h2 id="toc_0.8">源代码调试器</h2>
+<ul>
+<li>
+gdb：GNU项目所研发的源代码调试器，功能强大，是程式员的好助手
+
+</ul>
+
+<h2 id="toc_0.9">内存管理检查器</h2>
+<ul>
+<li>
+valgrind：很优秀的内存检查器，能够帮助您检测您程式中的内存错误。另外还能够对cache的使用和堆(也能够包括栈)的使用进行分析，让您能够优化您的代码
+
+</ul>
+
+<h2 id="toc_0.10">调用跟踪器</h2>
+<ul>
+<li>
+strace：系统调用跟踪器，能够跟踪您的程式所调用的系统调用
+
+<li>
+ltrace：动态库调用跟踪器，能够跟踪您的程式所调用的动态库接口
+
+<li>
+truss：(BSD5.X下自带)跟踪进程的系统调用、动态装入的用户级函数调用、接收的信号和造成的机器故障。可疑观察一个程式运行时的调用。不错.
+
+</ul>
+
+<h2 id="toc_0.11">性能分析器</h2>
+<ul>
+<li>
+gprof：binutils中带的性能分析器，能够帮助您优化您的代码，提高程式速度
+
+<li>
+qprof：另一个性能分析器，支持动态库的性能分析和多线程、多进程性能分析
+
+<li>
+oprofile：一个系统范围的性能分析器，使用内核模块和一个后台进程进行数据采集，他不但能够获得某个进程的性能分析数据还能够获得内核的性能分析数据 
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

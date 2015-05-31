@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>Ubuntu文字终端分辨率</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Ubuntu文字终端分辨率</a>
+<ul>
+<li><a href="#toc_1.1">安装v86d和hwinfo包</a>
+<li><a href="#toc_1.2">查看显卡支持的分辨率</a>
+<li><a href="#toc_1.3">修改grub文件</a>
+<li><a href="#toc_1.4">修改initramfs-tools配置</a>
+<li><a href="#toc_1.5">更新grub配置</a>
+</ul>
+<li><a href="#toc_2">linux Framebuffer分类（uvesafb、vesafb、sisfb）</a>
+<ul>
+<li><a href="#toc_2.1">uvesafb</a>
+<li><a href="#toc_2.2">vesafb</a>
+<li><a href="#toc_2.3">sisfb</a>
+<li><a href="#toc_2.4">Kernel Command Line Options</a>
+<ul>
+<li><a href="#toc_2.4.1">uvesafb</a>
+<li><a href="#toc_2.4.2">vesafb</a>
+<li><a href="#toc_2.4.3">sisfb</a>
+</ul>
+<li><a href="#toc_2.5">Other Options</a>
+<ul>
+<li><a href="#toc_2.5.1">MTRR</a>
+<li><a href="#toc_2.5.2">ypan, ywrap and redraw</a>
+</ul>
+</ul>
+<li><a href="#toc_3">Ubuntu 10.10启动进入命令行模式</a>
+</ul>
+</div>
+
+<h1 id="toc_1">Ubuntu文字终端分辨率</h1>
+
+<p>
+原文：<a href="http://blog.csdn.net/shiyanhui66/article/details/6007280">http://blog.csdn.net/shiyanhui66/article/details/6007280</a>
+</p>
+
+<p>
+喜欢ubuntu的绚丽的桌面效果，这需要装上英伟达驱动。但是装上之后发现终端的分辨率变低了，这令我十分不爽。google了一下，终于找到了解决办法，只需要将grub文件改一下就行了。具体如下：
+</p>
+
+<h2 id="toc_1.1">安装v86d和hwinfo包</h2>
+
+<p>
+v86d - daemon to run x86 code in an emulated environment
+</p>
+
+<p>
+hwinfo - Hardware identification system
+</p>
+
+<pre>
+sudo apt-get install v86d hwinfo
+</pre>
+
+<h2 id="toc_1.2">查看显卡支持的分辨率</h2>
+
+<pre>
+sudo hwinfo --framebuffer
+</pre>
+
+<p>
+我的是：
+</p>
+
+<pre>
+    02: None 00.0: 11001 VESA Framebuffer
+      [Created at bios.464]
+      Unique ID: rdCR.sbqupgMqM7F
+      Hardware Class: framebuffer
+      Model: "NVIDIA G96 Board - kl1_n10p"
+      Vendor: "NVIDIA Corporation"
+      Device: "G96 Board - kl1_n10p"
+      SubVendor: "NVIDIA"
+      SubDevice:
+      Revision: "Chip Rev"
+      Memory Size: 14 MB
+      Memory Range: 0xcd000000-0xcddfffff (rw)
+      Mode 0x0300: 640x400 (+640), 8 bits
+      Mode 0x0301: 640x480 (+640), 8 bits
+      Mode 0x0303: 800x600 (+800), 8 bits
+      Mode 0x0305: 1024x768 (+1024), 8 bits
+      Mode 0x0307: 1280x1024 (+1280), 8 bits
+      Mode 0x030e: 320x200 (+640), 16 bits
+      Mode 0x030f: 320x200 (+1280), 24 bits
+      Mode 0x0311: 640x480 (+1280), 16 bits
+      Mode 0x0312: 640x480 (+2560), 24 bits
+      Mode 0x0314: 800x600 (+1600), 16 bits
+      Mode 0x0315: 800x600 (+3200), 24 bits
+      Mode 0x0317: 1024x768 (+2048), 16 bits
+      Mode 0x0318: 1024x768 (+4096), 24 bits
+      Mode 0x031a: 1280x1024 (+2560), 16 bits
+      Mode 0x031b: 1280x1024 (+5120), 24 bits
+      Mode 0x0330: 320x200 (+320), 8 bits
+      Mode 0x0331: 320x400 (+320), 8 bits
+      Mode 0x0332: 320x400 (+640), 16 bits
+      Mode 0x0333: 320x400 (+1280), 24 bits
+      Mode 0x0334: 320x240 (+320), 8 bits
+      Mode 0x0335: 320x240 (+640), 16 bits
+      Mode 0x0336: 320x240 (+1280), 24 bits
+      Mode 0x033d: 640x400 (+1280), 16 bits
+      Mode 0x033e: 640x400 (+2560), 24 bits
+      Mode 0x0345: 1600x1200 (+1600), 8 bits
+      Mode 0x0346: 1600x1200 (+3200), 16 bits
+      Mode 0x0347: 1400x1050 (+1400), 8 bits
+      Mode 0x0348: 1400x1050 (+2800), 16 bits
+      Mode 0x0349: 1400x1050 (+5600), 24 bits
+      Mode 0x034a: 1600x1200 (+6400), 24 bits
+      Mode 0x0352: 2048x1536 (+8192), 24 bits
+      Mode 0x0360: 1280x800 (+1280), 8 bits
+      Mode 0x0361: 1280x800 (+5120), 24 bits
+      Mode 0x0362: 768x480 (+768), 8 bits
+      Mode 0x0364: 1440x900 (+1440), 8 bits
+      Mode 0x0365: 1440x900 (+5760), 24 bits
+      Mode 0x0366: 1600x900 (+3200), 16 bits
+      Mode 0x0367: 1600x900 (+6400), 24 bits
+      Mode 0x0368: 1680x1050 (+1680), 8 bits
+      Mode 0x0369: 1680x1050 (+6720), 24 bits
+      Mode 0x0370: 1600x900 (+1600), 8 bits
+      Mode 0x037b: 1280x720 (+5120), 24 bits
+      Mode 0x037c: 1920x1200 (+1920), 8 bits
+      Mode 0x037d: 1920x1200 (+7680), 24 bits
+      Config Status: cfg=new, avail=yes, need=no, active=unknown
+</pre>
+
+<p>
+不过我感觉这个意义不大，因为虽然上面没有1366x768这个分辨率，但是还是可以在下面将参数设成1366x768.你可以根据你的爱好来修改，但是最好按上面机器支持的分辨率来修改，否则可能会出现意想不到的问题。
+</p>
+
+<h2 id="toc_1.3">修改grub文件</h2>
+
+<p>
+/etc/default/grub
+</p>
+
+<pre class="brush:bash">
+
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+#改成:
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash nomodeset video=uvesafb:mode_option=1366x768-24,mtrr=3,scroll=ywrap"
+
+#GRUB_GFXMODE=640×480
+#改成
+#GRUB_GFXMODE=1366x768
+</pre>
+
+<p>
+其最终结果如下(不同的机器不一定相同，我的是Lenovo Y450)：
+</p>
+
+<pre class="brush:bash">
+# If you change this file, run 'update-grub' afterwards to update
+# /boot/grub/grub.cfg.
+GRUB_DEFAULT=0
+#GRUB_HIDDEN_TIMEOUT=0
+GRUB_HIDDEN_TIMEOUT_QUIET=true
+GRUB_TIMEOUT=10
+GRUB_DISTRIBUTOR=`lsb_release -i -s 2&gt; /dev/null || echo Debian`
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash nomodeset video=uvesafb:mode_option=1366x768-24,mtrr=3,scroll=ywrap"
+GRUB_CMDLINE_LINUX=""
+# Uncomment to enable BadRAM filtering, modify to suit your needs
+# This works with Linux (no patch required) and with any kernel that obtains
+# the memory map information from GRUB (GNU Mach, kernel of FreeBSD ...)
+#GRUB_BADRAM="0x01234567,0xfefefefe,0x89abcdef,0xefefefef"
+# Uncomment to disable graphical terminal (grub-pc only)
+#GRUB_TERMINAL=console
+# The resolution used on graphical terminal
+# note that you can use only modes which your graphic card supports via VBE
+# you can see them in real GRUB with the command `vbeinfo'
+#GRUB_GFXMODE=1366x768
+# Uncomment if you don't want GRUB to pass "root=UUID=xxx" parameter to Linux
+#GRUB_DISABLE_LINUX_UUID=true
+# Uncomment to disable generation of recovery mode menu entries
+#GRUB_DISABLE_LINUX_RECOVERY="true"
+# Uncomment to get a beep at grub start
+#GRUB_INIT_TUNE="480 440 1"
+</pre>
+
+<h2 id="toc_1.4">修改initramfs-tools配置</h2>
+
+<p>
+/etc/initramfs-tools/modules
+</p>
+
+<p>
+将<code>uvesafb mode_option=1366x768-24 mtrr=3 scroll=ywrap</code>添加上去。
+</p>
+
+<p>
+最终结果是这个样子：
+</p>
+<pre class="brush:bash">
+# List of modules that you want to include in your initramfs.
+#
+# Syntax:  module_name [args ...]
+#
+# You must run update-initramfs(8) to effect this change.
+#
+# Examples:
+#
+# raid1
+# sd_mod
+uvesafb mode_option=1366x768-24 mtrr=3 scroll=ywrap
+</pre>
+
+<h2 id="toc_1.5">更新grub配置</h2>
+<pre class="brush:bash">
+sudo update-grub2
+sudo update-initramfs -u
+</pre>
+
+<p>
+最后重启就行了。
+</p>
+
+
+<h1 id="toc_2">linux Framebuffer分类（uvesafb、vesafb、sisfb）</h1>
+
+<p>
+<a href="http://blog.csdn.net/tangy110/article/details/6341922">http://blog.csdn.net/tangy110/article/details/6341922</a>
+</p>
+
+<p>
+<a href="http://en.gentoo-wiki.com/wiki/Framebuffer#vesafb">http://en.gentoo-wiki.com/wiki/Framebuffer#vesafb</a>
+</p>
+
+<p>
+A framebuffer enables the kernel to display graphics on an otherwise text only console. These drivers can also be used for other things, such as running a non-accelerated X server or playing video in media players with framebuffer support. Framebuffer support is a requirement for applications like <a href="http://en.gentoo-wiki.com/wiki/Fbsplash">Fbsplash</a> and <a href="http://en.gentoo-wiki.com/wiki/Qingy">Qingy</a>.
+</p>
+
+<h2 id="toc_2.1">uvesafb</h2>
+
+<p>
+Some tinkering is involved to get the uvesafb driver working. You will need to enable Connector - unified userspace &lt;-&gt; kernelspace linker and Userspace VESA VGA graphics support.
+</p>
+
+<ul>
+<li>
+Linux Kernel Configuration: uvesafb kernel configuration
+<pre>
+Device Drivers -&gt;
+    &lt;*&gt; Connector - unified userspace &lt;-&gt; kernelspace linker  ---&gt;
+    Graphics support -&gt;
+        [*] Support for frame buffer devices  ---&gt;
+            [*] Enable firmware EDID
+            ...
+            &lt;*&gt; Userspace VESA VGA graphics support
+</pre>
+
+</ul>
+
+<p>
+Rebuild the kernel, but don't install it just yet. The reason we first needed to build the kernel is that we need klibc to compile against a kernel withConnector - unified userspace &lt;-&gt; kernelspace linker and Userspace VESA VGA graphics support enabled. Next we need the <a href="http://gentoo-portage.com/Search?search=sys-apps/v86d">sys-apps/v86d</a> userspace helper,
+emerge -av v86d
+</p>
+
+<p>
+Now, read the <a href="http://en.gentoo-wiki.com/wiki/Initramfs#Kernel_Configuration">initramfs kernel configuration</a> chapter for instruction on enabling initramfs support, which is needed to include bits of <a href="http://gentoo-portage.com/Search?search=sys-apps/v86d">sys-apps/v86d</a> in the kernel. Set the Initramfs source file(s) to /usr/share/v86d/initramfs,
+</p>
+
+<p>
+<strong>Note:</strong> If you need to add v86d to an already existing initramfs source directory, look in /usr/share/v86d/initramfsand copy the files listed there.
+</p>
+
+<ul>
+<li>
+Linux Kernel Configuration: uvesafb initramfs configuration
+<pre>
+General Setup -&gt;
+    (/usr/share/v86d/initramfs) Initramfs source file(s)
+</pre>
+
+</ul>
+
+<p>
+Rebuild the kernel yet again and finally install it.
+</p>
+
+<h2 id="toc_2.2">vesafb</h2>
+
+<p>
+The vesafb driver is a generic VESA driver that works with most VESA compatible cards.
+</p>
+
+<ul>
+<li>
+Linux Kernel Configuration: vesafb kernel configuration
+<pre>
+Device Drivers -&gt;
+    &lt;*&gt; Connector - unified userspace &lt;-&gt; kernelspace linker  ---&gt;
+    Graphics support -&gt;
+        [*] Support for frame buffer devices  ---&gt;
+            [*] Enable firmware EDID
+            ...
+            [*] VESA VGA graphics support
+</pre>
+
+</ul>
+
+<h2 id="toc_2.3">sisfb</h2>
+
+<p>
+For users with a SiS card, you want the sisfb driver.
+</p>
+
+<ul>
+<li>
+Linux Kernel Configuration: sisfb kernel configuration
+<pre>
+Device Drivers -&gt;
+    Graphics support -&gt;
+        [*] Support for frame buffer devices  ---&gt;
+            [*] Enable firmware EDID
+            ...
+            [*] SiS/XGI display support
+</pre>
+
+</ul>
+
+<p>
+This driver supports the following SiS cards:
+</p>
+
+<pre>
+    SiS 300 series: SiS 300/305, 540, 630(S), 730(S)
+    SiS 315 series: SiS 315/H/PRO, 55x, (M)65x, 740, (M)661(F/M)X, (M)741(GX)
+    SiS 330 series: SiS 330 ("Xabre"), (M)760
+</pre>
+
+<h2 id="toc_2.4">Kernel Command Line Options</h2>
+
+<p>
+The kernel will only use the framebuffer if it is specifically told to do so. The required kernel command line option here is video= followed by the desired driver, a set of options, resolution, color depth and refresh rate.
+</p>
+
+<h3 id="toc_2.4.1">uvesafb</h3>
+
+<p>
+Add to the kernel line of your /boot/grub/grub.conf, substituting the options to your liking,
+</p>
+
+<p>
+<code>video=uvesafb:mtrr:3,ywrap,1024x768-24@60</code>
+</p>
+
+<p>
+You can also create an entry disabling uvesafb using the following,
+</p>
+
+<p>
+<code>video=uvesafb:off</code>
+</p>
+
+<p>
+One reason for disabling UVesaFB, is to avoid known conflicts when using the binary NVidia driver with hibernate/suspend feature.
+</p>
+
+<p>
+A uvesafb example is shown below, but keep in mind that how the kernel is told to use the framebuffer differs from driver to driver.
+</p>
+
+<p>
+File: /boot/grub/grub.conf
+</p>
+<pre>
+...
+title=Gentoo Linux
+root(hd0,0)
+kernel /boot/bzImage root=/dev/hda3 video=uvesafb:ywrap,mtrr:3,1024x768-32@70
+...
+</pre>
+
+<p>
+Here we told the kernel to use the uvesafb driver with the ywrap and mtrr:3 options, set the resolution to 1024x768 with a color depth of 32 bits and a refresh rate of 70Hz.
+</p>
+
+<h3 id="toc_2.4.2">vesafb</h3>
+
+<p>
+If you use the vesafb driver you will need to omit the resolution, color depth and refresh rate from the video= and follow with a vga= parameter. The vga= takes a decimal value (with no preceding 0x), or ask. Setting vga=ask is a good idea if you are unsure what to use, as the kernel will stop and ask you for the desired resolution and color depth. The Linux video mode numbers can be found here, but you should be aware that these number might not work on your particular hardware. A better way to see the modes you can set is to run:
+</p>
+
+<p>
+<code>hwinfo --vbe|grep Mode</code>
+</p>
+
+<p>
+So a vesafb example would be,
+</p>
+
+<p>
+<code>video=vesafb:mtrr:3,ywrap vga=792</code>
+</p>
+
+<p>
+which would be equivalent to a uvesafb of:
+</p>
+
+<p>
+<code>video=uvesafb:mtrr:3,ywrap,1024x768-24@60</code>
+</p>
+
+<p>
+To create a profile for disabling framebuffer, use either vga=normal or vga=nofb, or just omit vga= entirely.
+</p>
+
+<h3 id="toc_2.4.3">sisfb</h3>
+
+<p>
+The video= parameter differs from other drivers.
+</p>
+
+<p>
+The uvesafb driver entry,
+</p>
+
+<p>
+<code>video=uvesafb:ypan,mtrr:3,1024x768-32@70</code>
+</p>
+
+<p>
+would, using sisfb be,
+</p>
+
+<p>
+<code>video=sisfb:mode:1024x768x32,rate:70,mem:4096</code>
+</p>
+
+<p>
+Make sure you set the memory size of your card in KiB using the mem: option.
+</p>
+
+<h2 id="toc_2.5">Other Options</h2>
+
+<h3 id="toc_2.5.1">MTRR</h3>
+
+<p>
+The mtrr option defaults to <code>mtrr:0</code>, meaning that MTRR will be disabled — equivalent to the nomtrr option. 
+</p>
+
+<p>
+The safest option is probably to use <code>mtrr:1</code> and the most optimal option is most likely <code>mtrr:3</code>. The values represent:
+</p>
+
+<pre>
+0 - Disabled (equivalent to nomtrr) (default)
+1 - Uncacheable
+2 - Write-back
+3 - Write-combining
+4 - Write-through
+</pre>
+
+<p>
+Review the kernel documentation for more information.
+</p>
+
+<h3 id="toc_2.5.2">ypan, ywrap and redraw</h3>
+
+<p>
+The ypan, ywrap and redraw are scrolling options. They set the way the kernel will handle the scrolling and panning of the framebuffer. If none of these are specified, the redraw option will be used, this is the safest but slowest option. Most modern hardware can handle ywrap, so this is most likely the option you want to use. If that fails you could try ypan, expect flickering using this though.
+</p>
+
+<p>
+To clarify, a complete kernel command line in /boot/grub/grub.conf, using the uvesafb driver, with the mtrr:3 and ywrap options using a resolution of 1600x1200, a color depth of 32 bits and a refresh rate of 70 Hz would be:
+</p>
+
+<p>
+File: /boot/grub/grub.conf
+</p>
+<pre>
+...
+kernel /boot/bzImage root=/dev/hda3 video=uvesafb:1600x1200-32@70,mtrr:3,ywrap
+...
+</pre>
+
+<p>
+Review the Kernel Documentation for more information.
+</p>
+
+
+
+<h1 id="toc_3">Ubuntu 10.10启动进入命令行模式</h1>
+
+<ol>
+<li>
+运行 sudo gedit /etc/default/grub
+
+<li>
+找到 GRUB_CMDLINE_LINUX_DEFAULT=”quiet splash”
+
+<li>
+改为 GRUB_CMDLINE_LINUX_DEFAULT=”quiet splash text”
+
+<li>
+运行 sudo update-grub
+
+<li>
+重启 over
+
+</ol>
+
+<p>
+根本不需要任何对GDM的操作
+</p>
+
+<p>
+另外 中文locale下在命令行界面显示中文可以非常简单的安装zhcon即可 还自带命令行下的中文输入法
+</p>
+<pre>
+sudo aptitude install zhcon
+zhcon --utf8
+</pre>
+<p>
+注意 一定要以 --utf8参数启动，zhcon默认是gb2312编码
+</p>
+
+<p>
+如果控制台下没有输入中文的需要 ，那么可以使用jfbterm ，显示速度更快，也漂亮一点
+</p>
+<pre>
+sudo aptitude install jfbterm
+jfbterm -q -c other,UTF-8,iconv,UTF-8
+</pre>
+<p>
+由于参数较长 可以写入文件并加上执行权限来运行
+</p>
+
+<p>
+另外 ，为了开启framebuffer ，以提升zhcon或者jfbterm的性能，还需要修改 /etc/default/grub 文件， 将GRUB_GFXMODE前面的注释(#号)去掉，后面的根据你的机器修改为 800x600或者1024x768，注意不要修改为宽屏分辨率，除非你用vbeinfo这个命令测试出显卡支持宽屏分辨率下的framebuffer
+</p>
+
+<p>
+例如 
+</p>
+<pre>
+GRUB_GFXMODE=800x600x16
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

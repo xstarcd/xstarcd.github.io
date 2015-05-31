@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>LVS NAT</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>LVS NAT</h1>
+
+<ul>
+<li>
+LVS NAT模式
+
+<ul>
+<li>
+注意：所有机器都在一个交换机，并且在一个网段，LVS服务器端最好开启数据包转发net.ipv4.ip_forward。
+
+<li>
+LVS:
+
+<ul>
+<li>
+eth0:192.168.0.38
+
+<li>
+eth1:192.168.3.2
+
+</ul>
+<li>
+RS:
+
+<ul>
+<li>
+rs1:192.168.3.4
+
+<li>
+rs2:192.168.3.3
+
+</ul>
+<li>
+内核开启转发：
+
+<ul>
+<li>
+<code>net.ipv4.ip_forward = 1</code>
+
+<li>
+<code>echo "1" &gt; /proc/sys/net/ipv4/ip_forward</code>
+
+</ul>
+<li>
+LVS主机iptables开启转发规则(不一定需要)：
+
+<ul>
+<li>
+<code>iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -j SNAT --to-source 192.168.3.2</code>
+
+</ul>
+<li>
+RS网关指向LVS的内网网口
+
+<ul>
+<li>
+<code>route add default gw 192.168.3.2</code>
+
+</ul>
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

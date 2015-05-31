@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>trap</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>trap</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Trap命令详解</a>
+<ul>
+<li><a href="#toc_0.1.1">三种反应方式</a>
+<li><a href="#toc_0.1.2">三种命令形式</a>
+<li><a href="#toc_0.1.3">Linux信号简介</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">Trap命令详解</h2>
+
+<p>
+原文：<a href="http://shihaiyang.iteye.com/blog/438130">http://shihaiyang.iteye.com/blog/438130</a>
+</p>
+
+<h3 id="toc_0.1.1">三种反应方式</h3>
+
+<p>
+trap捕捉到信号之后，可以有三种反应方式：
+</p>
+<ol>
+<li>
+执行一段程序来处理这一信号
+
+<li>
+接受信号的默认操作
+
+<li>
+忽视这一信号
+
+</ol>
+
+<h3 id="toc_0.1.2">三种命令形式</h3>
+
+<p>
+trap对上面三种方式提供了三种基本形式：
+</p>
+
+<pre class="brush:bash">
+# 第一种形式的trap命令在shell接收到signal list清单中数值相同的信号时，将执行双引号中的命令串。
+trap 'commands' signal-list
+trap "commands" signal-list
+
+# 为了恢复信号的默认操作，使用第二种形式的trap命令：
+trap signal-list
+
+# 第三种形式的trap命令允许忽视信号
+trap " " signal-list
+</pre>
+
+<ul>
+<li>
+注意：
+
+<li>
+对信号11(段违例)不能捕捉，因为shell本身需要捕捉该信号去进行内存的转储。
+
+<li>
+在trap中可以定义对信号0的处理(实际上没有这个信号)， shell程序在其终止(如执行exit语句)时发出该信号。
+
+<li>
+在捕捉到signal-list中指定的信号并执行完相应的命令之后，如果这些命令没有将shell程序终止的话，shell程序将继续执行收到信号时所执行的命令后面的命令，这样将很容易导致shell程序无法终止。
+
+</ul>
+
+<p>
+另外，在trap语句中，单引号和双引号是不同的，当shell程序第一次碰到trap语句时，将把commands中的命令扫描一遍。此时若commands是用单引号括起来的话，那么shell不会对commands中的变量和命令进行替换，否则commands中的变量和命令将用当时具体的值来替换。
+</p>
+
+<p>
+在有些情况下，我们不希望自己的shell脚本在运行时刻被中断，比如说我们写的shell脚本设为某一用户的默认shell，使这一用户进入系统后只能作某一项工作，如数据库备份，我们可不希望用户使用ctrl+C之类便进入到shell状态，做我们不希望做的事情。这便用到了信号处理。
+</p>
+
+<p>
+kill -l可以列出系统的信号名称，如下：
+</p>
+<pre>
+kill -l
+
+ 1) SIGHUP       2) SIGINT       3) SIGQUIT      4) SIGILL       5) SIGTRAP
+ 6) SIGABRT      7) SIGBUS       8) SIGFPE       9) SIGKILL     10) SIGUSR1
+11) SIGSEGV     12) SIGUSR2     13) SIGPIPE     14) SIGALRM     15) SIGTERM
+16) SIGSTKFLT   17) SIGCHLD     18) SIGCONT     19) SIGSTOP     20) SIGTSTP
+21) SIGTTIN     22) SIGTTOU     23) SIGURG      24) SIGXCPU     25) SIGXFSZ
+26) SIGVTALRM   27) SIGPROF     28) SIGWINCH    29) SIGIO       30) SIGPWR
+31) SIGSYS      34) SIGRTMIN    35) SIGRTMIN+1  36) SIGRTMIN+2  37) SIGRTMIN+3
+38) SIGRTMIN+4  39) SIGRTMIN+5  40) SIGRTMIN+6  41) SIGRTMIN+7  42) SIGRTMIN+8
+43) SIGRTMIN+9  44) SIGRTMIN+10 45) SIGRTMIN+11 46) SIGRTMIN+12 47) SIGRTMIN+13
+48) SIGRTMIN+14 49) SIGRTMIN+15 50) SIGRTMAX-14 51) SIGRTMAX-13 52) SIGRTMAX-12
+53) SIGRTMAX-11 54) SIGRTMAX-10 55) SIGRTMAX-9  56) SIGRTMAX-8  57) SIGRTMAX-7
+58) SIGRTMAX-6  59) SIGRTMAX-5  60) SIGRTMAX-4  61) SIGRTMAX-3  62) SIGRTMAX-2
+63) SIGRTMAX-1  64) SIGRTMAX
+</pre>
+
+<p>
+通常我们需要忽略的信号有四个，即：HUP, INT, QUIT, TSTP，也就是信号1, 2, 3, 24使用这样的语句可以使这些中断信号被忽略：
+</p>
+
+<p>
+<code>trap "" 1 2 3 24</code>
+或
+<code>trap "" HUP INT QUIT TSTP</code>
+</p>
+
+<p>
+用<code>trap ：1 2 3 24</code> 或 <code>trap HUP INT QUIT TSTP</code>使其回复默认值。
+</p>
+
+<p>
+用<code>stty -a</code>可以列出中断信号与键盘的对应，分别执行上面的命令后，运行
+<code>tail -f /etc/passwd</code>, 然后尝试用键盘中断，试试两种情况（默认和忽略）下有何不同。
+</p>
+<pre>
+stty -a
+
+-ignbrk brkint -ignpar -parmrk -inpck -istrip -inlcr -igncr icrnl -iuclc
+ixon -ixany -ixoff imaxbel
+isig icanon -xcase echo echoe echok -echonl -noflsh
+-tostop echoctl -echoprt echoke -defecho -flusho -pendin iexten
+opost -olcuc onlcr -ocrnl -onocr -onlret -ofill -ofdel tab3
+
+speed 38400 baud; rows 41; columns 134; line = 0;
+intr = ^C; quit = ^\; erase = ^?; kill = ^U; eof = ^D; eol = M-^?; eol2 = M-^?; swtch = M-^?; start = ^Q; stop = ^S; susp = ^Z;
+rprnt = ^R; werase = ^W; lnext = ^V; flush = ^O; min = 1; time = 0;
+-parenb -parodd cs8 hupcl -cstopb cread -clocal -crtscts
+-ignbrk brkint -ignpar -parmrk -inpck -istrip -inlcr -igncr icrnl ixon -ixoff -iuclc ixany imaxbel iutf8
+opost -olcuc -ocrnl onlcr -onocr -onlret -ofill -ofdel nl0 cr0 tab0 bs0 vt0 ff0
+isig icanon iexten echo echoe echok -echonl -noflsh -xcase -tostop -echoprt echoctl echoke
+</pre>
+
+<p>
+更方便的是我们可以用在shell中用trap定义我们自己的信号处理程序，就象在c中用signal一样，如：<code>trap “echo 'GO Away'” INT</code>。
+</p>
+<pre class="brush:bash">
+#/bin/bash
+# reboot.sh
+i=0;
+while(( 1 ))
+do
+    echo "hello $i"
+    sleep 1
+    (( i++ ))
+    trap "bash $0 &amp;&amp; kill $$" QUIT
+done
+echo haha
+
+./reboot.sh
+hello 0
+hello 1
+hello 2
+hello 3
+Quit
+hello 0
+hello 1
+hello 2
+Quit
+hello 0
+</pre>
+
+<p>
+这样<code>^\</code>就可以reboot程序了<sup><small><em></small></sup>，不知道linux重启是不是trap到某个信号了就这样...当然是类似,这个脚本太east了.有时间加机会了看看<sup><small></em></small></sup>
+</p>
+
+<h3 id="toc_0.1.3">Linux信号简介</h3>
+<table>
+<tr>
+<td>
+SIGHUP
+</td>
+<td>
+本信号在用户终端连接(正常或非正常)结束时发出, 通常是在终端的控制进程结束时,通知同一session内的各个作业, 这时它们与控制终端不再关联.
+</td>
+</tr>
+<tr>
+<td>
+SIGINT
+</td>
+<td>
+程序终止(interrupt)信号, 在用户键入INTR字符(通常是Ctrl-C)时发出
+</td>
+</tr>
+<tr>
+<td>
+SIGQUIT
+</td>
+<td>
+和SIGINT类似, 但由QUIT字符(通常是Ctrl-\)来控制. 进程在因收到SIGQUIT退出时会产生core文件, 在这个意义上类似于一个程序错误信号.
+</td>
+</tr>
+<tr>
+<td>
+SIGILL
+</td>
+<td>
+执行了非法指令. 通常是因为可执行文件本身出现错误, 或者试图执行数据段. 堆栈溢出时也有可能产生这个信号.
+</td>
+</tr>
+<tr>
+<td>
+SIGTRAP
+</td>
+<td>
+由断点指令或其它trap指令产生. 由debugger使用.
+</td>
+</tr>
+<tr>
+<td>
+SIGABRT
+</td>
+<td>
+程序自己发现错误并调用abort时产生.
+</td>
+</tr>
+<tr>
+<td>
+SIGIOT
+</td>
+<td>
+在PDP-11上由iot指令产生, 在其它机器上和SIGABRT一样.
+</td>
+</tr>
+<tr>
+<td>
+SIGBUS
+</td>
+<td>
+非法地址, 包括内存地址对齐(alignment)出错. eg: 访问一个四个字长的整数, 但其地址不是4的倍数.
+</td>
+</tr>
+<tr>
+<td>
+SIGFPE
+</td>
+<td>
+在发生致命的算术运算错误时发出. 不仅包括浮点运算错误, 还包括溢出及除数为0等其它所有的算术的错误.
+</td>
+</tr>
+<tr>
+<td>
+SIGKILL
+</td>
+<td>
+用来立即结束程序的运行. 本信号不能被阻塞, 处理和忽略.
+</td>
+</tr>
+<tr>
+<td>
+SIGUSR1
+</td>
+<td>
+留给用户使用
+</td>
+</tr>
+<tr>
+<td>
+SIGSEGV
+</td>
+<td>
+试图访问未分配给自己的内存,或试图往没有写权限的内存地址写数据.
+</td>
+</tr>
+<tr>
+<td>
+SIGUSR2
+</td>
+<td>
+留给用户使用
+</td>
+</tr>
+<tr>
+<td>
+SIGPIPE
+</td>
+<td>
+Broken pipe
+</td>
+</tr>
+<tr>
+<td>
+SIGALRM
+</td>
+<td>
+时钟定时信号, 计算的是实际的时间或时钟时间. alarm函数使用该信号.
+</td>
+</tr>
+<tr>
+<td>
+SIGTERM
+</td>
+<td>
+程序结束(terminate)信号, 与SIGKILL不同的是该信号可以被阻塞和处理. 通常用来要求程序自己正常退出. shell命令kill缺省产生这个信号.
+</td>
+</tr>
+<tr>
+<td>
+SIGCHLD
+</td>
+<td>
+子进程结束时, 父进程会收到这个信号.
+</td>
+</tr>
+<tr>
+<td>
+SIGCONT
+</td>
+<td>
+让一个停止(stopped)的进程继续执行. 本信号不能被阻塞. 可以用一个handler来让程序在由stopped状态变为继续执行时完成特定的工作. 例如, 重新显示提示符
+</td>
+</tr>
+<tr>
+<td>
+SIGSTOP
+</td>
+<td>
+停止(stopped)进程的执行. 注意它和terminate以及interrupt的区别: 该进程还未结束, 只是暂停执行. 本信号不能被阻塞, 处理或忽略.
+</td>
+</tr>
+<tr>
+<td>
+SIGTSTP
+</td>
+<td>
+停止进程的运行, 但该信号可以被处理和忽略. 用户键入SUSP字符时(通常是Ctrl-Z)发出这个信号
+</td>
+</tr>
+<tr>
+<td>
+SIGTTIN
+</td>
+<td>
+当后台作业要从用户终端读数据时, 该作业中的所有进程会收到SIGTTIN信号. 缺省时这些进程会停止执行.
+</td>
+</tr>
+<tr>
+<td>
+SIGTTOU
+</td>
+<td>
+类似于SIGTTIN, 但在写终端(或修改终端模式)时收到.
+</td>
+</tr>
+<tr>
+<td>
+SIGURG
+</td>
+<td>
+有紧急数据或out-of-band数据到达socket时产生.
+</td>
+</tr>
+<tr>
+<td>
+SIGXCPU
+</td>
+<td>
+超过CPU时间资源限制. 这个限制可以由getrlimit/setrlimit来读取/改变
+</td>
+</tr>
+<tr>
+<td>
+SIGXFSZ
+</td>
+<td>
+超过文件大小资源限制.
+</td>
+</tr>
+<tr>
+<td>
+SIGVTALRM
+</td>
+<td>
+虚拟时钟信号. 类似于SIGALRM, 但是计算的是该进程占用的CPU时间.
+</td>
+</tr>
+<tr>
+<td>
+SIGPROF
+</td>
+<td>
+类似于SIGALRM/SIGVTALRM, 但包括该进程用的CPU时间以及系统调用的时间.
+</td>
+</tr>
+<tr>
+<td>
+SIGWINCH
+</td>
+<td>
+窗口大小改变时发出.
+</td>
+</tr>
+<tr>
+<td>
+SIGIO
+</td>
+<td>
+文件描述符准备就绪, 可以开始进行输入/输出操作.
+</td>
+</tr>
+<tr>
+<td>
+SIGPWR
+</td>
+<td>
+Power failure
+</td>
+</tr>
+</table>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

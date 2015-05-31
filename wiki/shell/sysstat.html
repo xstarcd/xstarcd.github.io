@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>sysstat 搜集和报告系统活动</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>sysstat 搜集和报告系统活动</h1>
+
+<p>
+sar命令用来搜集、报告和储存系统活动信息。
+</p>
+<pre class="brush:bash">
+sar -o sar_`hostname`_`date +'%Y%m%d_%H%M%S'` 10 8640 &gt;/dev/null 2&gt;&amp;1 &amp;
+
+# MySQL性能分析
+./tuning-primer.sh all &gt;tuning-primer_`date +'%Y%m%d_%H%M%S'`.txt
+mysql -uroot -pxxxxx -e 'show processlist;'
+
+# CPU:
+sar -u all -f datafile
+# 网络：
+sar -n DEV -f datafile|grep -E "eth0|IFACE"
+# 内存：
+sar -r -f  datafile
+# 显示最近24小时网络计数器
+sar -n DEV -f /var/log/sa/sa24 | more
+</pre>
+<ul>
+<li>
+用sar显示实时情况
+<pre>
+sar 4 5
+
+输出样例：
+Linux 2.6.18-128.1.14.el5 (www03.nixcraft.in)   06/26/2009
+06:45:12 PM       CPU     %user     %nice   %system   %iowait    %steal     %idle
+06:45:16 PM       all      2.00      0.00      0.22      0.00      0.00     97.78
+06:45:20 PM       all      2.07      0.00      0.38      0.03      0.00     97.52
+06:45:24 PM       all      0.94      0.00      0.28      0.00      0.00     98.78
+06:45:28 PM       all      1.56      0.00      0.22      0.00      0.00     98.22
+06:45:32 PM       all      3.53      0.00      0.25      0.03      0.00     96.19
+Average:          all      2.02      0.00      0.27      0.01      0.00     97.70
+</pre>
+
+<li>
+相关链接：<a href="http://www.cyberciti.biz/tips/howto-write-system-utilization-data-to-file.html">How to collect Linux system utilization data into a file</a>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

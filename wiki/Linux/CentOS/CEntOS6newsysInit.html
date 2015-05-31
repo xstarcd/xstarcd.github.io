@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>CentOS系统新安装</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">CentOS系统新安装</a>
+<ul>
+<li><a href="#toc_1.1">RedHat 6.4改用CentOS 6.4源</a>
+<li><a href="#toc_1.2">系统基本设置</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">CentOS系统新安装</h1>
+
+
+
+<h2 id="toc_1.1">RedHat 6.4改用CentOS 6.4源</h2>
+<pre class="brush:bash">
+# 下载CentOS相关包
+wget http://mirrors.aliyun.com/centos/6.6/os/x86_64/Packages/python-iniparse-0.3.1-2.1.el6.noarch.rpm
+wget http://mirrors.aliyun.com/centos/6.6/os/x86_64/Packages/yum-metadata-parser-1.1.2-16.el6.x86_64.rpm
+wget http://mirrors.aliyun.com/centos/6.6/os/x86_64/Packages/yum-3.2.29-60.el6.centos.noarch.rpm
+wget http://mirrors.aliyun.com/centos/6.6/os/x86_64/Packages/yum-plugin-fastestmirror-1.1.30-30.el6.noarch.rpm
+wget http://mirrors.aliyun.com/centos/6.6/os/x86_64/Packages/centos-release-6-6.el6.centos.12.2.x86_64.rpm
+
+# 删除redhat原有包
+rpm -qa | grep yum | xargs rpm -e --nodeps
+rpm -qa | grep redhat-release | xargs rpm -e --nodeps
+
+# 安装CentOS相关包、导入key
+rpm -ivh python-iniparse-0.3.1-2.1.el6.noarch.rpm
+rpm -ivh yum-metadata-parser-1.1.2-16.el6.x86_64.rpm
+rpm -ivh yum-3.2.29-60.el6.centos.noarch.rpm yum-plugin-fastestmirror-1.1.30-30.el6.noarch.rpm
+rpm -ivh centos-release-6-6.el6.centos.12.2.x86_64.rpm
+rpm --import http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-6
+
+清除并重新获取缓存
+yum clean all
+yum makecache
+</pre>
+
+<h2 id="toc_1.2">系统基本设置</h2>
+<ul>
+<li>
+hostname
+<pre class="brush: bash">
+h="myworkv1" \
+&amp;&amp; hostname $h \
+&amp;&amp; sed -i.bak "s/\(HOSTNAME=\).*$/\1$h/g" /etc/sysconfig/network \
+&amp;&amp; grep "127.0.0.1.*$h" /etc/hosts || sed -i "s/\(127.0.0.1.*$\)/\1 $h/g" /etc/hosts \
+&amp;&amp; ping -c 4 $h
+</pre>
+
+<li>
+本地光盘源
+<pre>
+#rhel6,local.repo
+[local-Server]
+name=local-Server
+baseurl=file:///media/Server
+enabled=1
+gpgcheck=0
+[local-HA]
+name=local-HA
+baseurl=file:///media/HighAvailability
+enabled=1
+gpgcheck=0
+[local-LB]
+name=local-LB
+baseurl=file:///media/LoadBalancer
+enabled=1
+gpgcheck=0
+[local-RS]
+name=local-RS
+baseurl=file:///media/ResilientStorage
+enabled=1
+gpgcheck=0
+</pre>
+
+<li>
+软件源设置
+<pre class="brush: bash">
+yum -y install wget
+
+cd /etc/yum.repos.d/ \
+&amp;&amp; wget http://mirrors.163.com/.help/CentOS6-Base-163.repo \
+&amp;&amp; yum makecache \
+&amp;&amp; yum update
+</pre>
+
+<li>
+常用工具软件安装
+<pre class="brush: bash">
+yum -y install screen curl vim gzip bzip2 p7zip rsync ntpdate openssh-clients crontabs yum-utils telnet traceroute
+
+service crond start
+chkconfig crond on
+
+cat &gt;&gt; ~/.screenrc &lt;&lt;EOF
+startup_message off
+defscrollback 1024
+caption always "%-w%{= BW}%50&gt;%n %t%{-}%+w%&lt;"
+vbell off
+EOF
+</pre>
+
+<li>
+编译环境
+<pre class="brush: bash">
+yum -y install gcc gcc-c++ autoconf automake
+</pre>
+
+<li>
+关闭ipv6
+<pre class="brush: bash">
+echo "net.ipv6.conf.all.disable_ipv6 = 1" &gt;&gt; /etc/sysctl.conf
+echo "net.ipv6.conf.default.disable_ipv6 = 1" &gt;&gt; /etc/sysctl.conf
+sysctl -p
+chkconfig ip6tables off
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>keepalived misc_check</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>keepalived misc_check</h1>
+
+<ul>
+<li>
+keepalived.conf中配置
+<pre class="brush:bash">
+virtual_server 172.17.19.59 9090 {
+    delay_loop 6
+    lb_algo wlc
+    lb_kind DR
+    persistence_timeout 120
+    protocol TCP
+    ha_suspend
+
+    real_server 172.17.14.16 9090 {
+        weight 1
+        #TCP_CHECK {
+        #    connect_port 9090
+        #    connect_timeout 3
+        #    nb_get_retry 3
+        #    delay_before_retry 3
+        #}
+        MISC_CHECK {
+            misc_path "/usr/local/bin/Keepalived_MISC_TCPCHECK.sh 172.17.14.16 9092 ''"
+            #misc_path "/usr/local/bin/Keepalived_MISC_TCPCHECK.sh 172.17.19.228 9090 'Health_Check' 'imOK'"
+            #misc_path "/usr/local/bin/Keepalived_MISC_HTTPGETCHECK.sh 172.16.17.100 8099 '/healthCheckWS?q=Health_Check' '1593a0d165dbb2ce680fac0bca96c78c'"
+            misc_timeout 3
+        }
+    } # end real_server
+} # end virtual_server 172.17.19.59:9090
+</pre>
+
+<li>
+检查脚本:/usr/local/bin/Keepalived_MISC_TCPCHECK.sh 
+<pre class="brush:bash">
+#!/bin/sh
+#Keepalived_MISC_TCPCHECK.sh
+#EXITcode:
+# 0 success
+# 1 connect error
+# 2 return error
+# 3 script run error
+
+if [ -z "$1" -o -z "$2" ];then
+    echo "$0 IP PORT SendText OkMsg"
+    exit 3
+fi
+IP=$1
+PORT=$2
+SendText=$3
+OkMsg=$4
+LOG=/var/log/Keepalived_TCPcheck.log
+#LOG=/dev/null
+export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
+RMsg=`echo -n "$SendText"|nc -w 2 $IP $PORT 2&gt;&amp;1`
+RCode=$?
+EXITcode=0
+if [ "$RCode" != "0" ];then
+    EXITcode=1
+elif [ -n "$OkMsg" -a "$RMsg" != "$OkMsg" ];then
+    EXITcode=2
+fi
+echo "`date +"%Y-%m-%d %H:%M:%S"` $1 $2 $3 $4,RCode=$RCode,RMsg=$RMsg,EXITcode=$EXITcode" &gt;&gt; $LOG
+exit $EXITcode
+</pre>
+
+<li>
+Keepalived_TCPcheck.log日志回滚
+<pre class="brush:bash">
+cat &gt; /etc/logrotate.d/Keepalived_TCPcheck &lt;&lt;EOF
+/var/log/Keepalived_TCPcheck.log {
+    copytruncate
+    weekly
+    rotate 20
+    compress
+    missingok
+    size 20M
+}
+EOF
+</pre>
+
+<li>
+2014-11-11: GAEI_AG健康检查接口:<a href="http://{ip}:8099/healthCheckWS?q=Health_Check">http://{ip}:8099/healthCheckWS?q=Health_Check</a>
+
+<li>
+因接口未知原因使用Keepalived自有的HTTP_GET方法失败，自定义检查脚本:/usr/local/bin/Keepalived_MISC_HTTPGETCHECK.sh 
+<pre class="brush:bash">
+#!/bin/sh
+# Keepalived_MISC_HTTPGETCHECK.sh
+# get OkMsgMD5:
+# curl 'http://172.16.17.100:8099/healthCheckWS?q=Health_Check'|md5sum|awk '{print $1}'
+#EXITcode:
+# 0 success
+# 1 connect error
+# 2 return error
+# 3 script run error
+
+if [ -z "$1" -o -z "$2" -o -z "$3" ];then
+    echo "$0 IP PORT URI [OkMsgMD5]"
+    exit 3
+fi
+
+IP="$1"
+PORT="$2"
+URI="$3"
+OkMsgMD5="$4"
+
+LOG=/var/log/Keepalived_TCPcheck.log
+#LOG=/dev/null
+export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
+RMsgMD5=`curl -s -S -m 2 "http://$IP:$PORT$URI" 2&gt;&gt;"$LOG"|md5sum|awk '{print $1}'`
+RCode=$?
+EXITcode=0
+if [ "$RCode" != "0" ];then
+    EXITcode=$RCode
+elif [ -n "$OkMsgMD5" -a "$RMsgMD5" != "$OkMsgMD5" ];then
+    EXITcode=2
+fi
+echo "`date +"%Y-%m-%d %H:%M:%S"` $IP $PORT $URI $OkMsgMD5,RCode=$RCode,RMsgMD5=$RMsgMD5,EXITcode=$EXITcode" &gt;&gt; $LOG
+exit $EXITcode
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

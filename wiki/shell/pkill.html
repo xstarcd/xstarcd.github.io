@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>pkill</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>pkill</h1>
+
+<ul>
+<li>
+Linux系统root用户可强制踢制其它登录用户
+<pre class="brush:bash">
+# 首先可用w命令查看登录用户信息，显示信息如下：
+
+ 20:51:34 up 70 days,  4:22,  4 users,  load average: 0.56, 0.18, 0.10
+ USER     TTY      FROM              LOGIN@   IDLE   JCPU   PCPU WHAT
+ dfjsb    tty2     -                08May10 70days 51.37s  0.53s -bash
+ dfjsb    tty3     -                08May10 70days  2:42   0.21s -bash
+ dfjsb    tty1     -                08May10 70days  6:53m  0.92s -bash
+ dfjsb    pts/0    125.69.149.152   20:46    0.00s  0.35s  0.01s sshd: dfjsb [priv]
+
+# 强制踢人命令格式：pkill -kill -t tty
+# tty　所踢用户的TTY
+# 如上踢出tty2上的用户的命令为： pkill -kill -t tty2
+# 踢除当前所有登录，只保留当前使用的tty/pts
+
+Me="`tty|sed 's#/dev/##g'`";w|awk '{if($2~"^pts/|^tty")print $2}'|grep -v "$Me"|xargs -I {} pkill -kill -t {};w
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>lvs的持久连接</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">lvs持久性工作原理和配置</a>
+<ul>
+<li><a href="#toc_1.1">LVS持久连接技术</a>
+<li><a href="#toc_1.2">如何查看这些值？</a>
+<li><a href="#toc_1.3">他们是如何工作的？</a>
+<li><a href="#toc_1.4">如何设置这些值？</a>
+</ul>
+<li><a href="#toc_2">lvs的持久连接</a>
+<ul>
+<li><a href="#toc_2.1">PCC</a>
+<li><a href="#toc_2.2">PPC</a>
+<li><a href="#toc_2.3">防火墙标记</a>
+</ul>
+<li><a href="#toc_3">关于arp_announce和arp_ignore</a>
+<ul>
+<li><a href="#toc_3.1">arp_announce</a>
+<li><a href="#toc_3.2">arp_ignore</a>
+</ul>
+<li><a href="#toc_4">关于连接追踪</a>
+</ul>
+</div>
+
+<h1 id="toc_1">lvs持久性工作原理和配置</h1>
+
+<ul>
+<li>
+作者: ISADBA|FH.CN 日期: 06/01/2012
+
+<li>
+转载请注明：
+
+<ul>
+<li>
+作者：ISADBA.COM|FH.CN
+
+<li>
+BLOG：<a href="http://isadba.com">http://isadba.com</a>
+
+<li>
+原文：<a href="http://isadba.com/?p=67">http://isadba.com/?p=67</a>
+
+</ul>
+</ul>
+
+<h2 id="toc_1.1">LVS持久连接技术</h2>
+
+<p>
+lvs的持久性连接有两方面：
+</p>
+<ol>
+<li>
+把同一个client的请求信息记录到lvs的hash表里，保存时间使用persistence_timeout控制，单位为秒。persistence_granularity 参数是配合persistence_timeout的，在某些情况特别有用，他的值是子网掩码，表示持久连接的粒度，默认是255.255.255.255，也就是单独的client ip，如果改成，255.255.255.0就是client ip一个网段的都会被分配到同一个real server。
+
+<li>
+一个连接创建后空闲时的超时时间，这个时间为3种
+
+<ul>
+<li>
+tcp的空闲超时时间
+
+<li>
+lvs收到客户端tcp fin的超时时间
+
+<li>
+udp的超时时间
+
+</ul>
+</ol>
+
+<h2 id="toc_1.2">如何查看这些值？</h2>
+<pre class="brush:bash">
+ipvsadm  # 可以查看连接空闲的超时时间(persistent 10)。
+
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+-&gt; RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  122.225.32.142:http rr persistent 10
+-&gt; 122.225.32.137:http          Route   1      0          1
+-&gt; 122.225.32.136:http          Route   1      0          0
+
+ipvsadm -L -timeout  # 查看tcp tcpfin udp的超时时间
+
+Timeout (tcp tcpfin udp): 900 120 300
+</pre>
+
+<h2 id="toc_1.3">他们是如何工作的？</h2>
+
+<pre>
+ipvsadm -Lcn
+
+IPVS connection entries
+pro expire state       source             virtual            destination
+TCP 00:57  NONE        110.184.96.173:0   122.225.32.142:80  122.225.32.136:80
+TCP 01:57  FIN_WAIT    110.184.96.173:54568 122.225.32.142:80  122.225.32.136:80
+</pre>
+
+<p>
+当一个client访问vip的时候，ipvs或记录一条状态为NONE的信息，expire初始值是persistence_timeout的值，然后根据时钟主键变小，在以下记录存在期间，同一client ip连接上来，都会被分配到同一个后端。
+</p>
+
+<p>
+FIN_WAIT的值就是tcp tcpfin udp的超时时间，当NONE的值为0时，如果FIN_WAIT还存在，那么NONE的值会从新变成60秒，再减少，直到FIN_WAIT消失以后，NONE才会消失，只要NONE存在，同一client的访问，都会分配到统一real server。
+</p>
+
+<h2 id="toc_1.4">如何设置这些值？</h2>
+
+<ul>
+<li>
+persistence_timeout可以通过以下两种方法设置
+<pre>
+ipvsadm -A -t 192.168.20.154:80 -s rr -p 60
+</pre>
+
+</ul>
+<p>
+注意：上面命令中红色标记的80端口，表示同一客户端访问服务器的80端口，会被定义到同一个real server，如果把80端口改为0，那么同一客户端访问服务器的任何服务都会被转发到同一real server。
+</p>
+
+<p>
+修改keepalived配置文件，在虚拟服务器配置下面加入<code>persistence_timeout 60</code>
+</p>
+
+<ul>
+<li>
+tcp tcpfin udp的配置
+
+</ul>
+
+<pre>
+ipvsadm –set tcp tcpfin udp
+
+# ipvsadm –set 120 50 50 //实例
+</pre>
+
+<p>
+建议：tcpfin的值最好小于persistence_timeout的值，这样比较方便计算。
+</p>
+
+<ul>
+<li>
+lvs持久性参考资料：
+
+</ul>
+
+<p>
+<a href="http://www.linuxvirtualserver.org/docs/persistence.html">http://www.linuxvirtualserver.org/docs/persistence.html</a>
+</p>
+
+
+<h1 id="toc_2">lvs的持久连接</h1>
+
+<p>
+本文出自 “成长全记录” 博客，请务必保留此出处<a href="http://lymrg.blog.51cto.com/1551327/684681">http://lymrg.blog.51cto.com/1551327/684681</a>
+</p>
+
+<p>
+由于HTTP是一种无状态协议，每次请求完毕之后就立即断开了，当用户浏览购物网站挑选商品的时候，看到一件商品加入购物车，此过程被重定向到了REALSERVER1上面来，当把第二件商品加入购物车又被重定向到了REALSERVER2上面，最后结账的时候在REALSERVER2上面，只有一件商品，这显然是用户无法接受的，此时就需要一种持久连接机制，来把同一用户的HTTP请求在超时时间内都重定向到同一台REALSERVER，超时时间可以自己定义，比如说2个小时，在超时时间内服务器会不断追踪用户的访问请求，把某一用户的所有请求都转发到同一台REALSERVER上面，如果超时时间过后用户依然在访问，则默认按照每次两分钟的方式无限加长
+</p>
+
+<p>
+这里的所有操作都以DR模型为例，试验环境参见：<a href="http://lymrg.blog.51cto.com/1551327/660925">http://lymrg.blog.51cto.com/1551327/660925</a>
+</p>
+
+<p>
+对于LVS的持久连接来说常见的分为三种PCC,PPC和基于防火墙标记的持久连接，下面我们就来分别讨论
+</p>
+
+<h2 id="toc_2.1">PCC</h2>
+
+<p>
+PCC用来实现把某个用户的所有访问在超时时间内定向到同一台REALSERVER，这种方式在实际中不常用
+</p>
+<pre>
+ipvsadm -A -t 192.168.0.1:0 -s wlc -p 600(单位是s)
+ipvsadm -a -t 192.168.0.1:0 -r 192.168.1.2 -w 4 -g
+ipvsadm -a -t 192.168.0.1:0 -r 192.168.1.3 -w 2 -g
+</pre>
+<p>
+此时测试一下会发现通过HTTP访问VIP和通过SSH登录VIP的时候都被定向到了同一台REALSERVER上面了
+</p>
+
+<h2 id="toc_2.2">PPC</h2>
+
+<p>
+PPC用来把某个用户对同一服务的访问在超时时间内定向到同一台REALSERVER
+</p>
+<pre>
+ipvsadm -A -t 192.168.0.1:80 -s wlc -p 600
+ipvsadm -a -t 192.168.0.1:80 -r 192.168.1.2 -w 4 -g
+ipvsadm -a -t 192.168.0.1:80 -r 192.168.1.3 -w 2 -g
+
+ipvsadm -A -t 192.168.0.1:22 -s wlc -p 300
+ipvsadm -a -t 192.168.0.1:22 -r 192.168.1.2 -g
+ipvsadm -a -t 192.168.0.1:22 -r 192.168.1.3 -g
+</pre>
+<p>
+此时再测试会发现某个用户在超时时间内对于某个服务的访问都会被重定向到同一台REALSERVER上面
+</p>
+
+<h2 id="toc_2.3">防火墙标记</h2>
+
+<p>
+基于防火墙标记的持久连接
+</p>
+
+<p>
+对于电子商务网站来说，用户在挑选商品的时候使用的是80端口来浏览的，当付款的时候则是通过443的ssl加密的方式，当然当用户挑选完商品付款的时候我们当然不希望https的443跳转到另外一台REALSERVER，很显然应该是同一REALSERVER才对，这时候就要用到基于防火墙标记的持久连接，通过定义端口的姻亲关系来实现
+</p>
+
+<ol>
+<li>
+首先两个REALSERVER要配置SSL，很明显证书应该也是一样的
+
+<li>
+定义端口的姻亲关系，给80和443端口打上同样的防火墙标记
+
+<li>
+配置实现基于防火墙标记的LVS
+
+</ol>
+
+<p>
+<code>yum install mod_ssl</code> 两个服务器上面都安装一下
+</p>
+
+<p>
+在REALSERVER1上面。也就是192.168.1.2上面如下操作
+</p>
+<pre>
+cd /etc/pki/tls/certs/
+make httpd.pem  #此种SSL证书的生成方式只为测试，在实际操作中构建
+</pre>
+<p>
+SSL参见我博客前面的完整步骤
+</p>
+
+<p>
+填写相关信息，主机名称一定要和VIP在互联网上面解析的DNS名称一致
+</p>
+<pre>
+cp httpd.pem /etc/httpd/
+vi /etc/httpd/conf.d/ssl.conf
+
+# 找到如下行启用并且修改
+DocumentRoot "/var/www/html"
+ServerName www.test.org:443   #这里修改为你得服务器名称
+
+# 修改证书路径
+SSLCertificateFile /etc/httpd/httpd.pem
+SSLCertificateKeyFile /etc/httpd/httpd.pem
+
+scp httpd.pem 192.168.1.3:/etc/httpd
+scp /etc/httpd/conf.d/ssl.conf 192.168.1.3:/etc/httpd/conf.d/
+</pre>
+
+<p>
+防火墙添加mark
+</p>
+<pre>
+iptables -t mangle -A PREROUTING -d 192.168.0.1 -p tcp --dport 80 -j MARK --set-mark 10 (0-99范围)
+iptables -t mangel -A PREROUTING -d 192.168.0.1 -p tcp --dport 443 -j MARK --set-mark 10
+ipvsadm -A -f 10 -s wlc -p 600
+ipvsadm -a -f 10 -r 192.168.1.2 -g -w 4
+ipvsadm -a -f 10 -r 192.168.1.3 -g -w 2
+</pre>
+
+<p>
+本文出自 “成长全记录” 博客，请务必保留此出处<a href="http://lymrg.blog.51cto.com/1551327/684681">http://lymrg.blog.51cto.com/1551327/684681</a>
+</p>
+
+
+<h1 id="toc_3">关于arp_announce和arp_ignore</h1>
+
+<p>
+<a href="http://lymrg.blog.51cto.com/1551327/660925">http://lymrg.blog.51cto.com/1551327/660925</a>
+</p>
+
+<p>
+VS/DR或VS/TUN应用的一种模型中（所有机器都在同一个物理网络），所有机器（包括Director和RealServer）都使用了一个额外的IP地址，即VIP。
+</p>
+
+<p>
+当一个客户端向VIP发出一个连接请求时，此请求必须要连接至Director的VIP，而不能是RealServer的。因为，LVS的主要目标就是要Director负责调度这些连接请求至RealServer的。因此，在Client发出至VIP的连接请求后，只能由Director将其MAC地址响应给客户端（也可能是直接与Director连接的路由设备），而Director则会相应的更新其ipvsadm table以追踪此连接，而后将其转发至后端的RealServer之一。
+</p>
+
+<p>
+如果Client在请求建立至VIP的连接时由某RealServer响应了其请求，则Client会在其MAC table中建立起一个VIP至RealServer的对就关系，并以至进行后面的通信。此时，在Client看来只有一个RealServer而无法意识到其它服务器的存在。
+</p>
+
+<p>
+为了解决此问题，可以通过在路由器上设置其转发规则来实现(静态的MAC-IP绑定)。当然，如果没有权限访问路由器并做出相应的设置，则只能通过传统的本地方式来解决此问题了。
+这些方法包括：
+</p>
+<ol>
+<li>
+禁止RealServer响应对VIP的ARP请求；
+
+<li>
+在RealServer上隐藏VIP，以使得它们无法获知网络上的ARP请求；
+
+<li>
+基于“透明代理（Transparent Proxy）”或者“fwmark （firewall mark）”；
+
+<li>
+禁止ARP请求发往RealServers；
+
+</ol>
+
+<p>
+传统认为，解决ARP问题可以基于网络接口，也可以基于主机来实现。Linux采用了基于主机的方式，因为其可以在大多场景中工作良好，但LVS却并不属于这些场景之一，因此，过去实现此功能相当麻烦。现在可以通过设置arp_ignore，arp_announce，这变得相对简单的多了。
+</p>
+
+<p>
+Linux 2.2和2.4（2.4.26之前的版本）的内核解决“ARP问题”的方法各不相同，且比较麻烦。幸运的是，2.4.26和2.6的内核中引入了两个新的调整ARP栈的标志（device flags）：arp_announce和arp_ignore。基于此，在DR/TUN的环境中，所有IPVS相关的设定均可使用arp_announce=2和arp_ignore=1/2/3来解决“ARP问题”了。以下是官方说明：
+</p>
+<pre>
+arp_annouce：Define different restriction levels for announcing the local source IP address from IP packets in ARP requests sent on interface；
+0 - (default) Use any local address, configured on any interface.
+1 - Try to avoid local addresses that are not in the target's subnet for this interface. 
+2 - Always use the best local address for this target.
+
+arp_ignore: Define different modes for sending replies in response to received ARP requests that resolve local target IP address.
+0 - (default): reply for any local target IP address, configured on any interface.
+1 - reply only if the target IP address is local address configured on the incoming interface.
+2 - reply only if the target IP address is local address configured on the incoming interface and both with the sender's IP address are part from same subnet on this interface.
+3 - do not reply for local address configured with scope host,only resolutions for golbal and link addresses are replied.
+4-7 - reserved
+8 - do not reply for all local addresses
+</pre>
+
+<h2 id="toc_3.1">arp_announce</h2>
+<p>
+定义了网卡在向外宣告自己的MAC-IP时候的限制级别，有三个值：
+</p>
+<ul>
+<li>
+0：默认值，不管哪块网卡接收到了ARP请求，只要发现本机有这个MAC都给与响应
+
+<li>
+1：尽量避免响应ARP请求中MAC不是本网卡的，一个主机有多块网卡，其中一块网卡接收到了ARP请求，发现所请求的MAC是本机另一块网卡的，这个时候接收到ARP请求的这块网卡就尽量避免响应
+
+<li>
+2：总是使用最合适的网卡来响应，一个主机有多块网卡，其中一块网卡接收到了ARP请求，发现所请求的MAC是本机另一块网卡的，这个时候接收到ARP请求的这块网卡就一定不响应，只有发现请求的MAC是自己的才给与响应
+
+</ul>
+
+<h2 id="toc_3.2">arp_ignore</h2>
+<p>
+定义了网卡在响应外部ARP请求时候的响应级别，这里有8个值，但我们只使用了2个
+</p>
+
+<ul>
+<li>
+0：默认值，不管哪块网卡接收到了ARP请求，只要发现本机有这个MAC都给与响应
+
+<li>
+1：总是使用最合适的网卡来响应，一个主机有多块网卡，其中一块网卡接收到了ARP请求，发现所请求的MAC是本机另一块网卡的，这个时候接收到ARP请求的这块网卡就一定不响应，只有发现请求的MAC是自己的才给与响应
+
+</ul>
+
+<p>
+在RealServers上，VIP配置在本地回环接口lo上。如果回应给Client的数据包路由到了eth0接口上，则arp通告或请应该通过eth0实现，因此，需要在sysctl.conf文件中定义如下配置：
+</p>
+<pre>
+vim /etc/sysctl.conf
+net.ipv4.conf.eth0.arp_ignore = 1
+net.ipv4.conf.eth0.arp_announce = 2
+net.ipv4.conf.all.arp_ignore = 1
+net.ipv4.conf.all.arp_announce = 2
+</pre>
+
+<p>
+以上选项需要在启用VIP之前进行，否则，则需要在Drector上清空arp表才能正常使用LVS。
+</p>
+
+<h1 id="toc_4">关于连接追踪</h1>
+
+<p>
+到达Director的数据包首先会经过PREROUTING，而后经过路由发现其目标地址为本地某接口的地址，因此，接着就会将数据包发往INPUT(LOCAL_IN HOOK)。此时，正在运行内核中的ipvs（始终监控着LOCAL_IN HOOK）进程会发现此数据包请求的是一个集群服务，因为其目标地址是VIP。于是，此数据包的本来到达本机(Director)目标行程被改变为经由POSTROUTING HOOK发往RealServer。这种改变数据包正常行程的过程是根据IPVS表(由管理员通过ipvsadm定义)来实现的。
+</p>
+
+<p>
+如果有多台Realserver，在某些应用场景中，Director还需要基于“连接追踪”实现将由同一个客户机的请求始终发往其第一次被分配至的Realserver，以保证其请求的完整性等。其连接追踪的功能由Hash table实现。Hash table的大小等属性可通过下面的命令查看：
+</p>
+
+<p>
+<code>ipvsadm -Lcn</code>
+</p>
+
+<p>
+为了保证其时效性，Hash table中“连接追踪”信息被定义了“生存时间”。LVS为记录“连接超时”定义了三个计时器：
+</p>
+<ol>
+<li>
+空闲TCP会话；
+
+<li>
+客户端正常断开连接后的TCP会话；
+
+<li>
+无连接的UDP数据包（记录其两次发送数据包的时间间隔）；
+
+</ol>
+
+<p>
+上面三个计时器的默认值可以由类似下面的命令修改，其后面的值依次对应于上述的三个计时器：
+</p>
+
+<p>
+<code>ipvsadm --set 28800 30 600</code>
+</p>
+
+<p>
+数据包在由Direcotr发往Realserver时，只有目标MAC地址发生了改变(变成了Realserver的MAC地址)。Realserver在接收到数据包后会根据本地路由表将数据包路由至本地回环设备，接着，监听于本地回环设备VIP上的服务则对进来的数据库进行相应的处理，而后将处理结果回应至RIP，但数据包的原地址依然是VIP。
+</p>
+
+
+<p>
+DIP要配置在接口上，VIP要配置在接口别名上
+</p>
+
+<ul>
+<li>
+在前端服务器上的配置(配置VIP)
+<pre>
+ifconfig eth0:0 $192.168.0.1 broadcast $192.168.0.1 netmask 255.255.255.255 up
+route add -host $192.168.0.1 dev eth0:0 
+route add -host $192.168.1.1 dev eth0
+echo 1 &gt;/proc/sys/net/ipv4/ip_forward
+</pre>
+
+<li>
+在REALSERVER上面的配置
+
+</ul>
+<p>
+RIP要配置在接口上，VIP要配置在lo的别名上
+</p>
+
+<p>
+定义内核参数，禁止响应对VIP的ARP广播请求
+</p>
+<pre>
+echo 1&gt;/proc/sys/net/ipv4/conf/lo/arp_ignore
+echo 1&gt;/proc/sys/net/ipv4/conf/all/arp_ignore
+echo 2&gt;/proc/sys/net/ipv4/conf/lo/arp_announce
+echo 2&gt;/proc/sys/net/ipv4/conf/all/arp_announce
+</pre>
+
+<p>
+配置VIP
+</p>
+<pre>
+ifconfig lo:0 $192.168.0.1 broadcast $192.168.0.1 netmask 255.255.255.255 up
+route add -host 192.168.0.1 dev lo:0 # 确保如果请求的目标IP是$VIP，那么让出去的数据包的源地址也显示为$VIP
+</pre>
+
+<p>
+在前端服务器配置并启动服务
+</p>
+<pre>
+ipvsadm -A -t 192.168.0.1:80 -s wlc 
+ipvsadm -a -t 192.168.0.1:80 -r 192.168.1.2 -g -w 4 
+ipvsadm -a -t 192.168.0.1:80 -r 192.168.1.3 -g -w 2
+ipvsadm -L -n
+
+ab -c -n 10000 http://192.168.0.1/index.html 
+watch -n 1 'ipvsadm -L -n'
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

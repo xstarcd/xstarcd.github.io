@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>date - 获取日期时间及格式处理</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>date - 获取日期时间及格式处理</h1>
+
+<ul>
+<li>
+时间格式转换
+<pre class="brush:bash">
+# date 到 timestamp:
+date -d "2014-02-26 17:43" +%s                   
+1393407780
+
+# 将时间字符串转换为毫秒级时间截
+D="2014-06-30 00:00:00";expr $(date -d "$D" +%s) \* 1000
+D="2014-06-30 00:00:00";expr $(date -d "$D" +%s) '*' 1000
+
+# timestamp 到 date
+date -d '1970-1-1 UTC 1393404758 sec'
+Wed Feb 26 16:52:38 CST 2014
+
+# timestamp 到 UTC date
+date -d '1970-1-1 UTC 1393404758 sec' -u
+Wed Feb 26 08:52:38 UTC 2014
+
+# 当前时间UTC timestamp
+date +%s
+1393407544
+
+# 取当前时间的timestamp，再用date -d转换为str格式
+date;date -d "1970-1-1 UTC $(date +%s) sec"
+Wed Feb 26 17:42:16 CST 2014
+Wed Feb 26 17:42:16 CST 2014
+
+# mysql转换时间戳
+mysql&gt; select FROM_UNIXTIME(1404190686) FROM DUAL;          
++---------------------------+
+| FROM_UNIXTIME(1404190686) |
++---------------------------+
+| 2014-07-01 12:58:06       |
++---------------------------+
+</pre>
+
+<li>
+时间运算
+<pre class="brush:bash">
+date +"%Y-%m-%d %H:%M:%S"  #当前时间按指定格式输出
+date +'%Y%m%d' -d '-1 day' #当前时间减一天(昨天)，昨天
+date +'%Y%m%d' -d '+1 day' #当前时间加一天(昨天)，明天
+
+# 将指定的时间字串加上10秒
+date +'%Y/%m/%d-%H:%M:%S' -d '2013-04-08 CST 10:00:00 sec +10 sec'
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

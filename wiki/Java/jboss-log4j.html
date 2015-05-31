@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>jboss日志输出设置</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">jboss日志输出设置</a>
+<ul>
+<li><a href="#toc_1.1">基本参数</a>
+<li><a href="#toc_1.2">自定义Appender</a>
+<li><a href="#toc_1.3">category</a>
+<li><a href="#toc_1.4">使用自定义的appender</a>
+<li><a href="#toc_1.5">代码示例</a>
+<li><a href="#toc_1.6">常用配置参考</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">jboss日志输出设置</h1>
+
+<p>
+2010-10-12 15:03
+</p>
+
+<p>
+<a href="http://blog.csdn.net/nuoyan666/article/details/5935772">http://blog.csdn.net/nuoyan666/article/details/5935772</a>
+</p>
+
+
+<p>
+如果不进行优化配置，JBOSS下的项目查错将非常麻烦，在JBOSS４.２.２GA版本中，默认将所有的DEBUG信息都输了个遍，刚运行JBOSS,Server.log的日志就差不多1M了，再停掉JBOSS，什么正事都没做，都己经生成看不到的LOG了，只能用一个字来形容：费物！
+</p>
+
+<p>
+不过话先别说得这么激，年轻人，应该控制好自己的心态，冲动是魔兽咧！LOG太多确实一点用也没有，本来这些LOG最大的功能是方便查错的，但如果生成N行的LOG，从中找到你想要的，我还不如把程序检查一遍算了！因此，在不同的应用场合下，配置好你的LOG，才能让项目更加顺利地进行哦！
+</p>
+
+<p>
+好了，转入正题，本文针对的是JBOSS4的LOG4J配置，其它的请参阅相应的文章。
+</p>
+
+<p>
+JBOSS4的LOG4J配置默认放在Deploy目录的conf/目录下，比如现在我将ear放到jboss的default目录下，那么log4j的文件就是jboss/server/default/conf/jboss-log4j.xml，找到它，我们再分析一下它里面的内容吧。
+</p>
+
+<h2 id="toc_1.1">基本参数</h2>
+
+<p>
+先是第一段，一个FILE的appender，代码如下
+</p>
+
+<pre class="brush:xml">
+&lt;!-- A time/date based rolling appender --&gt;
+&lt;appender name="FILE" class="org.jboss.logging.appender.DailyRollingFileAppender"&gt;
+  &lt;errorHandler class="org.jboss.logging.util.OnlyOnceErrorHandler"/&gt;
+  &lt;param name="File" value="${jboss.server.log.dir}/server.log"/&gt;
+  &lt;param name="Append" value="false"/&gt;
+
+  &lt;!-- Rollover at midnight each day --&gt;
+  &lt;param name="DatePattern" value="'.'yyyy-MM-dd"/&gt;
+
+  &lt;!-- Rollover at the top of each hour
+  &lt;param name="DatePattern" value="'.'yyyy-MM-dd-HH"/&gt;
+  --&gt;
+
+  &lt;layout class="org.apache.log4j.PatternLayout"&gt;
+     &lt;!-- The default pattern: Date Priority [Category] Message/n --&gt;
+     &lt;param name="ConversionPattern" value="%d %-5p [%c] %m%n"/&gt;
+
+     &lt;!-- The full pattern: Date MS Priority [Category] (Thread:NDC) Message/n
+     &lt;param name="ConversionPattern" value="%d %-5r %-5p [%c] (%t:%x) %m%n"/&gt;
+      --&gt;
+  &lt;/layout&gt;
+&lt;/appender&gt;
+</pre>
+
+<p>
+上面这一段就是JBOSS默认输出到log/server.log文件的基本配置，它的name是FILE，这是自己定的，在其它地方会用这引name引用到它，然后appender的类型是DailyRollingFileAppender,意思是每天生成一个新的server.log文件，此时有人就会问，怎么每天都是server.log，那么昨天的岂不覆盖掉了？别担心，这种事情开发者早就想到了，它里面会有一些参数去设置它，自动让你前一天的log改其它名，当然appender的类型还有好几种，本文最后面有参考，根据你的项目的需要去设置它。
+</p>
+
+<p>
+中间第一个参数是log文件的输出地址，大家明白的了，改动一下就行了。
+</p>
+
+<p>
+第二个参数&lt;param name="Append" value="false"/&gt;，意思是运行jboss时，要不要覆盖之前的log，这在开发调试时很有用，你设成false后，每次你重新运行jboss，新生成的log都覆盖了旧的，这样找起来比较方便，也不用自己专门去删除它，但如果是正式使用了，可以根据需要将成设成true，这样所有的日志都会被保存起来了，隔一段时间，你就可以找到之前任一时候的log信息哦。
+</p>
+
+<p>
+上面讲到了有一些参数设置文件换前一天的log的文件名的，大家可以注意到配置的中间有个DatePattern,这个就是设置你前一天的log将会被改成什么名，它在每天晚上的午夜进行，很自动吧，你看它后面的'.'yyyy-MM-dd，你就会知道前一天的log的文件名将会被换成什么样的了！这里不进行填鸭！它还可以表现得更狠一下，每小时生成一个log怎么样，你想怎么样就怎么样，学学去配它吧。
+</p>
+
+<p>
+再往下，有一个PatternLayout，这个是输出文本的样式，这个是文本的，不过它还有得换哦，可以换成网页形式的日志（看起来会爽点），还有另外几个，大家有空可以玩玩，不过这个PatternLayout是最常用，也是最专业的，想成为专业人士，就用它吧！呵呵，开玩笑的，其它几个也很专业，甚至更专业！
+</p>
+
+<p>
+刚接触log4j的人会不太理解PatternLayout的作用，不过你用过之后，就知它是多么强悍的了，日志显示的形式随你心意改变，可以输出很多信息，如类名，类行号，详细时间，日志正文，还有日志级别等，如果你自己开发一个log工具，你会做到这么强吗？我以前做过一个，只能硬编码，其它什么都不能干，用了它，准会把你气死一半。我就气了三分之一，因为我写的嘛，呵呵，亲生的，不能什么都怪它，那怪谁。。。
+</p>
+
+<p>
+再往下有个ConversionPattern的参数，它是配置log的显示格式的，它的详细格式使用在本文后面会贴出，有需要就去看看，不过用它默认的都挺好的了。
+</p>
+
+
+<p>
+好了，之前介绍了一个默认的FILE Appender，还有一个CONSOLE的Appender，不用介绍了吧，就是显示在jboss控制台的日志样式，在此我们就不详谈了。
+</p>
+
+<h2 id="toc_1.2">自定义Appender</h2>
+
+<p>
+除了这两个默认的，还可以自定义Appender哦，比如你项目有不同类型的日志输出到不同的log日志中，或者你不想改动默认的log配置，另找高明，反正就是很个性化啦，生成多少个不同的log都行！
+</p>
+
+<p>
+在这里我拷贝了一个FILE的的appender，然后作了小小改动，就可以生成我自定义的log了，代码如下
+</p>
+
+<pre class="brush:xml">
+&lt;!-- A time/date based rolling appender --&gt;
+&lt;appender name="MYAPPENDER" class="org.jboss.logging.appender.DailyRollingFileAppender"&gt;
+   &lt;errorHandler class="org.jboss.logging.util.OnlyOnceErrorHandler"/&gt;
+   &lt;param name="File" value="${jboss.server.log.dir}/mylog.log"/&gt;
+   &lt;param name="Append" value="false"/&gt;
+
+   &lt;!-- Rollover at midnight each day --&gt;
+   &lt;param name="DatePattern" value="'.'yyyy-MM-dd"/&gt;
+
+   &lt;!-- Rollover at the top of each hour
+   &lt;param name="DatePattern" value="'.'yyyy-MM-dd-HH"/&gt;
+   --&gt;
+
+   &lt;layout class="org.apache.log4j.PatternLayout"&gt;
+      &lt;!-- The default pattern: Date Priority [Category] Message/n --&gt;
+      &lt;!--&lt;param name="ConversionPattern" value="%d %-5p [%c] %m%n"/&gt;--&gt;
+      &lt;!-- The full pattern: Date MS Priority [Category] (Thread:NDC) Message/n--&gt;
+      &lt;param name="ConversionPattern" value="%d %-5r %-5p [%c] (%t:%x) %m%n"/&gt;
+   &lt;/layout&gt;
+&lt;/appender&gt;
+</pre>
+
+<p>
+它将会在log目录生成一个mylog.log文件，不过有一点需要注意，在没有其它代码引用这些appender之前，它什么也不会干的，怎么引用还得往下看。
+</p>
+
+<h2 id="toc_1.3">category</h2>
+
+<p>
+在jboss-log4j.xml文件里靠下的地方，有很多下面这类代码
+</p>
+
+<pre class="brush:xml">
+&lt;!-- Limit the org.jboss category to INFO as its DEBUG is verbose --&gt;
+&lt;category name="org.jboss"&gt;
+   &lt;priority value="INFO" /&gt;
+&lt;/category&gt;
+</pre>
+
+<p>
+它是干嘛用的？它就是log4j的强悍之一，它检测到是org.jboss输出的信息的话，就限制DEBUG的信息输出，之前说过jboss的log信息超多，因为它默认将所有Debug信息都输出来了，这些jboss的debug信息对于我们这些平民百姓来说，没啥用，你加上我上面这一段，所有的JBOSS DEBUG信息都不会输出来的了，试试吧，其它的category你怎么改？讲一个我的经验给你们吧，你运行过jboss，然后停掉它，打开server.log，会看到很多的log信息，像下面这种
+</p>
+
+<p>
+2008-10-18 16:00:59,203 DEBUG[org.apache.resource.deployment.RARDeployment] Required license terms exist, view META-INF/ra.xml in .../deploy/jboss-ha-local-jdbc.rar
+</p>
+
+<p>
+看上面粗体部份，它是由类org.apache.resource.deployment.RARDeployment产生的log，你如果看到很多，你觉得没用，又或者你看到是DEBUG信息，你也不想要，就写一段category吧，将类的前面部分截取一段，写进category的name属性里，比如上面这类log，你不想看到它，你就这样写
+</p>
+
+<pre class="brush:xml">
+&lt;!-- Limit the org.apache category to INFO as its DEBUG is verbose --&gt;
+&lt;category name="org.apache"&gt;
+   &lt;priority value="INFO" /&gt;
+&lt;/category&gt;
+</pre>
+
+<p>
+这样所有org.apache属下的类的debug log都不会再输出来了，你还可以更狠一点，写下面这段
+</p>
+
+<pre class="brush:xml">
+&lt;category name="org.apache"&gt;
+   &lt;priority value="ERROR" /&gt;
+&lt;/category&gt;
+</pre>
+
+<p>
+这样org.apache下的普通INFO信息也不会输出了，只有错误的信息才会被输出！
+</p>
+
+<p>
+至于其它的log信息，你就运行多几次jboss，每次根据server.log,找到你不想要的，再加多一些category，这样你的server.log就会变得非常精简的了，试试吧，一劳永逸，以后log就有得控制了，调试查错也更方便了。
+</p>
+
+<h2 id="toc_1.4">使用自定义的appender</h2>
+
+<p>
+到了这里，事情还没完呢，最后一点了。
+</p>
+
+<p>
+之前我们自定义了一个appender，我们要用它来输出自己的项目的log，我们只是定义好了这个appender，还没用上它，它暂时还是不会起作用的（它会生成文件，但是没log往里面写），项目的log，还是只会在server.log里出现，不会写进你自定义的log里。下面我们干最后一点，完成所有工作。
+</p>
+
+<p>
+写多一个category，name填上自己项目对应的，比如com.mycompany，然后在&lt;priority value="xxx" /&gt;后面加多一行&lt;appender-ref ref="MYAPPENDER" /&gt;，如下
+</p>
+
+<pre class="brush:xml">
+&lt;!-- Self Define Appender --&gt;
+&lt;category name="com.mycompany"&gt;
+  &lt;priority value="INFO" /&gt;
+  &lt;appender-ref ref="MYAPPENDER"/&gt;
+&lt;/category&gt;
+</pre>
+
+<h2 id="toc_1.5">代码示例</h2>
+
+<p>
+配置好了，下面贴一段代码中使用log的代码中，怎么用不讲了，很简单的，
+</p>
+
+<pre class="brush:c">
+public class TestLog4j
+{
+    public static void main(String[] args)
+    {
+        Logger logger = Logger.getLogger(TestLog4j.class);
+        logger.debug("debug");
+        logger.error("error");
+        logger.info("info");
+    }
+}
+</pre>
+
+<h2 id="toc_1.6">常用配置参考</h2>
+
+<p>
+下面，贴出一些常用的配置参考文档
+</p>
+
+<ul>
+<li>
+日志输出级别，共有5级：
+
+</ul>
+
+<table>
+<tr>
+<td>
+FATAL
+</td>
+<td>
+0
+</td>
+</tr>
+<tr>
+<td>
+ERROR
+</td>
+<td>
+3
+</td>
+</tr>
+<tr>
+<td>
+WARN
+</td>
+<td>
+4
+</td>
+</tr>
+<tr>
+<td>
+INFO
+</td>
+<td>
+6
+</td>
+</tr>
+<tr>
+<td>
+DEBUG
+</td>
+<td>
+7
+</td>
+</tr>
+</table>
+ 
+<ul>
+<li>
+Log4j提供的appender有以下几种：
+
+</ul>
+
+<table>
+<tr>
+<td>
+org.apache.log4j.ConsoleAppender
+</td>
+<td>
+控制台
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.FileAppender
+</td>
+<td>
+文件
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.DailyRollingFileAppender
+</td>
+<td>
+每天产生一个日志文件
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.RollingFileAppender
+</td>
+<td>
+文件大小到达指定尺寸的时候产生一个新的文件
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.WriterAppender
+</td>
+<td>
+将日志信息以流格式发送到任意指定的地方
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+Log4j提供的layout有以下几种：
+
+</ul>
+
+<table>
+<tr>
+<td>
+org.apache.log4j.HTMLLayout
+</td>
+<td>
+以HTML表格形式布局
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.PatternLayout
+</td>
+<td>
+可以灵活地指定布局模式
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.SimpleLayout
+</td>
+<td>
+包含日志信息的级别和信息字符串
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.TTCCLayout
+</td>
+<td>
+包含日志产生的时间、线程、类别等等信息
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+Log4J采用类似C语言中的printf函数的打印格式格式化日志信息，如下:
+
+</ul>
+
+<table>
+<tr>
+<td>
+%m
+</td>
+<td>
+输出代码中指定的消息
+</td>
+</tr>
+<tr>
+<td>
+%p
+</td>
+<td>
+输出优先级，即DEBUG，INFO，WARN，ERROR，FATAL
+</td>
+</tr>
+<tr>
+<td>
+%r
+</td>
+<td>
+输出自应用启动到输出该log信息耗费的毫秒数
+</td>
+</tr>
+<tr>
+<td>
+%c
+</td>
+<td>
+输出所属的类目，通常就是所在类的全名
+</td>
+</tr>
+<tr>
+<td>
+%t
+</td>
+<td>
+输出产生该日志事件的线程名
+</td>
+</tr>
+<tr>
+<td>
+%n
+</td>
+<td>
+输出一个回车换行符，Windows平台为\r\n，Unix平台为\n
+</td>
+</tr>
+<tr>
+<td>
+%d
+</td>
+<td>
+输出日志时间点的日期或时间，默认格式为ISO8601，也可以在其后指定格式，比如：%d{yyy MMM dd HH:mm:ss , SSS}，输出类似：2002年10月18日 22:10:28,921
+</td>
+</tr>
+<tr>
+<td>
+%l
+</td>
+<td>
+输出日志事件的发生位置，包括类目名、发生的线程，以及在代码中的行数。举例：Testlog4.main(TestLog4.java: 10)
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+jboss-log4j.xml中设置日志路径及保留周期
+
+</ul>
+
+<pre class="brush:xml">
+&lt;!-- A size based file rolling appender--&gt;
+&lt;appender name="com.szypt.all" class="org.jboss.logging.appender.RollingFileAppender"&gt;
+    &lt;param name="File" value="${jboss.server.home.dir}/log/elathen.log"/&gt;
+    &lt;param name="Append" value="true"/&gt;
+    &lt;param name="MaxFileSize" value="500KB"/&gt;
+    &lt;param name="MaxBackupIndex" value="1"/&gt;
+    &lt;layout class="org.apache.log4j.PatternLayout"&gt;
+        &lt;param name="ConversionPattern" value="%d %-5p [%c] %m%n"/&gt;
+    &lt;/layout&gt;
+&lt;/appender&gt;
+
+&lt;logger name="com.szypt"&gt;
+    &lt;level value="DEBUG" /&gt;
+    &lt;appender-ref ref="com.szypt.all"/&gt;
+&lt;/logger&gt;
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Xen</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Xen</a>
+<ul>
+<li><a href="#toc_1.1">单端口实现Xen虚拟机多VLAN</a>
+<li><a href="#toc_1.2">XCP-Linux模板无法从光驱启动</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">Xen</h1>
+
+<ul>
+<li>
+编辑客户机grub.conf
+<pre>
+xe-edit-bootloader -u uuid of vm -p1
+</pre>
+
+</ul>
+
+<ul>
+<li>
+设置XenServer中的Linux vm从光驱启动
+
+</ul>
+
+<p>
+<a href="http://roland.blog.51cto.com/227050/699336">http://roland.blog.51cto.com/227050/699336</a>
+</p>
+
+<p>
+xenserver中的windows vm安装后可以通过xencenter设置从光驱启动，而linux vm则没有这样的选项，可以通过以下命令行解决：
+</p>
+<pre>
+xe vm-param-set uuid=546f896a-ebe6-8071-2c31-b9214dc1d1b5 HVM-boot-policy=BIOS\ order
+xe vm-param-set uuid=546f896a-ebe6-8071-2c31-b9214dc1d1b5 HVM-boot-params:order="dc"
+</pre>
+
+<p>
+uuid为vm的uuid，order中的d表明光驱，c表明启动硬盘。这样设置完后通过xencenter中的虚机属性也可以设置启动顺序了。
+</p>
+
+<p>
+要改回原来设置，只需将该选项重新设置为空即可：HVM-boot-policy=''。
+</p>
+
+<h2 id="toc_1.1"><a href="SinglePort_VirtualMultiVlan_in_Xen.html">单端口实现Xen虚拟机多VLAN</a></h2>
+
+<h2 id="toc_1.2">XCP-Linux模板无法从光驱启动</h2>
+
+<p>
+Xen Cloud Platform (XCP) – Linux Templates Will Not Boot To CD/DVD
+</p>
+ 
+<p>
+July 15th, 2011 by Ronny
+</p>
+
+<p>
+It seems that the Linux templates in XCP 1.0 &amp; 1.1 are all bugged and will not boot to a CD/DVD drive upon first boot of the virtual machine. This makes it very difficult to start up your installation media. In order to work around this you can either use the “Other Installation Media” template and fill in the blanks, or you can do a little command line magic once you create your virtual machine from one of the Linux templates. The problem is that the boot order does not get set from the template upon VM creation, so once you have the VM created do the following:
+</p>
+
+<ul>
+<li>
+List all of the Virtual Machines currently on the server:
+<pre>
+xe vm-list
+</pre>
+
+</ul>
+
+<p>
+You should see a list that contains all of your virtual machines in this format:
+</p>
+<pre>
+uuid ( RO): 68e93b9f-705c-a8c6-66df-4da9cec8ed9d
+name-label ( RW): CentOS 5 (64-bit) (2011-07-14)
+power-state ( RO): halted
+</pre>
+
+<ul>
+<li>
+Next check the current boot order setting by issuing the following command:
+<pre>
+xe vm-param-list uuid=68e93b9f-705c-a8c6-66df-4da9cec8ed9d | grep HVM
+</pre>
+
+</ul>
+
+<p>
+You will see something like this:
+</p>
+<pre>
+HVM-boot-policy ( RW): BIOS order
+HVM-boot-params (MRW): order:
+HVM-shadow-multiplier ( RW): 1.000
+</pre>
+
+<p>
+Notice there is no boot order setting listed, add one by issuing the following command:
+</p>
+<pre>
+xe vm-param-set uuid=&lt;VM UUID&gt; HVM-boot-policy=BIOS\ order \
+HVM-boot-params:order="dc"
+</pre>
+
+<ul>
+<li>
+Now check the boot order setting again:
+<pre>
+xe vm-param-list uuid=68e93b9f-705c-a8c6-66df-4da9cec8ed9d | grep HVM
+</pre>
+
+</ul>
+
+<p>
+And we see that it is now set to “dc” a.k.a. CDROM/DISK
+</p>
+<pre>
+HVM-boot-policy ( RW): BIOS order
+HVM-boot-params (MRW): order: dc
+HVM-shadow-multiplier ( RW): 1.000
+</pre>
+
+<p>
+That’s it! You should now be able to start the virtual machine and have it boot to it’s installation media.
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

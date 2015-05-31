@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>系统安装及基本配置说明</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>系统安装及基本配置说明</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">系统版本及RAID选择</a>
+<li><a href="#toc_0.2">Raid选择</a>
+<li><a href="#toc_0.3">安装选项</a>
+<li><a href="#toc_0.4">硬盘分区</a>
+<li><a href="#toc_0.5">初始管理员</a>
+<li><a href="#toc_0.6">组件选择</a>
+<li><a href="#toc_0.7">网络配置</a>
+<li><a href="#toc_0.8">加载基本访问控制策略</a>
+</ul>
+</ul>
+</div>
+
+<p>
+主要内容：Raid选择、硬盘分区、初始管理员、组件选择、网络配置、基本安装策略
+</p>
+
+<ul>
+<li>
+author: YuanXing
+
+<li>
+CREATE DATE: 2011/12/19
+
+<li>
+Rework Date: 2012/09/03
+
+</ul>
+
+<h2 id="toc_0.1">系统版本及RAID选择</h2>
+
+<p>
+系统版本选择：使用长线支持Ubuntu Server 12.04 LTS版本(根据服务器硬件条件，选择64bit或32bit)
+</p>
+
+<p>
+下载地址：<a href="http://www.ubuntu.com/download/server">http://www.ubuntu.com/download/server</a>
+</p>
+
+<h2 id="toc_0.2">Raid选择</h2>
+
+<ul>
+<li>
+单硬盘：无Raid
+
+<li>
+双硬盘配置：Raid1
+
+<li>
+四硬盘配置：Raid1+0
+
+<li>
+六硬盘配置：两个盘Raid1做系统相关分区，其于四个Raid1+0作数据分区。
+
+</ul>
+
+
+<h2 id="toc_0.3">安装选项</h2>
+
+<ol>
+<li>
+country:     Asia-China
+
+<li>
+keyborad:    USA
+
+<li>
+Configure the network: manually
+
+<li>
+Hostname:    可根据设备名称填写
+
+<li>
+Domain:      留空
+
+</ol>
+
+<h2 id="toc_0.4">硬盘分区</h2>
+<ul>
+<li>
+DataBase:
+<table>
+<tr>
+<td>
+顺序
+</td>
+<td>
+Mount点
+</td>
+<td>
+文件系统
+</td>
+<td>
+分区大小
+</td>
+<td>
+备注
+</td>
+</tr>
+<tr>
+<td>
+1
+</td>
+<td>
+/
+</td>
+<td>
+Ext4
+</td>
+<td>
+2GB
+</td>
+<td>
+the root file system(至少512MB以上)
+</td>
+</tr>
+<tr>
+<td>
+2
+</td>
+<td>
+/boot
+</td>
+<td>
+Ext4
+</td>
+<td>
+256MB
+</td>
+<td>
+boot分区
+</td>
+</tr>
+<tr>
+<td>
+3
+</td>
+<td>
+swap
+</td>
+<td>
+swap
+</td>
+<td>
+8GB
+</td>
+<td>
+内存2倍，8GB以上内存用8GBwsap即可
+</td>
+</tr>
+<tr>
+<td>
+3
+</td>
+<td>
+/tmp
+</td>
+<td>
+Ext4
+</td>
+<td>
+4GB
+</td>
+<td>
+temporary files(如有大量cache数据在此目录可考虑加大)
+</td>
+</tr>
+<tr>
+<td>
+4
+</td>
+<td>
+/var
+</td>
+<td>
+Ext4
+</td>
+<td>
+30GB
+</td>
+<td>
+variable data(4G以上，如日志文件递增量较大，可考虑加大)(DB因放binlog，可能需要更大空间)
+</td>
+</tr>
+<tr>
+<td>
+5
+</td>
+<td>
+/usr
+</td>
+<td>
+Ext4
+</td>
+<td>
+20GB
+</td>
+<td>
+static data(10GB以上)
+</td>
+</tr>
+<tr>
+<td>
+6
+</td>
+<td>
+/data
+</td>
+<td>
+Ext4
+</td>
+<td>
+40GB
+</td>
+<td>
+add-on application software packages(根据实际情况调整，也可考虑将应用数据、数据库划为不同的卷)
+</td>
+</tr>
+<tr>
+<td>
+7
+</td>
+<td>
+/home
+</td>
+<td>
+Ext4
+</td>
+<td>
+10GB
+</td>
+<td>
+user home directories
+</td>
+</tr>
+<tr>
+<td>
+8
+</td>
+<td>
+/bak
+</td>
+<td>
+Ext4
+</td>
+<td>
+30GB
+</td>
+<td>
+backup space
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+Raid 1:系统分区(/var:60GB,/bak:40GB，/data划到Raid 1+0上。)
+
+<li>
+Raid 1+0:应用数据(/data,/data2)
+
+</ul>
+</ul>
+
+<h2 id="toc_0.5">初始管理员</h2>
+
+<ul>
+<li>
+用户名：dfjsb
+
+<li>
+初始密码：至少8位，不得使用简单密码、不得与其他主机使用相同密码。
+
+</ul>
+
+<h2 id="toc_0.6">组件选择</h2>
+
+<p>
+对于生产系统，只需安装英文环境。系统安装时，仅选择安装Open-SSH Server，其他软件包均不安装。
+</p>
+
+<h2 id="toc_0.7">网络配置</h2>
+<ul>
+<li>
+eth0:公网接口
+
+<li>
+eth1/2:内网接口(如有接内网交换机，则配置)
+
+<li>
+/etc/network/interfaces
+<pre class="brush:bash">
+auto eth0
+iface eth0 inet static
+        address xx.xx.xx.xx
+        netmask 255.255.255.0
+        network xx.xx.xx.0
+        broadcast xx.xx.xx.255
+        gateway xx.xx.xx.1
+        dns-nameservers xx.xx.xx.xx
+        dns-search xxx.com
+
+auto eth1
+iface eth1 inet static
+        address 192.168.0.xx    #xx:设置为与公网IP最后一节相同
+        netmask 255.255.255.0
+        network 192.168.0.0
+        broadcast 192.168.0.255
+</pre>
+
+<li>
+完成后重启动network生效
+<pre class="brush:bash">
+/etc/init.d/networking restart
+</pre>
+
+</ul>
+
+<h2 id="toc_0.8">加载基本访问控制策略</h2>
+<pre class="brush:bash">
+cat &gt;/root/stand_iptables.sh &lt;&lt;EOF
+#!/bin/sh
+
+GMIPs="172.16.1.100 192.168.0.0/24"
+
+IPTABLES=/sbin/iptables
+
+\$IPTABLES -F
+\$IPTABLES -X
+\$IPTABLES -Z
+\$IPTABLES -F -t nat
+\$IPTABLES -X -t nat
+\$IPTABLES -Z -t nat
+\$IPTABLES -F -t mangle
+\$IPTABLES -X -t mangle
+\$IPTABLES -Z -t mangle
+
+\$IPTABLES -P INPUT ACCEPT
+\$IPTABLES -P OUTPUT ACCEPT
+\$IPTABLES -P FORWARD DROP
+
+\$IPTABLES -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+\$IPTABLES -A INPUT -i lo -p all -j ACCEPT
+for ip in \$GMIPs
+do
+    \$IPTABLES -A INPUT -s \$ip -m multiport -p tcp --dport 20:22,2222 -j ACCEPT
+    \$IPTABLES -A INPUT -s \$ip -p icmp -j ACCEPT
+done
+\$IPTABLES -A INPUT  -m limit --limit 5/min -j LOG --log-prefix "$IPTABLES denied: " --log-level 7
+\$IPTABLES -A INPUT -j DROP
+
+echo "\n[+] iptables policy activated"
+
+\$IPTABLES -L -v -n
+
+EOF
+</pre>
+<ul>
+<li>
+修改GMIPs设置:/root/stand_iptables.sh
+
+<li>
+加载访问控制
+<pre class="brush:bash">
+sh /root/stand_iptables.sh
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

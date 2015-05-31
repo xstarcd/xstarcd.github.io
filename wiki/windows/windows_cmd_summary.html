@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>批处理常用命令总结</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>批处理常用命令总结</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">什么是批处理</a>
+<li><a href="#toc_0.2">批处理命令简介</a>
+<li><a href="#toc_0.3">批处理符号简介</a>
+<li><a href="#toc_0.4">常用DOS命令</a>
+<li><a href="#toc_0.5">语句结构</a>
+<li><a href="#toc_0.6">概念方法</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+来源
+
+<ul>
+<li>
+批处理常用命令总结: <a href="http://blog.csdn.net/z22050519/article/details/17019137">http://blog.csdn.net/z22050519/article/details/17019137</a>
+
+<li>
+批处理_百度百科: <a href="http://baike.baidu.com/view/80110.htm">http://baike.baidu.com/view/80110.htm</a>
+
+</ul>
+</ul>
+
+
+<h2 id="toc_0.1">什么是批处理</h2>
+
+<p>
+批处理(Batch)，也称为批处理脚本。顾名思义，批处理就是对某对象进行批量的处理。批处理文件的扩展名为<code>bat</code>。
+</p>
+
+<p>
+目前比较常见 的批处理包含两类：DOS批处理和PS批处理。PS批处理是基于强大的图片编辑软件Photoshop的，用来批量处理图片的脚本；而DOS批处理则是基于DOS命令的，用来自动地批量地执行DOS命令以实现特定操作的脚本。这里要讲的就是DOS批处理。
+</p>
+
+<p>
+批处理是一种简化的脚本语言，它应用于DOS和Windows系统中，它是由DOS或者Windows系统内嵌的命令解释器（通常是COMMAND.COM或者CMD.EXE）解释运行。类似于Unix中的Shell脚本。批处理文件具有.bat或者.cmd的扩展名，其最简单的例子，是逐行书写在命令行中会用到的各种命令。更复杂的情况，需要使用if，for，goto等命令控制程序的运行过程，如同C，Basic等中高级语言一样。如果需要实现更复杂的应用，利用外部程序是必要的，这包括系统本身提供的外部命令和第三方提供的工具或者软件。
+</p>
+
+<p>
+批处理文件，或称为批处理程序，是由一条条的DOS命令组成的普通文本文件，可以用记事本直接编辑或用DOS命令创建，也可以用DOS下的文本编辑器Edit.exe来编辑。在“命令提示”下键入批处理文件的名称，或者双击该批处理文件，系统就会调用Cmd.exe运行该批处理程序。一般情况下，每条命令占据一行；当然也可以将多条命令用特定符号（如：&amp;、&amp;&amp;、|、||等）分隔后写入同一行中；还有的情况就是像if、for等较高级的命令则要占据几行甚至几十几百行的空间。
+</p>
+
+<p>
+系统在解释运行批处理程序时，首先扫描整个批处理程序，然后从第一行代码开始向下逐句执行所有的命令，直至程序结尾或遇见exit命令或出错意外退出。
+</p>
+
+<h2 id="toc_0.2"><a href="windows_cmd_summary_commands.html">批处理命令简介</a></h2>
+
+<ul>
+<li>
+echo
+
+<li>
+rem
+
+<li>
+pause
+
+<li>
+call
+
+<li>
+start
+
+<li>
+goto
+
+<li>
+set
+
+</ul>
+
+<h2 id="toc_0.3"><a href="windows_cmd_summary_symbols.html">批处理符号简介</a></h2>
+
+<ul>
+<li>
+回显屏蔽 @
+
+<li>
+重定向1 &gt;与&gt;&gt;
+
+<li>
+重定向2 &lt;
+
+<li>
+管道符号 |
+
+<li>
+转义符 ^
+
+<li>
+逻辑命令符包括：<code>&amp;、&amp;&amp;、||</code>
+
+</ul>
+
+<h2 id="toc_0.4"><a href="windows_cmd_summary_doscmds.html">常用DOS命令</a></h2>
+
+<h2 id="toc_0.5"><a href="windows_cmd_summary_syntax.html">语句结构</a></h2>
+
+<ul>
+<li>
+if语句(选择结构)
+
+<ul>
+<li>
+字符串比较
+
+<li>
+存在判断
+
+<li>
+定义判断
+
+</ul>
+<li>
+for语句(循环结构)
+
+<ul>
+<li>
+无开关
+
+<li>
+开关/L
+
+<li>
+开关/F
+
+<li>
+开关/D或/R
+
+</ul>
+<li>
+字符串处理
+
+<ul>
+<li>
+截取字符串
+
+<li>
+替换字符串
+
+<li>
+字符串合并
+
+<li>
+扩充字符串
+
+</ul>
+<li>
+数值计算
+
+</ul>
+
+<h2 id="toc_0.6"><a href="windows_cmd_summary_tips.html">概念方法</a></h2>
+
+<ul>
+<li>
+环境变量
+
+<ul>
+<li>
+系统变量
+
+<li>
+用户变量
+
+<li>
+变量引用
+
+</ul>
+<li>
+参数
+
+<ul>
+<li>
+直接传递
+
+<li>
+间接传递
+
+<li>
+区别
+
+</ul>
+<li>
+返回值
+
+<li>
+用户交互
+
+<ul>
+<li>
+视窗
+
+<li>
+声音
+
+</ul>
+<li>
+控制
+
+<li>
+ASCII码
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>rm</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>rm</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_1">linux rm -rf * 文件恢复记</a>
+<ul>
+<li><a href="#toc_1.1">立即挂载只读</a>
+<li><a href="#toc_1.2">使用debugfs</a>
+<li><a href="#toc_1.3">使用grep恢复</a>
+<li><a href="#toc_1.4">使用ext3grep</a>
+<li><a href="#toc_1.5">用testdisk 6.14</a>
+<li><a href="#toc_1.6">用extundelete-0.2.4恢复</a>
+</ul>
+</ul>
+</div>
+
+
+<h1 id="toc_1">linux rm -rf * 文件恢复记</h1>
+
+<p>
+原文: <a href="http://abloz.com/2013/09/12/linux-rm-rf-file-recovery-record.html">http://abloz.com/2013/09/12/linux-rm-rf-file-recovery-record.html</a>
+</p>
+
+<p>
+周海汉/文 2013.9.12
+</p>
+
+<p>
+手太快，肠子都毁清了。本来是删除一个文件 rm path/myfile.txt
+</p>
+
+<p>
+结果不知为何加了个*，变成了
+</p>
+
+<p>
+<code>rm path/myfile.txt *</code>
+</p>
+
+<p>
+赶紧ls，发现所有代码都化为了乌有，还没提交，还没备份。删除时还不确认。一秒钟，世界就清净了。
+</p>
+
+<p>
+带着侥幸的心情四处寻找，并无一处压缩包备份。有一些备份的地方也是很早期的工作。
+</p>
+
+<p>
+欲哭无泪。
+</p>
+
+<p>
+所以linux的rm删除时不先备份，真是要不得。难怪很多人rm时左看右看得过个半分钟才敢下手。有人建议直接将root下的rm改成mv的别名。
+</p>
+
+<p>
+没办法，必须恢复。
+</p>
+
+<p>
+机器在机房里，也不能断电拔硬盘或者重启。
+</p>
+
+<h2 id="toc_1.1">立即挂载只读</h2>
+
+<p>
+首先，需立即将磁盘挂载为只读。
+</p>
+
+<p>
+否则其他daemons 都来读写，神仙都恢复不了了。磁盘规划时一定要做功能分区。否则，误删了想恢复也很困难。比如linux安装时不分区整个装/下面，就很麻烦。
+</p>
+<pre class="brush:bash">
+# /data挂在/dev/sdb1上
+mount
+/dev/sdb1 on /data type ext4 (rw)
+
+mount -r -n -o remount /data
+mount: /data is busy
+
+# 这需看看有哪些进程在用，可以看到有很多java和hadoop进程在使用，杀之。
+fuser -v -m /data
+
+# 重新mount成只读
+mount -r -n -o remount /data
+
+# 再到/data里测试touch文件，报错。
+touch a
+touch: cannot touch `a’: Read-only file system
+</pre>
+
+<p>
+一下就放轻松了很多。因为改为只读挂载后，可以慢慢恢复，再也不用担心我的文件被覆盖。
+</p>
+
+<h2 id="toc_1.2">使用debugfs</h2>
+
+<p>
+用debugfs查找被删文件的inode，再想法恢复。
+</p>
+<pre class="brush:bash">
+debugfs /dev/sdb1
+debugfs 1.41.12 (17-May-2010)
+
+debugfs:
+debugfs: lsdel
+Inode Owner Mode Size Blocks Time deleted
+0 deleted inodes found.
+</pre>
+
+<p>
+神奇的debugfs 根本没找到有文件被删除的inodes，难道是我不会用？
+</p>
+
+<p>
+失败！
+</p>
+
+<h2 id="toc_1.3">使用grep恢复</h2>
+
+<p>
+grep 在磁盘二进制中查找文本，把前后的字符导出来，也许可以恢复部分。
+</p>
+<pre class="brush:bash">
+grep -a -B 100 -A 100 'active.sh' /dev/sdb1 &gt; results.txt
+</pre>
+<p>
+只有一些乱七八糟的二进制。
+</p>
+
+<p>
+失败！
+</p>
+
+<h2 id="toc_1.4">使用ext3grep</h2>
+
+<p>
+我的是ext4系统，根本不起作用。
+</p>
+
+<p>
+只好寻找专业工具
+</p>
+
+<h2 id="toc_1.5">用testdisk 6.14</h2>
+
+<p>
+使用介绍：<a href="http://www.cgsecurity.org/wiki/TestDisk%3a_undelete_file_for_ext2">http://www.cgsecurity.org/wiki/TestDisk%3a_undelete_file_for_ext2</a>
+</p>
+
+<p>
+下载：wget <a href="http://www.cgsecurity.org/testdisk-6.14.linux26-x86_64.tar.bz2">http://www.cgsecurity.org/testdisk-6.14.linux26-x86_64.tar.bz2</a>
+</p>
+<pre class="brush:bash">
+cd testdisk-6.14
+ls
+Android.mk ChangeLog documentation.html fidentify_static INFO l photorec.8 README testdisk.8 testdisk_static VERSION
+AUTHORS COPYING fidentify.8 ico jni NEWS photorec_static readme.txt testdisk.log THANKS
+
+./testdisk_static
+TestDisk 6.14, Data Recovery Utility, July 2013
+Christophe GRENIER &lt;grenier@cgsecurity.org&gt;
+
+http://www.cgsecurity.org
+
+1 P MS Data 2048 7811889151 7811887104 [primary]
+Directory /
+
+&gt;drwxr-xr-x 500 500 4096 28-Aug-2013 13:41 .
+drwxr-xr-x 500 500 4096 28-Aug-2013 13:41 ..
+drwxrwxrwx 500 500 16384 18-Jul-2013 15:42 lost+found
+drwxrwxrwx 500 500 12288 12-Sep-2013 00:36 logs
+
+drwxrwxrwx 500 500 4096 25-Jul-2013 16:54 test1
+drwxrwxr-x 500 500 4096 12-Sep-2013 03:28 statis
+drwxrwxr-x 500 500 4096 12-Sep-2013 17:40 sh
+drwxrwxr-x 500 500 12288 3-Sep-2013 15:28 hadoop
+
+Next
+Use Right to change directory, h to hide deleted files
+q to quit, : to select the current file, a to select all files
+C to copy the selected files, c to copy the current file
+</pre>
+
+<p>
+选到相应目录，enter，终于看到了删除的文件名，但是文件大小怎么都是0啊？
+</p>
+<pre class="brush:bash">
+TestDisk 6.14, Data Recovery Utility, July 2013
+Christophe GRENIER &lt;grenier@cgsecurity.org&gt;
+
+http://www.cgsecurity.org
+
+1 P MS Data 2048 7811889151 7811887104 [primary]
+Directory /sh
+
+drwxrwxr-x 500 500 4096 12-Sep-2013 17:40 .
+drwxr-xr-x 500 500 4096 28-Aug-2013 13:41 ..
+&gt;-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 active.awk
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 active.sh
+lrwxrwxrwx 500 500 13 2-Aug-2013 17:17 statis
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 dateutil.sh
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 hiveput.sh
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 multidate.sh
+drwxrwxr-x 500 500 4096 3-Sep-2013 15:24 errlogs
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 hiveactive.sh
+drwxrwxr-x 500 500 4096 12-Sep-2013 17:40 cps
+drwxrwxr-x 500 500 4096 30-Aug-2013 15:21 TempStatsStore
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 bkactive.awk
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 test.awk
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 t.awk
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 print
+-rw-rw-r-- 500 500 0 12-Sep-2013 17:40 a
+-rw-rw-r-- 500 500 0 12-Sep-2013 17:40 a.txt
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 user.awk
+-rw-rw-r-- 500 500 0 12-Sep-2013 17:40 luan
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 cps.sh
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 hivenewdev.sh
+-rw-rw-r-- 500 500 0 12-Sep-2013 17:40 hive2mysql.sh
+-rw-rw-r-- 500 500 0 12-Sep-2013 17:40 py
+lrwxrwxrwx 500 500 12 26-Aug-2013 09:34 userdata
+lrwxrwxrwx 500 500 10 26-Aug-2013 09:34 bidata
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 bi.awk
+-rw-r--r-- 500 500 0 12-Sep-2013 17:40 luandoutang_09_900037.csv
+-rw-rw-r-- 500 500 0 12-Sep-2013 17:40 luan1
+-rwxr-xr-x 500 500 0 12-Sep-2013 17:40 luan.awk
+-rwxr-xr-x 500 500 0 12-Sep-2013 17:40 luan.sh
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 dvid_price.awk
+-rwxrwxr-x 500 500 0 12-Sep-2013 17:40 cid_price.awk
+lrwxrwxrwx 500 500 15 9-Sep-2013 13:33 adsdkdata
+-rw-rw-r-- 500 500 0 12-Sep-2013 17:40 0908.txt
+-rw-rw-r-- 500 500 0 12-Sep-2013 17:40 09081.txt
+-rw-rw-r-- 500 500 0 12-Sep-2013 17:40 09.txt
+drwxrwxr-x 500 500 4096 9-Sep-2013 16:22 pid
+
+TestDisk 6.14, Data Recovery Utility, July 2013
+
+Please select a destination where /sh/active.awk will be copied.
+Keys: Arrow keys to select another directory
+C when the destination is correct
+Q to quit
+</pre>
+
+<p>
+用a 选择所有文件，C 备份，选一个备份到的目录，确认。
+</p>
+
+<p>
+进去一看，文件名都恢复了，但文件内容都是空的。号称能恢复ext4的testdisk恢复失败。
+</p>
+
+<p>
+又下了新版testdisk-7.0-WIP.linux26-x86_64.tar.bz2，一样的问题。
+</p>
+
+<h2 id="toc_1.6">用extundelete-0.2.4恢复</h2>
+
+<ul>
+<li>
+官方网站：<a href="http://extundelete.sourceforge.net/">http://extundelete.sourceforge.net/</a>
+
+<li>
+下载：wget <a href="http://downloads.sourceforge.net/project/extundelete/extundelete/0.2.4/extundelete-0.2.4.tar.bz2">http://downloads.sourceforge.net/project/extundelete/extundelete/0.2.4/extundelete-0.2.4.tar.bz2</a>
+
+<li>
+安装
+<pre class="brush:bash">
+# extundelete依赖e2fsprogs
+[root@hs12 extundelete-0.2.4]# ./configure
+Configuring extundelete 0.2.4
+configure: error: Can’t find ext2fs library
+
+[root@hs12 extundelete-0.2.4]# yum install e2fsprogs-devel
+
+[root@hs12 extundelete-0.2.4]# ./configure
+Configuring extundelete 0.2.4
+Writing generated files to disk
+
+[root@hs12 extundelete-0.2.4]# make &amp; make install
+
+</pre>
+
+</ul>
+
+<ul>
+<li>
+参数说明
+<pre class="brush:bash">
+[root@hs12 extundelete-0.2.4]# cd src
+[root@hs12 src]# ls
+block.c cli.cc extundelete-block.o extundelete-cli.o extundelete.h extundelete-priv.h jfs_compat.h Makefile Makefile.in
+block.h extundelete extundelete.cc extundelete-extundelete.o extundelete-insertionops.o insertionops.cc kernel-jbd.h Makefile.am
+
+[root@hs12 src]# ./extundelete
+No action specified; implying --superblock.
+./extundelete: Missing device name.
+Usage: ./extundelete [options] [--] device-file
+Options:
+--version, -[vV] Print version and exit successfully.
+--help, Print this help and exit successfully.
+--superblock Print contents of superblock in addition to the rest.
+If no action is specified then this option is implied.
+--journal Show content of journal.
+--after dtime Only process entries deleted on or after ‘dtime’.
+--before dtime Only process entries deleted before ‘dtime’.
+Actions:
+--inode ino Show info on inode ‘ino’.
+--block blk Show info on block ‘blk’.
+--restore-inode ino[,ino,...]
+Restore the file(s) with known inode number ‘ino’.
+The restored files are created in ./RECOVERED_FILES
+with their inode number as extension (ie, file.12345).
+--restore-file ‘path’ Will restore file ‘path’. ‘path’ is relative to root
+of the partition and does not start with a ‘/’
+The restored file is created in the current
+directory as ‘RECOVERED_FILES/path’.
+--restore-files ‘path’ Will restore files which are listed in the file ‘path’.
+Each filename should be in the same format as an option
+to --restore-file, and there should be one per line.
+--restore-directory ‘path’
+Will restore directory ‘path’. ‘path’ is relative to the
+root directory of the file system. The restored
+directory is created in the output directory as ‘path’.
+--restore-all Attempts to restore everything.
+-j journal Reads an external journal from the named file.
+-b blocknumber Uses the backup superblock at blocknumber when opening
+the file system.
+-B blocksize Uses blocksize as the block size when opening the file
+system. The number should be the number of bytes.
+--log 0 Make the program silent.
+--log filename Logs all messages to filename.
+--log D1=0,D2=filename Custom control of log messages with comma-separated
+Examples below: list of options. Dn must be one of info, warn, or
+--log info,error error. Omission of the ‘=name’ results in messages
+--log warn=0 with the specified level to be logged to the console.
+--log error=filename If the parameter is ‘=0′, logging for the specified
+level will be turned off. If the parameter is
+‘=filename’, messages with that level will be written
+to filename.
+-o directory Save the recovered files to the named directory.
+The restored files are created in a directory
+named ‘RECOVERED_FILES/’ by default.
+./extundelete: Error parsing command-line options.
+</pre>
+
+</ul>
+
+<ul>
+<li>
+执行恢复
+
+</ul>
+
+<p>
+注：/data为只读挂载，此步骤原文中的命令参数有误，不应将恢复目录指向/data/sh，且与按上文的--restore-directory参数的说明不符，这应该是恢复失败的真实原因。
+</p>
+
+<pre class="brush:bash">
+[root@hs12 src]# ./extundelete /dev/sdb1 --restore-directory /data/sh
+NOTICE: Extended attributes are not restored.
+Loading filesystem metadata … 29800 groups loaded.
+Loading journal descriptors … 28266 descriptors loaded.
+Failed to restore file /data/sh
+Could not find correct inode number past inode 2.
+Try altering the filename to one of the entries listed below.
+File name | Inode number | Deleted status
+. 2
+.. 2
+lost+found 11
+logs 195821569
+dfs 14942209
+mapred 165806081
+bidata 221380609
+userdata 3407873
+trackdata 112459777
+adsdkdata 135135233
+test 227409921
+a.tar.gz 12
+t1 13 Deleted
+test1 227278849
+statis 109051905
+sh 24641537
+hadoop 59506689
+./extundelete: Operation not permitted while restoring directory.
+./extundelete: Operation not permitted when trying to examine filesystem
+[root@hs12 src]# ./extundelete /dev/sdb1 --restore-file /data/sh/active.awk
+NOTICE: Extended attributes are not restored.
+Loading filesystem metadata … 29800 groups loaded.
+Loading journal descriptors … 28266 descriptors loaded.
+Failed to restore file /data/sh/active.awk
+Could not find correct inode number past inode 2.
+Try altering the filename to one of the entries listed below.
+File name | Inode number | Deleted status
+. 2
+.. 2
+lost+found 11
+logs 195821569
+dfs 14942209
+mapred 165806081
+bidata 221380609
+userdata 3407873
+trackdata 112459777
+adsdkdata 135135233
+test 227409921
+a.tar.gz 12
+t1 13 Deleted
+test1 227278849
+statis 109051905
+sh 24641537
+hadoop 59506689
+./extundelete: Operation not permitted while restoring file.
+./extundelete: Operation not permitted when trying to examine filesystem
+</pre>
+
+<ul>
+<li>
+再次执行恢复(restore-all)
+<pre class="brush:bash">
+[root@hs12 RECOVERED_FILES]# ../extundelete /dev/sdb1 --restore-all
+
+NOTICE: Extended attributes are not restored.
+Loading filesystem metadata … 29800 groups loaded.
+Loading journal descriptors … 28266 descriptors loaded.
+
+[root@hs12 RECOVERED_FILES]# cd RECOVERED_FILES/
+[root@hs12 RECOVERED_FILES]# cd sh
+[root@hs12 sh]# ls
+09081.txt a bknewdev.awk charge.sh derby.log hive2mysql.sh luan.awk newdev.awk so.awk
+0908.txt active.awk b.txt charge.txt dvid_price.awk hiveactive.sh luandoutang_09_900037.csv newdev.sh t.awk
+09.txt active.sh charge cid_price.awk emptycid hivenewdev.sh luan.sh pid.awk TempStatsStore
+100001 adsdkdata charge_2013-09-09.txt cps err.txt hiveput.sh multidate.sh pid.sh test.awk
+1dev.awk a.txt charge_20130909_.txt cps_newdev.java getdvid.awk insdata.py newdev print user.awk
+201309081.txt bi.awk charge2mysql.sh cps.sh getmysql.sh luan newdev1.awk py
+201309091.txt bkactive.awk charge.awk dateutil.sh getnewdev_from_mysql.sh luan1 newdev2mysql.sh sendmail.sh
+[root@hs12 sh]# ls -l
+total 225360
+-rw-r--r-- 1 root root 29251633 Sep 12 19:46 09081.txt
+-rw-r--r-- 1 root root 35249787 Sep 12 19:46 0908.txt
+-rw-r--r-- 1 root root 64501420 Sep 12 19:46 09.txt
+-rw-r--r-- 1 root root 2378 Sep 12 19:46 100001
+-rw-r--r-- 1 root root 840 Sep 12 19:46 1dev.awk
+-rw-r--r-- 1 root root 33931129 Sep 12 19:46 201309081.txt
+-rw-r--r-- 1 root root 27169653 Sep 12 19:46 201309091.txt
+-rw-r--r-- 1 root root 1 Sep 12 19:46 a
+-rw-r--r-- 1 root root 2227 Sep 12 19:46 active.awk
+-rw-r--r-- 1 root root 999 Sep 12 19:46 active.sh
+-rw-r--r-- 1 root root 19242484 Sep 12 19:46 adsdkdata
+-rw-r--r-- 1 root root 5626 Sep 12 19:46 a.txt
+-rw-r--r-- 1 root root 331 Sep 12 19:46 bi.awk
+-rw-r--r-- 1 root root 1543 Sep 12 19:46 bkactive.awk
+-rw-r--r-- 1 root root 931 Sep 12 19:46 bknewdev.awk
+-rw-r--r-- 1 root root 11 Sep 12 19:46 b.txt
+-rw-r--r-- 1 root root 230 Sep 12 19:46 charge
+-rw-r--r-- 1 root root 20964603 Sep 12 19:46 charge_2013-09-09.txt
+-rw-r--r-- 1 root root 229 Sep 12 19:46 charge_20130909_.txt
+-rw-r--r-- 1 root root 1243 Sep 12 19:46 charge2mysql.sh
+-rw-r--r-- 1 root root 428 Sep 12 19:46 charge.awk
+-rw-r--r-- 1 root root 2822 Sep 12 19:46 charge.sh
+-rw-r--r-- 1 root root 227 Sep 12 19:46 charge.txt
+-rw-r--r-- 1 root root 1227 Sep 12 19:46 cid_price.awk
+drwxr-xr-x 2 root root 4096 Sep 12 19:46 cps
+-rw-r--r-- 1 root root 12070 Sep 12 19:46 cps_newdev.java
+-rw-r--r-- 1 root root 2764 Sep 12 19:46 cps.sh
+-rw-r--r-- 1 root root 885 Sep 12 19:46 dateutil.sh
+-rw-r--r-- 1 root root 992 Sep 12 19:46 derby.log
+-rw-r--r-- 1 root root 658 Sep 12 19:46 dvid_price.awk
+-rw-r--r-- 1 root root 54217 Sep 12 19:46 emptycid
+-rw-r--r-- 1 root root 64279 Sep 12 19:46 err.txt
+-rw-r--r-- 1 root root 379 Sep 12 19:46 getdvid.awk
+-rw-r--r-- 1 root root 1217 Sep 12 19:46 getmysql.sh
+-rw-r--r-- 1 root root 1552 Sep 12 19:46 getnewdev_from_mysql.sh
+-rw-r--r-- 1 root root 532 Sep 12 19:46 hive2mysql.sh
+-rw-r--r-- 1 root root 858 Sep 12 19:46 hiveactive.sh
+-rw-r--r-- 1 root root 926 Sep 12 19:46 hivenewdev.sh
+-rw-r--r-- 1 root root 683 Sep 12 19:46 hiveput.sh
+-rw-r--r-- 1 root root 2227 Sep 12 19:46 insdata.py
+-rw-r--r-- 1 root root 1045 Sep 12 19:46 luan
+-rw-r--r-- 1 root root 813 Sep 12 19:46 luan1
+-rw-r--r-- 1 root root 336 Sep 12 19:46 luan.awk
+-rw-r--r-- 1 root root 72909 Sep 12 19:46 luandoutang_09_900037.csv
+-rw-r--r-- 1 root root 180 Sep 12 19:46 luan.sh
+-rw-r--r-- 1 root root 420 Sep 12 19:46 multidate.sh
+drwxr-xr-x 2 root root 4096 Sep 12 19:46 newdev
+-rw-r--r-- 1 root root 777 Sep 12 19:46 newdev1.awk
+-rw-r--r-- 1 root root 1290 Sep 12 19:46 newdev2mysql.sh
+-rw-r--r-- 1 root root 738 Sep 12 19:46 newdev.awk
+-rw-r--r-- 1 root root 762 Sep 12 19:46 newdev.sh
+-rw-r--r-- 1 root root 693 Sep 12 19:46 pid.awk
+-rw-r--r-- 1 root root 518 Sep 12 19:46 pid.sh
+-rw-r--r-- 1 root root 99 Sep 12 19:46 print
+-rw-r--r-- 1 root root 30324 Sep 12 19:46 py
+-rw-r--r-- 1 root root 160 Sep 12 19:46 sendmail.sh
+-rw-r--r-- 1 root root 744 Sep 12 19:46 so.awk
+-rw-r--r-- 1 root root 93 Sep 12 19:46 t.awk
+drwxr-xr-x 2 root root 4096 Sep 12 19:46 TempStatsStore
+-rw-r--r-- 1 root root 311 Sep 12 19:46 test.awk
+-rw-r--r-- 1 root root 385 Sep 12 19:46 user.awk
+[root@hs12 sh]# vi active.awk
+</pre>
+
+</ul>
+<p>
+查看，脚本都在。
+</p>
+
+<p>
+整个恢复成功。
+</p>
+
+<p>
+所以唯一成功的是extundelete ,并且不能指定文件和目录，而是全部恢复，才能成功。
+</p>
+
+<p>
+一块石头落了地：）
+</p>
+
+<p>
+经验提供给后来者，一定要备份，磁盘要功能分区。rm命令要 alias rm=”rm -i”.
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

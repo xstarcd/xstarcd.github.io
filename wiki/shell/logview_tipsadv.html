@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>日志复杂统计实例</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">日志特殊统计实例</a>
+<ul>
+<li><a href="#toc_1.1">模块执行时间统计</a>
+<li><a href="#toc_1.2">netstat连接数统计</a>
+<li><a href="#toc_1.3">mysqldump包求和统计</a>
+<li><a href="#toc_1.4">日志分类统计次数</a>
+<li><a href="#toc_1.5">opentsdb处理时间分析</a>
+<li><a href="#toc_1.6">nginx日志时间格式转换</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">日志特殊统计实例</h1>
+
+<p>
+最后更新: 2012-12-28
+</p>
+
+<h2 id="toc_1.1">模块执行时间统计</h2>
+
+<p>
+根据执行时间计算最小、最大和平均值
+</p>
+
+<pre class="brush: bash">
+# 各类操作：请求次数、最短处理时长、最大处理时长、平均处理时长
+# 日志格式
+# 2012-02-22 16:00:01+0800 [-] REQUEST|d78392afde00407085cb9cd42d67f5ee|enter_scene|0.003
+# 2012-02-22 16:00:01+0800 [-] REQUEST|7f556a4ff25f4c71a9043738130bc5de|cd_queue_list|0.001
+# 2012-02-22 16:00:01+0800 [-] REQUEST|a5c961d1ef7842aca8535b8efe6ae06a|instance_list|0.030
+
+Rfile=20120222_16_18.server.log.opt.txt.gz
+Outfile=20120222_16_18.server.log.opt.txt
+key=`zcat $Rfile|grep " REQUEST|" |awk -F\| '{print $3}'|sort|uniq`
+
+echo "# 各类操作：请求次数、最短处理时长、最大处理时长、平均处理时长" &gt; "$Outfile"
+printf "key\tnum\tmin\tmax\tavg\n" &gt;&gt; "$Outfile"
+for k in $key;do \
+zcat $Rfile|grep " REQUEST|" | grep "|${k}|" \
+|awk -F \| -v key=${k} '
+BEGIN{
+  OFS="\t";
+}
+{
+  if( NR == 1) { min = $4;max = $4;total = $4;}
+  else{
+    if( $4 &lt; min ) { min = $4 }
+    if( $4 &gt; max ) { max = $4 }
+    total += $4;
+  }
+}
+END {
+avg = total * 1.0 / NR
+print key, NR, min,max, avg
+}' &gt;&gt; "$Outfile";done
+</pre>
+<pre>
+key num min max avg
+active_gest 5   0.002   0.002   0.002
+active_tactics  32  0.001   0.004   0.00246875
+add_gam 4   0.004   0.005   0.00425
+...
+</pre>
+<p>
+结果可方便地转换为表格形式：
+<table>
+<tr>
+<td>
+key
+</td>
+<td>
+num
+</td>
+<td>
+min
+</td>
+<td>
+max
+</td>
+<td>
+avg
+</td>
+</tr>
+<tr>
+<td>
+active_gest
+</td>
+<td>
+5
+</td>
+<td>
+0.002
+</td>
+<td>
+0.002
+</td>
+<td>
+0.002
+</td>
+</tr>
+<tr>
+<td>
+active_tactics
+</td>
+<td>
+32
+</td>
+<td>
+0.001
+</td>
+<td>
+0.004
+</td>
+<td>
+0.00246875
+</td>
+</tr>
+<tr>
+<td>
+add_gam
+</td>
+<td>
+4
+</td>
+<td>
+0.004
+</td>
+<td>
+0.005
+</td>
+<td>
+0.00425
+</td>
+</tr>
+</table>
+</p>
+
+<h2 id="toc_1.2">netstat连接数统计</h2>
+
+<pre class="brush: bash">
+#!/bin/sh
+curtime=`date +"%Y-%m-%d %H:%M:%S"`
+#netstatstr=`netstat -tn`
+netstatstr=`netstat -atn`
+
+#连接数
+EstablishedNum=`echo "$netstatstr"|grep "^tcp"|grep ESTABLISHED|wc -l|tail -n1`
+#连接ip数
+EstablishedIPNum=`echo "$netstatstr"|grep ESTABLISHED|awk '{print $5}'|awk -F: '{print $1}'|sort|uniq|wc -l|tail -n1`
+echo "$curtime EstablishedNUM:${EstablishedNum}|EstablishedIPNum:${EstablishedIPNum}"
+
+#chkports连接数
+chkports="$1"
+for port in `echo $chkports|sed 's/,/ /g'`
+do
+    if [ "${port}" != "" ] ;then
+        EstablishedMsgNum=`echo "$netstatstr"| grep "^tcp"|grep ESTABLISHED|grep ":${port}"|wc -l|tail -n1`
+        EstablishedMsgIpNum=`echo "$netstatstr"| grep "^tcp"|grep ESTABLISHED|grep ":${port}"\
+        |awk '{print $5}'|awk -F: '{print $1}'|sort|uniq|wc -l|tail -n1`
+        echo "$curtime EstablishedMsgNum(${port}):${EstablishedMsgNum}|EstablishedMsgIpNum(${port}):${EstablishedMsgIpNum}"
+    fi
+done
+
+State=`echo "$netstatstr"|awk '/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}'|sed -e ':a;N;s/\n/|/g;ta'|sed -e 's/ /:/g'`
+echo "$curtime State $State"
+
+echo ESTABLISHED IPs:
+echo "$netstatstr"|grep ESTABLISHED|awk '{print $5}'|awk -F: '{print $1}'|sort|uniq -c|sort -r -n
+
+echo SYN IPs:
+echo "$netstatstr"|grep SYN|awk '{print $5}'|awk -F: '{print $1}'|sort|uniq -c|sort -r -n
+
+exit 0
+</pre>
+<pre>
+# ./netstat.sh 11211
+2012-12-29 00:39:27 EstablishedNUM:19|EstablishedIPNum:2
+2012-12-29 00:39:27 EstablishedMsgNum(11211):8|EstablishedMsgIpNum(11211):1
+2012-12-29 00:39:27 State LISTEN:14|ESTABLISHED:19|TIME_WAIT:2
+ESTABLISHED IPs:
+     18 127.0.0.1
+      1 171.216.167.159
+SYN IPs:
+
+</pre>
+
+<h2 id="toc_1.3">mysqldump包求和统计</h2>
+
+<pre class="brush: bash">
+# 统计指定物品数量
+keys="PABA0100 PABB0100 PABC0100"
+dumpfile="db_hh01.20100821.dump.gz db_hh01.20100822.dump.gz db_hh01.20100823.dump.gz db_hh01.20100824.dump.gz db_hh01.20100825.dump.gz"
+for file in $dumpfile
+do
+    echo $file
+    for key in $keys
+    do
+        zcat "$file" \
+        |grep 'INSERT INTO `player_package`'\
+        |grep "$key" \
+        |sed -e 's/,/\t/g' -e 's/)/\t/g' \
+        |awk -v key=$key '
+        BEGIN{
+          OFS="\t"
+        }{
+          if(NR == 1) { total = $9;}
+          else {total += $9;}
+         }
+        END { print key"\t"total}'
+    done
+done
+</pre>
+<pre>
+db_hh01.20100826.dump.gz
+PABA0100    4869111
+PABB0100    529377
+PABC0100    521948
+db_hh01.20100827.dump.gz
+PABA0100    4916997
+PABB0100    534871
+PABC0100    527671
+...
+</pre>
+
+
+<h2 id="toc_1.4">日志分类统计次数</h2>
+
+<pre class="brush: bash">
+#!/bin/sh
+# 统计指定日期各游戏区登录角色数、登录次数
+# scriptname : LoginCount.sh
+
+# 日志范本
+# 2012-04-10 06:17:17,195-INFO-&gt;[loginserver]192.168.1.100|loginname|101960|001|http://abc.com/game/login/001
+
+logd="/bak/rbkup/applog/neijiang/applog"
+outd="/data/www/stat"
+# ------------------------------------------------------------------------------
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
+docount(){
+    day=$1
+    logf=$2
+
+    if [ ! -f "$logf" ];then
+        echo "Error: $logf not exist!"
+        return 2
+    fi
+
+    zcat "$logf" |grep "\[loginserver\]"\
+    |awk -F\| '{print $2" "$4}'|sort|uniq -c|sort -nr \
+    |awk -v day="${day}" '
+    BEGIN{
+        OFS="\t";
+        printf("%-10s %-10s %-18s %-18s %-18s %-18s\n","日期","区编号","登录角色数","登录总次数","角色最大次数","角色平均次数");
+        }
+        {
+            if( ! dictimes[$3] ) { dictimes[$3]=0; }
+            if( ! dicusers[$3] ) { dicusers[$3]=0; }
+            if( ! dicmax[$3] ) { dicmax[$3]=0; }
+            dictimes[$3]+=$1;
+            dicusers[$3]+=1;
+            if( dicmax[$3] &lt; $1 ) { dicmax[$3] = $1; }
+        }
+    END{
+        for (k in dictimes) { 
+            avg = dictimes[k] * 1.0 / dicusers[k];
+
+            printf("%-10s %-8s %-10d %-10d %-10d %-10.1f\n",day,k,dicusers[k],dictimes[k],dicmax[k],avg);
+         }
+       }'
+}
+
+if [ -z $1 ];then
+    day=`date --date='yesterday' +%Y%m%d`
+else
+    day=$1
+fi
+month=`echo $day |cut -b 1-6`
+output="${outd}/LoginCount_${month}.txt"
+logf="${logd}/passport_info.log.${day}.gz"
+
+docount "$day" "$logf" &gt;&gt; "$output" 2&gt;&amp;1
+
+</pre>
+<pre>
+日期     区编号  登录角色数    登录总次数    角色最大次数 角色平均次数
+20120331   001      26         190        34         7.3
+20120331   002      21         245        62         11.7
+...
+</pre>
+
+<h2 id="toc_1.5">opentsdb处理时间分析</h2>
+
+<pre class="brush:bash">
+#!/bin/sh
+# opentsdb日志查询时间统计
+# 日志格式
+#2014-04-04 14:28:01,082 INFO  [New I/O worker #2] HttpQuery: [id: 0xfdc57fc7, /172.17.11.30:42105 =&gt; /172.17.19.80:4243] HTTP /api/put done in 0ms
+#2014-04-04 14:28:07,592 INFO  [New I/O worker #1] HttpQuery: [id: 0x08036d88, /172.17.19.79:31998 =&gt; /172.17.19.80:4243] HTTP /api/query done in 7ms
+
+[ -z "$1" ] &amp;&amp; echo "Usage:$0 opentsdblogfile" &amp;&amp; exit 1
+[ ! -f "$1" ] &amp;&amp; echo "Error: logfile $1 not exist!" &amp;&amp; exit 1
+
+Rfile=$1
+Outfile=$Rfile.`date +'%Y%m%d_%H%M%S'`.txt
+
+key=`zcat $Rfile|grep 'INFO.*HttpQuery:'|awk '{print $15}'|sort|uniq`
+echo -e "$key" 
+ 
+echo "# 各类操作：请求次数、最短处理时长、最大处理时长、平均处理时长" &gt; "$Outfile"
+printf "key\tnum\tmin\tmax\tavg\n" &gt;&gt; "$Outfile"
+for k in $key;do \
+zcat $Rfile|grep 'INFO.*HttpQuery:' | grep "HTTP ${k} "|sed 's/ms$//g' \
+|awk -v key=${k} '
+BEGIN{
+  OFS="\t";
+}
+{
+  if( NR == 1) { min = $18;max = $18;total = $18;}
+  else{
+    if( $18 &lt; min ) { min = $18 }
+    if( $18 &gt; max ) { max = $18 }
+    total += $18;
+  }
+}
+END {
+avg = total * 1.0 / NR
+print key, NR, min,max, avg
+}' &gt;&gt; "$Outfile";done
+</pre>
+<ul>
+<li>
+输出结果：
+<pre>
+# 各类操作：请求次数、最短处理时长、最大处理时长、平均处理时长
+key     num     min     max     avg
+/api/put        51059   0       185     1.06655
+/api/query      607857  1       9216    1903.8
+/api/uid/assign 1       26      26      26
+</pre>
+
+</ul>
+
+<h2 id="toc_1.6">nginx日志时间格式转换</h2>
+
+<ul>
+<li>
+来源:
+
+<ul>
+<li>
+<a href="http://hi.baidu.com/ouchaonihao/item/c85f62016c710914addc7066">http://hi.baidu.com/ouchaonihao/item/c85f62016c710914addc7066</a>
+
+<li>
+<a href="http://hi.baidu.com/chenliujin/item/2c3e68f854a8d3cc521c26dc">http://hi.baidu.com/chenliujin/item/2c3e68f854a8d3cc521c26dc</a>
+
+</ul>
+<li>
+脚本一
+<pre class="brush:bash">
+awk -F "|" -f ch.awk airpush_ht.access.log
+cat ch.awk
+{
+    s1=substr($3,2,20);
+    gsub(/\//," ",s1);
+    date=substr(s1,1,11);
+    time=substr(s1,13,11);
+    xx=("\'"date" "time"\'");
+    "date +%s -d "xx"|xargs -i date -d @\"{}\" +%Y-%m-%d\" \"%H:%M:%S" |getline yy;
+    for(i=1;i&lt;=NF;i++)
+        if(i==3){printf "%s ",yy} 
+        else{
+            if(i!=NF){printf $i} 
+            else{print $i}
+        }
+}
+</pre>
+
+<li>
+脚本二
+<pre class="brush:bash">
+#!/bin/bash
+for file in ~/log.*
+do
+    cat $file | grep -v  '\.\(css\|js\|gif\|jpg\|jpeg\|JPG\|png\|swf\)' | \
+    awk -F '|' ' BEGIN { OFS="|"; }
+        {
+            gsub(/\//, " ", $6);
+            d=substr($6,1,11);
+            t=substr($6,13,14);
+            day=d" "t;
+            "date -d \""day"\" +\"%Y-%m-%d %H:%M:%S\"" | getline created_at;
+            "date -d \""day"\" +\"%Y%m%d\"" | getline created_date;;
+            "date -d \""day"\" +\"%H0000\"" | getline created_time;
+            $6=created_at;
+            print $0 &gt;&gt; "/root/nginx_"created_date"_"created_time
+        } ';
+done
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

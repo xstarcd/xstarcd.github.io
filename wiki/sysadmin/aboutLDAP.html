@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>关于LDAP</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">关于LDAP</a>
+<ul>
+<li><a href="#toc_1.1">什么是LDAP?</a>
+<li><a href="#toc_1.2">什么是slapd以及它能干什么?</a>
+<li><a href="#toc_1.3">配置LDAP域信息</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">关于LDAP</h1>
+
+<p>
+原文：<a href="http://wiki.jabbercn.org/OpenLDAP2.4管理员指南">http://wiki.jabbercn.org/OpenLDAP2.4管理员指南</a>
+</p>
+
+<h2 id="toc_1.1">什么是LDAP?</h2>
+
+<p>
+LDAP表示轻型目录访问协议. 顾名思义，它是一个轻量级协议，用于访问目录服务，特别是基于X.500的目录服务. LDAP运行在TCP / IP或其他面向连接的传输服务. LDAP是一个IETF标准跟踪协议，在“轻量级目录访问协议（ LDAP ）技术规范路线图”RFC4510中被指定。
+</p>
+
+<p>
+本节概述了从用户的角度来看LDAP的样子。
+</p>
+
+<ul>
+<li>
+什么样的信息可以存储在目录?
+
+</ul>
+
+<p>
+LDAP信息模型是基于条目的. 一个条目是一个属性的集合，有一个全球唯一的识别名（ DN ）. DN用于明白无误地标识条目. 每个条目的属性有一个类型和一个或多个值. 该类型通常是可记忆的字符串，如“ cn ”就是标识通用名称，或“电子邮件”就是电子邮件地址。 值的语法依赖于属性类型. 例如, 一个 cn 属性可以包含一个值 Babs Jensen. 一个 mail 属性可以包含值"babs@example.com". 一个 jpegPhoto 属性将包含一个JPEG (binary) 格式的照片.
+</p>
+
+<ul>
+<li>
+信息如何组织?
+
+</ul>
+
+<p>
+在LDAP, 目录条目都被排列在一个分层树形结构。传统上，这种结构反映了地域和/或组织界限. 代表国家的条目出现在树的顶端。它们下面是代表州和国家组织的条目. 再下面可能是代表组织单位,人,打印机,文档,或只是任何你你能想象到的东西. 图1.1所示的LDAP目录树中使用传统的命名。 
+</p>
+
+<p>
+<a href="http://www.openldap.org/doc/admin24/intro_tree.png">images/http://www.openldap.org/doc/admin24/intro_tree.png</a>
+</p>
+
+<p>
+树也可以根据互联网域名组主。这种命名方式正越来越受欢迎，因为它允许使用DNS为目录服务定位 。图1.2所示的LDAP目录树中使用基于域的命名。
+</p>
+
+<p>
+<a href="http://www.openldap.org/doc/admin24/intro_dctree.png">images/http://www.openldap.org/doc/admin24/intro_dctree.png</a> 
+</p>
+
+<p>
+此外，可让您的LDAP控制在一个条目中哪个属性是必需的和允许的，通过使用一种特殊属性objectClass。objectClass属性的值确定条目必须遵守的架构规则。
+</p>
+
+<ul>
+<li>
+信息是如何引用的的?
+
+</ul>
+
+<p>
+一个条目所引用的辨别名称，是构造于名字本身（称为相对辨别名称Relative Distinguished Name或RDN ）再串连其祖先条目的名字。 例如, 在上面Internet命名例子里的条目 Barbara Jensen 有一个 RDN 为 uid=babs 和一个 DN 为 uid=babs,ou=People,dc=example,dc=com. 全 DN 格式在 RFC4514 中的 "LDAP: String Representation of Distinguished Names."有描述.
+</p>
+
+<ul>
+<li>
+如何访问信息?
+
+</ul>
+
+<p>
+LDAP定义了查问和更新目录的操作. 提供的操作包括，从一个目录增加和删除一个条目,变更一个已存在的条目，以及变更一个条目的名字. 尽管，绝大部分时间, LDAP 是用于在目录中搜索信息. LDAP搜索操作允许目录的一些部分被搜索以寻找那些满足搜索过滤器规定的条件的条目. 可以请求每个和要求相匹配的条目的信息。
+</p>
+
+<p>
+例如, 你可以在 dc=example,dc=com之下的整个目录树，搜索一个人，他的名字是 Barbara Jensen, 接收每个发现的条目的 email 地址. LDAP 让你很简单地完成这件事. 或者你可能想直接在st=California,c=US下搜索， organizations 为Acme 的所有条目的名字以及传真号码. LDAP 也能让你做到. 下一节对于你能用LDAP做什么和它如何帮助你做更详细的描述.
+</p>
+
+<ul>
+<li>
+如何从未授权的访问中保护信息?
+
+</ul>
+
+<p>
+一些目录服务不提供保护, 允许任何人查看信息. LDAP提供了给客户一个机制，向一个目录服务器验证或保护他的标识，提供了丰富的访问控制方法来保护服务器包含的信息. LDAP也支持数据安全 (完整性和保密性) 服务. 
+</p>
+
+<p>
+...
+OpenLDAP使用Berkeley DB并行/事务数据库软件.
+...
+</p>
+
+
+<h2 id="toc_1.2">什么是slapd以及它能干什么?</h2>
+
+<p>
+slapd(8) 是一个 LDAP 目录服务器，可以运行在各种不同的平台之上. 你可使用它提供一个你自己的目录服务. 你的目录可能包含非常多期望放进去的东西. 你可以把它连接到全球 LDAP 目录服务中, 或完全自己运行一个目录服务. 一些 slapd's 更有意思的功能和能力包括:
+</p>
+
+<p>
+<strong>LDAPv3:</strong> slapd实现了轻量级目录访问协议的版本3. slapd支持 LDAP 运行于 IPv4 和 IPv6 以及 Unix IPC.
+</p>
+
+<p>
+<strong>简单验证和安全层:</strong> slapd通过使用SASL支持强验证和数据安全(完整性和保密性) 服务. slapd的SASL实现利用了 Cyrus SASL 软件，它支持不少机制，包括 DIGEST-MD5, EXTERNAL, 和 GSSAPI.
+</p>
+
+<p>
+<strong>传输层安全：</strong> slapd通过使用TLS的（或SSL ）支持基于证书的身份验证和数据安全（完整性和保密性）服务。slapd的TLS实现可以利用OpenSSL或GnuTLS软件。
+</p>
+
+<p>
+<strong>拓扑控制：</strong> slapd可以被配置为根据网络的拓扑结构信息限制访问的套接字层。此功能利用了TCP包装。
+</p>
+
+<p>
+<strong>访问控制：</strong> slapd提供了丰富和强大的访问控制设施，使您可以控制对你的数据库的信息的获取 。您可以基于LDAP授权信息， IP地址，域名和其他标准控制对条目的访问。slapd支持静态和动态的访问控制信息。slapd provides a rich and powerful access control facility,
+</p>
+
+<p>
+<strong>国际化：</strong> slapd支持Unicode和语言标签。
+</p>
+
+<p>
+<strong>可选的数据库后端：</strong> slapd配备了各种不同的数据库后端您可以从中选择。它们包括*BDB*，一个高性能的交易数据库后端;*HDB*，一个分级的高性能的交易后端;*SHELL*，一个后端接口通向任意 shell脚本;和PASSWD，一个简单的后端接口，到passwd （ 5 ）文件。BDB和HDB后端利用了Oracle Berkeley DB。
+</p>
+
+<p>
+<strong>多数据库实例：</strong> slapd可以配置为在同一时间服务多个数据库。这意味着，一个单一的slapd服务器能够使用相同或不同的数据库后端，响应许多逻辑上不同的LDAP树的请求。
+</p>
+
+<p>
+<strong>通用模块API</strong> ：如果您需要更加个性化， slapd让你轻松地写自己的模块。slapd包括两个不同的部分：处理和LDAP客户沟通协议的前端;和处理特定任务，如数据库操作的模块。因为这两个部分之间通过一个明确界定的C API通讯 ，你可以用多种方式写自己的定制模块扩展slapd。此外，提供了一些可编程数据库模块。这些允许你使用流行的编程语言（ Perl，shell和SQL ）暴露外部数据源给slapd 。
+</p>
+
+<p>
+<strong>线程：</strong> slapd是线程高性能的。一个单一的多线程slapd进程使用线程池处理所有传入的请求。这减少了系统开销，同时提供所需的高性能。
+</p>
+
+<p>
+<strong>复制：</strong> slapd可以被配置为维护目录信息的影子复制。这个单主/多从复制规划，对于安装单一的slapd而不提供必要的可用性和可靠性的高容量环境，是至关重要的。对于不能接受单点故障的要求极高的环境，也可以用多主复制。 slapd包含了对LDAP基于同步的复制的支持。
+</p>
+
+<p>
+<strong>代理缓存：</strong> slapd可以被配置为一个缓存的LDAP代理服务。
+</p>
+
+<p>
+<strong>配置：</strong> slapd是高度可配置的，通过一个单一的配置文件你可以改变一切,任何你想改变的东西。配置选项有合理的默认值，使您的工作更加容易。配置也可以使用LDAP本身动态的执行，这极大地改善了可管理性。 
+</p>
+
+<h2 id="toc_1.3">配置LDAP域信息</h2>
+<p>
+OpenLDAP 2.3及以后版本改用动态配置引擎：<a href="http://www.openldap.org/doc/admin24/slapdconf2.html">http://www.openldap.org/doc/admin24/slapdconf2.html</a>
+</p>
+<pre>
+man slapd-config
+slapd-config - configuration backend to slapd
+slapd - Stand-alone LDAP Daemon
+
+* is fully LDAP-enabled
+* is managed using the standard LDAP operations
+* stores its configuration data in an LDIF database, generally in the /usr/local/etc/openldap/slapd.d directory.
+* allows all of slapd's configuration options to be changed on the fly, generally without requiring a server 
+restart for the changes to take effect.
+...
+Note: Although the slapd-config(5) system stores its configuration as (text-based) LDIF files, 
+you should never edit any of the LDIF files directly. Configuration changes should be performed via LDAP operations,
+ e.g. ldapadd(1), ldapdelete(1), or ldapmodify(1).
+...
+</pre>
+
+<p>
+<a href="http://www.openldap.org/doc/admin24/config_dit.png">images/http://www.openldap.org/doc/admin24/config_dit.png</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

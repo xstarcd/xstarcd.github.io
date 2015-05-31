@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>关于markdown语法</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>关于markdown语法</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">基础篇</a>
+<li><a href="#toc_0.2">语法篇</a>
+<ul>
+<li><a href="#toc_0.2.1">段落/换行</a>
+<li><a href="#toc_0.2.2">标题</a>
+<li><a href="#toc_0.2.3">引用</a>
+<li><a href="#toc_0.2.4">代码</a>
+<li><a href="#toc_0.2.5">列表</a>
+<li><a href="#toc_0.2.6">链接</a>
+<li><a href="#toc_0.2.7">强调</a>
+<li><a href="#toc_0.2.8">图片</a>
+<li><a href="#toc_0.2.9">分隔符</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+Markdown语法简介：<a href="http://upwith.me/?p=503">http://upwith.me/?p=503</a>
+
+<li>
+Markdown 语法说明 (简体中文版): <a href="http://wowubuntu.com/markdown/basic.html">http://wowubuntu.com/markdown/basic.html</a>
+
+</ul>
+
+<h2 id="toc_0.1">基础篇</h2>
+
+<p>
+首先来介绍一下什么是Markdown？我们可以先来看一下Wiki上面的的介绍，介绍是英文的，很长，简单来说，Markdown就是一种轻量级的标记语言。或者说，就是一种文本的书写格式，文件保存格式。
+</p>
+
+<ul>
+<li>
+Markdown适合
+
+<ul>
+<li>
+博客
+
+<li>
+论文
+
+<li>
+写书
+
+</ul>
+</ul>
+
+<ul>
+<li>
+Markdown优点
+
+<ul>
+<li>
+简单
+
+<li>
+格式转换方便
+
+<li>
+专注内容而不是排版
+
+<li>
+Markdown是纯文本文件，兼顾了「什么都能打开」
+
+</ul>
+</ul>
+
+<h2 id="toc_0.2">语法篇</h2>
+
+<p>
+接着我们来简单的介绍一下Markdown的语法和使用方法
+</p>
+
+<h3 id="toc_0.2.1">段落/换行</h3>
+<ul>
+<li>
+分段：空一行(2个回车)
+
+<li>
+换行：文末加2个或者2个以上的空格
+
+</ul>
+
+<h3 id="toc_0.2.2">标题</h3>
+<ul>
+<li>
+标题h1~h6,使用相应的#个数作为前缀，比如以下代码表示h2
+<pre>
+    ## 我是h2
+</pre>
+
+</ul>
+
+<h3 id="toc_0.2.3">引用</h3>
+<pre>
+     &gt; 这是引用
+</pre>
+
+<h3 id="toc_0.2.4" class="justcenter">代码</h3>
+
+<p>
+在一般的段落文字中，你可以使用反引号 ` 来标记代码区段，区段内的 &amp;、&lt; 和 &gt; 都会被自动的转换成 HTML 实体，这项特性让你可以很容易的在代码区段内插入 HTML 码。
+</p>
+
+<p>
+如果要建立一个已经格式化好的代码区块，只要每行都缩进 4 个空格或是一个 tab 就可以了，而 &amp;、&lt; 和 &gt; 也一样会自动转成 HTML 实体。
+</p>
+
+<h3 id="toc_0.2.5">列表</h3>
+
+<p>
+使用星号(*)、加号(+)、减号(-)表示无序列表，使用数字来表示有序列表
+</p>
+
+<ul>
+<li>
+无序列表
+<pre>
+    * 我是列表1
+    * 我是列表2
+    * 我是列表3
+</pre>
+
+<li>
+有序列表
+<pre>
+    1. 我是数字1
+    2. 我是数字2
+    3. 我是数字3
+</pre>
+
+</ul>
+
+<h3 id="toc_0.2.6">链接</h3>
+
+<ul>
+<li>
+普通链接
+<pre>
+    我的[Wiki](http://w.gdu.me)
+</pre>
+
+</ul>
+
+<ul>
+<li>
+参考式连接
+<pre>
+    我的Wiki[Wiki][1]
+    [1]: http://w.gdu.me
+</pre>
+
+</ul>
+
+<h3 id="toc_0.2.7">强调</h3>
+
+<ul>
+<li>
+斜体
+<pre>
+    * 我是斜体 *
+</pre>
+
+</ul>
+
+<ul>
+<li>
+加粗
+<pre>
+    ** 我是加粗 **
+</pre>
+
+</ul>
+
+<h3 id="toc_0.2.8">图片</h3>
+<pre>
+    ![Alt text](http://www.aaa.com/xxx.jpg)
+</pre>
+
+<h3 id="toc_0.2.9">分隔符</h3>
+
+<p>
+在一行中用三个以上的星号(*)、减号(-)、下划线(_) 来建立一个分隔线
+</p>
+<pre>
+* * *
+- - -
+_ _ _
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

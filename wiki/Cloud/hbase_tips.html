@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>hbase日常操作收集</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">hbase日常操作收集</a>
+<ul>
+<li><a href="#toc_1.1">基本命令</a>
+<li><a href="#toc_1.2">日常维护的命令</a>
+<li><a href="#toc_1.3">重启一个regionserver</a>
+<li><a href="#toc_1.4">关闭下线一台regionserver</a>
+<li><a href="#toc_1.5">检查region是否正常以及修复</a>
+<li><a href="#toc_1.6">hbase的迁移</a>
+<li><a href="#toc_1.7">错误处理</a>
+<li><a href="#toc_1.8">其他信息</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">hbase日常操作收集</h1>
+
+<ul>
+<li>
+参考：
+
+<ol>
+<li>
+<a href="http://my.oschina.net/beiyou/blog/76456">http://my.oschina.net/beiyou/blog/76456</a>
+
+</ol>
+</ul>
+
+
+<h2 id="toc_1.1">基本命令</h2>
+
+<ul>
+<li>
+建表
+<pre>
+create 'testtable','coulmn1','coulmn2'
+</pre>
+
+</ul>
+
+<p>
+也可以建表时加coulmn的属性如：
+</p>
+
+<pre>
+create 'testtable',
+     {NAME =&gt; 'coulmn1', BLOOMFILTER =&gt; 'NONE', REPLICATION_SCOPE =&gt; '0', VERSIONS =&gt; '10', 
+        COMPRESSION =&gt; 'LZO', TTL =&gt; '30000', IN_MEMORY =&gt; 'false', BLOCKCACHE =&gt; 'false'}, 
+     {NAME =&gt; 'coulmn', BLOOMFILTER =&gt; 'NONE', REPLICATION_SCOPE =&gt; '0', VERSIONS =&gt; '30', 
+        COMPRESSION =&gt; 'LZO', TTL =&gt; '30000', IN_MEMORY =&gt; 'true'}
+</pre>
+
+<p>
+其中的属性有versions：设置历史版本数，TTL：过期时间，COMPRESSION：压缩方式，当配置lzo的情况
+</p>
+
+<ul>
+<li>
+删除表
+
+</ul>
+
+<p>
+删除表之前先要禁用表
+</p>
+
+<pre>
+disable 'testtable'
+drop 'testtable'
+</pre>
+
+<ul>
+<li>
+describe 'testtable'（查看表结构）
+
+<li>
+alter修改表结构
+
+<li>
+list列出所有表
+
+<li>
+hbase中的disable和enable
+
+</ul>
+
+<p>
+<a href="http://www.oratea.net/?p=1343">http://www.oratea.net/?p=1343</a>
+</p>
+
+<p>
+disable和enable都是hbase中比较常见的操作，很多对table的修改都需要表在disable的状态下才能进行。
+</p>
+
+<ul>
+<li>
+disable
+
+</ul>
+
+<p>
+当通过disable ‘sunwg01′将表sunwg01的状态更改为disable的时候，hbase会在zookeeper中的table结点下做个记录，如下：
+</p>
+
+<pre>
+[zk: hadoop01:2181(CONNECTED) 32] get /hbase/table/sunwg01
+3203@hadoop01DISABLED
+cZxid = 0×3017
+ctime = Fri Jun 29 14:00:07 CST 2012
+mZxid = 0×3022
+mtime = Fri Jun 29 14:05:05 CST 2012
+pZxid = 0×3017
+cversion = 0
+dataVersion = 1
+aclVersion = 0
+ephemeralOwner = 0×0
+dataLength = 26
+numChildren = 0
+</pre>
+
+<p>
+结点/hbase/table/sunwg01的值并不是3203@hadoop01DISABLED，而还有些不可能见的字符在里面。
+</p>
+
+<p>
+在zookeeper记录下该表的同时，还会将表sunwg01的region全部下线，region为offline状态。
+</p>
+
+<ul>
+<li>
+enable
+
+</ul>
+
+<p>
+enable的过程和disable相反，会把表sunwg01的所有region上线，并删除zookeeper下的标志。但有个问题需要主要，如果在enable前，META中有region的server信息，那么此时会在该server上将该region online；如果没有server的信息，那么此时还要随机选择一台机器作为该region的server。
+</p>
+
+
+<h2 id="toc_1.2">日常维护的命令</h2>
+
+<ul>
+<li>
+major_compact 'testtable'
+
+</ul>
+
+<p>
+通常生产环境会关闭自动major_compact(配置文件中hbase.hregion.majorcompaction设为0)，选择一个晚上用户少的时间窗口手工major_compact。
+</p>
+
+<p>
+如果hbase更新不是太频繁，可以一个星期对所有表做一次major_compact，这个可以在做完一次major_compact后，观看所有的storefile数量，如果storefile数量增加到major_compact后的storefile的近二倍时，可以对所有表做一次major_compact，时间比较长，操作尽量避免高锋期。
+</p>
+
+<ul>
+<li>
+flush 'testtable'
+
+</ul>
+
+<p>
+将所有memstore刷新到hdfs，通常如果发现regionserver的内存使用过大，造成该机的regionserver很多线程block，可以执行一下flush操作，这个操作会造成hbase的storefile数量剧增，应尽量避免这个操作。
+</p>
+
+<p>
+还有一种情况，在hbase进行迁移的时候，如果选择拷贝文件方式，可以先停写入，然后flush所有表，拷贝文件。
+</p>
+
+<ul>
+<li>
+balance_switch
+
+</ul>
+
+<p>
+balance_switch flase|true，配置master是否执行平衡各个regionserver的region数量，当我们需要维护或者重启一个regionserver时，会关闭balancer，这样就使得region在regionserver上的分布不均，这个时候需要手工的开启balance。
+</p>
+
+
+<h2 id="toc_1.3">重启一个regionserver</h2>
+<pre>
+bin/graceful_stop.sh --restart --reload --debug nodename
+</pre>
+
+<p>
+这个操作是平滑的重启regionserver进程，对服务不会有影响，他会先将需要重启的regionserver上面的所有region迁移到其它的服务器，然后重启，最后又会将之前的region迁移回来。
+</p>
+
+<p>
+当我们修改一个配置时，可以用这种方式重启每一台机子，这个命令会关闭balancer，所以最后我们要在hbase shell里面执行一下balance_switch true。
+</p>
+
+<p>
+对于hbase regionserver重启，不要直接kill进程，这样会造成在zookeeper.session.timeout这个时间长的中断，也不要通过bin/hbase-daemon.sh stop regionserver去重启，如果运气不太好，-ROOT-或者.META.表在上面的话，所有的请求会全部失败。
+</p>
+
+
+<h2 id="toc_1.4">关闭下线一台regionserver</h2>
+<pre>
+bin/graceful_stop.sh --stop  nodename
+</pre>
+
+<p>
+和上面一样，系统会在关闭之前迁移所有region，然后stop进程，同样最后我们要手工balance_switch true，开启master的region均衡。
+</p>
+
+<h2 id="toc_1.5">检查region是否正常以及修复</h2>
+
+<pre>
+bin/hbase hbck       #检查
+bin/hbase hbck -fix  #修复
+</pre>
+
+<p>
+会返回所有的region是否正常挂载，如没有正常挂载可以使用下一条命令修复，如果还是不能修复，那需要看日志为什么失败，手工处理。
+</p>
+
+
+<h2 id="toc_1.6">hbase的迁移</h2>
+
+<ul>
+<li>
+copytable方式
+
+</ul>
+
+<pre>
+bin/hbase org.apache.hadoop.hbase.mapreduce.CopyTable --peer.adr=zookeeper1,zookeeper2,zookeeper3:/hbase 'testtable'
+</pre>
+
+<p>
+目前0.92之前的版本的不支持多版本的复制，0.94已经支持多个版本的复制。当然这个操作需要添加hbase目录里的conf/mapred-site.xml，可以复制hadoop的过来。
+</p>
+
+<ul>
+<li>
+Export/Import
+
+</ul>
+
+<pre>
+bin/hbase org.apache.hadoop.hbase.mapreduce.Export testtable /user/testtable [versions] [starttime] [stoptime]
+bin/hbase org.apache.hadoop.hbase.mapreduce.Import testtable /user/testtable
+</pre>
+
+<p>
+跨版本的迁移，我觉得是一个不错的选择，而且copytable不支持多版本，而export支持多版本，比copytable更实用一些。
+</p>
+
+<ul>
+<li>
+直接拷贝hdfs对应的文件
+
+</ul>
+
+<p>
+首先拷贝hdfs文件，如:
+</p>
+<pre>
+bin/hadoop distcp hdfs://srcnamenode:9000/hbase/testtable/ hdfs://distnamenode:9000/hbase/testtable/
+</pre>
+
+<p>
+然后在目的hbase上执行:
+</p>
+<pre>
+bin/hbase org.jruby.Main bin/add_table.rb /hbase/testtable
+</pre>
+
+<p>
+生成meta信息后，重启hbase
+</p>
+
+<p>
+这个操作是简单的方式，操作之前可以关闭hbase的写入，执行flush所有表（上面有介绍）,再distcp拷贝，如果hadoop版本不一致，可以用hftp接口的方式，我推荐使用这种方式，成本低。
+</p>
+
+
+<h2 id="toc_1.7">错误处理</h2>
+
+<ul>
+<li>
+关于错误No server address listed in .META. for region
+
+</ul>
+
+<p>
+<a href="http://www.oratea.net/?p=1345">http://www.oratea.net/?p=1345</a>
+</p>
+
+<p>
+有的时候会遇到如下的错误：
+</p>
+<pre>
+hbase(main):001:0&gt; scan ‘sunwg01′
+ROW COLUMN+CELL
+
+ERROR: org.apache.hadoop.hbase.client.NoServerForRegionException: No server address listed in .META. 
+for region sunwg01,,1340950453949.4464c1f0c6bdee802052d669af6db6ae.
+</pre>
+
+<p>
+原因是hbase在.META.中没有办法找到该region的server信息，也就是没有办法找到该region所在server地址。
+</p>
+
+<p>
+这个时候比较简单的处理方式就是先disable table，然后enable table，在enable的时候会对region重新分配regionserver。
+</p>
+
+<pre>
+hbase(main):002:0&gt; disable ‘sunwg01′
+0 row(s) in 2.1500 seconds
+
+hbase(main):003:0&gt; enable ‘sunwg01′
+0 row(s) in 2.0700 seconds
+
+hbase(main):004:0&gt; scan ‘sunwg01′
+ROW COLUMN+CELL
+r1 column=f1:k1, timestamp=1340950459281, value=100
+1 row(s) in 0.0570 seconds
+</pre>
+
+
+<h2 id="toc_1.8">其他信息</h2>
+
+
+<ul>
+<li>
+RegionSever统计信息说明
+
+</ul>
+
+<p>
+<a href="http://www.oratea.net/?p=1320">http://www.oratea.net/?p=1320</a>
+</p>
+
+<p>
+通过浏览器访问RegionServer的60030端口可以查看该RegionSever的各方面的统计信息。
+</p>
+
+<p>
+通过这些统计信息可以对RegionServer的各个方面有大概的了解，知道当前ReginoServer的运行情况，为RegionServer的优化和配置提供数据支持
+</p>
+
+<p>
+如：<a href="http://slave003:60030/rs-status">http://slave003:60030/rs-status</a>
+</p>
+
+<p>
+Metrics中的各个状态信息：
+<table>
+<tr>
+<th>
+名称
+</th>
+<th>
+含义
+</th>
+</tr>
+<tr>
+<td>
+requestsPerSecond
+</td>
+<td>
+上次统计到现在的每秒的请求数，包括写和读
+</td>
+</tr>
+<tr>
+<td>
+numberOfOnlineRegions
+</td>
+<td>
+在线的region的个数
+</td>
+</tr>
+<tr>
+<td>
+numberOfStores
+</td>
+<td>
+总的store的个数，多个column family会对应多个store
+</td>
+</tr>
+<tr>
+<td>
+numberOfStorefiles
+</td>
+<td>
+总的storefile的个数
+</td>
+</tr>
+<tr>
+<td>
+storefileIndexSizeMB
+</td>
+<td>
+总的storefile的索引大小
+</td>
+</tr>
+<tr>
+<td>
+rootIndexSizeKB
+</td>
+<td>
+总的根索引的大小
+</td>
+</tr>
+<tr>
+<td>
+totalStaticIndexSizeKB
+</td>
+<td>
+总的非压缩的data block索引大小，包括根索引，枝索引，叶索引
+</td>
+</tr>
+<tr>
+<td>
+totalStaticBloomSizeKB
+</td>
+<td>
+总的非压缩Bloom索引大小
+</td>
+</tr>
+<tr>
+<td>
+memstoreSizeMB
+</td>
+<td>
+总memstore的大小，memstore中存储尚未被flush到hdfs上的数据
+</td>
+</tr>
+<tr>
+<td>
+readRequestsCount
+</td>
+<td>
+读请求数
+</td>
+</tr>
+<tr>
+<td>
+writeRequestsCount
+</td>
+<td>
+写请求数
+</td>
+</tr>
+<tr>
+<td>
+compactionQueueSize
+</td>
+<td>
+compact队列长度
+</td>
+</tr>
+<tr>
+<td>
+flushQueueSize
+</td>
+<td>
+region flush队列长度
+</td>
+</tr>
+<tr>
+<td>
+usedHeapMB
+</td>
+<td>
+已经使用的堆大小
+</td>
+</tr>
+<tr>
+<td>
+maxHeapMB
+</td>
+<td>
+总的堆大小，总的堆大小一般是堆设置减去4mb，这4mb是保留区域大小，可以通过参数修改
+</td>
+</tr>
+<tr>
+<td>
+blockCacheSizeMB
+</td>
+<td>
+已使用块缓冲的大小
+</td>
+</tr>
+<tr>
+<td>
+blockCacheFreeMB
+</td>
+<td>
+空闲的块缓冲大小
+</td>
+</tr>
+<tr>
+<td>
+blockCacheCount
+</td>
+<td>
+块缓冲数
+</td>
+</tr>
+<tr>
+<td>
+blockCacheHitCount
+</td>
+<td>
+块缓冲命中数
+</td>
+</tr>
+<tr>
+<td>
+blockCacheMissCount
+</td>
+<td>
+块缓冲未命中数
+</td>
+</tr>
+<tr>
+<td>
+blockCacheEvictedCount
+</td>
+<td>
+lru淘汰块数
+</td>
+</tr>
+<tr>
+<td>
+blockCacheHitRatio
+</td>
+<td>
+总块缓冲命中率
+</td>
+</tr>
+<tr>
+<td>
+blockCacheHitCachingRatio
+</td>
+<td>
+指定访问cache的缓冲命中率
+</td>
+</tr>
+<tr>
+<td>
+hdfsBlocksLocalityIndex
+</td>
+<td>
+hdfs块本地访问比率
+</td>
+</tr>
+</table>
+</p>
+
+<ul>
+<li>
+hbase监控指标均可通过http形式的jmx方式采集：
+<pre  class="brush:bash">
+# 采集master 上的hb.m.AverageLoad
+http://172.17.19.81:60010/jmx?qry=hadoop:service=Master,name=Master
+
+# 采集master 上的hb.m.AverageLoad以外的指标
+http://172.17.19.81:60010/jmx?qry=hadoop:service=Master,name=MasterStatistics
+
+# 采集region server 上的指标（hbase.txt 文件中 hbase.regionserver.*）
+http://172.17.19.81:60030/jmx?qry=hadoop:service=RegionServer,name=RegionServerStatistics
+
+# 采集region server 上的动态统计指标（hbase.txt 文件中 hbase.RegionServerDynamicStatistics.*）
+http://172.17.19.81:60030/jmx?qry=hadoop:service=RegionServer,name=RegionServerDynamicStatistics
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>pptp</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>pptp</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Linux命令行拨pptpd</a>
+</ul>
+</div>
+
+<ul>
+<li>
+Debian/Ubuntu PPTP VPN 安装笔记: <a href="http://wangyan.org/blog/debian-pptp-vpn.html">http://wangyan.org/blog/debian-pptp-vpn.html</a>
+
+<li>
+PPTP/L2TP + FreeRADIUS + MySQL 安装与配置: <a href="http://wangyan.org/blog/freeradius-pptp-l2tp-html.html">http://wangyan.org/blog/freeradius-pptp-l2tp-html.html</a>
+
+</ul>
+
+<h1 id="toc_1">Linux命令行拨pptpd</h1>
+
+<pre class="brush:bash">
+# 设置vpn客户端
+sudo pptpsetup --create myVPN --server x.x.x.x --username vpn --password 123456 --encrypt
+
+# 拨号
+sudo pppd call myVPN updetach
+
+# 调试
+sudo pppd call myVPN debug dump logfd 2 updetach
+</pre>
+
+<ul>
+<li>
+LCP: timeout sending Config-Requests错误处理
+
+</ul>
+
+<p>
+参考：<a href="http://askubuntu.com/questions/269399/pptp-vpn-cant-connect">http://askubuntu.com/questions/269399/pptp-vpn-cant-connect</a>
+</p>
+<pre>
+Aug  8 02:59:17 localhost pppd[8659]: LCP: timeout sending Config-Requests
+</pre>
+
+<p>
+Edit /etc/ppp/options, enable option silent, then problem solved.
+</p>
+<pre class="brush:bash">
+# With this option, pppd will not transmit LCP packets to initiate a
+# connection until a valid LCP packet is received from the peer (as for
+# the "passive" option with old versions of pppd).
+silent
+</pre>
+
+<ul>
+<li>
+PTY read or GRE write failed
+<pre>
+Aug  8 02:59:17 localhost pptpd[8658]: GRE: read(fd=6,buffer=611860,len=8196) from PTY failed: status = -1 error = Input/output error, usually caused by unexpected termination of pppd, check option syntax and pppd logs
+Aug  8 02:59:17 localhost pptpd[8658]: CTRL: PTY read or GRE write failed (pty,gre)=(6,7)
+
+Aug  8 02:27:03 UDesktop pptpd[12957]: GRE: Bad checksum from pppd.
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

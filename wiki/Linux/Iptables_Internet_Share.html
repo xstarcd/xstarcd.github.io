@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>LinuxInternetShare</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>LinuxInternetShare</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Linux连接共享网关</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">Linux连接共享网关</h2>
+
+<ul>
+<li>
+网关设置脚本
+<pre class="brush:bash">
+#首先用lsmod看一下ipchains等模块有没有装入，如果已经装入，则用rmmod命令移走它们。
+#modprobe ip_tables             #装入iptables
+
+LAN_iface="wlan0"
+LAN_ip="192.168.0.0/24"
+INET_iface="ppp0"
+#打开IP转发功能
+# echo "net.ipv4.ip_forward=1" &gt;&gt; /etc/sysctl.conf &amp;&amp; sysctl -p
+echo 1 &gt; /proc/sys/net/ipv4/ip_forward
+
+#清除INPUT、FORWARD、POSTROUTING规则，设置默认转发策略
+iptables -F INPUT
+iptables -F FORWARD
+iptables -F POSTROUTING -t nat
+iptables -P FORWARD DROP
+
+#转发本网段的机器到任何地方去的包
+iptables -A FORWARD -s "$LAN_ip" -j ACCEPT
+#对先前从防火墙外部接口出去的请求包的回复
+iptables -A FORWARD -i "$INET_iface" -m state --state ESTABLISHED,RELATED -j ACCEPT
+#SNAT(静态IP上网)
+#iptables -t nat -A POSTROUTING -s $LAN_ip -o eth0 -j SNAT --to ip
+#打开IP伪装(pppoe上网时)
+iptables -t nat -A POSTROUTING -o "$INET_iface" -s "$LAN_ip" -j MASQUERADE
+#目标端口为80的包可以进入
+iptables -A INPUT -p tcp -i "$INET_iface" --syn --dport 80 -j ACCEPT
+#拒绝不是目标端口是80的所求TCP新的连接请求包
+iptables -A INPUT -p tcp -i "$INET_iface" --syn -j DROP
+</pre>
+
+<li>
+其他机器将路由指向该网关
+<pre class="brush:bash">
+route add default gw 192.168.0.100
+</pre>
+
+<li>
+查看iptables中的postrouting规则
+<pre class="brush:bash">
+iptables -t nat -L -v -n
+iptables -t nat -L POSTROUTING -v -n
+</pre>
+
+<li>
+网关设置脚本2
+<pre class="brush:bash">
+InternetShare(){
+    #InternetShare "enable" "192.168.0.0/24" "ppp0"
+    #InternetShare "disable"
+    local LAN_IP INET_IFACE
+    case $1 in
+    "enable")
+        echo "Eable InternetShare set..."
+        [ -n "$2" ] &amp;&amp; echo "LAN_IP error!" &amp;&amp; return 1
+        [ -n "$3" ] &amp;&amp; echo "INET_IFACE error!" &amp;&amp; return 1
+        LAN_IP=$2
+        INET_IFACE=$3
+        #打开IP转发功能
+        echo 1 &gt; /proc/sys/net/ipv4/ip_forward
+        #清除 FORWARD、POSTROUTING规则，设置默认转发策略
+        iptables -F INPUT
+        iptables -F FORWARD
+        iptables -F POSTROUTING -t nat
+        iptables -P FORWARD DROP
+        #转发本网段的机器到任何地方去的包
+        iptables -A FORWARD -s "$LAN_IP" -j ACCEPT
+        #对先前从防火墙外部接口出去的请求包的回复
+        iptables -A FORWARD -i "$INET_IFACE" -m state --state ESTABLISHED,RELATED -j ACCEPT
+        #打开IP伪装
+        iptables -t nat -A POSTROUTING -o "$INET_IFACE" -s "$LAN_IP" -j MASQUERADE
+        ;;
+    *)
+        #清除 FORWARD、POSTROUTING规则，设置默认转发策略
+        echo "Disable InternetShare set..."
+        iptables -F INPUT
+        iptables -F FORWARD
+        iptables -F POSTROUTING -t nat
+        iptables -P FORWARD DROP
+    ;;
+    esac
+} #InternetShare() end
+
+
+== 无线ad-hoc模式共享上网 ==
+
+{{{class="brush:bash"
+#!/bin/sh
+
+#starts the ad hoc server
+
+sudo ifconfig wlan0 down
+sudo iwconfig wlan0 mode ad-hoc
+sudo iwconfig wlan0 key s:adhoc
+sudo iwconfig wlan0 essid 'adam'
+sudo ifconfig wlan0 10.0.0.1 up
+
+#forwards the ad hoc network to the router
+sudo iptables -A FORWARD -i wlan0 -o eth0 -s 10.0.0.0/24 -m state --state NEW -j ACCEPT
+sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A POSTROUTING -t nat -j MASQUERADE
+sudo sh -c "echo 1 &gt; /proc/sys/net/ipv4/ip_forward"
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

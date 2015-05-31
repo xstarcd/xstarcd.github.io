@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>lftp</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>lftp</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">常用命令</a>
+<li><a href="#toc_0.2">其它命令</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">常用命令</h2>
+
+<pre class="brush:bash">
+# 登录ftp服务器
+lftp ftp://user:passwd@127.0.0.1
+
+# 在环境中设置缺省关闭被动模式
+~/.lftprc:set ftp:passive-mode 0
+
+# lftp自动处理命令
+lftp -e 'set ftp:passive-mode 0;lcd /home/admin;cd /;ls;quit' ftp://user:passwd@127.0.0.1
+
+# lftp镜像命令:将本地上传到服务端(镜像)
+# mirror [OPTS] [source [target]]
+#       Mirror specified source directory to local target directory. 
+#       If target directory ends with a slash, the source base name is appended to target directory name.
+#       Source and/or target can be URLs pointing to directories.
+mirror -R -v --use-cache --no-umask --no-perms --only-missing --parallel=2 --exclude-glob .svn 本地目录名 远程目录名
+
+# 统计服务器上各文件大小，输出重定向到本地的ls.txt文件中
+lftp ................:/&gt; du incoming &gt; ls.txt
+
+# lftp中文乱码问题
+set ftp:charset gb2312     #设置ftp server端的编码格式
+set file:charset utf-8     #设置本地编码格式
+
+# lftp查看设置参数
+# set查看已设置的参数，set -a查看所有可设置参数
+lftp ................:/&gt; set -a|grep -i passive-mode
+set ftp:auto-passive-mode yes
+set ftp:passive-mode 0
+
+# lftp上传下载限速
+lftp ................:/&gt; set -a|grep -i limit
+set net:connection-limit 0
+set net:limit-max 0
+set net:limit-rate 0:0
+set net:limit-total-max 0
+set net:limit-total-rate 0:0
+# 设置下载800k，上传40k(limit up/down transfer rate bytes per second,0 means unlimited)
+set net:limit-rate 819200,40960
+
+# 查找ftp端文件
+ls *.txt           #查找当前目录下的所有txt文件
+ls ./123/          #列出123目录下所有文件
+find . -name "*.txt"      #递归查找站点上所有的txt文件
+find ./xx -name "*.txt"   #查找xx目录下所有的txt文件
+
+# 查看文件列表
+ls    # 查看文件列表，第二次从本地缓存读取
+rels  # 代替ls，不受本地缓存影响
+catch of/on  # 开关cache
+cache flush  # 清空本地缓存
+!ls   # 查看本地目录列表
+
+# 下载文件
+下载文件之前要先设置好本地的目录，用来存放下载的文件
+lcd /home/web   #设置本地存放目录 默认为/home/user
+
+get 123.txt     #下载123.txt文件
+get -c 123.txt  #断点续传下载
+
+mget *.txt      #批量下载所有txt文件
+mget -c *.txt   #断点续传
+mget -c ./123/aaa/*.txt   #断点续传、批量下载ftp端aaa目录下的所有txt文件
+
+pget -c -n 10 file.dat    #以最多10个线程以允许断点续传的方式下载file.dat
+                          #可以通过设置 set pget:default-n 5 的值而使用默认值。
+
+mirror aaa/   #将aaa目录整个的下载下来，子目录也会自动复制，本地自动建立目录
+
+# 上传文件
+put 123.txt
+mput *.txt
+mirror -R aaa/
+
+# 多任务处理
+ctrl+z #将当前进行的任务移交后台处理
+wait   #将后台处理任务调至前台查看
+jobs   #查看后台进行的任务列表
+kill all/job_no #删除所有任务 或 指定的任务
+
+# 将任务加入任务列表
+queue get 123.txt
+queue put 234.txt
+queue mirror aaa/ 
+
+queue  #查看任务列表
+jobs   #查看后台任务列表
+
+queue start #开始任务列表
+queue stop  #停止任务列表
+</pre>
+
+<h2 id="toc_0.2">其它命令</h2>
+
+<pre class="brush:bash">
+# alias [] 定义别名
+# 直接输入 alias 即可看到目前定义了那些别名。如果只输入 alias name 的话, 则是取消 name 这个别名。
+alias less more
+alias reconnect "close; cd ."
+
+# 设定书签, 可将目前站台及所在目录设成书签, 下次可直接进来, 不用再 cd 来 cd 去的
+bookmark SUBCMD
+bookmark add name #用来新增名称为 name 的书签
+bookmark del name #删除名称为 name 的书签
+bookmark list     # 显示目前有设定那些书签(另外直接打 bookmark 和 bookmark list 的结果一样)
+bookmark edit     # 呼叫编辑器修改书签 (~/.lftp/bookmarks)
+
+cd  #切换远端目录
+lcd #切换本地端的目录
+
+# 管理 lftp 的 cache
+cache SUBCMD
+
+# 从 cache 中显示远端的档案列表, 应该算是 ls 的加强版, 有很多参数可用,应该是可用来产生各种不同的档案列表以供其他程式使用。
+rels []
+# recls 则不会从 cache 中读取
+recls opts [path/]pattern
+
+du options #计算远端整个目录占用容量
+
+
+get OPTS -o #抓取远端档案 
+get rfile -o lfile  #抓 rfile 到本地改名为 lfile
+    # -c 为续传
+    # -E 抓档完成后, 将远端的档案砍了
+    # -a 为 ascii mode, 预设为 binary mode
+    # -O 设定 base directory 为本地端放档案的目录
+
+mget OPTS #下载远端档案(可用 wildcard expansion 也就是 *)
+
+pget OPTS -o #使用多个连结来下载档案, 预设为五个。-n 3 为三个连结
+
+jobs -v # 显示目前有那些程序在背景执行，-v 显示详细的资讯(-v 可多加几个来显示更详细的资讯)
+
+# 下载整个目录(get 只能用来抓档案)
+mirror OPTS remote [local]
+    # -c 续传
+    # -e 这个要小心一些, 比较远端和本地端的档案, 假如远端没有的, 就将本地端的档案删除, 也就是将本地端和远端资料同步。
+    # -R 上传整个目录
+    # -n 只下载较新的档案
+    # -r 不用递回到目录中
+    # --parallel=n 同时下载 n 个档案(预设一次只下载一个)
+
+module name args #载入模组
+
+put OPTS -o  #上传档案
+mput OPTS    #上传档案(可用 wildcard expansion 也就是 *)
+mv  #将远端的 file1 改名为 file2
+rm -r -f #移除远端档案
+mrm #用 wildcard expansion 方式来删除远端档案
+
+open OPTS  #开启某个站台
+open -u , -p site
+
+queue OPTS []
+    # 将 cmd 放到队列中等待执行
+    # -d index 将编号为 index 的 job 删除
+    # -m index new_index 将编号为 index 的 job 移至编号 new_index, 插队专用。
+    # -n index 在编号 index 之前新增一个 job
+
+wait [] #将背景执行中的程序移至前景(也可用 fg)
+
+kill all|job_no #删除全部的 jobs 或 job_no
+
+repeat delay command #每隔 delay 秒, 重覆执行 command, 预设是每隔一秒
+
+
+mkdir -p  #建立远端目录
+rmdir -f  #移除远端目录
+
+set OPT [] #设定变数，直接键入 set 可看目前定义了那些变数
+
+source # 读取 file, 并执行 file 中的命令(应该是和 bash 中的 source 命令是一样的吧)
+
+debug [|off] -o #设定 debug level 为 level
+-o # 将输出导向至 file
+
+exit [|bg]  # 结束 lftp，此时若还有 jobs, 则会将 lftp 放至背景执行, 继续未完成的工作
+
+history -w file-r file-c|-l cnt # 和 bash 中的 history 功能一样
+
+renlist [] #只显示远端的档名
+
+pwd -p #显示目前远端所在目录，-p 连登入密码也显示
+
+scache [] #只打 scache 显示目前所有的 session, 加上 session_no 可切换至其他的 session,
+          #对于同时开启多个站台或同个站台不同目录间切换。
+
+# 中文乱码
+# 服务端系统为gbk，客户端系统为utf8
+# 用lftp登录到ftp服务器上，设置远程服务器编码为gbk，而设置本地编码为utf-8，做法为：输入下面两个命令：
+# 也可加入到~/.lftp中自动加载
+set ftp:charset gbk
+set file:charset utf8
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

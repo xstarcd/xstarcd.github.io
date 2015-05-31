@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>snmpd</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>snmpd</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">SNMP监控一些常用OID的总结</a>
+<li><a href="#toc_0.2">CentOS开启snmpd</a>
+<li><a href="#toc_0.3">OIDs</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1"><a href="snmp_oids_summary.html">SNMP监控一些常用OID的总结</a></h2>
+
+<h2 id="toc_0.2">CentOS开启snmpd</h2>
+
+<ul>
+<li>
+snmpd
+<pre class="brush:bash">
+# 安装
+yum install -y net-snmp
+
+# 配置: /etc/snmp/snmpd.conf
+# v2c验证方式
+# rocommunity timasnmpd
+# rocommunity : 只读访问权限
+# timasnmpd : v2c的帐号
+# 后面的IP表示授权访问的IP
+
+# v3验证方式
+# 注意:
+# 1.密码要8个字节以上，否则会失败。
+# 2.由于安全的原因，snmpd启动后，以上两行会被删除，其内容以密文的形式记录在其它文件中。
+# rouser myuser auth               # 设定只读帐号类型，auth指明连接时需要验证
+# createUser myuser MD5 mypassword # 创建一个名为tima的用户，密码为mypassword，并用MD5进行加密传输
+cat &gt;&gt; /etc/snmp/snmpd.conf &lt;&lt;EOF
+rocommunity mysnmpd
+rouser myuser auth
+createUser myuser MD5 mypassword
+EOF
+
+# 取消默认community:public、删除rocomnunity
+sed -i -e 's/^com2sec /#&amp;/g' -e 's/^rocommunity/#&amp;/g' -e '/^# My CONFIG START/,/^# My CONFIG END/d' /etc/snmp/snmpd.conf
+#增加timasnmpd授权(com2sec中的source默认是default 可以根据需要访问的主机IP做限制)
+cat &gt;&gt; /etc/snmp/snmpd.conf &lt;&lt;EOF
+# My CONFIG START
+com2sec  myuser       default       mysnmpd
+group    myGroup      v1            myuser
+group    myGroup      v2c           myuser
+view     myview       included      .1.3.6.1.2.1
+view     myview       included      .1.3.6.1.4.1
+access   myGroup      ""       any        noauth     exact   myview   none   none
+# My CONFIG END
+EOF
+
+# 启动
+service snmpd restart
+chkconfig snmpd on
+</pre>
+
+</ul>
+
+<ul>
+<li>
+安装snmpwalk
+<pre class="brush:bash">
+# CentOS
+yum install net-snmp-utils
+# Ubuntu
+apt-get install snmp
+</pre>
+
+</ul>
+
+
+<h2 id="toc_0.3">OIDs</h2>
+
+<ul>
+<li>
+磁盘卷列表
+
+</ul>
+<p>
+从iso.3.6.1.4.1.2021.9.1.2.1开始，最后一位+1递增，直到返回:No Such Instance currently exists at this OID
+</p>
+<pre>
+snmpwalk -v2c -c public localhost iso.3.6.1.4.1.2021.9.1.2.1
+iso.3.6.1.4.1.2021.9.1.2.1 = STRING: "/"
+
+snmpwalk -v2c -c public localhost iso.3.6.1.4.1.2021.9.1.2.25
+iso.3.6.1.4.1.2021.9.1.2.25 = No Such Instance currently exists at this OID
+</pre>
+
+<ul>
+<li>
+Ubnutu启用mibs
+
+</ul>
+<p>
+修改/etc/snmp/snmp.conf，注释mibs:这一行。
+</p>
+
+<ul>
+<li>
+Debian missing MIBs for SNMP
+<pre>
+For error such as:
+Cannot find module (HOST-RESOURCES-MIB): At line 0 in (none)
+Cannot find module (HOST-RESOURCES-TYPES): At line 0 in (none)
+Cannot find module (SNMPv2-TC): At line 10 in /usr/share/mibs/netsnmp/UCD-DLMOD-MIB
+Cannot find module (SNMPv2-SMI): At line 34 in /usr/share/mibs/netsnmp/UCD-SNMP-MIB
+Cannot find module (SNMPv2-TC): At line 37 in /usr/share/mibs/netsnmp/UCD-SNMP-MIB
+Did not find ‘enterprises’ in module #-1 (/usr/share/mibs/netsnmp/UCD-SNMP-MIB)
+Did not find ‘DisplayString’ in module #-1 (/usr/share/mibs/netsnmp/UCD-SNMP-MIB)
+Did not find ‘TruthValue’ in module #-1 (/usr/share/mibs/netsnmp/UCD-SNMP-MIB)
+Unlinked OID in UCD-SNMP-MIB: ucdavis ::= { enterprises 2021 }
+Undefined identifier: enterprises near line 39 of /usr/share/mibs/netsnmp/UCD-SNMP-MIB
+Did not find ‘DisplayString’ in module #-1 (/usr/share/mibs/netsnmp/UCD-DLMOD-MIB)
+Did not find ‘ucdExperimental’ in module UCD-SNMP-MIB (/usr/share/mibs/netsnmp/UCD-DLMOD-MIB)
+Unlinked OID in UCD-DLMOD-MIB: ucdDlmodMIB ::= { ucdExperimental 14 }
+</pre>
+<pre class="brush:bash">
+apt-get install snmp-mibs-downloader
+
+Please note that the second, snmp-mibs-downloader is not free so in order to install it you need to modify your /etc/apt/sources.list to include non-free packages.
+
+Then run download-mibs
+
+snmpwalk -Os -c public -v 1 localhost system
+
+# 以下为查询同一内容:dskPath
+snmpwalk -v2c -c public localhost iso.3.6.1.4.1.2021.9.1.2
+snmpwalk -v2c -c public localhost 1.3.6.1.4.1.2021.9.1.2
+snmpwalk -v2c -c public localhost UCD-SNMP-MIB::dskPath
+</pre>
+
+</ul>
+
+<ul>
+<li>
+OID-MIB查询
+<pre class="brush:bash">
+# snmptranslate 这个命令可以用来查看映射关系
+snmptranslate .1.3.6.1.2.1.1.3.0
+SNMPv2-MIB::sysUpTime.0
+
+snmptranslate -On SNMPv2-MIB::system.sysUpTime.0
+.1.3.6.1.2.1.1.3.0
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

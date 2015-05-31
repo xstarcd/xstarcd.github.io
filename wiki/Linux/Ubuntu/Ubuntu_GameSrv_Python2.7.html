@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>Python 2.7 编译安装(Ubuntu 10.04)</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Python 2.7 编译安装(Ubuntu 10.04)</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">安装编译环境</a>
+<li><a href="#toc_0.2">编译安装</a>
+<li><a href="#toc_0.3">easy_install-2.7</a>
+<li><a href="#toc_0.4">安装其它python支持包</a>
+<li><a href="#toc_0.5">passport、网关需要的包</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">安装编译环境</h2>
+<pre class="brush:bash">
+sudo apt-get install build-essential autoconf automake libreadline-dev libsqlite3-dev \
+        libbz2-dev libssl-dev
+</pre>
+
+<h2 id="toc_0.2">编译安装</h2>
+<p>
+下载python2.7源代码、编译安装python2.7。
+</p>
+
+<ul>
+<li>
+说明：
+
+<ul>
+<li>
+<code>--enable-ipv6</code>
+
+<li>
+<code>make altinstall</code>:作用与make install类似,但是它不会生成名为python的软连接,也不会生成man文件,这样就避免了覆盖python2.6的相应文件
+
+</ul>
+</ul>
+
+<pre class="brush:bash">
+mkdir -p /data/packages/ \
+&amp;&amp; cd /data/packages/ \
+&amp;&amp; wget http://www.python.org/ftp/python/2.7.2/Python-2.7.2.tar.bz2 \
+&amp;&amp; tar jxvf Python-2.7.2.tar.bz2 \
+&amp;&amp; cd Python-2.7.2 \
+&amp;&amp; ./configure --prefix=/usr --enable-unicode=ucs4 --with-dbmliborder=bdb \
+--with-system-expat --with-system-ffi \
+&amp;&amp; make &amp;&amp; make altinstall
+</pre>
+
+<h2 id="toc_0.3">easy_install-2.7</h2>
+<pre class="brush:bash">
+cd /data/packages/ \
+&amp;&amp; wget http://pypi.python.org/packages/source/s/setuptools/setuptools-0.6c11.tar.gz#md5=7df2a529a074f613b509fb44feefe74e \
+&amp;&amp; tar zxvf setuptools-0.6c11.tar.gz \
+&amp;&amp; cd setuptools-0.6c11 \
+&amp;&amp; python2.7 setup.py install
+</pre>
+
+<h2 id="toc_0.4">安装其它python支持包</h2>
+<pre class="brush:bash">
+easy_install-2.7 -Z python-memcached MySQL_python sqlalchemy simplejson pyamf blinker Twisted pycrypto
+</pre>
+
+<h2 id="toc_0.5">passport、网关需要的包</h2>
+<pre class="brush:bash">
+# pycurl
+apt-get install libcurl4-gnutls-dev
+easy_install-2.7 -Z pycurl tornado pycrypto
+
+# PIL Python Imaging Library
+# 解决不能出验证码错误：ImportError: The _imagingft C module is not installed
+
+sudo apt-get install libjpeg62-dev zlib1g-dev libfreetype6-dev
+
+cd /data/packages/ \
+&amp;&amp; wget http://effbot.org/downloads/Imaging-1.1.7.tar.gz \
+&amp;&amp; tar zxvf Imaging-1.1.7.tar.gz \
+&amp;&amp; cd Imaging-1.1.7 \
+&amp;&amp; python2.7 setup.py build_ext -i \
+&amp;&amp; python2.7 selftest.py \
+&amp;&amp; python2.7 setup.py install
+
+# M2Crypto
+apt-get install swig
+easy_install-2.7 -Z M2Crypto
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

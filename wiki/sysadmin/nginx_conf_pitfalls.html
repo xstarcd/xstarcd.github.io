@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>nginx配置陷阱</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>nginx配置陷阱</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">location区块之下的root指令</a>
+<li><a href="#toc_0.2">重复的 index 指令</a>
+<li><a href="#toc_0.3">使用if指令</a>
+<ul>
+<li><a href="#toc_0.3.1">服务器域名</a>
+<li><a href="#toc_0.3.2">文件是否存在</a>
+</ul>
+<li><a href="#toc_0.4">基于包的前端控制器模式</a>
+<li><a href="#toc_0.5">脚本文件里的FastCGI路径</a>
+<li><a href="#toc_0.6">繁重的重写</a>
+<li><a href="#toc_0.7">忽略<code>http://</code>的重写</a>
+<li><a href="#toc_0.8">代理所有东西</a>
+<li><a href="#toc_0.9">配置没有变化</a>
+<li><a href="#toc_0.10">VirtualBox</a>
+<li><a href="#toc_0.11">丢失(消失)的HTTP标头</a>
+</ul>
+</ul>
+</div>
+
+
+<ul>
+<li>
+原文:
+
+<ul>
+<li>
+<a href="http://xwsoul.com/posts/737">http://xwsoul.com/posts/737</a>
+
+<li>
+<a href="http://wiki.nginx.org/Pitfalls">http://wiki.nginx.org/Pitfalls</a>
+
+</ul>
+</ul>
+
+<p>
+Nginx 配置陷阱
+</p>
+
+<p>
+Posted on 2013/07/30 by 虚伪的灵魂  
+</p>
+
+<p>
+注意, 本篇文章中的配置方式, 可能在各版本中有所差异, 配置投入生产环境前, 务必确认你已经理解了这些配置, 且该配置在当前生产环境下是正常可用的.
+</p>
+
+<h2 id="toc_0.1">location区块之下的root指令</h2>
+
+<ul>
+<li>
+差评配置:
+<pre class="brush:bash">
+server {
+  server_name www.domain.com;
+  location / {
+    root /var/www/nginx-default/;
+    [...]
+  }
+  location /foo {
+    root /var/www/nginx-default/;
+    [...]
+  }
+  location /bar {
+    root /var/www/nginx-default/;
+    [...]
+  }
+}
+</pre>
+
+</ul>
+
+<p>
+点评: root 指令置于 location 之下的配置是完全可用的, 但是错就错在你只要一新增 location 区块, 你就需要为这个 location 添加一条 root.这样的情况下我们不如参考一下好评配置.
+</p>
+
+<ul>
+<li>
+好评配置:
+<pre class="brush:bash">
+server {
+  server_name www.domain.com;
+  root /var/www/nginx-default/;
+  location / {
+    [...]
+  }
+  location /foo {
+    [...]
+  }
+  location /bar {
+    [...]
+  }
+}
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">重复的 index 指令</h2>
+
+<ul>
+<li>
+差评配置:
+
+</ul>
+
+<pre class="brush:bash">
+http {
+  index index.php index.htm index.html;
+  server {
+    server_name www.domain.com;
+    location / {
+      index index.php index.htm index.html;
+      [...]
+    }
+  }
+  server {
+    server_name domain.com;
+    location / {
+      index index.php index.htm index.html;
+      [...]
+    }
+    location /foo {
+      index index.php;
+      [...]
+    }
+  }
+}
+</pre>
+
+<p>
+点评: 不需要重复这么多次index指令, 只要把他置于 http 区块之下, 下级区块就可以继承这一指令的配置了.
+</p>
+
+<ul>
+<li>
+好评配置:
+
+</ul>
+
+<pre class="brush:bash">
+http {
+  index index.php index.htm index.html;
+  server {
+    server_name www.domain.com;
+    location / {
+      [...]
+    }
+  }
+  server {
+    server_name domain.com;
+    location / {
+      [...]
+    }
+    location /foo {
+      [...]
+    }
+  }
+}
+</pre>
+
+<h2 id="toc_0.3">使用if指令</h2>
+
+<p>
+由于篇幅有限, if指令的陷阱只介绍一小部分, 更多内容请点击Nginx配置陷阱之万恶的if指令.
+</p>
+
+<h3 id="toc_0.3.1">服务器域名</h3>
+
+<ul>
+<li>
+差评配置:
+
+</ul>
+
+<pre class="brush:bash">
+server {
+  server_name domain.com *.domain.com;
+  if ($host ~* ^www\.(.+)) {
+    set $raw_domain $1;
+    rewrite ^/(.*)$ $raw_domain/$1 permanent;
+    [...]
+  }
+}
+</pre>
+
+<p>
+点评: 这个配置一共有三处问题.首先是 if 的使用, 为啥他差的掉渣? 你有没有阅读Nginx配置陷阱之万恶的if指令?当nginx收到无论来自哪个子域名的何种请求, 域名是否以 www 开头的判断总是会执行. 自然而然的该配置会导致Nginx检查每次请求的host header,这显然是十分低效的.因此,不如使用两个server区块来实现上述配置需求.
+</p>
+
+<ul>
+<li>
+好评配置:
+
+</ul>
+
+<pre class="brush:bash">
+server {
+  server_name www.domain.com;
+  return 301 $scheme://domain.com$request_uri;
+}
+server {
+  server_name domain.com;
+  [...]
+}
+</pre>
+
+<p>
+点评: 上述指令中的 <code>$scheme</code> 可以传递当前host的请求协议.
+</p>
+
+<h3 id="toc_0.3.2">文件是否存在</h3>
+
+<p>
+使用if来确认文件是否存在是相当可怕的. 如果你使用了较新版本的nginx, 你应该看看 try_files, 这会使你的生活变得更轻松.<sup><small>o</small></sup>
+</p>
+
+<ul>
+<li>
+差评配置:
+<pre class="brush:bash">
+server {
+  root /var/www/domain.com;
+  location / {
+    if (!-f $request_filename) {
+      break;
+    }
+  }
+}
+</pre>
+
+</ul>
+
+<ul>
+<li>
+好评配置:
+
+</ul>
+
+<pre class="brush:bash">
+server {
+  root /var/www/domain.com;
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+}
+</pre>
+
+<p>
+点评: 现在改变的是我们尝试不使用if来断定<code>\(uri</code>是否存在, 使用 try_files 意味着你可以测试一个序列. 如果 <code>\)uri</code> 不存在, 尝试使用 <code>$uri/</code>, 如果那个也不存在则尝试使用一个回调路径.
+</p>
+
+<p>
+在这样的情况下, 我们就可以看到, 如果 <code>$uri</code> 存在, 则正常服务. 如果不存在, 就试试目录是否存在, 如果还是不存在他就会使用 index.html 这个你确定一定会存在的地址提供服务.他的加载如此简单, 这是你可以消除if的另一个实例.
+</p>
+
+<h2 id="toc_0.4">基于包的前端控制器模式</h2>
+
+<p>
+基于包的前端控制器模式(Front Controller Pattern based packages)
+</p>
+
+<p>
+前端控制器模式是一种很受欢迎的设计, 它被用在很多最流行的PHP软件包(packages)里.很多人给出的软件包在Nginx下运行的配置过于复杂.其实要想让 Drupal, Joomla 等工作起来, 只要使用如下的配置就可以了:
+</p>
+<pre>
+try_files $uri $uri/ /index.php?q=$uri&amp;$args;
+</pre>
+
+<p>
+你实际使用的软件包的在参数上的差异需要注意, 例如:
+</p>
+<pre>
+“q” 参数是 Drupal, Joomla, WordPress 需要的
+“page” 则是 CMS Made Simple 需要的 
+</pre>
+
+<p>
+而另一些软件甚至都不需要 query string, 他可以从 REQUEST_URI 中读取对应信息, 例如 WordPress 就支持这样配置:
+</p>
+<pre>
+try_files $uri $uri/ /index.php;
+</pre>
+
+<p>
+而且如果你根本不在意, 如果<code>\(uri不存在时</code>, <code>\)uri</code>是否存在的话, 你完全可以 <code>“$uri/”</code> 这条配置将不可控请求传递给PHP。
+</p>
+
+<p>
+许多网络上倡导的PHP配置的例子都是都是将传递给以.php结尾的URI传递给PHP解释器.请注意, 目前大多数类似的PHP设置都有严重的安全问题, 因为它可能允许第三方执行任意代码.
+</p>
+
+<p>
+这个有问题的配置通常如下:
+</p>
+<pre>
+location ~* \.php$ {
+  fastcgi_pass backend;
+  ...
+}
+</pre>
+
+<p>
+在这里任意以.php结尾的请求都会传递给 FastCGI backend, 这样做的会出现的问题是, 当完整的路径未能指向文件系统里一个确切的文件时, PHP的默认配置会试图猜测你想要执行的文件是什么.
+</p>
+
+<p>
+举个实例, 如果一个如下的请求<code>/forum/avatar/1232.jpg/file.php</code>中的文件并不存在,而 <code>/forum/avatar/1232.jpg</code> 存在, 那么PHP解释器就会取而代之的使用 <code>/forum/avatar/1232.jpg</code> 来解释. 如果这里面包含了嵌入式的PHP代码, 这段代码就会被执行.
+</p>
+
+<p>
+下面给出避免出现这一情况的给中解决方案:
+</p>
+<ul>
+<li>
+修改 php.ini 的配置为 <code>cgi.fix_pathinfo=0</code>. 这将导致PHP解释器如果没找到文件就停止执行.
+
+<li>
+将Nginx的请求传递给指定的PHP执行
+<pre>
+    location ~* (file_a|file_b|file_c)\.php$ {
+      fastcgi_pass backend;
+      ...
+    }
+</pre>
+
+<li>
+指定特定的目录下PHP禁止执行,例如用户上传目录:
+<pre>
+    location /uploaddir {
+      location ~ \.php$ {return 403;}
+      ...
+    }
+</pre>
+
+<li>
+使用 try_files 指令过滤有问题的情况:
+<pre>
+    location ~* \.php$ {
+      try_files $uri =404;
+      fastcgi_pass backend;
+      ...
+    }
+</pre>
+
+<li>
+嵌套的location过滤有问题的情况:
+<pre>
+    location ~* \.php$ {
+      location ~ \..*/.*\.php$ {return 404;}
+      fastcgi_pass backend;
+      ...
+    }
+</pre>
+
+</ul>
+
+<h2 id="toc_0.5">脚本文件里的FastCGI路径</h2>
+
+<p>
+不解释
+</p>
+
+<ul>
+<li>
+好评配置:
+<pre>
+   fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
+</pre>
+
+</ul>
+
+<ul>
+<li>
+差评配置:
+<pre>
+   fastcgi_param  SCRIPT_FILENAME /var/www/yoursite.com/$fastcgi_script_name;
+</pre>
+
+</ul>
+
+<h2 id="toc_0.6">繁重的重写</h2>
+
+<p>
+不要一看到正则表达式就发慌. 事实上它很简单，我们应该努力让他们干净整洁. 相当简单，毫不冗余.
+</p>
+<pre class="brush:bash">
+# 屌丝配置:
+rewrite ^/(.*)$ http://domain.com/$1 permanent;
+
+# 依然是屌丝配置:
+rewrite ^ http://domain.com$request_uri? permanent;
+
+# 高富帅写法:
+return 301 http://domain.com$request_uri;
+</pre>
+
+<p>
+看看那些屌丝写法,再看会来,再看看那些屌丝,再看回来.好了.第一个配置捕获了去掉了第一个斜线的完整路径.而通过使用内置变量$request_uri, 我们可以有效地避免做任何捕获或匹配, 使用 return 指令, 我们可以完全避免的正则表达式的匹配过程.
+</p>
+
+<h2 id="toc_0.7">忽略<code>http://</code>的重写</h2>
+
+<p>
+这点比较简单, 重写(的路径)是相对的除非你告诉nginx他们不是.
+</p>
+
+<pre class="brush:bash">
+# 差评配置:
+rewrite ^/blog(/.*)$ blog.domain.com$1 permanent;
+
+# 好评配置:
+rewrite ^/blog(/.*)$ http://blog.domain.com$1 permanent;
+</pre>
+
+<h2 id="toc_0.8">代理所有东西</h2>
+
+<ul>
+<li>
+差评配置:
+<pre class="brush:bash">
+server {
+    server_name example.org;
+    root /var/www/site;
+ 
+    location / {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_pass unix:/tmp/phpcgi.socket;
+    }
+}
+</pre>
+
+</ul>
+
+<p>
+这个例子中, 所有的东西都交给PHP处理了. Apache可能需要这么整(黑的漂亮), 但是Nginx中则不必. try_files 指令按特定的顺序尝试访问文件.这就意味着 nginx 可以先试试看静态文件, 如果没找到再转向到用户定义的回调上.这种方式下PHP就不用进去搞基了,除非确实有基友被请求了, 服务器也节约了资源.然后我们看看怎么撸才是正确的.
+</p>
+
+<ul>
+<li>
+正确的撸法:
+<pre class="brush:bash">
+server {
+    server_name example.org;
+    root /var/www/site;
+ 
+    location / {
+        try_files $uri $uri/ @proxy;
+    }
+ 
+    location @proxy {
+        include fastcgi.conf;
+        fastcgi_pass unix:/tmp/php-fpm.sock;
+    }
+}
+</pre>
+
+</ul>
+
+<ul>
+<li>
+另一种正确的撸法:
+<pre class="brush:bash">
+server {
+    server_name example.org;
+    root /var/www/site;
+ 
+    location / {
+        try_files $uri $uri/ /index.php;
+    }
+ 
+    location ~ \.php$ {
+        include fastcgi.conf;
+        fastcgi_pass unix:/tmp/php-fpm.sock;
+    }
+}
+</pre>
+
+</ul>
+
+<h2 id="toc_0.9">配置没有变化</h2>
+
+<p>
+可能是你的浏览器缓存导致的, 解决方式:
+</p>
+<ul>
+<li>
+方式一: 清理浏览器缓存
+
+<li>
+方式二: 使用 curl 访问
+
+</ul>
+
+<h2 id="toc_0.10">VirtualBox</h2>
+
+<p>
+如果你在VirtualBox的虚拟机里运行的Nginx跑不起来, 那么很有可能是 sendfile() 导致了这一问题的出现, 修复如下:
+</p>
+
+<pre>
+sendfile off;
+</pre>
+
+<h2 id="toc_0.11">丢失(消失)的HTTP标头</h2>
+
+<p>
+如果你没有明确的设置 <code>underscores_in_headers on;</code>, nginx将丢弃的HTTP头信息用下划线表示(这是完全有效的HTTP标准). 这样做是为了防止头信息映射到CGI变量是产生歧义.
+</p>
+
+<p>
+文章参考以及大部分翻译来源: <a href="http://wiki.nginx.org/Pitfalls">http://wiki.nginx.org/Pitfalls</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

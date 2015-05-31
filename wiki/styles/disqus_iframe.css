@@ -1,0 +1,10 @@
+body {
+    background-color: #133144;
+}
+html textarea {
+    display: block;
+    background-color: #133144;
+    color: #fff;
+    overflow: hidden;
+    resize: none;
+}

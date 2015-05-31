@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>lvm修改vg名字</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>lvm修改vg名字</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">信息收集</a>
+<li><a href="#toc_0.2">修改vg名称</a>
+<li><a href="#toc_0.3">mount文件系统</a>
+</ul>
+</ul>
+</div>
+
+<p>
+因一CentOS主机文件系统故障系统无法启动，需要将硬盘挂载到另外的主机上备份数据，但因为两台主机安装时都使用的缺省命名，造成Volume group重名(系统中有两个VolGroup00)无法挂载。
+</p>
+
+<p>
+需要将故障硬盘的vgname修改后才能挂载，操作步骤如下：
+</p>
+
+<h2 id="toc_0.1">信息收集</h2>
+
+<pre class="brush:bash">
+lvm  # 进入lvm环境
+
+# 查看物理卷
+lvm&gt; pvs -v 
+    Scanning for physical volume names
+  PV         VG         Fmt  Attr PSize  PFree DevSize PV UUID                               
+  /dev/hda2  VolGroup00 lvm2 a-   59.88G    0   59.90G 0m2CBI-2Riw-aN0j-jej2-v7ix-G8MK-l8Ve0P
+  /dev/hdb2  VolGroup00 lvm2 a-   79.88G    0   79.90G 3SUISX-C95S-gvt9-N3Yg-wTJu-B7fh-wrHORh
+
+# 查看卷组，有两个同名的卷组VolGroup00，分别是两个硬盘上的
+lvm&gt; vgs -v
+    Finding all volume groups
+    Finding volume group "VolGroup00"
+    Finding volume group "VolGroup00"
+    Archiving volume group "VolGroup00" metadata (seqno 3).
+    Archiving volume group "VolGroup00" metadata (seqno 3).
+    Creating volume group backup "/etc/lvm/backup/VolGroup00" (seqno 3).
+  VG         Attr   Ext    #PV #LV #SN VSize  VFree VG UUID                               
+  VolGroup00 wz--n- 32.00M   1   2   0 79.88G    0  2iZ9Ue-JPU0-GUa1-WOUC-LaqI-g4nB-AVqotw #注意这个vg的uuid，后面会用到
+  VolGroup00 wz--n- 32.00M   1   2   0 59.88G    0  VCk0AU-gshw-vCNb-8kwQ-efOq-KMBC-OdpcRc
+
+# 只能看到第一个vg上的逻辑卷
+lvm&gt; lvs -v
+    Finding all logical volumes
+  LV       VG         #Seg Attr   LSize  Maj Min KMaj KMin Origin Snap%  Move Copy%  Log Convert LV UUID                               
+  LogVol00 VolGroup00    1 -wi-ao 54.16G  -1  -1 253  0                                          FI1JkF-qEhd-f7ui-ghQS-dsLy-zTeh-u7WAEn
+  LogVol01 VolGroup00    1 -wi-ao  5.72G  -1  -1 253  1                                          VZ6fDl-VwWU-x7ct-jt6c-dfe7-0aft-c3Fdoh
+</pre>
+
+<h2 id="toc_0.2">修改vg名称</h2>
+
+<pre class="brush:bash">
+# 改vgname，uuid是上面vgs -v里查到的对应vg标识
+lvm&gt; vgrename 2iZ9Ue-JPU0-GUa1-WOUC-LaqI-g4nB-AVqotw VGmaven
+  Volume group "VolGroup00" successfully renamed to "VGmaven"
+
+# 查看修改结果
+lvm&gt; vgs -v
+    Finding all volume groups
+    Finding volume group "VGmaven"
+    Finding volume group "VolGroup00"
+    Archiving volume group "VolGroup00" metadata (seqno 3).
+    Creating volume group backup "/etc/lvm/backup/VolGroup00" (seqno 3).
+  VG         Attr   Ext    #PV #LV #SN VSize  VFree VG UUID                               
+  VGmaven    wz--n- 32.00M   1   2   0 79.88G    0  2iZ9Ue-JPU0-GUa1-WOUC-LaqI-g4nB-AVqotw
+  VolGroup00 wz--n- 32.00M   1   2   0 59.88G    0  VCk0AU-gshw-vCNb-8kwQ-efOq-KMBC-OdpcRc
+
+# 新改名的卷组是inactive了，2个分区LogVol00和LogVol01
+lvm&gt; lvscan 
+  ACTIVE            '/dev/VolGroup00/LogVol00' [54.16 GB] inherit
+  ACTIVE            '/dev/VolGroup00/LogVol01' [5.72 GB] inherit
+  inactive          '/dev/VGmaven/LogVol00' [77.84 GB] inherit
+  inactive          '/dev/VGmaven/LogVol01' [2.03 GB] inherit
+
+# 用vgchange加载我们该名过的 VGmaven 卷组,提示active状态成功：
+lvm&gt; vgchange -ay /dev/VGmaven
+  2 logical volume(s) in volume group "VGmaven" now active
+
+lvm&gt; lvscan
+  ACTIVE            '/dev/VolGroup00/LogVol00' [54.16 GB] inherit
+  ACTIVE            '/dev/VolGroup00/LogVol01' [5.72 GB] inherit
+  ACTIVE            '/dev/VGmaven/LogVol00' [77.84 GB] inherit
+  ACTIVE            '/dev/VGmaven/LogVol01' [2.03 GB] inherit
+</pre>
+
+<h2 id="toc_0.3">mount文件系统</h2>
+
+<pre class="brush:bash">
+ll /dev/VGmaven/
+total 0
+lrwxrwxrwx 1 root root 28 Jul 26 02:26 LogVol00 -&gt; /dev/mapper/VGmaven-LogVol00
+lrwxrwxrwx 1 root root 28 Jul 26 02:26 LogVol01 -&gt; /dev/mapper/VGmaven-LogVol01
+
+mount /dev/VGmaven/LogVol00 /mnt/maven/
+
+df -h
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/mapper/VolGroup00-LogVol00
+                       53G   14G   37G  28% /
+/dev/hda1              99M   13M   82M  14% /boot
+tmpfs                 1.9G     0  1.9G   0% /dev/shm
+/dev/mapper/VGmaven-LogVol00
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>关于vimwiki的使用</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">关于vimwiki的使用</a>
+<ul>
+<li><a href="#toc_1.1">安装配置收集</a>
+<li><a href="#toc_1.2">常用指令</a>
+<ul>
+<li><a href="#toc_1.2.1">Vimwiki键盘指令</a>
+<li><a href="#toc_1.2.2">发布html</a>
+</ul>
+<li><a href="#toc_1.3">参考链接</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">关于vimwiki的使用</h1>
+
+<h2 id="toc_1.1">安装配置收集</h2>
+<ul>
+<li>
+Ubnutu上vimwiki无法使用,应是缺省未开启filetype plugin选项，在/etc/vim/vimrc中启用:
+<pre>
+if has("autocmd")
+  filetype plugin indent on
+endif
+
+# Without them Vimwiki will not work properly.
+set nocompatible
+filetype plugin on
+syntax on
+
+</pre>
+
+</ul>
+
+<ul>
+<li>
+todo_list热键CR+Space与中文输入法切换冲突,重新绑到&lt;leader&gt;tt键(不过tt也是tasklist.vim插件的热键)
+<pre>
+:map &lt;leader&gt;tt &lt;Plug&gt;VimwikiToggleListItem
+</pre>
+
+</ul>
+<h2 id="toc_1.2">常用指令</h2>
+
+<h3 id="toc_1.2.1">Vimwiki键盘指令</h3>
+<ul>
+<li>
+如果有什么不懂,可输入在"Normal"下输入":h vimwiki-mappings"查询
+
+</ul>
+<table>
+<tr>
+<td>
+&lt;Leader&gt;ww
+</td>
+<td>
+打开默认的wiki主页
+</td>
+</tr>
+<tr>
+<td>
+&lt;Leader&gt;wt
+</td>
+<td>
+在新的标签页中打开默认的wiki主页
+</td>
+</tr>
+<tr>
+<td>
+&lt;Leader&gt;ws
+</td>
+<td>
+Select and open wiki index file.(未知)
+</td>
+</tr>
+<tr>
+<td>
+&lt;Leader&gt;wd
+</td>
+<td>
+删除你所在的wikiword的页面
+</td>
+</tr>
+<tr>
+<td>
+&lt;Leader&gt;wr
+</td>
+<td>
+重命名你所在的wikiword页面
+</td>
+</tr>
+<tr>
+<td>
+Backspace
+</td>
+<td>
+返回上一页
+</td>
+</tr>
+<tr>
+<td>
+Tab
+</td>
+<td>
+寻找下一个wikiword
+</td>
+</tr>
+<tr>
+<td>
+Shift Tab
+</td>
+<td>
+寻找上一个wikiword
+</td>
+</tr>
+</table>
+
+<h3 id="toc_1.2.2">发布html</h3>
+<ul>
+<li>
+:Vimwiki2HTML -- 将当前wiki页转换成Html格式
+
+<li>
+:VimwikiAll2HTML -- 将所有的wiki页转换成HTML格式
+
+<li>
+绑定热键： 
+<pre class="brush: bash">
+nmap &lt;F5&gt; :VimwikiAll2HTML&lt;cr&gt;
+nmap &lt;F4&gt; :Vimwiki2HTML&lt;cr&gt;
+</pre>
+
+</ul>
+
+<h2 id="toc_1.3">参考链接</h2>
+<ul>
+<li>
+[<a href="http://wiki.ktmud.com/tips/vim/vimwiki-guide.html">http://wiki.ktmud.com/tips/vim/vimwiki-guide.html</a> 用 vimwiki 搭建你自己的维基世界]
+
+<li>
+[<a href="http://vimwiki.googlecode.com/hg/misc/vimwikiqrc.pdf">http://vimwiki.googlecode.com/hg/misc/vimwikiqrc.pdf</a> Vimwiki语法PDF]
+
+<li>
+[<a href="http://www.ruchee.com/code/linux/vim/syntaxhighlighter.html">http://www.ruchee.com/code/linux/vim/syntaxhighlighter.html</a> 在Vimwiki中使用SyntaxHighlighter]
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

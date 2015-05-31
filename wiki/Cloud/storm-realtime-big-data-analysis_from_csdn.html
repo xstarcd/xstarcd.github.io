@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>使用Storm实现实时大数据分析</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>使用Storm实现实时大数据分析</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Storm</a>
+<li><a href="#toc_0.2">Storm组件</a>
+<ul>
+<li><a href="#toc_0.2.1">主节点-Nimbus</a>
+<li><a href="#toc_0.2.2">工作节点-Supervisor</a>
+<li><a href="#toc_0.2.3">Zookeeper</a>
+<li><a href="#toc_0.2.4">Topology</a>
+<ul>
+<li><a href="#toc_0.2.4.1">Spout</a>
+<li><a href="#toc_0.2.4.2">Bolt</a>
+<li><a href="#toc_0.2.4.3">Stream Groupings</a>
+</ul>
+</ul>
+<li><a href="#toc_0.3">项目实施</a>
+<ul>
+<li><a href="#toc_0.3.1">临界分析</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<p>
+原文: <a href="http://www.csdn.net/article/2012-12-24/2813117-storm-realtime-big-data-analysis">使用Storm实现实时大数据分析</a>
+</p>
+
+<p>
+发表于2012-12-24 16:56 | 来源Dr.Dobb's| 作者Shruthi Kumar、Siddharth Patankar
+</p>
+
+<p>
+<strong>简单和明了，Storm让大数据分析变得轻松加愉快。</strong>
+</p>
+
+<p>
+当今世界，公司的日常运营经常会生成TB级别的数据。数据来源囊括了互联网装置可以捕获的任何类型数据，网站、社交媒体、交易型商业数据以及其它商业环境中创建的数据。考虑到数据的生成量，实时处理成为了许多机构需要面对的首要挑战。我们经常用的一个非常有效的开源实时计算工具就是<a href="http://storm-project.net/">Storm</a> —— Twitter开发，通常被比作"实时的Hadoop"。然而Storm远比Hadoop来的简单，因为用它处理大数据不会带来新老技术的交替。
+</p>
+
+<p>
+Shruthi Kumar、Siddharth Patankar共同效力于Infosys，分别从事技术分析和研发工作。本文详述了Storm的使用方法，例子中的项目名称为“超速报警系统（Speeding Alert System）”。我们想实现的功能是：实时分析过往车辆的数据，一旦车辆数据超过预设的临界值 —— 便触发一个trigger并把相关的数据存入数据库。
+</p>
+
+<h2 id="toc_0.1">Storm</h2>
+
+<p>
+对比Hadoop的批处理，Storm是个实时的、分布式以及具备高容错的计算系统。同Hadoop一样Storm也可以处理大批量的数据，然而Storm在保证高可靠性的前提下还可以让处理进行的更加实时；也就是说，所有的信息都会被处理。Storm同样还具备容错和分布计算这些特性，这就让Storm可以扩展到不同的机器上进行大批量的数据处理。他同样还有以下的这些特性：
+</p>
+
+<ul>
+<li>
+易于扩展。对于扩展，你只需要添加机器和改变对应的topology（拓扑）设置。Storm使用Hadoop Zookeeper进行集群协调，这样可以充分的保证大型集群的良好运行。
+
+<li>
+每条信息的处理都可以得到保证。
+
+<li>
+Storm集群管理简易。
+
+<li>
+Storm的容错机能：一旦topology递交，Storm会一直运行它直到topology被废除或者被关闭。而在执行中出现错误时，也会由Storm重新分配任务。
+
+<li>
+尽管通常使用Java，Storm中的topology可以用任何语言设计。
+
+</ul>
+
+<p>
+当然为了更好的理解文章，你首先需要安装和设置Storm。需要通过以下几个简单的步骤：
+</p>
+
+<ul>
+<li>
+从Storm官方下载<a href="http://storm-project.net/downloads.html">Storm安装文件</a>
+
+<li>
+将bin/directory解压到你的PATH上，并保证bin/storm脚本是可执行的。
+
+</ul>
+
+<h2 id="toc_0.2">Storm组件</h2>
+
+<p>
+Storm集群主要由一个主节点和一群工作节点（worker node）组成，通过Zookeeper进行协调。
+</p>
+
+<h3 id="toc_0.2.1">主节点-Nimbus</h3>
+
+<p>
+主节点通常运行一个后台程序 —— Nimbus，用于响应分布在集群中的节点，分配任务和监测故障。这个很类似于Hadoop中的Job Tracker。
+</p>
+
+<h3 id="toc_0.2.2">工作节点-Supervisor</h3>
+
+<p>
+工作节点同样会运行一个后台程序 —— Supervisor，用于收听工作指派并基于要求运行工作进程。每个工作节点都是topology中一个子集的实现。
+</p>
+
+<p>
+而Nimbus和Supervisor之间的协调则通过Zookeeper系统或者集群。
+</p>
+
+<h3 id="toc_0.2.3">Zookeeper</h3>
+
+<p>
+Zookeeper是完成Supervisor和Nimbus之间协调的服务。而应用程序实现实时的逻辑则被封装进Storm中的“topology”。
+</p>
+
+<h3 id="toc_0.2.4">Topology</h3>
+
+<p>
+Topology则是一组由Spouts（数据源）和Bolts（数据操作）通过Stream Groupings进行连接的图。下面对出现的术语进行更深刻的解析。
+</p>
+
+<h4 id="toc_0.2.4.1">Spout</h4>
+
+<p>
+简而言之，Spout从来源处读取数据并放入topology。Spout分成可靠和不可靠两种，当Storm接收失败时：
+</p>
+<ol>
+<li>
+可靠的Spout会对tuple（元组，数据项组成的列表）进行重发；
+
+<li>
+而不可靠的Spout不会考虑接收成功与否只发射一次。
+
+</ol>
+
+<p>
+而Spout中最主要的方法就是nextTuple()，该方法会发射一个新的tuple到topology，如果没有新tuple发射则会简单的返回。
+</p>
+
+<h4 id="toc_0.2.4.2">Bolt</h4>
+
+<p>
+Topology中所有的处理都由Bolt完成。Bolt可以完成任何事，比如：连接的过滤、聚合、访问文件/数据库、等等。
+</p>
+
+<p>
+Bolt从Spout中接收数据并进行处理，如果遇到复杂流的处理也可能将tuple发送给另一个Bolt进行处理。
+</p>
+
+<p>
+而Bolt中最重要的方法是execute()，以新的tuple作为参数接收。
+</p>
+
+<p>
+不管是Spout还是Bolt，如果将tuple发射成多个流，这些流都可以通过declareStream()来声明。
+</p>
+
+<h4 id="toc_0.2.4.3">Stream Groupings</h4>
+
+<p>
+Stream Grouping定义了一个流在Bolt任务间该如何被切分。这里有Storm提供的6个Stream Grouping类型：
+</p>
+
+<ol>
+<li>
+<strong>随机分组（Shuffle grouping）：</strong> 随机分发tuple到Bolt的任务，保证每个任务获得相等数量的tuple。
+
+<li>
+<strong>字段分组（Fields grouping）：</strong> 根据指定字段分割数据流，并分组。例如，根据“user-id”字段，相同“user-id”的元组总是分发到同一个任务，不同“user-id”的元组可能分发到不同的任务。
+
+<li>
+<strong>全部分组（All grouping）：</strong> tuple被复制到bolt的所有任务。这种类型需要谨慎使用。
+
+<li>
+<strong>全局分组（Global grouping）：</strong> 全部流都分配到bolt的同一个任务。明确地说，是分配给ID最小的那个task。
+
+<li>
+<strong>无分组（None grouping）：</strong> 你不需要关心流是如何分组。目前，无分组等效于随机分组。但最终，Storm将把无分组的Bolts放到Bolts或Spouts订阅它们的同一线程去执行（如果可能）。
+
+<li>
+<strong>直接分组（Direct grouping）：</strong> 这是一个特别的分组类型。元组生产者决定tuple由哪个元组处理者任务接收。
+
+</ol>
+
+<p>
+当然还可以实现CustomStreamGroupimg接口来定制自己需要的分组。
+</p>
+
+<h2 id="toc_0.3">项目实施</h2>
+
+<p>
+当下情况我们需要给Spout和Bolt设计一种能够处理大量数据（日志文件）的topology，当一个特定数据值超过预设的临界值时促发警报。使用Storm的topology，逐行读入日志文件并且监视输入数据。在Storm组件方面，Spout负责读入输入数据。它不仅从现有的文件中读入数据，同时还监视着新文件。文件一旦被修改Spout会读入新的版本并且覆盖之前的tuple（可以被Bolt读入的格式），将tuple发射给Bolt进行临界分析，这样就可以发现所有可能超临界的记录。
+</p>
+
+<p>
+下一节将对用例进行详细介绍。
+</p>
+
+<h3 id="toc_0.3.1">临界分析</h3>
+
+<p>
+这一节，将主要聚焦于临界值的两种分析类型：瞬间临界（instant thershold）和时间序列临界（time series threshold）。
+</p>
+
+<ul>
+<li>
+瞬间临界值监测：一个字段的值在那个瞬间超过了预设的临界值，如果条件符合的话则触发一个trigger。举个例子当车辆超越80公里每小时，则触发trigger。
+
+<li>
+时间序列临界监测：字段的值在一个给定的时间段内超过了预设的临界值，如果条件符合则触发一个触发器。比如：在5分钟类，时速超过80KM两次及以上的车辆。
+
+</ul>
+
+
+<p>
+略，请见原文：<a href="http://www.csdn.net/article/2012-12-24/2813117-storm-realtime-big-data-analysis">使用Storm实现实时大数据分析</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

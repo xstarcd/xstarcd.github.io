@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>keepalived_lvs_conf</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">lvs_ngx</a>
+<ul>
+<li><a href="#toc_1.1">keepalived_lvs_conf</a>
+<ul>
+<li><a href="#toc_1.1.1">keepalived_lvs_conf.idc</a>
+<li><a href="#toc_1.1.2">keepalived_lvs_conf.pre</a>
+<li><a href="#toc_1.1.3">RealServer:lvs_dr.sh</a>
+</ul>
+<li><a href="#toc_1.2">nginx</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">lvs_ngx</h1>
+
+<ul>
+<li>
+Create: 2013-05-30
+
+<li>
+Update: 2013-06-21
+
+</ul>
+
+<p>
+<a href="../img/AP_LB_lvs_ngx.png">topo</a>
+</p>
+
+<h2 id="toc_1.1">keepalived_lvs_conf</h2>
+
+<h3 id="toc_1.1.1"><a href="keepalived_lvs_conf.idc.html">keepalived_lvs_conf.idc</a></h3>
+
+<h3 id="toc_1.1.2"><a href="keepalived_lvs_conf.pre.html">keepalived_lvs_conf.pre</a></h3>
+
+<h3 id="toc_1.1.3">RealServer:lvs_dr.sh</h3>
+<ul>
+<li>
+配置文件
+<pre class="brush:bash">
+cat &gt; /etc/lvs_dr.conf &lt;&lt;EOF
+# LVS DR VIP configfile
+VIPs="
+172.17.19.2
+172.17.19.3
+"
+EOF
+</pre>
+
+<li>
+lvs_dr.sh
+<pre class="brush:bash">
+#!/bin/sh
+# name   : lvs_dr.sh
+# auther : YuanXing
+# update : 2013-06-21
+# description : start realserver
+# chkconfig: 2345 55 25
+ 
+VIPs="$VIPs"
+CONF=/etc/lvs_dr.conf
+ 
+. /etc/rc.d/init.d/functions
+
+do_start(){
+    echo "Start LVS of RealServer"
+    VIPs=
+    if [ -f "$CONF" ];then
+        . $CONF
+    else
+        echo "Error:config file $CONF not exist!"
+        return 1  
+    fi
+    if [ -z "$VIPs" ];then
+        echo "Error:VIPs is empty!"
+        return 1
+    fi
+    lab=0
+    for vip in `echo "$VIPs"|grep -vE "^#|^$"`
+    do
+        [ -z "$vip" ] &amp;&amp; echo "Error vip:$vip" &amp;&amp; continue
+        /sbin/ifconfig lo:$lab $vip broadcast $vip netmask 255.255.255.255 up
+        lab=`expr $lab + 1`
+    done
+    echo "1" &gt;/proc/sys/net/ipv4/conf/lo/arp_ignore
+    echo "2" &gt;/proc/sys/net/ipv4/conf/lo/arp_announce
+    echo "1" &gt;/proc/sys/net/ipv4/conf/all/arp_ignore
+    echo "2" &gt;/proc/sys/net/ipv4/conf/all/arp_announce
+}
+do_stop(){
+    echo "Close LVS RealServer"
+    for dev in `ifconfig|grep ^lo:|awk '{print $1}'`
+    do
+        /sbin/ifconfig $dev down
+    done
+    echo "0" &gt;/proc/sys/net/ipv4/conf/lo/arp_ignore
+    echo "0" &gt;/proc/sys/net/ipv4/conf/lo/arp_announce
+    echo "0" &gt;/proc/sys/net/ipv4/conf/all/arp_ignore
+    echo "0" &gt;/proc/sys/net/ipv4/conf/all/arp_announce
+}
+  
+case "$1" in
+start)
+    do_start
+    exit $?
+    ;;
+stop)
+    do_stop
+    ;;
+restart)
+    do_stop
+    do_start
+    ;;
+status)
+    ip addr show|grep 'lo:'
+    ;;
+*)
+    echo "Usage: $0 {start|stop|restart|status}"
+    exit 1
+    ;;
+esac
+</pre>
+
+<li>
+快速部署
+<pre class="brush:bash">
+# ---------------------------------------------------------
+cat &gt; /etc/lvs_dr.conf &lt;&lt;EOF
+# LVS DR VIP configfile
+VIPs_pre_test="
+172.17.19.2
+172.17.19.3
+172.17.19.4
+172.17.19.5
+172.17.19.6
+172.17.19.7
+172.17.19.8
+172.17.19.9
+172.17.19.59"
+VIPs_IDC="
+172.16.17.53
+172.16.17.54
+172.16.17.55
+172.16.17.56
+172.16.17.57
+172.16.17.58
+172.16.17.59
+172.16.17.60
+172.16.17.61
+172.16.17.62
+172.16.17.63"
+VIPs=$VIPs_pre_test
+EOF
+# ---------------------------------------------------------
+echo -e "H4sIAJ/yw1EAA51UbY8SMRD+vr9ibiGHaKAsd/gBgl8uZ2Ji1Ei8aIxA2e1Cw167abvACfx3py1w
+exwqSkKAmXle5mWpXJAJF0TPggoIes8AoAvZQo8S1XRBWpgZUxj8VlDxlYspxoo8oYZhrN2Krhqt
+1412hNGE6Vjx3HApMKUNVQYUo5lmasEUFsSzeSxFyqcIvLruQKcD7U4AENy9+6T7YRjcfPzwtk+Y
+icnOgS23BU1wURU3E8IFN/iRFiK2UjqAIJEjJ/eivsZqABbPJIQD5+D93QBkCp/RyMAZCV2Jk3Tf
+eArfoZFCWLXyIfzoYcPCpeyrCS7uebGXQ8KL3ColVde3BSnPmC8HIQ2wFdfmIjwgFDOFEhCBi6S8
+JP8T5a2lZ/JlFVsAXAO7z83DCd4ybUYn/ZYPSAULngMXMPZsXmkzVSyHxuIWwmFlM6yGY1eeyAPv
+zheC0RZcXpbNWMquT2EC+zdcFI/DIdpeFU93g8lkt4qOwAJgoiRNYqqN/ymYuad6jqfQaZbeeGQH
+NtvMmK1yBY7lFUR7r4KVFh6F8IbkSsZEP2iCvITni2tiPZBMEqryEZ8KqcqY9t8xVAiJx3auEs2y
+f5fagw5aW3/UMn960zeZ1Mzd9PFB2zUnbOHWvJ+7X/EQp7+hyznU1rniAscebWvPln20sarlSuRS
+nBp06z8GfQbmxKD/hPrtoM8BlQaNuADPkeGp4165CNx/SX3XuP9n8ewrbsA/VL1eYJdTKpL5PqHY
+McEu94TMMVBTaF+HDwJNEgV6Jpd+bTVcW21f+rJe6u+LplPWhWoL1o5vYxU2O9mNZ92Gj5ajPQvT
+NA5+Abwq10byBQAA"|base64 -d|gzip -d&gt; /etc/init.d/lvs_dr.sh
+chmod 755 /etc/init.d/lvs_dr.sh
+chkconfig --add lvs_dr.sh
+chkconfig lvs_dr.sh on
+chkconfig --list lvs_dr.sh
+service lvs_dr.sh restart
+service lvs_dr.sh status
+# ---------------------------------------------------------
+</pre>
+
+</ul>
+
+
+<h2 id="toc_1.2">nginx</h2>
+
+<ul>
+<li>
+default.conf
+
+<li>
+gac_evpre.conf
+
+<li>
+gac_afpre.conf
+
+<li>
+...
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

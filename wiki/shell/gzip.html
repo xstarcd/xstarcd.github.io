@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>gzip</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>gzip</h1>
+
+<ul>
+<li>
+语法
+<pre>
+gzip [-cdt#] 档名
+zcat 档名.gz
+</pre>
+
+</ul>
+
+<ul>
+<li>
+参数
+<pre>
+-c ：将压缩的资料输出到萤幕上，可透过资料流重导向来处理；
+-d ：解压缩的参数；
+-t ：可以用来检验一个压缩档的一致性～看看文件有无错误；
+-# ：压缩等级，-1 最快，但是压缩比最差、-9 最慢，但是压缩比最好！预设是 -6
+</pre>
+
+</ul>
+
+<ul>
+<li>
+范例：
+<pre class="brush:bash">
+# 范例一：将 /etc/man.config 複制到 /tmp ，并且以 gzip 压缩
+cd /tmp
+cp /etc/man.config .
+gzip man.config
+# 此时 man.config 会变成 man.config.gz ！
+
+# 范例二：将范例一的文件内容读出来！
+# 此时萤幕上会显示 man.config.gz 解压缩之后的文件内容！！
+zcat man.config.gz
+
+# 范例三：将范例一的文件解压缩
+gzip -d man.config.gz
+
+# 范例四：将范例三解开的 man.config 用最佳的压缩比压缩，并保留原本的文件
+gzip -9 -c man.config &gt; man.config.gz
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

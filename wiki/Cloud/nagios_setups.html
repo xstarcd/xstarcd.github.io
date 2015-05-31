@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>nagios配置记录</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>nagios配置记录</h1>
+
+<ul>
+<li>
+<a href="nagios_mailx_smtp.html">设置smtp方式告警</a>
+
+<li>
+<a href="nagios_interval.html">调整Nagios灵敏度</a>
+
+<li>
+pnp4nagios
+
+</ul>
+
+<ul>
+<li>
+nagios 4.0.2安装
+
+<ul>
+<li>
+Installation Documentation: <a href="http://library.nagios.com/library/products/nagioscore/documentation/567-installing-nagios-core-from-source">http://library.nagios.com/library/products/nagioscore/documentation/567-installing-nagios-core-from-source</a>
+
+<li>
+Nagios Core Documentation: <a href="http://nagios.sourceforge.net/docs/nagioscore/4/en/">http://nagios.sourceforge.net/docs/nagioscore/4/en/</a>
+
+<li>
+设置SELinux授权
+<pre>
+chcon -R -t httpd_sys_content_t /usr/local/nagios/sbin/
+chcon -R -t httpd_sys_content_t /usr/local/nagios/share/
+</pre>
+
+</ul>
+<li>
+NRPE
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

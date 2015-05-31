@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Vmware</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Vmware</a>
+<ul>
+<li><a href="#toc_1.1">VMware ESXi开启snmpd</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">Vmware</h1>
+
+<ul>
+<li>
+vmware trunk:VST - Virtual Switch Tagging
+<pre>
+通过在虚拟交换机中配置多个port group对应多个vlan, 物理交换机启动trunk
+优点:VMware推荐的方式,可以在ESXi的一个物理端口支持多个vlan
+缺点: 配置比较复杂
+物理交换机配置: switchport trunk encap dot1q
+虚拟交换机(vSwitch)配置: 在ESXi "Configuration" - "Networking" 中选择相应的vSwitch, 在属性中添加多个port group, 每个port group的vlan id对应一个vlan
+虚拟机(vm)配置: 无
+</pre>
+
+<li>
+<a href="http://kb.vmware.com/selfservice/microsites/search.do?language=en_US&amp;cmd=displayKC&amp;externalId=1591">Host power management causes problems with guest timekeeping on Linux hosts (1591)</a>
+
+<li>
+<a href="VMWareCLI.html">VMwareCLI命令参考</a>
+
+<li>
+hpet1: lost 1 rtc interrupts
+<pre>
+Feb  9 23:30:01 tsplb1 kernel: hpet1: lost 1 rtc interrupts
+Feb 10 10:30:02 tsplb1 kernel: hpet1: lost 7 rtc interrupts
+Feb 10 21:30:02 tsplb1 kernel: hpet1: lost 3 rtc interrupts
+
+If anyone ever comes across this, I have found a resolution. It's VMWare causing these error messages.
+If I simple enter "host.useFastClock = FALSE" into /etc/vmware/config, it stops the message.
+
+http://www.linuxforums.org/forum/ubuntu-linux/143796-rtc-lost-interrupts-flooding-var-log-kern-log-messages.html
+</pre>
+
+</ul>
+
+<h2 id="toc_1.1">VMware ESXi开启snmpd</h2>
+
+<ul>
+<li>
+VMware ESXi 5.0启用snmpd服务
+<pre class="brush:bash">
+ssh root@172.16.16.10                          #ssh登录vmware主机
+#修改snmp.xml配置
+cp /etc/vmware/snmp.xml /etc/vmware/snmp.xml.bak
+echo "&lt;config&gt;&lt;snmpSettings&gt;&lt;enable&gt;true&lt;/enable&gt;&lt;communities&gt;timasnmpd&lt;/communities&gt;&lt;targets&gt;&lt;/targets&gt;&lt;/snmpSettings&gt;&lt;/config&gt;"&gt;/etc/vmware/snmp.xml
+/sbin/services.sh restart
+exit                                           # 退出登录
+</pre>
+
+</ul>
+
+<ul>
+<li>
+VMware ESXi 5.1启用snmpd服务
+<pre class="brush:bash">
+ssh root@172.16.16.10                          #ssh登录vmware主机
+esxcli system snmp set --enable true           #允许启用snmp服务
+esxcli system snmp set --communities timasnmpd #设置snmp 服务团体字，建议设置复杂些。
+exit                                           # 退出登录
+
+# http://blogs.vmware.com/vsphere/2012/11/configuring-snmp-v1v2cv3-using-esxcli-5-1.html
+</pre>
+
+</ul>
+
+<ul>
+<li>
+vSphere中设置
+
+<ul>
+<li>
+配置-&gt;安全配置文件-&gt;服务：设置服务启动级别(ESXi 5.0无snmpd项，不用设置。)
+
+<li>
+配置-&gt;安全配置文件-&gt;防火墙：设置允许访问SNMPd服务的IP段
+
+</ul>
+</ul>
+
+<ul>
+<li>
+测试snmp访问
+<pre class="brush:bash">
+snmpwalk -v 2c -c timasnmpd 192.168.0.180 system
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

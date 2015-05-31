@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>zookeeper的python客户端</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>zookeeper的python客户端</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">安装zookeeper的c客户端</a>
+<li><a href="#toc_0.2">安装python版客户端</a>
+<li><a href="#toc_0.3">使用范例</a>
+</ul>
+</ul>
+</div>
+
+
+<ul>
+<li>
+<a href="http://blog.csdn.net/lengzijian/article/details/9227005">http://blog.csdn.net/lengzijian/article/details/9227005</a>
+
+<li>
+<a href="http://justfansty.blog.sohu.com/217928676.html">http://justfansty.blog.sohu.com/217928676.html</a>
+
+<li>
+<a href="http://www.zlovezl.cn/articles/40/">http://www.zlovezl.cn/articles/40/</a>
+
+<li>
+zkpython使用文档: <a href="http://justfansty.blog.sohu.com/217953183.html">http://justfansty.blog.sohu.com/217953183.html</a>
+
+</ul>
+
+<p>
+由于服务很多都是python写的，这里需要安装python客户端，所以记录下安装过程。
+</p>
+
+<h2 id="toc_0.1">安装zookeeper的c客户端</h2>
+
+<ul>
+<li>
+由于python客户端依赖c的客户端所以要先安装c版本的客户端
+<pre>
+cd zookeeper-3.4.5/src/c
+./configure
+make
+make install
+</pre>
+
+</ul>
+
+<ul>
+<li>
+测试c版本客户端，看到以上信息说明c版本的客户端已经安装好了
+<pre>
+./cli_mt localhost:2181
+Watcher SESSION_EVENT state = CONNECTED_STATE
+Got a new session id: 0x23f9d77d3fe0001
+</pre>
+
+</ul>
+
+<ul>
+<li>
+可以执行以下命令进行测试
+<pre>
+Here's a list of command supported by the cli shell:
+
+ls &lt;path&gt;             -- list children of a znode identified by &lt;path&gt;. The
+                         command set a children watch on the znode.
+get &lt;path&gt;            -- get the value of a znode at &lt;path&gt;
+set &lt;path&gt; &lt;value&gt;    -- set the value of a znode at &lt;path&gt; to &lt;value&gt;
+create [+e|+s] &lt;path&gt; -- create a znode as a child of znode &lt;path&gt;;
+                         use +e option to create an ephemeral znode,
+                         use +s option to create a znode with a sequence number
+                         appended to the name. The operation will fail if
+                         the parent znode (the one identified by &lt;path&gt;) doesn't
+                         exist.
+delete &lt;path&gt;         -- delete the znode at &lt;path&gt;. The command will fail if the znode
+                         has children.
+sync &lt;path&gt;           -- make sure all pending updates have been applied to znode at &lt;path&gt;
+exists &lt;path&gt;         -- returns a result code indicating whether the znode at &lt;path&gt;
+                         exists. The command also sets a znode watch.
+myid                  -- prints out the current zookeeper session id.
+quit                  -- exit the shell.
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">安装python版客户端</h2>
+
+<ul>
+<li>
+下载python扩展包，并且解压： <a href="https://pypi.python.org/pypi/zkpython/0.4.2">https://pypi.python.org/pypi/zkpython/0.4.2</a>
+
+<li>
+如果找不到Pyhon.h，可能由于没有安装python-devel,运行<code>yum install python-devel</code>安装
+
+<li>
+测试是否成功: <code>import zookeeper</code>
+
+<li>
+如果出现了一个ImportError: libzookeeper_mt.so.2: cannot open shared object file: No such file or directory 错误，请在/etc/profile里添加如下变量： <code>export LD_LIBRARY_PATH=/usr/local/lib</code>
+
+<li>
+也可以：cd zookeeper-3.3.3/src/contrib/zkpython/，之后执行<code>ant install</code>来安装
+
+</ul>
+
+<h2 id="toc_0.3">使用范例</h2>
+
+<pre class="brush:python">
+import zookeeper                            #导入zkpython模块
+handler = zookeeper.init("localhost:2181"); # 建立连接
+
+zookeeper.create(handler,"/zkpython_create_node","mydata1",[{"perms":0x1f,"scheme":"world","id":"anyone"}]),0);  #创建节点
+# 第一个参数就是我们刚才建立的链接
+# 第二个参数是创建的节点的路径
+# 第三个是创建的节点的数据
+# 第四个是acl(zookeeper中的访问控制列表)
+# 第四个是创建的节点的类型(0表示持久化的,1表示持久化+序号,2表示瞬时的,3表示瞬时加序号型的)
+# acl的描述:第一个参数是perms,这个代表了控制这个节点的权限,具体值参考如下:
+#    int READ   = 1 &lt;&lt; 0;
+#    int WRITE  = 1 &lt;&lt; 1;
+#    int CREATE = 1 &lt;&lt; 2;
+#    int DELETE = 1 &lt;&lt; 3;
+#    int ADMIN  = 1 &lt;&lt; 4;
+# 也就是说,这是一个数字,而我们例子中为什么是1f呢?实际上就是 READ | WRITE | CREATE | DELETE | ADMIN的结果
+# 后面还有两个参数,实际上现在java和c的api中定义的值只有两种,除了例子中的还有一种是:
+# "scheme":"auth","id":""组合的,但是实际上,官方的文档中是有四种的,有兴趣的同学可以参考:
+# http://zookeeper.apache.org/doc/trunk/zookeeperProgrammers.html 里的内容
+
+zookeeper.get_children(handler,"/",None);  # 查看子节点
+zookeeper.get(handler,"/zkpython_create_node"); # 获取节点的值及描述信息
+zookeeper.set(handler,"/zkpython_create_node","mydata2");  #修改节点的值
+zookeeper.delete(handler,"/zkpython_create_node");  #删除节点的值
+zookeeper.close(handler); #关闭连接
+
+# watch的使用,我们知道zookeeper有一个watch机制,可以监听节点上发生的事件,在zkpython中,我们通过如下方式来进行监听.
+# 比如我们在获取一个节点的时候,给这个节点加一个监听器,具体的代码是:
+
+import zookeeper;
+# 首先,我们先要定义一个watch方法,比如这里的myWatch方法,之后在调用get方法的时候,把这个watch传递进去就可以了
+def myWatch(handler,type,state,path):
+    print "handler:"+str(handler)+",type:"+str(type)+",state:"+str(state)+",path:"+path;
+    zookeeper.get(handler,path,myWatch);#保证可以被重复监听
+handler = zookeeper.init("localhost:2181");
+data = zookeeper.get(handler,"/zkpython_node",myWatch);
+
+# handler:就是我们创建连接之后的返回值,我试了下,发现好像指的是连接的一个索引值,以0开始
+# type:事件类型,-1表示没有事件发生,1表示创建节点,2表示节点删除,3表示节点数据被改变,4表示子节点发生变化
+# state:客户端的状态,0:断开连接状态,3:正常连接的状态,4认证失败,-112:过期啦
+# path:这个状态就不用解释了,znode的路径 
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

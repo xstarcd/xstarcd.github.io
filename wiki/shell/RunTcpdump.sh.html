@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>RunTcpdump.sh</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>RunTcpdump.sh</h1>
+
+<pre class="brush:bash">
+#!/bin/sh
+# run tcpdump everyday.
+# 0 0 * * * root /root/RunTcpdump.sh
+# 抓包数据文件：/var/log/IP_日期.tcpdump，每日凌晨00:00自动切换。
+# 抓包管理操作日志：/var/log/RunTcpdump.log
+HOSTNAME=`hostname`
+TODAY=`date +'%Y%m%d'`
+logdir=/var/log
+logfile=$logdir/RunTcpdump.log
+
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
+
+# 清除较早历史文件
+z_clearcycle(){
+    local rev
+    find ${1} -maxdepth 1 -type f -atime +${2} -name "*.tcpdump" -exec rm -f {} \;
+    rev=$?
+    if [ "$rev" = "0" ];then
+        echo "`date +"%Y-%m-%d %H:%M:%S"`  ${2} days ago file  spare parts for ${1}'s paper!"
+    fi
+}
+
+[ ! -d "$logdir" ] &amp;&amp; mkdir -p "$logdir"
+exec 1&gt;&gt;"$logfile"
+exec 2&gt;&amp;1
+echo "--------------------------------------------------------"
+echo "`date +"%Y-%m-%d %H:%M:%S"` killall"
+ps aux|grep tcpdump|grep -v grep
+killall tcpdump
+
+if [ "$1" != "stop" ];then
+    dumprule="host 60.195.250.200"
+    dumpfile="60.195.250.200_$TODAY.tcpdump"
+
+    echo "`date +"%Y-%m-%d %H:%M:%S"` run tcpdump($TODAY,$dumprule) -&gt; $logdir/$dumpfile"
+    nohup tcpdump -nn -s 0 -i eth0 -w $logdir/$dumpfile "$dumprule" &amp;
+fi
+
+ps aux|grep tcpdump|grep -v grep
+z_clearcycle "$logdir" 30
+exit 0
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

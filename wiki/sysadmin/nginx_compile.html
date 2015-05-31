@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>nginx编译安装(CentOS)</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">nginx编译安装(CentOS)</a>
+<ul>
+<li><a href="#toc_1.1">设置主机名</a>
+<li><a href="#toc_1.2">编译环境</a>
+<li><a href="#toc_1.3">下载</a>
+<li><a href="#toc_1.4">用户及工作目录</a>
+<li><a href="#toc_1.5">编译安装</a>
+<li><a href="#toc_1.6">启动脚本</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">nginx编译安装(CentOS)</h1>
+
+<p>
+Update: 2013-01-22
+</p>
+
+<h2 id="toc_1.1">设置主机名</h2>
+<pre class="brush: bash">
+h="TMXLlvs2" \
+&amp;&amp; hostname $h \
+&amp;&amp; sed -i.bak "s/\(HOSTNAME=\).*$/\1$h/g" /etc/sysconfig/network \
+&amp;&amp; grep "127.0.0.1.*$h" /etc/hosts || sed -i "s/\(127.0.0.1.*$\)/\1 $h/g" /etc/hosts \
+&amp;&amp; ping -c 4 $h
+</pre>
+
+<h2 id="toc_1.2">编译环境</h2>
+<pre class="brush: bash">
+yum -y install gcc gcc-c++ autoconf automake make
+yum -y install zlib zlib-devel openssl openssl-devel pcre pcre-devel libxml2 libxml2-devel
+</pre>
+
+<h2 id="toc_1.3">下载</h2>
+<pre class="brush: bash">
+mkdir -p ~/work/ &amp;&amp; cd ~/work/ \
+&amp;&amp; wget http://nginx.org/download/nginx-1.2.5.tar.gz \
+&amp;&amp; wget https://nginx-upstream-jvm-route.googlecode.com/files/nginx-upstream-jvm-route-0.1.tar.gz
+</pre>
+
+<h2 id="toc_1.4">用户及工作目录</h2>
+<pre class="brush: bash">
+groupadd -r nginx &amp;&amp; useradd -r -g nginx nginx -s /sbin/nologin -d /dev/null
+install -m 755 -o nginx -g nginx -d /var/cache/nginx
+install -m 755 -o nginx -g nginx -d /var/log/nginx/
+</pre>
+
+<h2 id="toc_1.5">编译安装</h2>
+<pre class="brush: bash">
+V=1.2.5 \
+&amp;&amp; cd ~/work/ \
+&amp;&amp; tar zxvf nginx-$V.tar.gz \
+&amp;&amp; tar zxvf nginx-upstream-jvm-route-0.1.tar.gz \
+&amp;&amp; cd nginx-$V \
+&amp;&amp; sed -i.bak 's/^CFLAGS="$CFLAGS -g"/#&amp;/' auto/cc/gcc \
+&amp;&amp; patch -p0 &lt; ../nginx_upstream_jvm_route/jvm_route.patch \
+&amp;&amp; ./configure --user=nginx --group=nginx \
+--prefix=/usr/local/nginx \
+--http-log-path=/var/log/nginx/access.log \
+--error-log-path=/var/log/nginx/error.log \
+--http-client-body-temp-path=/var/cache/nginx/client_temp \
+--http-proxy-temp-path=/var/cache/nginx/proxy_temp \
+--http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
+--http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp \
+--http-scgi-temp-path=/var/cache/nginx/scgi_temp \
+--pid-path=/var/run/nginx.pid \
+--with-http_realip_module \
+--with-http_stub_status_module \
+--with-http_gzip_static_module \
+--with-http_ssl_module \
+--add-module=../nginx_upstream_jvm_route \
+--with-cc-opt='-O2 -g' \
+&amp;&amp; make &amp;&amp; make install
+
+</pre>
+
+<h2 id="toc_1.6">启动脚本</h2>
+<pre class="brush: bash">
+[ -f /usr/sbin/nginx ] &amp;&amp; mv /usr/sbin/nginx{,.backup}
+ln -sfT /usr/local/nginx/sbin/nginx /usr/sbin/nginx
+
+#install -m 755 -o root -g root "CentOS_init.nginx2" /etc/init.d/nginx
+</pre>
+
+<pre class="brush: bash">
+#!/bin/sh
+#
+# nginx        Startup script for nginx
+#
+# chkconfig: - 85 15
+# processname: nginx
+# config: /usr/local/nginx/conf/nginx.conf
+# config: /etc/sysconfig/nginx
+# pidfile: /var/run/nginx.pid
+# description: nginx is a HTTP and reverse proxy server
+#
+### BEGIN INIT INFO
+# Provides: nginx
+# Required-Start: $local_fs $remote_fs $network
+# Required-Stop: $local_fs $remote_fs $network
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: start and stop nginx
+### END INIT INFO
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+if [ -f /etc/sysconfig/nginx ]; then
+    . /etc/sysconfig/nginx
+fi
+
+prog=nginx
+#nginx=${NGINX-/usr/sbin/nginx}
+#conffile=${CONFFILE-/etc/nginx/nginx.conf}
+nginx=${NGINX-/usr/local/nginx/sbin/nginx}
+conffile=${CONFFILE-/usr/local/nginx/conf/nginx.conf}
+lockfile=${LOCKFILE-/var/lock/subsys/nginx}
+pidfile=${PIDFILE-/var/run/nginx.pid}
+SLEEPMSEC=100000
+RETVAL=0
+
+start() {
+    echo -n $"Starting $prog: "
+
+    daemon --pidfile=${pidfile} ${nginx} -c ${conffile}
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] &amp;&amp; touch ${lockfile}
+    return $RETVAL
+}
+
+stop() {
+    echo -n $"Stopping $prog: "
+    killproc -p ${pidfile} ${prog}
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] &amp;&amp; rm -f ${lockfile} ${pidfile}
+}
+
+reload() {
+    echo -n $"Reloading $prog: "
+    killproc -p ${pidfile} ${prog} -HUP
+    RETVAL=$?
+    echo
+}
+
+upgrade() {
+    oldbinpidfile=${pidfile}.oldbin
+
+    configtest -q || return 6
+    echo -n $"Staring new master $prog: "
+    killproc -p ${pidfile} ${prog} -USR2
+    RETVAL=$?
+    echo
+    /bin/usleep $SLEEPMSEC
+    if [ -f ${oldbinpidfile} -a -f ${pidfile} ]; then
+        echo -n $"Graceful shutdown of old $prog: "
+        killproc -p ${oldbinpidfile} ${prog} -QUIT
+        RETVAL=$?
+        echo 
+    else
+        echo $"Upgrade failed!"
+        return 1
+    fi
+}
+
+configtest() {
+    if [ "$#" -ne 0 ] ; then
+        case "$1" in
+            -q)
+                FLAG=$1
+                ;;
+            *)
+                ;;
+        esac
+        shift
+    fi
+    ${nginx} -t -c ${conffile} $FLAG
+    RETVAL=$?
+    return $RETVAL
+}
+
+rh_status() {
+    status -p ${pidfile} ${nginx}
+}
+
+# See how we were called.
+case "$1" in
+    start)
+        rh_status &gt;/dev/null 2&gt;&amp;1 &amp;&amp; exit 0
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        rh_status
+        RETVAL=$?
+        ;;
+    restart)
+        configtest -q || exit $RETVAL
+        stop
+        start
+        ;;
+    upgrade)
+        upgrade
+        ;;
+    condrestart|try-restart)
+        if rh_status &gt;/dev/null 2&gt;&amp;1; then
+            stop
+            start
+        fi
+        ;;
+    force-reload|reload)
+        reload
+        ;;
+    configtest)
+        configtest
+        ;;
+    *)
+        echo $"Usage: $prog {start|stop|restart|condrestart|try-restart|force-reload|upgrade|reload|status|help|configtest}"
+        RETVAL=2
+esac
+
+exit $RETVAL
+
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

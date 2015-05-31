@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>samba - 文件共享</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>samba - 文件共享</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">简介</a>
+<li><a href="#toc_0.2">安装Samba服务</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+原文: <a href="http://www.cnblogs.com/mchina/archive/2012/12/18/2816717.html">http://www.cnblogs.com/mchina/archive/2012/12/18/2816717.html</a>
+
+</ul>
+
+
+<h2 id="toc_0.1">简介</h2>
+
+<p>
+Samba是一个能让Linux系统应用Microsoft网络通讯协议的软件，而SMB是Server Message Block的缩写，即为服务器消息块 ，SMB主要是作为Microsoft的网络通讯协议，后来Samba将SMB通信协议应用到了Linux系统上，就形成了现在的Samba软件。后来微软又把 SMB 改名为 CIFS（Common Internet File System），即公共 Internet 文件系统，并且加入了许多新的功能，这样一来，使得Samba具有了更强大的功能。
+</p>
+
+<p>
+Samba最大的功能就是可以用于Linux与windows系统直接的文件共享和打印共享，Samba既可以用于windows与Linux之间的文件共享，也可以用于Linux与Linux之间的资源共享，由于NFS(网络文件系统）可以很好的完成Linux与Linux之间的数据共享，因而 Samba较多的用在了Linux与windows之间的数据共享上面。
+</p>
+
+<p>
+SMB是基于客户机/服务器型的协议，因而一台Samba服务器既可以充当文件共享服务器，也可以充当一个Samba的客户端，例如，一台在Linux 下已经架设好的Samba服务器，windows客户端就可以通过SMB协议共享Samba服务器上的资源文件，同时，Samba服务器也可以访问网络中 其它windows系统或者Linux系统共享出来的文件。
+Samba在windows下使用的是NetBIOS协议，如果你要使用Linux下共享出来的文件，请确认你的windows系统下是否安装了NetBIOS协议。
+</p>
+
+<p>
+组成Samba运行的有两个服务，一个是SMB，另一个是NMB；SMB是Samba 的核心启动服务，主要负责建立 Linux Samba服务器与Samba客户机之间的对话， 验证用户身份并提供对文件和打印系统的访问，只有SMB服务启动，才能实现文件的共享，监听139 TCP端口；而NMB服务是负责解析用的，类似与DNS实现的功能，NMB可以把Linux系统共享的工作组名称与其IP对应起来，如果NMB服务没有启动，就只能通过IP来访问共享文件，监听137和138 UDP端口。
+</p>
+
+<p>
+例如，某台Samba服务器的IP地址为10.0.0.163，对应的工作组名称为davidsamba，那么在Windows的IE浏览器输入下面两条指令都可以访问共享文件。其实这就是Windows下查看Linux Samba服务器共享文件的方法。
+</p>
+<pre>
+　　\\10.0.0.163\共享目录名称
+　　\\davidsamba\共享目录名称
+</pre>
+<ul>
+<li>
+Samba服务器可实现如下功能：
+
+<ul>
+<li>
+WINS和DNS服务；
+
+<li>
+网络浏览服务；
+
+<li>
+Linux和Windows域之间的认证和授权；
+
+<li>
+UNICODE字符集和域名映射；
+
+<li>
+满足CIFS协议的UNIX共享等。
+
+</ul>
+</ul>
+
+<h2 id="toc_0.2">安装Samba服务</h2>
+
+<p>
+在可以联网的机器上使用yum工具安装，如果未联网，则挂载系统光盘进行安装。
+</p>
+<pre class="brush:bash">
+yum install samba samba-client
+
+# samba-common-3.5.10-125.el6.x86_64  主要提供samba服务器的设置文件与设置文件语法检验程序testparm
+# samba-client-3.5.10-125.el6.x86_64  客户端软件，主要提供linux主机作为客户端时，所需要的工具指令集
+# samba-swat-3.5.10-125.el6.x86_64    基于https协议的samba服务器web配置界面
+# samba-3.5.10-125.el6.x86_64         服务器端软件，主要提供samba服务器的守护程序，共享文档，日志的轮替，开机默认选项
+</pre>
+<p>
+有依赖关系的包samba-common、samba-winbind-clients、libsmbclient将自动安装上去。
+</p>
+
+<p>
+Samba服务器安装完毕，会生成配置文件目录/etc/samba和其它一些samba可执行命令工具，/etc/samba/smb.conf是samba的核心配置文件，/etc/init.d/smb是samba的启动/关闭文件。
+</p>
+
+<ul>
+<li>
+启动Samba服务器
+<pre class="brush:bash">
+/etc/init.d/smb start|stop|restart|status
+
+# 设置自启动
+chkconfig --level 35 smb on
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

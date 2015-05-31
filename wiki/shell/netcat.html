@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>netcat</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>netcat</h1>
+
+<ul>
+<li>
+远程shell
+<pre class="brush:bash">
+rm -f /tmp/f; mkfifo /tmp/f
+cat /tmp/f | /bin/bash -i 2&gt;&amp;1 | nc -l 127.0.0.1 1234 &gt; /tmp/f
+</pre>
+
+</ul>
+
+<ul>
+<li>
+启动tcp侦听测试
+<pre class="brush:bash">
+# CentOS下安装nc工具
+yum install nc
+
+# 启动一个tcp侦听，并将收到的内容存入指定的文件中
+# 需配置路由器等，确保该端口可以被互联网上任意主机访问到
+nc -k -l 9090 &gt;&gt; updata
+
+# 测试向该tcp端口发起连接、并发送数据，完成后比较发送端、接收端数据差异。
+# 如：执行echo "abc" | nc IPaddress 9090，则updata的内容中将追加"abc"。
+</pre>
+
+</ul>
+
+<ul>
+<li>
+windows版本
+
+<ul>
+<li>
+<a href="../files/netcat-win32-1.12.zip">netcat-win32-1.12.zip</a>
+
+<li>
+<a href="http://www.securityfocus.com/tools/139">http://www.securityfocus.com/tools/139</a>
+
+<li>
+<a href="http://eternallybored.org/misc/netcat/">http://eternallybored.org/misc/netcat/</a>
+
+<li>
+持继侦听一个端口：<code>nc -L -p 9090 &gt;&gt; updata</code>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+用netcat进行端口扫描
+<pre class="brush:bash">
+nc -zv localhost 1-65535
+nc -v -z -w 1 192.168.0.236 1231-1233
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

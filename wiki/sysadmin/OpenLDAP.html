@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>OpenLdap</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">OpenLdap</a>
+<ul>
+<li><a href="#toc_1.1">参考文档</a>
+<li><a href="#toc_1.2">调试记录</a>
+<li><a href="#toc_1.3">碎片记录</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">OpenLdap</h1>
+
+<p>
+<a href="http://www.openldap.org/"><img src="http://www.openldap.org/images/headers/LDAPworm.gif" alt="OpenLdap" /></a>
+</p>
+
+<h2 id="toc_1.1">参考文档</h2>
+
+<p>
+有些文档一开始看不懂，觉得写得很乱，看一堆其他文档、看得晕头转向时，回过去再看它，懂了！
+</p>
+
+<ul>
+<li>
+<a href="aboutLDAP.html">关于LDAP</a>
+
+<li>
+<a href="OpenLDAP_HowTo_Fedora.html">OpenLDAP How To (Fedora)</a> 
+
+<li>
+OpenLDAP Software 2.4 Administrator's Guide: <a href="http://www.openldap.org/doc/admin24/">http://www.openldap.org/doc/admin24/</a>
+
+<li>
+OpenLDAP2.4管理员指南: <a href="http://wiki.jabbercn.org/OpenLDAP2.4管理员指南">http://wiki.jabbercn.org/OpenLDAP2.4管理员指南</a>
+
+<li>
+<a href="RedhatLDAPClienttools.html">红帽目录服务的基本客户端工具</a>
+
+<li>
+(荐)使用 OpenLDAP 集中管理用户帐号: <a href="http://www.ibm.com/developerworks/cn/linux/l-openldap/">http://www.ibm.com/developerworks/cn/linux/l-openldap/</a>
+
+<li>
+(荐)Ubuntu LDAP配置(10.04部份): <a href="http://forum.ubuntu.org.cn/viewtopic.php?f=54&amp;t=246642">http://forum.ubuntu.org.cn/viewtopic.php?f=54&amp;t=246642</a>
+
+<li>
+(荐)Setting Up OpenLDAP on Ubuntu 10.04 Alpha 2 (Lucid): <a href="http://labs.opinsys.com/blog/2010/01/27/setting-up-openldap-on-ubuntu-10-04-alpha2/">http://labs.opinsys.com/blog/2010/01/27/setting-up-openldap-on-ubuntu-10-04-alpha2/</a>
+
+</ul>
+
+<h2 id="toc_1.2">调试记录</h2>
+
+<ul>
+<li>
+<a href="OpenLDAPconfig.html">OpenLDAP配置记录</a>
+
+</ul>
+
+<h2 id="toc_1.3">碎片记录</h2>
+
+<pre class="brush: bash">
+yum list openldap*
+yum install -y openldap openldap-clients openldap-servers 
+</pre>
+
+
+<ul>
+<li>
+新版openldap-servers-2.4.19-4.fc12.i686的設定
+
+</ul>
+
+<p>
+<a href="http://phorum.study-area.org/index.php?topic=61059.0">http://phorum.study-area.org/index.php?topic=61059.0</a>
+</p>
+
+<p>
+1. 新版OpenLDAP version 2.3 introduced an optional new feature whereby configuration may be performed at run-time using a DIT entry  called cn=config.
+</p>
+
+<p>
+  可以用<code>slaptest -f slapd.conf -F slapd.d</code>將slapd.conf轉成/etc/openldap/slapd.d的格式
+</p>
+
+<p>
+  轉格式時會將/etc/openldap/slapd.conf中include的模組放到/etc/openldap/slapd.d/cn=config/cn=schema
+</p>
+
+<p>
+  將slapd.conf更名為slapd.conf.20100426即可改成 DIT格式啟動openldap
+</p>
+
+<p>
+  但在啟動slapd之前要修改/etc/openldap/slapd.d 目錄下的部份檔案
+</p>
+
+<p>
+1.1. 建議先將/var/lib/ldap目錄先刪除(<strong>为什么？</strong>)
+</p>
+
+<p>
+再下 ln -s /etc/openldap/slapd.d /var/lib/ldap
+</p>
+
+
+<p>
+1.2. 修改/etc/openldap/slapd.d/cn=config/olcDatabase={2}bdb.ldif檔案中以下2行
+</p>
+<pre>
+olcSuffix: dc=your-domain,dc=idv,dc=tw
+olcRootDN: uid=root,ou=People,dc=your-domain,dc=idv,dc=tw
+</pre>
+<p>
+並自行新增以下這行,否則出現 ldap_bind: Invalid credentials (49)
+</p>
+<pre>
+olcRootPW: secret
+#使用slappasswd -s secret生成
+</pre>
+
+<p>
+1.3. 修改/etc/openldap/slapd.d/cn=config/olcDatabase={1}monitor.ldif修改以下這行:
+</p>
+<pre>
+olcAccess: {0}to * by dn.base="uid=root,ou=People,dc=my-domain,dc=idv,dc=tw" read by * none
+</pre>
+
+<p>
+1.4. 修改/etc/openldap/slapd.d/cn=config/ olcDatabase={0}config.ldif
+</p>
+<pre>
+olcRootDN: uid=root,ou=People,dc=my-domain,dc=idv,dc=tw
+</pre>
+
+<p>
+2. schema已改放在/etc/openldap/slapd.d/cn=config/cn=schema目錄下且檔名也完全不一樣了
+</p>
+
+<p>
+3. 設定完後啟動 /etc/rc.d/init.d/slapd start
+</p>
+
+<p>
+會出現/var/lib/ldap owner 不是 ldap的錯誤而不能啟動,沒關係,下 chown ldap:ldap /var/lib/ldap/*,重啟動/etc/rc.d/init.d/slapd start 即OK
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

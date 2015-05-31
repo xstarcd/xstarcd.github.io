@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>lvm修改根分区大小</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">lvm修改根分区大小</a>
+<ul>
+<li><a href="#toc_1.1">目标</a>
+<li><a href="#toc_1.2">缩小home、增大根分区</a>
+<ul>
+<li><a href="#toc_1.2.1">进入rescue模式</a>
+<li><a href="#toc_1.2.2">激活分区</a>
+<li><a href="#toc_1.2.3">缩小home分区</a>
+<li><a href="#toc_1.2.4">扩大根分区</a>
+</ul>
+<li><a href="#toc_1.3">其他操作</a>
+<ul>
+<li><a href="#toc_1.3.1">修改swap卷大小</a>
+<li><a href="#toc_1.3.2">新建逻辑卷lv_develop</a>
+<li><a href="#toc_1.3.3">增加物理盘</a>
+</ul>
+</ul>
+<li><a href="#toc_2">LVM分区在线扩容</a>
+</ul>
+</div>
+
+<h1 id="toc_1">lvm修改根分区大小</h1>
+
+<ul>
+<li>
+参考：
+
+<ol>
+<li>
+减小lvm根分区容量: <a href="http://kwokchivu.blog.51cto.com/1128937/724128">http://kwokchivu.blog.51cto.com/1128937/724128</a>
+
+<li>
+CentOS 5 LVM逻辑卷管理: <a href="http://sunshyfangtian.blog.51cto.com/1405751/860018">http://sunshyfangtian.blog.51cto.com/1405751/860018</a>
+
+</ol>
+</ul>
+
+<h2 id="toc_1.1">目标</h2>
+
+<p>
+home、根各为50GB空间，根空间不足，需缩小home至10GB、扩大根为90GB。
+</p>
+<pre>
+lvm&gt; lvscan
+  ACTIVE            '/dev/vg_db/lv_root' [50.00 GiB] inherit
+  ACTIVE            '/dev/vg_db/lv_home' [50.00 GiB] inherit
+  ACTIVE            '/dev/vg_db/lv_swap' [9.83 GiB] inherit
+</pre>
+
+<h2 id="toc_1.2">缩小home、增大根分区</h2>
+
+<h3 id="toc_1.2.1">进入rescue模式</h3>
+<pre>
+增大root分区是否可以在线完成、不用进rescue状态？找机会试试...
+</pre>
+<p>
+从Linux安装光盘启动进入rescue模式；
+</p>
+
+<p>
+选择相关的语言，键盘模式，当系统提示启用网络设备时，选择“NO”；
+</p>
+
+<p>
+然后在提示允许rescue模式挂载本地Linux系统到/mnt/sysimage下时选择“Skip”，文件系统必须不被挂载才可以对/分区减小容量操作。
+</p>
+
+<p>
+最后系统会提示选择进入shell终端还是reboot机器，选择进入shell终端。
+</p>
+
+<h3 id="toc_1.2.2">激活分区</h3>
+
+<p>
+输入lvm命令，进入lvm界面，依次输入pvscan、vgscan、lvscan三个命令扫描pv、vg、lv相关信息。
+</p>
+
+<p>
+然后输入lvchange -ay /dev/vg_db/lv_root（上文提到的/分区名称）此命令是激活/分区所在的逻辑卷，输入 quit返回到bash shell界面。
+</p>
+<pre>
+lvchange -ay /dev/vg_db/lv_home
+lvchange -ay /dev/vg_db/lv_root
+</pre>
+
+<h3 id="toc_1.2.3">缩小home分区</h3>
+
+<ul>
+<li>
+先检查下分区: e2fsck -f /dev/vg_db/lv_home
+
+<li>
+缩小文件系统大小：resize2fs /dev/vg_db/lv_home 10G
+
+<li>
+缩小逻辑卷
+
+<ul>
+<li>
+输入lvm命令进入lvm模式
+
+<li>
+缩小逻辑卷：lvreduce -L 10G /dev/vg_db/lv_home
+
+<li>
+系统会询问是否缩小逻辑卷，输入 y 确定。
+
+</ul>
+<li>
+查看修改结果: vgdisplay，lvdisplay
+<pre>
+减小LVM中的文件系统必须离线操作(处于umount装态)，要减小文件系统和LV:
+    # Unmount相应的文件系统
+    # 运行磁盘检查确保卷的完整
+    # 减小文件系统
+    # 减小LV
+</pre>
+
+</ul>
+
+<h3 id="toc_1.2.4">扩大根分区</h3>
+
+<ul>
+<li>
+先检查下分区: e2fsck -f /dev/vg_db/lv_root
+
+<li>
+扩大逻辑卷: 
+
+<ul>
+<li>
+输入lvm命令进入lvm模式
+
+<li>
+扩大逻辑卷：lvresize -L +40G /dev/vg_db/lv_root
+
+</ul>
+<li>
+更改文件系统大小
+
+<ul>
+<li>
+resize2fs -p /dev/vg_db/lv_root
+
+</ul>
+<li>
+查看修改结果: lvscan
+
+</ul>
+
+<h2 id="toc_1.3">其他操作</h2>
+
+<h3 id="toc_1.3.1">修改swap卷大小</h3>
+
+<ul>
+<li>
+取消激活swap空间: swapoff
+
+<li>
+修改swap分区大小: lvresize -L 4G /dev/vg_db/lv_swap
+
+<li>
+重新格区化: mkswap -f /dev/vb_db/lv_swap
+
+<li>
+激活swap空间: swapon
+
+</ul>
+
+<h3 id="toc_1.3.2">新建逻辑卷lv_develop</h3>
+
+<ul>
+<li>
+创建逻辑卷 : lvcreate -L 2.8G -n lv_develop /dev/vb_db
+
+<li>
+创建文件系统 : mkfs.ext3 /dev/vg_db/lv_develop
+
+</ul>
+
+<h3 id="toc_1.3.3">增加物理盘</h3>
+
+<ul>
+<li>
+fdisk分区，并将分区类型为0×8e(Linux LVM)
+
+<li>
+创建物理卷PV: pvcreate /dev/hdb1
+
+<li>
+创建卷组VG:  vgcreate vgtest /dev/hdb1
+
+<li>
+添加PV到VG: vgextend
+
+<li>
+创建逻辑卷LV: lvcreate -L 6000M -n mysql vgtest
+
+<li>
+创建文件系统: mkfs -t ext3 /dev/vgtest/mysql
+
+<li>
+建立新分区卷标:  tune2fs –L /mysql /dev/vgtest/mysql
+
+<li>
+加载新分区: mount –t ext3 /dev/vgtest/mysql /mysql
+
+<li>
+卸载卷的顺序:
+
+<ol>
+<li>
+umount
+
+<li>
+卸载逻辑卷:lvremove LVDEVICE
+
+<li>
+卸载卷组:vgremove VGNAME
+
+<li>
+卸载物理卷:pvremove PVDEVICE
+
+</ol>
+</ul>
+
+
+<h1 id="toc_2">LVM分区在线扩容</h1>
+
+<p>
+2011-12-19 15:24:16
+</p>
+
+<p>
+<a href="http://share.blog.51cto.com/278008/745479">http://share.blog.51cto.com/278008/745479</a>
+</p>
+
+<p>
+今天对三台服务器的LV分区进行了一次扩容。本文有点标题党嫌疑，因为只有一台服务器是在线扩容，其它两台都是先卸载再扩容的。
+</p>
+
+<p>
+在线扩容的这台服务器，LV分区格式为xfs，原大小1.2TB。增加了一块硬盘，大小为1.8TB。
+</p>
+<pre class="brush:bash">
+fdisk /dev/cciss/c0d1                              # 创建分区，并指定分区类型为LVM (8e) 
+pvcreate /dev/cciss/c0d1p1                         # 创建pv
+vgextend VolGroup00 /dev/cciss/c0d1p1              # 添加新创建的pv到原有vg
+lvextend -L +1.8T /dev/mapper/VolGroup00-LogVol05  # 在线扩容指定lv分区
+xfs_growfs /dev/mapper/VolGroup00-LogVol05         # 使扩容生效。注意xfs文件系统的生效命令！ 
+</pre>
+
+<p>
+其它两台服务器也是新增了一个1.8TB的硬盘，要扩容的LV分区格式为ext3。之所以没有进行在线扩容，是因为没有找到ext2online命令；后来发现，resize2fs也是支持在线扩容的！
+</p>
+
+<pre class="brush:bash">
+lvextend -l +100%FREE /dev/mapper/VolGroup00-LogVol05
+umount -l /dev/mapper/VolGroup00-LogVol05
+e2fsck -f /dev/mapper/VolGroup00-LogVol05    # 过程比较长 
+resize2fs /dev/mapper/VolGroup00-LogVol05    # 也要几分钟时间 
+mount /dev/mapper/VolGroup00-LogVol05 /hdfs 
+</pre>
+
+<p>
+虽然resize2fs可以在线使用，但是对在线lv分区执行e2fsck有点风险！
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

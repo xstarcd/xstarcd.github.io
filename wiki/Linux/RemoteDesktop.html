@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>RemoteDesktop</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">linux的远程桌面</a>
+<ul>
+<li><a href="#toc_1.1">linux桌面系统原理</a>
+<li><a href="#toc_1.2">linux远程桌面原理</a>
+<li><a href="#toc_1.3">XDMCP协议</a>
+<ul>
+<li><a href="#toc_1.3.1">Cygwin XServer</a>
+</ul>
+<li><a href="#toc_1.4">VNC</a>
+<ul>
+<li><a href="#toc_1.4.1">vnc-server</a>
+</ul>
+<li><a href="#toc_1.5">xrdp</a>
+<li><a href="#toc_1.6">freeNX</a>
+<ul>
+<li><a href="#toc_1.6.1">Centos下安装X Window+GNOME Desktop+FreeNX</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">linux的远程桌面</h1>
+
+<ul>
+<li>
+参考：
+
+<ul>
+<li>
+<a href="http://tianlehan.wap.blog.163.com/w2/blogDetail.do;jsessionid=D2C23A747EB23EA70436802F16E84B34.blogp17v1-8010?blogId=fks_087066086084089075082085083069072080087066083094084069&amp;showRest=true&amp;p=2&amp;hostID=tianle_han">windows和linux的远程桌面</a>
+
+<li>
+<a href="http://scarygliders.net/tag/rdp-and-linux/">http://scarygliders.net/tag/rdp-and-linux/</a>
+
+<li>
+<a href="http://www.linuxidc.com/Linux/2010-08/27458.htm">XRDP远程登录Linux系统</a>
+
+<li>
+<a href="https://github.com/scarygliders/X11RDP-o-Matic">https://github.com/scarygliders/X11RDP-o-Matic</a>
+
+<li>
+<a href="http://easwy.com/blog/archives/linux-remote-desktop-via-cygwin-x-server/">使用cygwin X server实现Linux远程桌面 (for windows)</a>
+
+<li>
+<a href="http://www.nomachine.com/">freeNX</a>
+
+</ul>
+<li>
+Keyword: XMDCP, ssh -X, FreeNX, rDesktop, Cygwin, XShell, X Manager, Xming, MobaXterm
+
+</ul>
+
+<h2 id="toc_1.1">linux桌面系统原理</h2>
+
+<p>
+linux的桌面系统（X Window System，可以直接通过yum groupinstall "X Window System"安装)实现了X protocol。它包括X server和X client。
+</p>
+
+<p>
+X client包括gnome和kde两套实现方案，两套方案中提供的登录管理程序分别是gdm和kdm。
+</p>
+
+<p>
+gnome在centos5上可以使用yum groupinstall "GNOME Desktop Environment"进行安装，在centos6上可以使用yum groupinstall "Desktop"进行安装。
+</p>
+
+<h2 id="toc_1.2">linux远程桌面原理</h2>
+
+<ul>
+<li>
+XDMCP协议
+
+</ul>
+
+<p>
+客户端是X Window System的X server，它通过XDMCP协议连接服务器上的X client。
+</p>
+
+<p>
+X server会根据指定的远程桌面的显示编号开启tcp监听端口（一般从6000开始），然后X client的登录管理程序连接到客户端的X server提供的端口上，并由X client的登录管理程序（gdm或者kdm）提供登录界面上，登录完成后由X client启动WM（window manager）。
+</p>
+
+<p>
+然后就开始正常的交互了，客户端的X server负责在客户端绘制图形并提供硬件的操作事件，X client负责提供界面操作需求，然后经过网络传输给X server。使用这种方式进行连接X client和X server之间的通信只需要X server往X client的硬件事件和X client往X server的绘图要求，所以通信量还是比较小的
+</p>
+
+<p>
+。gdm提供的远程登录请求接收协议使用udp，端口默认在177上。udp请求协议通过后，X server便开始在6000+窗口编号的tcp端口上监听了，然后x client便可以连接这个端口，并将请求发送到X server上。
+</p>
+
+<ul>
+<li>
+VNC
+
+</ul>
+
+<p>
+VNC借助XDMCP的原理，在服务器上启动一个X server并负责绘图，然后通过网络传输到VNC的客户端。因为VNC生成的界面只在服务器端，然后传往客户端，所以输出的界面都只是同步的拷贝，一个X server的显示也只能有一个客户端。VNC的实现有tigervnc等。由于VNC的服务端和客户端传输的是已经绘制完的屏幕图像，所以通信量比较大。
+</p>
+
+<ul>
+<li>
+xrdp
+
+</ul>
+
+<p>
+xrdp实现了rdp协议。前端使用统一端口（默认为3389）管理客户端的连接请求，后端借助vnc server或者rdp server进行窗口显示，并把vnc的窗口发往客户端，由于它提供了sesman(session manager)，所以连向它的客户端如果没有这个session，那么它将启动vncserver（Xvnc）或者rdp server建立这个显示界面，并发往客户端。
+</p>
+
+<ul>
+<li>
+freeNX
+
+</ul>
+
+<p>
+freeNX使用NX protocol，后端通过VNC、gnome或者xrdp来提供界面，由于NX协议封装了界面显示信息，使通信量大大降低，比直接使用VNC所需要的带宽要小很多。
+</p>
+
+<h2 id="toc_1.3">XDMCP协议</h2>
+
+<ul>
+<li>
+服务器端
+
+</ul>
+
+<p>
+如果是centos5的版本，在使用XDMCP时，只需要使用gdmsetup（系统-&gt;管理-&gt;登录窗口）进行配置即可，配置的方式是在远程标签里的样式选上"与本地相同”，然后安全标签里分别选上允许本地系统管理员登录、允许远程管理员登录和禁止TCP连接到X服务器。当然也可直接修改gdm的配置文件/etc/gdm/custom.conf，内容改成如下：
+</p>
+<pre>
+[daemon]
+RemoteGreeter=/usr/libexec/gdmgreeter
+[security]
+AllowRemoteRoot=true
+[xdmcp]
+Enable=true
+[greeter]
+[chooser]
+[debug]
+</pre>
+
+<p>
+如果是centos6的版本，由于找不到gdmsetup程序（centos6取消了gdmsetup，gdm-restart等一系列命令，release_note上可以查到移除了rhn-setup-gnome包），所以不能再通过gdmsetup程序进行修改了，但可以通过改gdm的配置文件进行gdm的管理，也可以通过首选项的远程桌面配置来管理远程连接的配置部分。gdm的配置文件为/etc/gdm/custum.conf，内容改成如下：
+</p>
+<pre>
+[daemon]
+[security]
+DisallowTcp=false
+AllowRemoteRoot=true
+[xdmcp]
+Enable=true
+[greeter]
+[chooser]
+[debug]
+</pre>
+
+<ul>
+<li>
+客户端
+
+</ul>
+
+<p>
+linux客户端可以使用tsclient（yum可以直接安装，tsclient只是一个软件，它的名称叫在终端服务客户端，它装完后在应用程序-&gt;internet或者附件里可以找到，它根据使用的协议选择不同的程序，如使用xdmcp协议时，tsclient实际上调用的是Xnest），也可直接使用Xnest进行连接。
+</p>
+
+<p>
+使用Xnest时需要指定使用哪个窗口进行显示，如<code>Xnest -query serveraddr :2</code>，其中2表示窗口编号，一般操作系统启动之后0和1窗口是已经被使用过了，所以不能指定0和1，当然这个是可以配置的。
+</p>
+
+<p>
+需要注意的是XDMCP协议不同版本兼容性可能存在问题，经测试高版本的Xnest可以访问低版本的gdm，但低版本的Xnest访问高版本的gdm时老是出段错误，软件上存在bug。
+</p>
+
+<p>
+当然linux上也可以直接使用X启用X server连接远程桌面，但缺点是需要使用显示界面编号，不能在当前的显示界面里显示，使用Ｘ进行连接有三种方法：
+</p>
+
+<ol>
+<li>
+query方法，例：<code>X -query XDMCPServerAddr :2</code>
+
+<li>
+broadcast方法，例：<code>X -broadcast :2</code>，这种方式将会连接第一个响应支持远程连接的server上。
+
+<li>
+indirect方法，例：<code>X -indirect XDMCPServerAddr :2</code>，这种方式将由服务器返回可以连接的主机列表，然后你可以选择登录。
+
+</ol>
+
+<p>
+Remmina也是一个不错的选择：
+</p>
+<pre>
+remmina - remote desktop client for GNOME desktop environment
+remmina-common - common files for remmina remote desktop client
+remmina-plugin-rdp - RDP plugin for remmina remote desktop client
+remmina-plugin-vnc - VNC plugin for remmina remote desktop client
+remmina-plugin-gnome - GNOME plugin for remmina remote desktop client
+remmina-plugin-nx - NX plugin for remmina remote desktop client
+remmina-plugin-telepathy - Telepathy plugin for remmina remote desktop client
+remmina-plugin-xdmcp - XDMCP plugin for remmina remote desktop client
+</pre>
+
+<p>
+Windows的XDMCP协议客户端可以使用xshell带的X Manager客户端、<a href="http://sourceforge.net/projects/xming/">Xming</a>或MobaXterm。
+</p>
+
+<h3 id="toc_1.3.1">Cygwin XServer</h3>
+
+<ul>
+<li>
+<a href="linux-remote-desktop-via-cygwin-x-server.html">使用cygwin X server实现Linux远程桌面 (for windows)</a>
+
+</ul>
+
+<h2 id="toc_1.4">VNC</h2>
+
+<ul>
+<li>
+服务器端
+
+</ul>
+
+<p>
+centos5上使用的vnc服务器软件为vnc-server，可以直接使用yum install vnc-server安装
+</p>
+
+<p>
+centos6上使用的vnc服务器软件为tigervnc-server，也可以直接使用yum install tigervnc-server安装
+</p>
+
+<p>
+安装完成后配置过程如下（参考<a href="http://wiki.centos.org/HowTos/VNC-Server">http://wiki.centos.org/HowTos/VNC-Server</a> ）：
+</p>
+
+<ol>
+<li>
+添加vnc用户，直接使用useradd即可。
+
+<li>
+使用添加的用户登录，然后使用vncpasswd修改自己的vnc密码，注意这个密码不是系统密码，只是远程登录时的验证密码。
+
+<li>
+修改配置文件，为每个用户提供显示界面，vncserver配置文件为/etc/sysconfig/vncserver，它里面的配置指定在哪个显示界面上输出，示例配置如下：
+<pre class="brush:bash">
+VNCSERVER="3:xiaomao"                                #表示在编号为3的显示界面上输出，登录用户名为xiaomao
+VNCSERVERARGS[3]="-geometry 800x600 -nolisten tcp"   #表示显示界面的参数。
+</pre>
+
+</ol>
+
+<ul>
+<li>
+客户端
+
+</ul>
+
+<p>
+linux上在centos5上使用的客户端软件为vnc，可以使用yum install vnc进行安装，安装完成后命令名称为vncviewer，应用程序-&gt;附件里可以找到，名称为VNC Viewer。
+</p>
+
+<p>
+linux上在centos6上使用的客户端软件为tigervnc，可以使用yum install tigervnc进行安装，安装完成后命令名称为vncview，应用程序-&gt;internet里面可以找到，名称为TigerVNC Viewer。
+</p>
+
+<p>
+linux上的VNC客户端也可以使用tsclient，选择使用VNC协议即可，tsclient实际调用的仍然是vnc的客户端（tigervnc或者vnc）。
+</p>
+
+<p>
+需要说明的是vnc的客户端需要指明vnc的端口，否则将连接不上。端口和用户显示的界面相关，一般是5900+界面编号，如前面示例配置里xiaomao的端口为5903。
+</p>
+
+<h3 id="toc_1.4.1">vnc-server</h3>
+
+<ul>
+<li>
+<a href="vnc-server.html">vnc-server</a>
+
+<li>
+<a href="../files/shell/install_vnc_server.sh">阿里云:install_vnc_server.sh</a>
+
+</ul>
+
+<h2 id="toc_1.5">xrdp</h2>
+
+<p>
+Xrdp uses Xvnc or X11rdp to manage the X session.
+</p>
+
+<ul>
+<li>
+服务器端
+
+</ul>
+
+<p>
+linux服务器安装xrdp软件，需要下载xrdp包，自己编译安装。
+</p>
+
+<p>
+下载地址: <a href="http://sourceforge.net/projects/xrdp/files">http://sourceforge.net/projects/xrdp/files</a>
+</p>
+
+<p>
+官网地址: <a href="http://www.xrdp.org">http://www.xrdp.org</a>
+</p>
+
+<p>
+安装完成后的配置过程如下：
+</p>
+
+<p>
+xrdp的配置文件为/etc/xrdp/xrdp.ini。端口默认为3389。sesman的配置文件为sesman.ini。
+</p>
+
+<p>
+xrdp的启动需要启动sesman（xrdp-sesman）和xrdp两个进程，一般编写service脚本的时候要把这两个进程都启动。安装时默认的service脚本(源码包的instfiles里的xrdp.sh)有问题，restart会卡住，需要修改脚本，当然也可以手工启动这两个程序。
+</p>
+
+<ul>
+<li>
+<a href="xrdp.html">xrdp安装配置方法</a>
+
+<li>
+X11rdp-o-Matic:
+
+<ul>
+<li>
+<a href="X11rdp-o-Matic.html">X11rdp-o-Matic</a>
+
+<ul>
+<li>
+<a href="http://scarygliders.net/tag/rdp-and-linux/">http://scarygliders.net/tag/rdp-and-linux/</a>
+
+<li>
+<a href="https://github.com/scarygliders/X11RDP-o-Matic">https://github.com/scarygliders/X11RDP-o-Matic</a>
+
+<li>
+<a href="../files/shell/X11RDP-o-Matic-master.zip">X11RDP-o-Matic-master_3.0.3.zip</a>
+<pre class="brush:bash">
+git clone https://github.com/scarygliders/X11RDP-o-Matic.git
+
+sudo ./X11RDP-o-Matic.sh --justdoit
+sudo ./RDPsesconfig.sh
+</pre>
+
+</ul>
+<li>
+简单地从源安装
+<pre class="brush:bash">
+# Ubuntu 12.04源中为xrdp 0.50版本，不支持剪贴板，需编译安装0.70版本。
+apt-get update
+apt-get -y install xrdp
+cd /etc/xrdp &amp;&amp; mv startwm.sh{,.default} &amp;&amp; ln -sf /etc/X11/Xsession startwm.sh
+apt-get -y install gnome-session unity-2d gnome-shell
+apt-get -y gedit gnome-terminal keepassx
+
+
+cat &gt; /home/yuanxing/.xsession &lt;&lt;EOF
+#fluxbox
+#blackbox
+gnome-session --session=gnome
+#gnome-session --session=ubuntu-2d
+EOF
+chown yuanxing. /home/yuanxing/.xsession
+</pre>
+
+</ul>
+</ul>
+
+
+<ul>
+<li>
+客户端
+
+</ul>
+
+<p>
+linux可以使用krdc、rdesktop或者tsclient(实际调用的是rdesktop)进行连接。
+</p>
+
+<p>
+windows可以直接使用windows的远程桌面进行连接，也可以使用xrdp的客户端(rdesktop)进行连接。
+</p>
+
+<h2 id="toc_1.6">freeNX</h2>
+
+<p>
+<a href="http://www.nomachine.com/">http://www.nomachine.com/</a>
+</p>
+
+<p>
+<a href="http://www.nomachine.com/select-package-server.php?id=1&amp;ids=2">http://www.nomachine.com/select-package-server.php?id=1&amp;ids=2</a>
+</p>
+
+<ul>
+<li>
+服务器端
+
+</ul>
+
+<ol>
+<li>
+linux可以直接通过yum安装freenx（yum install nx freenx）。
+
+<li>
+编辑配置文件/etc/nxserver/node.conf，打开ENABLE_PASSDB_AUTHENTICATION="1"选项（去掉前面的#号就行）。
+
+<li>
+添加nxserver系统用户（直接使用useradd即可），完成后添加到nxserver用户列表中去（nxserver --adduser username）。
+
+<li>
+设置用户密码（nxserver --passwd username）。
+
+</ol>
+
+
+<p>
+直接从<a href="http://www.nomachine.com">http://www.nomachine.com</a> 上下载free版本的client,node, server三个组件的deb包后安装,安装时是需要安装顺序的client-&gt;node-&gt;server.
+</p>
+<pre>
+sudo dpkg -i nxclient_3.5.0-7_amd64.deb
+sudo dpkg -i nxnode_3.5.0-9_amd64.deb
+sudo dpkg -i nxserver_3.5.0-11_amd64.deb
+</pre>
+
+<p>
+注意：iptables需开放端口：5000-5200
+</p>
+
+<p>
+配置启动服务：<a href="http://www.nomachine.com/documents/admin-guide.php">http://www.nomachine.com/documents/admin-guide.php</a>
+</p>
+
+<p>
+添加用户：
+</p>
+<pre class="brush:bash">
+cd /usr/NX/bin
+./nxserver --useradd jianghang           #切换到root下执行,一般我们都添加自己常用的账户
+./nxserver --passwd jianghang --system   #修改nxserver密码
+./nxserver --restart                     #启动NX服务器
+</pre>
+
+<p>
+其他的管理命令：
+</p>
+<pre class="brush:bash">
+nxserver --stop         #停止NX服务器
+nxserver --status       #查看NX服务器
+nxserver --restart      #重新启动NX服务器
+nxserver --userlist     #列出用户列表
+nxserver --list         #列出当前的连接情况
+</pre>
+
+<ul>
+<li>
+客户端
+
+</ul>
+
+<p>
+客户端软件需要在freeNX的官方网站下载安装包进行安装，过程比较简单，linux下是rpm包，windows下面是exe。
+</p>
+
+<p>
+安装完成后可以使用连接向导建立连接，linux下在应用程序-&gt;Internet-&gt;NX Client for Linux下面。
+</p>
+
+<p>
+需要注意的是在选择连接类型的时候我们需要根据服务器提供服务的类型进行选择，如我们可以选择GNOME、VNC（需要server端提供了vnc服务，并且已知vnc提供的界面显示编号）以及rdp（需要服务端提供了xrdp的服务）等都可以。然后在finish时选上"显示高级配置对话框”的复选框，然后在key里面贴上nxserver验证使用的key（使用所选用户登ssh录服务器后，文件/etc/nxserver/client.id.dsa.key里面的内容）。经过试验，如果登录的server是centos6，并且使用默认设置的话，需要选择xdm而不是gnome才可以登录。
+</p>
+
+<p>
+FreeNX使用说明：<a href="http://www.ctohome.com/FuWuQi/d0/260.html">http://www.ctohome.com/FuWuQi/d0/260.html</a>
+</p>
+
+<h3 id="toc_1.6.1">Centos下安装X Window+GNOME Desktop+FreeNX</h3>
+
+<p>
+<a href="http://www.vpsyou.com/2010/03/16/centos-to-install-x-window-gnome-desktop-freenx.html">http://www.vpsyou.com/2010/03/16/centos-to-install-x-window-gnome-desktop-freenx.html</a>
+</p>
+
+<p>
+2010年03月16日 @ 7:09 上午
+</p>
+
+<p>
+FreeNX是近年来继VNC之后新出现的远程控制解决方案，基本原理是将XWindows的信号压缩后传输到远程客户端显示，而VNC是直接截取 屏幕图像处理传输。这样，在同样的传输信道条件下，FreeNX可以比VNC提供更好的操作感和实时性；
+</p>
+
+<p>
+其实我们一直不提倡linux下安装桌面，但很多客户要求，今天总结了一下在我们vps下centos的安装
+</p>
+
+<ul>
+<li>
+第一：装X Window+GNOME Desktop+FreeNX
+<pre>
+yum  groupinstall "X Window System"
+yum groupinstall "GNOME Desktop Environment"
+yum install nc expect
+yum install freenx
+yum groupinstall chinese-support
+</pre>
+
+</ul>
+
+<ul>
+<li>
+第二：配置
+
+<ul>
+<li>
+cd /etc/nxserver ; cp node.conf.sample node.conf
+
+<li>
+编辑 /etc/ssh/sshd_config 档并更改／加入下列数行：
+<pre>
+PasswordAuthentication no #这样的话你将不能在使用putty SSH登陆了！
+AllowUsers nx root
+</pre>
+
+<li>
+然后重启动sshd：
+<pre>
+service sshd restart
+</pre>
+
+<li>
+编辑/etc/nxserver/node.conf
+<pre>
+把：
+#ENABLE_PASSDB_AUTHENTICATION="0"
+修改为：
+ENABLE_PASSDB_AUTHENTICATION="1"
+</pre>
+
+<li>
+创建一个登陆账户，此账户得是linux里的已有账号：
+<pre>
+nxserver --adduser myuser #myuser在这我用的是root
+</pre>
+
+<li>
+设置该用户的密码：
+<pre>
+nxserver --passwd myuser #myuser在这我用的是root
+</pre>
+
+<li>
+重新载入sshd：
+<pre>
+service sshd restart
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+第三：安装 NoMachine 客户端
+
+</ul>
+
+<p>
+FreeNX Windows 客户端下载：<a href="http://64.34.161.181/download/3.4.0/Windows/nxclient-3.4.0-7.exe">http://64.34.161.181/download/3.4.0/Windows/nxclient-3.4.0-7.exe</a>
+</p>
+
+<p>
+安装，不用说了吧？
+</p>
+
+<ul>
+<li>
+打开 NX 连接向导，如图：
+
+<ul>
+<li>
+Session：可以随便填
+
+<li>
+hostname：你的VPS的ip
+
+<li>
+Port：端口，一般22，不用改
+
+<li>
+Type of Internet Connection：视你的网速选择
+
+</ul>
+</ul>
+
+<ul>
+<li>
+选 unix 和 GNOME （默认）
+
+<li>
+size of the desktop：桌面尺寸大小
+
+<li>
+finish完成
+
+</ul>
+
+<ul>
+<li>
+这时会弹出该设置的配置选项，如图：
+
+</ul>
+
+<p>
+点击 “key” 后如图：
+</p>
+
+<p>
+此DSA Key非彼Key，那么这个key哪里找呢?请继续看：
+</p>
+
+<p>
+ssh里打开/etc/nxserver/client.id_dsa.key ，得root才能打开
+</p>
+
+<p>
+你会看到里面正是你需要的key，复制后黏贴覆盖刚才DSA Key的全部内容，然后保存退出
+</p>
+
+<p>
+这时会在你的桌面生成一个以刚才你输入Session的名的图标
+</p>
+
+<p>
+双击打开，得图：
+</p>
+
+<p>
+填入用户名，密码 点击login
+</p>
+
+<p>
+稍等片刻及成功登入：
+</p>
+
+<ul>
+<li>
+第四：该步骤是针对本站xen vps centos下安装上面重启vps导致vps当机的解决办法，本站用户必看
+<pre>
+当你安装完X Window+GNOME Desktop+FreeNX 后一定要做的事情是一定要禁用selinux！！
+具体做法是安装完上面后请编辑/etc/selinux/config，把
+SELINUX=enforcing 修改为
+SELINUX=disabled
+然后在重启
+我已经测试可行
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

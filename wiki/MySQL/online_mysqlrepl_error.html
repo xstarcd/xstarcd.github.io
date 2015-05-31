@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>线上MYSQL同步报错故障处理总结</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">线上MYSQL同步报错故障处理总结</a>
+<ul>
+<li><a href="#toc_1.1">前言</a>
+<li><a href="#toc_1.2">生产环境架构图</a>
+<li><a href="#toc_1.3">常见错误</a>
+<ul>
+<li><a href="#toc_1.3.1">最常见的3种情况</a>
+<li><a href="#toc_1.3.2">异步半同步区别</a>
+<li><a href="#toc_1.3.3">特殊的情况</a>
+</ul>
+<li><a href="#toc_1.4">问题处理</a>
+<ul>
+<li><a href="#toc_1.4.1">删除失败</a>
+<li><a href="#toc_1.4.2">主键重复</a>
+<li><a href="#toc_1.4.3">更新丢失</a>
+<li><a href="#toc_1.4.4">中继日志损坏</a>
+<ul>
+<li><a href="#toc_1.4.4.1">手工修复</a>
+<li><a href="#toc_1.4.4.2">Ibbackup</a>
+</ul>
+<li><a href="#toc_1.4.5">Maatkit工具包</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<p>
+原文：<a href="http://hcymysql.blog.51cto.com/5223301/888007">http://hcymysql.blog.51cto.com/5223301/888007</a>
+</p>
+
+<h1 id="toc_1">线上MYSQL同步报错故障处理总结</h1>
+
+<p>
+贺春旸 2012-06-05 
+</p>
+
+<h2 id="toc_1.1">前言</h2>
+
+<p>
+在发生故障切换后，经常遇到的问题就是同步报错，数据库很小的时候，dump完再导入很简单就处理好了，但线上的数据库都150G-200G，如果用单纯的这种方法，成本太高，故经过一段时间的摸索，总结了几种处理方法。
+</p>
+
+<h2 id="toc_1.2">生产环境架构图</h2>
+
+<p>
+目前现网的架构，保存着两份数据，通过异步复制做的高可用集群，两台机器提供对外服务。在发生故障时，切换到slave上，并将其变成master，坏掉的机器反向同步新的master，在处理故障时，遇到最多的就是主从报错。下面是我收录下来的报错信息。
+</p>
+
+<h2 id="toc_1.3">常见错误</h2>
+
+<h3 id="toc_1.3.1">最常见的3种情况</h3>
+
+<p>
+这3种情况是在HA切换时，由于是异步复制，且sync_binlog=0，会造成一小部分binlog没接收完导致同步报错。
+</p>
+
+<ul>
+<li>
+第一种：在master上删除一条记录，而slave上找不到。
+<pre>
+Last_SQL_Error: Could not execute Delete_rows event on table hcy.t1; 
+Can't find record in 't1', 
+Error_code: 1032; handler error HA_ERR_KEY_NOT_FOUND; 
+the event's master log mysql-bin.000006, end_log_pos 254
+</pre>
+
+<li>
+第二种：主键重复。在slave已经有该记录，又在master上插入了同一条记录。
+<pre>
+Last_SQL_Error: Could not execute Write_rows event on table hcy.t1; 
+Duplicate entry '2' for key 'PRIMARY', 
+Error_code: 1062; 
+handler error HA_ERR_FOUND_DUPP_KEY; the event's master log mysql-bin.000006, end_log_pos 924
+</pre>
+
+<li>
+第三种：在master上更新一条记录，而slave上找不到，丢失了数据。
+<pre>
+Last_SQL_Error: Could not execute Update_rows event on table hcy.t1;
+Can't find record in 't1', 
+Error_code: 1032; 
+handler error HA_ERR_KEY_NOT_FOUND; the event's master log mysql-bin.000010, end_log_pos 263
+</pre>
+
+</ul>
+
+<h3 id="toc_1.3.2">异步半同步区别</h3>
+
+<ul>
+<li>
+异步复制
+
+</ul>
+
+<p>
+简单的说就是master把binlog发送过去，不管slave是否接收完，也不管是否执行完，这一动作就结束了.
+</p>
+
+<ul>
+<li>
+半同步复制
+
+</ul>
+
+<p>
+简单的说就是master把binlog发送过去，slave确认接收完，但不管它是否执行完，给master一个信号我这边收到了，这一动作就结束了。（谷歌写的代码，5.5上正式应用。）
+</p>
+
+<ul>
+<li>
+异步的劣势
+
+</ul>
+
+<p>
+当master上写操作繁忙时，当前POS点例如是10，而slave上IO_THREAD线程接收过来的是3，此时master宕机，会造成相差7个点未传送到slave上而数据丢失。
+</p>
+
+<h3 id="toc_1.3.3">特殊的情况</h3>
+
+<ul>
+<li>
+slave的中继日志relay-bin损坏。
+<pre>
+Last_SQL_Error: Error initializing relay log position: I/O error reading the header from the binary log
+Last_SQL_Error: Error initializing relay log position: Binlog has bad magic number; 
+It's not a binary log file that can be used by this version of MySQL
+</pre>
+
+</ul>
+
+<p>
+这种情况SLAVE在宕机，或者非法关机，例如电源故障、主板烧了等，造成中继日志损坏，同步停掉。
+</p>
+
+<ul>
+<li>
+人为失误需谨慎：多台slave存在重复server-id
+
+</ul>
+ 
+<p>
+这种情况同步会一直延时，永远也同步不完，error错误日志里一直出现上面两行信息。解决方法就是把server-id改成不一致即可。
+</p>
+
+<pre>
+Slave: received end packet from server, apparent master shutdown:
+Slave I/O thread: Failed reading log event, reconnecting to retry, log 'mysql-bin.000012' at postion 106
+</pre>
+
+<h2 id="toc_1.4">问题处理</h2>
+
+<h3 id="toc_1.4.1">删除失败</h3>
+
+<p>
+在master上删除一条记录，而slave上找不到。
+</p>
+
+<pre>
+Last_SQL_Error: Could not execute Delete_rows event on table hcy.t1; 
+Can't find record in 't1',
+Error_code: 1032; handler error HA_ERR_KEY_NOT_FOUND; 
+the event's master log mysql-bin.000006, end_log_pos 254
+</pre>
+
+<p>
+解决方法：
+</p>
+
+<p>
+由于master要删除一条记录，而slave上找不到故报错，这种情况主上都将其删除了，那么从机可以直接跳过。可用命令：
+</p>
+
+<pre>
+stop slave;
+set global sql_slave_skip_counter=1;
+start slave;
+</pre>
+
+<p>
+如果这种情况很多，可用我写的一个脚本skip_error_replcation.sh，默认跳过10个错误（只针对这种情况才跳，其他情况输出错误结果，等待处理），这个脚本是参考maakit工具包的mk-slave-restart原理用shell写的，功能上定义了一些自己的东西，不是无论什么错误都一律跳过。）
+</p>
+
+
+<h3 id="toc_1.4.2">主键重复</h3>
+
+<p>
+在slave已经有该记录，又在master上插入了同一条记录。
+</p>
+<pre>
+Last_SQL_Error: Could not execute Write_rows event on table hcy.t1; 
+Duplicate entry '2' for key 'PRIMARY', 
+Error_code: 1062; 
+handler error HA_ERR_FOUND_DUPP_KEY; the event's master log mysql-bin.000006, end_log_pos 924
+</pre>
+
+<p>
+解决方法：
+</p>
+
+<p>
+在slave上用desc  hcy.t1; 先看下表结构：
+</p>
+
+<pre>
+mysql&gt; desc hcy.t1;
++-------+---------+------+-----+---------+-------+
+| Field | Type    | Null | Key | Default | Extra |
++-------+---------+------+-----+---------+-------+
+| id    | int(11) | NO   | PRI | 0       |       | 
+| name  | char(4) | YES  |     | NULL    |       | 
++-------+---------+------+-----+---------+-------+
+</pre>
+
+<p>
+删除重复的主键
+</p>
+<pre>
+mysql&gt; delete from t1 where id=2;
+Query OK, 1 row affected (0.00 sec)
+
+mysql&gt; start slave;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql&gt; show slave status\G;
+……
+Slave_IO_Running: Yes
+Slave_SQL_Running: Yes
+……
+mysql&gt; select * from t1 where id=2;
+</pre>
+
+<p>
+在master上和slave上再分别确认一下。
+</p>
+
+<h3 id="toc_1.4.3">更新丢失</h3>
+
+<p>
+在master上更新一条记录，而slave上找不到，丢失了数据。
+</p>
+<pre>
+Last_SQL_Error: Could not execute Update_rows event on table hcy.t1; 
+Can't find record in 't1', 
+Error_code: 1032; 
+handler error HA_ERR_KEY_NOT_FOUND; 
+the event's master log mysql-bin.000010, end_log_pos 794
+</pre>
+
+<p>
+解决方法：
+</p>
+
+<p>
+在master上，用mysqlbinlog 分析下出错的binlog日志在干什么。
+</p>
+<pre>
+/usr/local/mysql/bin/mysqlbinlog --no-defaults -v -v --base64-output=DECODE-ROWS mysql-bin.000010 | grep -A '10' 794
+
+#120302 12:08:36 server id 22  end_log_pos 794  Update_rows: table id 33 flags: STMT_END_F
+### UPDATE hcy.t1
+### WHERE
+###   @1=2 /* INT meta=0 nullable=0 is_null=0 */
+###   @2='bbc' /* STRING(4) meta=65028 nullable=1 is_null=0 */
+### SET
+###   @1=2 /* INT meta=0 nullable=0 is_null=0 */
+###   @2='BTV' /* STRING(4) meta=65028 nullable=1 is_null=0 */
+# at 794
+#120302 12:08:36 server id 22  end_log_pos 821  Xid = 60
+COMMIT/*!*/;
+DELIMITER ;
+# End of log file
+ROLLBACK /* added by mysqlbinlog */;
+/*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
+</pre>
+
+<p>
+在slave上，查找下更新后的那条记录，应该是不存在的。
+</p>
+<pre>
+mysql&gt; select * from t1 where id=2;
+Empty set (0.00 sec)
+</pre>
+
+<p>
+然后再到master查看
+</p>
+<pre>
+mysql&gt; select * from t1 where id=2;
++----+------+
+| id | name |
++----+------+
+|  2 | BTV  | 
++----+------+
+1 row in set (0.00 sec)
+</pre>
+
+<p>
+把丢失的数据在slave上填补，然后跳过报错即可。
+</p>
+<pre>
+mysql&gt; insert into t1 values (2,'BTV');
+Query OK, 1 row affected (0.00 sec)
+
+mysql&gt; select * from t1 where id=2;    
++----+------+
+| id | name |
++----+------+
+|  2 | BTV  | 
++----+------+
+1 row in set (0.00 sec)
+
+mysql&gt; stop slave ;set global sql_slave_skip_counter=1;start slave;
+Query OK, 0 rows affected (0.01 sec)
+Query OK, 0 rows affected (0.00 sec)
+Query OK, 0 rows affected (0.00 sec)
+
+mysql&gt; show slave status\G;
+……
+ Slave_IO_Running: Yes
+ Slave_SQL_Running: Yes
+……
+</pre>
+
+<h3 id="toc_1.4.4">中继日志损坏</h3>
+
+<p>
+slave的中继日志relay-bin损坏。
+</p>
+<pre>
+Last_SQL_Error: Error initializing relay log position: I/O error reading the header from the binary log
+Last_SQL_Error: Error initializing relay log position: Binlog has bad magic number;  
+It's not a binary log file that can be used by  this version of MySQL
+</pre>
+
+<h4 id="toc_1.4.4.1">手工修复</h4>
+
+<p>
+解决方法：找到同步的binlog和POS点，然后重新做同步，这样就可以有新的中继日值了。
+</p>
+
+<p>
+例子：
+</p>
+<pre>
+mysql&gt; show slave status\G;
+*************************** 1. row ***************************
+              Master_Log_File: mysql-bin.000010
+          Read_Master_Log_Pos: 1191
+               Relay_Log_File: vm02-relay-bin.000005
+                Relay_Log_Pos: 253
+        Relay_Master_Log_File: mysql-bin.000010
+             Slave_IO_Running: Yes
+            Slave_SQL_Running: No
+              Replicate_Do_DB: 
+          Replicate_Ignore_DB: 
+           Replicate_Do_Table: 
+       Replicate_Ignore_Table: 
+      Replicate_Wild_Do_Table: 
+  Replicate_Wild_Ignore_Table: 
+                   Last_Errno: 1593
+                   Last_Error: Error initializing relay log position: I/O error reading the header from the binary log
+                 Skip_Counter: 1
+          Exec_Master_Log_Pos: 821
+
+Slave_IO_Running ：接收master的binlog信息
+                   Master_Log_File
+                   Read_Master_Log_Pos
+
+Slave_SQL_Running：执行写操作
+                   Relay_Master_Log_File
+                   Exec_Master_Log_Pos
+
+</pre>
+
+<p>
+以执行写的binlog和POS点为准。
+</p>
+<pre>
+Relay_Master_Log_File: mysql-bin.000010
+Exec_Master_Log_Pos: 821
+</pre>
+
+<pre>
+mysql&gt; stop slave;
+Query OK, 0 rows affected (0.01 sec)
+
+mysql&gt; CHANGE MASTER TO MASTER_LOG_FILE='mysql-bin.000010',MASTER_LOG_POS=821;
+Query OK, 0 rows affected (0.01 sec)
+
+mysql&gt; start slave;
+Query OK, 0 rows affected (0.00 sec)
+
+
+mysql&gt; show slave status\G;
+*************************** 1. row ***************************
+               Slave_IO_State: Waiting for master to send event
+                  Master_Host: 192.168.8.22
+                  Master_User: repl
+                  Master_Port: 3306
+                Connect_Retry: 10
+              Master_Log_File: mysql-bin.000010
+          Read_Master_Log_Pos: 1191
+               Relay_Log_File: vm02-relay-bin.000002
+                Relay_Log_Pos: 623
+        Relay_Master_Log_File: mysql-bin.000010
+             Slave_IO_Running: Yes
+            Slave_SQL_Running: Yes
+              Replicate_Do_DB: 
+          Replicate_Ignore_DB: 
+           Replicate_Do_Table: 
+       Replicate_Ignore_Table: 
+      Replicate_Wild_Do_Table: 
+  Replicate_Wild_Ignore_Table: 
+                   Last_Errno: 0
+                   Last_Error: 
+                 Skip_Counter: 0
+          Exec_Master_Log_Pos: 1191
+              Relay_Log_Space: 778
+              Until_Condition: None
+               Until_Log_File: 
+                Until_Log_Pos: 0
+           Master_SSL_Allowed: No
+           Master_SSL_CA_File: 
+           Master_SSL_CA_Path: 
+              Master_SSL_Cert: 
+            Master_SSL_Cipher: 
+               Master_SSL_Key: 
+        Seconds_Behind_Master: 0
+Master_SSL_Verify_Server_Cert: No
+                Last_IO_Errno: 0
+                Last_IO_Error: 
+               Last_SQL_Errno: 0
+               Last_SQL_Error: 
+</pre>
+
+
+<h4 id="toc_1.4.4.2">Ibbackup</h4>
+
+<p>
+各种大招都用上了，无奈slave数据丢失过多，ibbackup（需要银子）该你登场了。
+</p>
+
+<p>
+Ibbackup热备份工具，是付费的。xtrabackup是免费的，功能上一样。
+</p>
+
+<p>
+Ibbackup备份期间不锁表，备份时开启一个事务（相当于做一个快照），然后会记录一个点，之后数据的更改保存在ibbackup_logfile文件里，恢复时把ibbackup_logfile 变化的数据再写入到ibdata里。
+</p>
+
+<p>
+Ibbackup 只备份数据（ ibdata、.ibd ），表结构.frm不备份。
+</p>
+
+<p>
+下面一个演示例子：
+</p>
+
+<p>
+备份：ibbackup /bak/etc/my_local.cnf /bak/etc/my_bak.cnf
+</p>
+
+<p>
+恢复：ibbackup --apply-log /bak/etc/my_bak.cnf 
+</p>
+<pre>
+[root@vm01 etc]# more my_local.cnf 
+
+datadir =/usr/local/mysql/data
+innodb_data_home_dir = /usr/local/mysql/data
+innodb_data_file_path = ibdata1:10M:autoextend
+innodb_log_group_home_dir = /usr/local/mysql/data
+innodb_buffer_pool_size = 100M
+innodb_log_file_size = 5M
+innodb_log_files_in_group=2
+
+
+
+[root@vm01 etc]# ibbackup /bak/etc/my_local.cnf /bak/etc/my_bak.cnf 
+
+InnoDB Hot Backup version 3.0.0; Copyright 2002-2005 Innobase Oy
+License A21488 is granted to vm01 (chunyang_he@126.com)
+(--apply-log works in any computer regardless of the hostname)
+Licensed for use in a computer whose hostname is 'vm01'
+Expires 2012-5-1 (year-month-day) at 00:00
+See http://www.innodb.com for further information
+Type ibbackup --license for detailed license terms, --help for help
+
+Contents of /bak/etc/my_local.cnf:
+innodb_data_home_dir got value /usr/local/mysql/data
+innodb_data_file_path got value ibdata1:10M:autoextend
+datadir got value /usr/local/mysql/data
+innodb_log_group_home_dir got value /usr/local/mysql/data
+innodb_log_files_in_group got value 2
+innodb_log_file_size got value 5242880
+
+Contents of /bak/etc/my_bak.cnf:
+innodb_data_home_dir got value /bak/data
+innodb_data_file_path got value ibdata1:10M:autoextend
+
+datadir got value /bak/data
+innodb_log_group_home_dir got value /bak/data
+innodb_log_files_in_group got value 2
+innodb_log_file_size got value 5242880
+
+ibbackup: Found checkpoint at lsn 0 1636898
+ibbackup: Starting log scan from lsn 0 1636864
+120302 16:47:43  ibbackup: Copying log...
+120302 16:47:43  ibbackup: Log copied, lsn 0 1636898
+ibbackup: We wait 1 second before starting copying the data files...
+120302 16:47:44  ibbackup: Copying /usr/local/mysql/data/ibdata1
+ibbackup: A copied database page was modified at 0 1636898
+ibbackup: Scanned log up to lsn 0 1636898
+ibbackup: Was able to parse the log up to lsn 0 1636898
+ibbackup: Maximum page number for a log record 0
+120302 16:47:46  ibbackup: Full backup completed!
+[root@vm01 etc]#
+[root@vm01 etc]# cd /bak/data/
+[root@vm01 data]# ls
+ibbackup_logfile  ibdata1
+
+
+
+
+[root@vm01 data]# ibbackup --apply-log /bak/etc/my_bak.cnf 
+
+InnoDB Hot Backup version 3.0.0; Copyright 2002-2005 Innobase Oy
+License A21488 is granted to vm01 (chunyang_he@126.com)
+(--apply-log works in any computer regardless of the hostname)
+Licensed for use in a computer whose hostname is 'vm01'
+Expires 2012-5-1 (year-month-day) at 00:00
+See http://www.innodb.com for further information
+Type ibbackup --license for detailed license terms, --help for help
+
+Contents of /bak/etc/my_bak.cnf:
+innodb_data_home_dir got value /bak/data
+innodb_data_file_path got value ibdata1:10M:autoextend
+datadir got value /bak/data
+innodb_log_group_home_dir got value /bak/data
+innodb_log_files_in_group got value 2
+innodb_log_file_size got value 5242880
+
+120302 16:48:38  ibbackup: ibbackup_logfile's creation parameters:
+ibbackup: start lsn 0 1636864, end lsn 0 1636898,
+ibbackup: start checkpoint 0 1636898
+
+
+ibbackup: start checkpoint 0 1636898
+InnoDB: Doing recovery: scanned up to log sequence number 0 1636898
+InnoDB: Starting an apply batch of log records to the database...
+InnoDB: Progress in percents: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 .....99
+Setting log file size to 0 5242880
+ibbackup: We were able to parse ibbackup_logfile up to
+ibbackup: lsn 0 1636898
+ibbackup: Last MySQL binlog file position 0 1191, file name ./mysql-bin.000010
+ibbackup: The first data file is '/bak/data/ibdata1'
+ibbackup: and the new created log files are at '/bak/data/'
+120302 16:48:38  ibbackup: Full backup prepared for recovery successfully!
+
+[root@vm01 data]# ls
+ibbackup_logfile  ibdata1  ib_logfile0  ib_logfile1
+</pre>
+
+<p>
+把ibdata1 ib_logfile0 ib_logfile1拷贝到从，把.frm也拷贝过去，启动MYSQL后，做同步，那个点就是上面输出的：
+</p>
+<pre>
+ibbackup: Last MySQL binlog file position 0 1191, file name ./mysql-bin.000010
+</pre>
+
+<pre>
+CHANGE MASTER TO MASTER_LOG_FILE='mysql-bin.000010',MASTER_LOG_POS=1191;
+</pre>
+
+
+<h3 id="toc_1.4.5">Maatkit工具包</h3>
+
+
+<p>
+<a href="http://www.maatkit.org/">http://www.maatkit.org/</a>
+</p>
+
+<ul>
+<li>
+简介
+
+</ul>
+
+<p>
+maatkit是一个开源的工具包，为mysql日常管理提供了帮助。目前，已被Percona公司收购并维护。其中：
+</p>
+
+<p>
+mk-table-checksum是用来检测master和slave上的表结构和数据是否一致。
+</p>
+
+<p>
+mk-table-sync是发生主从数据不一致时，来修复的。
+</p>
+
+<p>
+这两个工具包，没有在现网实际操作的经验，这里仅仅是新技术探讨和学术交流，下面展示下如何使用。
+</p>
+
+<p>
+<a href="http://www.actionsky.com/products/mysql-others/maatkit.jsp">http://www.actionsky.com/products/mysql-others/maatkit.jsp</a>
+</p>
+
+<pre>
+[root@vm02]# mk-table-checksum h=vm01,u=admin,p=123456 h=vm02,u=admin,p=123456 -d hcy -t t1
+Cannot connect to MySQL because the Perl DBI module is not installed or not found.  
+Run 'perl -MDBI' to see the directories that Perl searches for DBI.
+If DBI is not installed, try:
+  Debian/Ubuntu  apt-get install libdbi-perl
+  RHEL/CentOS    yum install perl-DBI
+  OpenSolaris    pgk install pkg:/SUNWpmdbi
+</pre>
+
+<p>
+提示缺少perl-DBI模块，那么直接 yum install perl-DBI。
+</p>
+
+<pre>
+[root@vm02 bin]# mk-table-checksum h=vm01,u=admin,p=123456 h=vm02,u=admin,p=123456 -d hcy -t t1
+DATABASE TABLE CHUNK HOST ENGINE      COUNT         CHECKSUM TIME WAIT STAT  LAG
+hcy      t1        0 vm02 InnoDB       NULL       1957752020    0    0 NULL NULL
+hcy      t1        0 vm01 InnoDB       NULL       1957752020    0    0 NULL NULL
+</pre>
+
+<p>
+如果表数据不一致，CHECKSUM的值是不相等的。
+</p>
+
+<p>
+解释下输出的意思：
+</p>
+<pre>
+DATABASE：数据库名
+TABLE：表名
+CHUNK：checksum时的近似数值
+HOST：MYSQL的地址
+ENGINE：表引擎
+COUNT：表的行数
+CHECKSUM：校验值
+TIME：所用时间
+WAIT：等待时间
+STAT：MASTER_POS_WAIT()返回值
+LAG：slave的延时时间
+</pre>
+
+<p>
+如果你想过滤出不相等的都有哪些表，可以用mk-checksum-filter这个工具，只要在后面加个管道符就行了。
+</p>
+<pre>
+[root@vm02 ~]# mk-table-checksum h=vm01,u=admin,p=123456 h=vm02,u=admin,p=123456 -d hcy | mk-checksum-filter       
+hcy      t2        0 vm01 InnoDB       NULL       1957752020    0    0 NULL NULL
+hcy      t2        0 vm02 InnoDB       NULL       1068689114    0    0 NULL NULL
+</pre>
+
+<p>
+知道有哪些表不一致，可以用mk-table-sync这个工具来处理。
+</p>
+
+<p>
+注：在执行mk-table-checksum时会锁表，表的大小取决于执行的快慢。
+</p>
+<pre>
+MASTER上的t2表数据：                      SLAVE上的t2表数据：
+mysql&gt; select * from t2;                  mysql&gt; select * from t2;    
++----+------+                             +----+------+
+| id | name |                             | id | name |
++----+------+                             +----+------+
+|  1 | a    |                             |  1 | a    | 
+|  2 | b    |                             |  2 | b    | 
+|  3 | ss   |                             |  3 | ss   | 
+|  4 | asd  |                             |  4 | asd  |  
+|  5 | ss   |                             +----+------+
++----+------+                             4 rows in set (0.00 sec)
+5 rows in set (0.00 sec) 
+                                          mysql&gt; \! hostname; 
+mysql&gt; \! hostname;                       vm02       
+vm01 
+</pre>
+
+<pre>
+[root@vm02 ~]# mk-table-sync --execute --print --no-check-slave --transaction --databases hcy h=vm01,u=admin,p=123456 h=vm02,u=admin,p=123456 
+INSERT INTO `hcy`.`t2`(`id`, `name`) VALUES ('5', 'ss') /*maatkit src_db:hcy src_tbl:t2 src_dsn:h=vm01,p=...,u=admin dst_db:hcy dst_tbl:t2 
+dst_dsn:h=vm02,p=...,u=admin lock:0 transaction:1 changing_src:0 replicate:0 bidirectional:0 pid:3246 user:root host:vm02*/;
+</pre>
+
+<p>
+它的工作原理是：先一行一行检查主从库的表是否一样，如果哪里不一样，就执行删除，更新，插入等操作，使其达到一致。表的大小决定着执行的快慢。
+</p>
+<pre>
+If C&lt;--transaction&gt; is specified, C&lt;LOCK TABLES&gt; is not used.  Instead, lock
+and unlock are implemented by beginning and committing transactions.
+The exception is if L&lt;"--lock"&gt; is 3.
+If C&lt;--no-transaction&gt; is specified, then C&lt;LOCK TABLES&gt; is used for any
+value of L&lt;"--lock"&gt;. See L&lt;"--[no]transaction"&gt;.
+When enabled, either explicitly or implicitly, the transaction isolation level
+is set C&lt;REPEATABLE READ&gt; and transactions are started C&lt;WITH CONSISTENT
+SNAPSHOT&gt;
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

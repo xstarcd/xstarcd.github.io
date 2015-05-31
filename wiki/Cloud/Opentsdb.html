@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Opentsdb</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Opentsdb</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">OpenTSDB介绍</a>
+<li><a href="#toc_0.2">OpenTSDB安装</a>
+<ul>
+<li><a href="#toc_0.2.1">用rpm包安装</a>
+<li><a href="#toc_0.2.2">编译安装opentsdb</a>
+<li><a href="#toc_0.2.3">create_table.sh</a>
+<li><a href="#toc_0.2.4">配置文件</a>
+<ul>
+<li><a href="#toc_0.2.4.1">编译安装配置</a>
+<li><a href="#toc_0.2.4.2">rpm包安装配置</a>
+</ul>
+<li><a href="#toc_0.2.5">启动脚本</a>
+<li><a href="#toc_0.2.6">日志截断</a>
+<li><a href="#toc_0.2.7">访问tsdb及配置</a>
+<li><a href="#toc_0.2.8">其它</a>
+</ul>
+<li><a href="#toc_0.3">通过nginx负载调度</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">OpenTSDB介绍</h2>
+
+<p>
+openTSDB使用hbase作为存储中心，它无须采样，可以完整的收集和存储上亿的数据点，支持秒级别的数据监控，得益于hbase的分布式列式存储，hbase可以灵活的支持metrics的增加，可以支持上万机器和上亿数据点的采集。在openTSDB中，TSD是hbase对外通信的daemon程序，没有master/slave之分，也没有共享状态，因此利用这点和hbase集群的特点就可以消除单点。用户可以通过telnet或者http协议直接访问TSD接口，也可以通过rpc访问TSD。每一个需要获取metrics的Servers都需要设置一个Collector用来收集时间序列数据。这个Collector就是你收集数据的脚本。
+</p>
+
+<ul>
+<li>
+<a href="http://opentsdb.net/">http://opentsdb.net/</a>
+
+<li>
+<a href="http://www.searchtb.com/2012/07/opentsdb-monitoring-system.html">OpenTSDB监控系统的研究和介绍</a>
+
+</ul>
+
+<h2 id="toc_0.2">OpenTSDB安装</h2>
+
+<h3 id="toc_0.2.1">用rpm包安装</h3>
+
+<pre class="brush:bash"&gt;>
+yum -y install lzo lzo-devel gnuplot
+rpm -ivh opentsdb-2.1.0RC1.noarch.rpm
+</pre>
+
+<h3 id="toc_0.2.2">编译安装opentsdb</h3>
+
+<ul>
+<li>
+依赖软件安装
+<pre class="brush:bash"&gt;>
+yum -y install gcc gcc-c++ autoconf automake make
+yum -y install lzo lzo-devel
+yum -y install gnuplot wget curl
+</pre>
+
+</ul>
+
+<ul>
+<li>
+编译安装
+<pre class="brush:bash"&gt;>
+# git clone git://github.com/OpenTSDB/opentsdb.git opentsdb.git
+# cd opentsdb.git
+
+# 访问： https://github.com/OpenTSDB/opentsdb/releases/tag/v2.0.0RC2
+# 下载： opentsdb-2.0.0.tar.gz
+
+tar zxvf opentsdb-2.0.0.tar.gz \
+&amp;&amp; cd opentsdb-2.0.0 \
+&amp;&amp; sed -i.bak 's;\(test -f Makefile || \.\./configure "$@"\);\1 --prefix=/opt/opentsdb-2.0.0;' build.sh
+
+./build.sh
+cd build &amp;&amp; make install
+
+# make clean
+# make distclean
+</pre>
+
+</ul>
+
+<h3 id="toc_0.2.3">create_table.sh</h3>
+
+<pre class="brush:bash"&gt;>
+#若需指定hbase中的表名，先export如下变更
+#export TSDB_TABLE='pre_tsdb'
+#export UID_TABLE='pre_tsdb-uid'
+#export TREE_TABLE='pre_tsdb-tree'
+#export META_TABLE='pre_tsdb-meta'
+
+env COMPRESSION=LZO HBASE_HOME=/opt/hbase/ ./src/create_table.sh
+</pre>
+<pre>
+# opentsdb 2.0.0
+tsdb      {NAME =&gt; 'tsdb', FAMILIES =&gt; [{NAME =&gt; 't', BLOOMFILTER =&gt; 'ROW', VERSIONS =&gt; '1', COMPRESSION =&gt; 'LZO'}]}
+tsdb-meta {NAME =&gt; 'tsdb-meta', FAMILIES =&gt; [{NAME =&gt; 'name', BLOOMFILTER =&gt; 'ROW', COMPRESSION =&gt; 'LZO'}]}
+tsdb-tree {NAME =&gt; 'tsdb-tree', FAMILIES =&gt; [{NAME =&gt; 't', BLOOMFILTER =&gt; 'ROW', VERSIONS =&gt; '1', COMPRESSION =&gt; 'LZO'}]}
+tsdb-uid  {NAME =&gt; 'tsdb-uid', FAMILIES =&gt; [{NAME =&gt; 'id', COMPRESSION =&gt; 'LZO'}, {NAME =&gt; 'name', COMPRESSION =&gt; 'LZO'}]}
+</pre>
+
+<h3 id="toc_0.2.4">配置文件</h3>
+
+<p>
+配置:bin/opentsdb.conf，若使用rpm包安装，则配置文件是/etc/opentsdb/opentsdb.conf。
+</p>
+
+<h4 id="toc_0.2.4.1">编译安装配置</h4>
+<pre class="brush:bash"&gt;>
+tsd.network.port = 4242
+tsd.network.bind = 0.0.0.0
+tsd.http.staticroot = /opt/opentsdb/share/opentsdb/static
+tsd.http.cachedir =
+tsd.core.auto_create_metrics = true
+tsd.core.meta.enable_realtime_ts=true
+tsd.storage.hbase.zk_quorum = yunwei2.timait:2181
+
+# 使用以下配置项指定hbase中的表名称
+# Name of the HBase table where data points are stored, default is "tsdb"
+#tsd.storage.hbase.data_table = pre_tsdb
+
+# Name of the HBase table where UID information is stored, default is "tsdb-uid"
+#tsd.storage.hbase.uid_table = pre_tsdb-uid
+
+#tsd.storage.hbase.meta_table = pre_tsdb-meta
+#tsd.storage.hbase.tree_table = pre_tsdb-tree
+</pre>
+
+<h4 id="toc_0.2.4.2">rpm包安装配置</h4>
+
+<ul>
+<li>
+/etc/opentsdb/opentsdb.conf
+<pre class="brush:bash"&gt;>
+tsd.network.port = 4242
+tsd.network.bind = 0.0.0.0
+tsd.http.staticroot = /usr/share/opentsdb/static/
+tsd.http.cachedir = /tmp/opentsdb
+tsd.core.plugin_path = /usr/share/opentsdb/plugins
+tsd.core.auto_create_metrics = true
+tsd.core.meta.enable_realtime_ts=true
+tsd.storage.hbase.zk_quorum = tsdb.tyunwei:2181
+</pre>
+
+</ul>
+
+<ul>
+<li>
+/etc/sysconfig/opentsdb
+<pre class="brush:bash"&gt;>
+#JVMXMX=-Xmx6000m
+JVMXMX=-Xmx1024m
+</pre>
+
+</ul>
+
+<ul>
+<li>
+精简日志输出
+
+</ul>
+<p>
+opentsdb.log和opentsdb-tsdb.tyunwei-opentsdb.out中同时输出详细请求记录，浪废存储和磁盘I/O，可修改/etc/opentsdb/logback.xml如下内容屏蔽FILE输出：
+</p>
+
+<pre class="brush:xml"&gt;>
+  &lt;root level="INFO"&gt;
+    &lt;appender-ref ref="STDOUT"/&gt;
+    &lt;appender-ref ref="CYCLIC"/&gt;
+    &lt;!--appender-ref ref="FILE"/--&gt;
+  &lt;/root&gt;
+</pre>
+
+<h3 id="toc_0.2.5">启动脚本</h3>
+
+<ul>
+<li>
+opentsdb rpm安装后自带启脚本
+
+</ul>
+<p>
+/etc/init.d/opentsdb {start|stop|status|restart|condrestart|try-restart|reload|force-reload}
+</p>
+
+<ul>
+<li>
+增加环境变量$JAVA:/etc/profile.d/java.sh
+<pre class="brush:bash"&gt;>
+export JAVA_HOME=/opt/java/jdk
+echo "$PATH"|grep "${JAVA_HOME}/bin" &gt; /dev/null || export PATH="${JAVA_HOME}/bin:${JAVA_HOME}/jre/bin:$PATH"
+export CLASSPATH=.:$JAVA_HOME/lib/tools.jar:$JAVA_HOME/lib/dt.jar
+export JAVA=/opt/java/jdk/bin/java
+</pre>
+
+</ul>
+
+<ul>
+<li>
+/etc/init.d/opentsdb脚本PID处理出错bug修改
+<pre class="brush:bash"&gt;>
+# 修改pgrep匹配规则
+findproc() {
+    if [ -z "$JAVA" ];then
+        pgrep -f "^java .* net.opentsdb.tools.TSDMain .*${NAME}"
+    else
+        pgrep -f "^${JAVA} .* net.opentsdb.tools.TSDMain .*${NAME}"
+    fi
+}
+</pre>
+
+</ul>
+
+<ul>
+<li>
+设置自启动
+<pre class="brush:bash"&gt;>
+chkconfig --add opentsdb
+chkconfig opentsdb on
+chkconfig --list opentsdb
+</pre>
+
+</ul>
+
+<ul>
+<li>
+单机启动两个tsdb
+<pre class="brush:bash"&gt;>
+#/etc/init.d/opentsdb4243：
+CONFIG=/etc/opentsdb4243/${NAME}.conf
+export configdir=/etc/opentsdb4243
+
+# /usr/bin/tsdb
+#configdir='/usr/share/opentsdb/etc/opentsdb'
+configdir=${configdir:-/usr/share/opentsdb/etc/opentsdb}
+
+# 生成4243配置
+cd /usr/share/opentsdb/etc
+cp -R opentsdb opentsdb4243
+cd opentsdb4243;mv opentsdb.conf opentsdb4243.conf
+# 并修改opentsdb4243.conf和logback.xml中相应配置。
+
+ln -sfT /usr/share/opentsdb/etc/opentsdb4243 /etc/opentsdb4243
+
+</pre>
+
+</ul>
+
+<h3 id="toc_0.2.6">日志截断</h3>
+<pre class="brush:bash"&gt;>
+# opentsdb.log自动回滚设置
+cat &gt; /etc/logrotate.d/opentsdb &lt;&lt;EOF
+/var/log/opentsdb/opentsdb*.out /var/log/opentsdb/opentsdb*.err {
+    copytruncate
+    daily
+    rotate 20
+    compress
+    missingok
+    size 200M
+}
+EOF
+</pre>
+
+
+<h3 id="toc_0.2.7">访问tsdb及配置</h3>
+
+<ul>
+<li>
+<a href="http://172.17.19.80:4242">http://172.17.19.80:4242</a>
+
+<li>
+<a href="http://172.17.19.80:4242/api/config">http://172.17.19.80:4242/api/config</a>
+
+<li>
+<a href="http://opentsdb.net/docs/build/html/api_http/">http://opentsdb.net/docs/build/html/api_http/</a>
+
+</ul>
+
+<h3 id="toc_0.2.8">其它</h3>
+
+<ul>
+<li>
+手工添加指标
+<pre class="brush:bash"&gt;>
+tsdb mkmetric proc.loadavg.1m proc.loadavg.5m
+</pre>
+
+<li>
+采集脚本范例:系统负载loadavg
+<pre class="brush:bash"&gt;>
+#!/bin/bash
+# loadavg-collector.sh
+
+# /proc/loadavg
+# 0.00 0.00 0.00 1/173 30545
+# The first three fields in this file are load average figures giving the number of jobs in the run queue (state R)  or  waiting
+# for  disk  I/O (state D) averaged over 1, 5, and 15 minutes.  They are the same as the load average numbers given by uptime(1)
+# and other programs.
+# The fourth field consists of two numbers separated by a slash (/).  The first of these is the  number  of currently  executing
+# kernel  scheduling entities (processes, threads); this will be less than or equal to the number of CPUs.
+# The value after the slash is the number of kernel scheduling entities that currently exist on the system. 
+# The fifth field  is the PID of the process that was most recently created on the system.
+
+# 该脚本每15秒输出如下格式内容，并直接通过nc提交给open-tsdb：
+# put proc.loadavg.1m 1398245238 0.00 host=tyunwei2.tsptest
+# put proc.loadavg.5m 1398245238 0.00 host=tyunwei2.tsptest
+set -e 
+while true;do
+    awk -v now=`date +%s` -v host=`hostname` \
+    '{ print "put proc.loadavg.1m "now " "$1" host="host;print "put proc.loadavg.5m "now " "$2" host="host }' /proc/loadavg
+    sleep 15
+done | nc -w 30 192.168.0.75 4242
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">通过nginx负载调度</h2>
+
+<pre class="brush:bash"&gt;>
+# Update: 2014-04-23
+upstream tsdb_dev_backends {
+    #ip_hash;
+    server 127.0.0.1:4243 max_fails=3 fail_timeout=10s;
+    server 127.0.0.1:4242 max_fails=3 fail_timeout=10s;
+}
+
+server {
+    listen 14242;
+    #server_name 172.17.19.80;
+    charset utf-8;
+
+    client_max_body_size 20M;
+
+    access_log /var/log/nginx/opentsdb.access.log main;
+    error_log /var/log/nginx/opentsdb.error.log warn;
+
+    location / {
+        proxy_read_timeout 30;
+        proxy_connect_timeout 10;
+        proxy_pass_header Server;
+        proxy_set_header Host $http_host;
+        #proxy_redirect off;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Scheme $scheme;
+        proxy_pass http://tsdb_dev_backends;
+    }
+} #End server
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

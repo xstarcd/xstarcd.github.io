@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>MySQL主从复制的一些错误处理和日常维护</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">MySQL主从复制的一些错误处理和日常维护</a>
+<ul>
+<li><a href="#toc_1.1">查看slave状态</a>
+<li><a href="#toc_1.2">主从同步</a>
+<li><a href="#toc_1.3">手工处理</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">MySQL主从复制的一些错误处理和日常维护</h1>
+
+<p>
+原文: <a href="http://www.blogjava.net/dongbule/archive/2010/08/23/329714.html">http://www.blogjava.net/dongbule/archive/2010/08/23/329714.html</a>
+</p>
+
+<h2 id="toc_1.1">查看slave状态</h2>
+
+<p>
+检查从服务器一般使用show slave status命令来检查
+</p>
+<pre>
+mysql&gt; SHOW SLAVE STATUS\G
+*************************** 1. row ***************************
+Slave_IO_State: Waiting for master to send event
+Master_Host: 192.168.0.100
+Master_User: root
+Master_Port: 3306
+Connect_Retry: 3
+ Master_Log_File: mysql-bin.003
+ Read_Master_Log_Pos: 79
+Relay_Log_File: mysql -relay-bin. 003
+Relay_Log_Pos: 548
+Relay_Master_Log_File: mysql -bin. 003
+Slave_IO_Running: Yes
+Slave_SQL_Running: Yes
+Replicate_Do_DB:
+Replicate_Ignore_DB:
+Last_Errno: 0
+…..
+</pre>
+
+<p>
+在上面这些信息中我们主要关注的是Slave_IO_Running和Slave_SQL_Running
+</p>
+
+<ul>
+<li>
+Slave_IO_Running:从服务器正从主服务器上读取BINLOG日志,并写入从服务器的中继日志
+
+<li>
+Slave_SQL_Running:进程正在读取从服务器的BINLOG中继日志，并转化为SQL执行
+
+</ul>
+
+<p>
+如果有一个进程是no状态，表示复制的进程停止，在Last_Errno会看到是什么情况
+</p>
+
+<h2 id="toc_1.2">主从同步</h2>
+
+<p>
+有时候因为主服务器的更新过于频繁,造成了从服务器更新速度较慢,当然问题是多种多样,有可能是网络搭建的结构不好或者硬件的性能较差,从而使得主从服务器之间的差距越来越大,最终对某些应用产生了影响,在这种情况下,我们需要定期进行主从服务器的数据同步,具体步骤如下：
+</p>
+
+<ul>
+<li>
+在主服务器上查看日志文件和偏移量
+<pre>
+mysql&gt; FLUSH TABLES WITH READ LOCK;
+Query OK, 0 rows affected (0.03 sec)
+mysql&gt; show master status\G;
+*************************** 1. row ***************************
+File: mysql-bin.000004
+Position: 102
+Binlog_Do_DB:
+Binlog_Ignore_DB:
+1 row in set (0.00 sec)
+</pre>
+
+</ul>
+
+<p>
+疑问：锁在什么时候释放？完成后是否需要执行UNLOCK TABLES释放锁？
+</p>
+
+<p>
+记录出日志的名字和偏移量,这些是从服务器复制的目的目标
+</p>
+
+<ul>
+<li>
+在从服务器上,使用MASTER_POS_WAIT()函数得到复制坐标值
+<pre>
+mysql&gt; select master_pos_wait('mysql-bin.000004','102');
++-------------------------------------------+
+| master_pos_wait('mysql-bin.000004','102') |
++-------------------------------------------+
+| 0                                         |
++-------------------------------------------+
+1 row in set (0.00 sec)
+</pre>
+
+</ul>
+
+<p>
+这个select语句会阻塞直到从服务器达到指定日志文件和偏移量后,返回0,如果是-1,则表示超时退出,查询是0时,表示从服务器与主服务器已经同步。
+</p>
+
+<h2 id="toc_1.3">手工处理</h2>
+
+<p>
+在某些情况下,会出现从服务器更新失败,
+</p>
+
+<p>
+首先需要确定是否从服务器的表与主服务器的不同造成的,如果是表结构造成的,则需要修改从服务器的表和主服务器一致,然后重新运行start slave
+</p>
+
+<p>
+如果不是表结构不同造成的更新失败，则需要确认手动更新是否安全，然后忽视来自主服务器的更新失败语句，跳过来来自主服务器的语句，命令为SET GLOBAL SQL_SLAVE_SKIP_COUNTER=n。
+</p>
+
+<p>
+其中,n=1表示来自主服务器的更新语句不使用AUTO_INCREMENT或LAST_INSERT_ID(),n=2时则反之,原因是使用AUTO_INCREMENT或LAST_INSERT_ID的语句需要从二进制日志中取得两个事件.
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

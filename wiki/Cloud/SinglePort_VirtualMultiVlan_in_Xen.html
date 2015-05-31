@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>单端口实现Xen虚拟机多VLAN</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>单端口实现Xen虚拟机多VLAN</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">两个知识点</a>
+<li><a href="#toc_0.2">新建两个bridge和网卡子接口</a>
+<li><a href="#toc_0.3">启动网桥</a>
+<li><a href="#toc_0.4">查看Vlan设备</a>
+<li><a href="#toc_0.5">为虚拟机新增网卡</a>
+<li><a href="#toc_0.6">修改Xen虚拟机的配置文件</a>
+<li><a href="#toc_0.7">最后一步</a>
+<li><a href="#toc_0.8">小结</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+Update:2014-09-24
+
+<li>
+参考:“祝建跃-专注、专业” 博客，请务必保留此出处: <a href="http://zhujy.blog.51cto.com/478869/490306">http://zhujy.blog.51cto.com/478869/490306</a>
+
+</ul>
+
+<p>
+实验环境：CentOs 5.5 两个VLAN 10、40
+</p>
+
+<h2 id="toc_0.1">两个知识点</h2>
+
+<ul>
+<li>
+linux bridge实现了ieee 802.1d协议，这个实现，不能支持VLAN的功能。
+
+</ul>
+<p>
+也就是说，这个实现，只能承载一个广播域，而不能承载多个广播域。当然，可以创建多个bridge device，每个bridge都对应不同的vlan，在bridge内部，包通过fdb表来转发，但是这个fdb表里面并没有vlan的信息。如果要在多个bridge device之间通信，必须在bridge device上创建vlan interface，然后配置路由，这样可以实现不同bridge之间的转发。
+</p>
+
+<ul>
+<li>
+linux vlan实现了ieee 802.1q协议。
+
+</ul>
+<p>
+802.1q本来应该是一个二层协议，但是linux的实现需要创建vlan interface,而且可以在vlan interface上配置ip地址。所以，这个interface可以放到路由表里面。一般来说，在这个interface上收到的包，会带这个interface配置的vlan id，而从这个interface发出去的包，会打上这个interface的vlan id。
+</p>
+<pre class="brush:bash">
+lsmod 8021q                # 查看8021q模块是否已加载
+modprobe 8021q             # 加载8021q模块到内核
+</pre>
+
+<h2 id="toc_0.2">新建两个bridge和网卡子接口</h2>
+
+<p>
+<strong>PS：将网卡子接口加入网桥后就变成了网桥的一个端口，网桥是一个二层设备，所以网卡子接口配置了IP也无效。可以在网桥接口上配置IP供管理使用。</strong>
+</p>
+
+<ul>
+<li>
+两个网桥命名为Xenbr2，xenbr3。
+
+<li>
+两个网卡接口
+
+<ol>
+<li>
+eth1.10 跑vlan10，桥接到xenbr10；
+
+<li>
+eth1.40 跑vlan40，桥接到xenbr40。
+
+</ol>
+<li>
+可以使用命令
+
+<ol>
+<li>
+<code>brctl addbr bridgename</code> 增加bridge
+
+<li>
+<code>brctl addif bridgename devicename</code> 将网卡加入网桥
+
+</ol>
+<li>
+也可以使用配置文件方式(推荐)。文件位置和内容如下：
+<pre class="brush:bash">
+cat /etc/sysconfig/network-scripts/ifcfg-xenbr10
+
+DEVICE=xenbr10
+BOOTPROTO=static
+ONBOOT=yes
+TYPE=Bridge
+
+cat /etc/sysconfig/network-scripts/ifcfg-xenbr40
+
+DEVICE=xenbr40
+BOOTPROTO=static
+ONBOOT=yes
+TYPE=Bridge
+
+cat /etc/sysconfig/network-scripts/ifcfg-eth1.10
+
+DEVICE=eth1.10
+BOOTPROTO=none
+ONBOOT=yes
+TYPE=Ethernet
+VLAN=yes
+BRIDGE=xenbr10
+
+cat /etc/sysconfig/network-scripts/ifcfg-eth1.40
+
+DEVICE=eth1.40
+BOOTPROTO=none
+ONBOOT=yes
+TYPE=Ethernet
+VLAN=yes
+BRIDGE=xenbr40
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">启动网桥</h2>
+
+<p>
+<strong>PS:网桥和网卡子接口启动有先后顺序，要先启动网桥，再启动网卡子接口。因为网卡了加入到网桥中去呀~</strong>
+</p>
+
+<pre class="brush:bash">
+Ifup xenbr10
+Ifup xenbr40
+Ifup eth1.10
+Ifup eth1.40
+</pre>
+
+<h2 id="toc_0.4">查看Vlan设备</h2>
+
+<ul>
+<li>
+CentOS中Vlan设置参考
+
+<ul>
+<li>
+/etc/sysconfig/network-scripts/ifup
+
+<li>
+/etc/sysconfig/network-scripts/ifdown-eth
+
+</ul>
+</ul>
+
+<pre class="brush:bash">
+brctl show                 # 查看桥接信息
+ls -la /proc/net/vlan/     # 查看vlan设备
+cat /proc/net/vlan/config  # 查看vlan配置
+cat /proc/net/vlan/vlan10  # 查看vlan详细信息
+
+# 查看vlan设备信息
+ip link|grep -i vlan
+ifconfig |grep -i vlan
+#ifup脚本中添加vlan操作:设置物理接口up，添加vlan信息
+ip -o link set dev ${PHYSDEV} up
+ip link add dev ${DEVICE} link ${PHYSDEV} type vlan id ${VID} ${FLAG_REORDER_HDR}
+#如：
+ip link add dev eth2.47 link eth2 type vlan id 47 
+ip link add dev eth2.47 link eth2 type vlan id 47 reorder_hdr off
+
+# 删除vlan信息
+ip link delete ${DEVICE} type vlan
+</pre>
+<pre>
+cat /proc/net/vlan/config
+VLAN Dev name    | VLAN ID
+Name-Type: VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD
+vlan36         | 36  | eth3
+vlan37         | 37  | eth3
+vlan38         | 38  | eth3
+vlan39         | 39  | eth3
+vlan51         | 51  | eth3
+eth1.46        | 46  | eth1
+eth2.47        | 47  | eth2
+eth2.48        | 48  | eth2
+
+cat /proc/net/vlan/vlan51 
+vlan51  VID: 51  REORDER_HDR: 1  dev-&gt;priv_flags: 2001
+         total frames received       438907
+          total bytes received     71270486
+      Broadcast/Multicast Rcvd       375413
+
+      total frames transmitted         5831
+       total bytes transmitted       398404
+            total headroom inc            0
+           total encap on xmit            0
+Device: eth3
+INGRESS priority mappings: 0:0  1:0  2:0  3:0  4:0  5:0  6:0 7:0
+ EGRESS priority mappings: 
+
+ip link|grep -i vlan
+12: vlan36@eth3: &lt;BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP 
+15: vlan37@eth3: &lt;BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP 
+60: vlan38@eth3: &lt;BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP 
+134: vlan39@eth3: &lt;BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP 
+173: vlan51@eth3: &lt;BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP 
+</pre>
+<pre>
+NAME
+       vconfig - VLAN (802.1q) configuration program.
+SYNOPSIS
+       vconfig [lots of long options]
+
+DESCRIPTION
+       The  vconfig program allows you to create and remove vlan-devices on a vlan enabled kernel. Vlan-devices are virtual ethernet devices
+       which represents the virtual lans on the physical lan.
+</pre>
+
+<h2 id="toc_0.5">为虚拟机新增网卡</h2>
+
+<pre>
+virsh
+virsh # attach-interface centos bridge xenbr10
+</pre>
+
+<p>
+这个命令就能为centos这个虚拟机添加了一块网卡桥接到xenbr10上。
+</p>
+
+<p>
+删除网卡的命令，不加MAC默认删除第一块网卡。
+</p>
+
+<pre>
+virsh # detach-interface centos bridge --mac 00:16:3E:24:B5:3B
+</pre>
+
+<p>
+<strong>Ps:上面的方式重启不会丢失网卡、但关机重新加载配置文件后会丢失网卡，下面提供修改配置文件的操作方法。</strong>
+</p>
+
+<h2 id="toc_0.6">修改Xen虚拟机的配置文件</h2>
+
+<p>
+配置文件在/etc/xen下，配置文件中对应的项是vif
+</p>
+
+<ul>
+<li>
+虚拟机只使用一块网卡
+
+</ul>
+
+<pre class="brush:bash">
+cat /etc/xen/centos
+
+name = "centos"
+uuid = "eb2f58c6-cd95-8109-f29e-5df80df8c476"
+maxmem = 256
+memory = 256
+vcpus = 1
+bootloader = "/usr/bin/pygrub"
+on_poweroff = "destroy"
+on_reboot = "restart"
+on_crash = "restart"
+disk = [ "tap:aio:/virtual/centos/centos5.5.img,xvda,w" ]
+vif = [ "mac=00:16:36:2b:3f:a1,bridge=xenbr20,script=vif-bridge"]
+</pre>
+
+<ul>
+<li>
+虚拟机使用两块网卡
+
+</ul>
+
+<pre class="brush:bash">
+cat /etc/xen/centos
+
+name = "centos"
+uuid = "eb2f58c6-cd95-8109-f29e-5df80df8c476"
+maxmem = 256
+memory = 256
+vcpus = 1
+bootloader = "/usr/bin/pygrub"
+on_poweroff = "destroy"
+on_reboot = "restart"
+on_crash = "restart"
+disk = [ "tap:aio:/virtual/centos/centos5.5.img,xvda,w" ]
+vif = [ "mac=00:16:36:2b:3f:a1,bridge=xenbr10,script=vif-bridge","mac=00:16:36:2b:3f:a2,bridge=xenbr40,script=vif-bridge"]
+</pre>
+
+<h2 id="toc_0.7">最后一步</h2>
+
+<p>
+将交换机的端口模式改成 <strong>trunk</strong> 模式。
+</p>
+
+<h2 id="toc_0.8">小结</h2>
+
+<p>
+以此类推的话，添加多个VLAN就新建网卡子接口跑不用的VLAN。要是有多块网卡的，也可以分别桥接到不同的网桥。组网很灵活。也可以将物理网卡使用bonding技术后再桥接，这个技术不错，哈哈~
+</p>
+
+<ul>
+<li>
+网桥有如下特点：
+
+<ul>
+<li>
+在混杂模式下工作。
+
+<li>
+有一个将全局唯一地址映射到网桥端口的地址表。
+
+<li>
+根据所接收帧的目的地址作出转发决定。
+
+<li>
+根据所接收帧的源地址建立和更新地址表。
+
+<li>
+当遇到未知的目的地址时，向每个端口(除接收此帧的端口外)转发该帧。
+
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

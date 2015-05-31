@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>exec</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>exec</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">exec使用方法</a>
+<li><a href="#toc_0.2">exec使用技巧</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">exec使用方法</h2>
+
+<ul>
+<li>
+<a href="fork_exec_source.html">三种shell脚本调用方法</a>
+
+<li>
+<a href="exec_redirect.html">exec与重定向</a>
+
+</ul>
+
+<table>
+<tr>
+<th>
+exec命令
+</th>
+<th>
+作用
+</th>
+</tr>
+<tr>
+<td>
+<code>exec ls</code>
+</td>
+<td>
+在shell中执行ls，ls结束后不返回原来的shell中了
+</td>
+</tr>
+<tr>
+<td>
+<code>exec &lt;file</code>
+</td>
+<td>
+将file中的内容作为exec的标准输入
+</td>
+</tr>
+<tr>
+<td>
+<code>exec &gt;file</code>
+</td>
+<td>
+将file中的内容作为标准写出
+</td>
+</tr>
+<tr>
+<td>
+<code>exec 3&lt;file</code>
+</td>
+<td>
+将file读入到fd3中
+</td>
+</tr>
+<tr>
+<td>
+<code>sort &lt;&amp;3</code>
+</td>
+<td>
+sort从fd3读入的内容排序
+</td>
+</tr>
+<tr>
+<td>
+<code>exec 4&gt;file</code>
+</td>
+<td>
+输出到fd4的内容写入file中
+</td>
+</tr>
+<tr>
+<td>
+<code>ls &gt;&amp;4</code>
+</td>
+<td>
+不会有内容显示到控制台，直接写入fd4中了，即上面的file中
+</td>
+</tr>
+<tr>
+<td>
+<code>exec 5&lt;&amp;4</code>
+</td>
+<td>
+创建fd4的拷贝fd5
+</td>
+</tr>
+<tr>
+<td>
+<code>exec 3&lt;&amp;-</code>
+</td>
+<td>
+关闭fd3
+</td>
+</tr>
+</table>
+
+<h2 id="toc_0.2">exec使用技巧</h2>
+
+<ul>
+<li>
+<a href="exec_redirect.html">exec与重定向</a>
+
+<li>
+三个常用FD(默认与keyboard、monitor、monitor有关)：
+
+</ul>
+<table>
+<tr>
+<td>
+0
+</td>
+<td>
+stdin，标准输入
+</td>
+</tr>
+<tr>
+<td>
+1
+</td>
+<td>
+stdout，标准输出
+</td>
+</tr>
+<tr>
+<td>
+2
+</td>
+<td>
+stderr，标准错误输出
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+ 常用命令语法及范例
+<pre class="brush:bash">
+exec 6&lt;&amp;0          # 将fd6与stdin链接起来，保存stdin
+exec &lt; data-file   # stdin被文件data-file代替
+read a             # 从data-file读取一行
+exec 0&lt;&amp;6 6&lt;&amp;-     # 从fd6恢复stdin，然后关闭fd6
+
+exec 1&gt;outfilename # 打开文件outfilename作为stdout
+exec 2&gt;errfilename # 打开文件errfilename作为 stderr
+exec 1&amp;-           # 关闭 FD1
+exec 5&gt;&amp;-          # 关闭 FD5
+
+exec 4&gt;&amp;1          # 备份当前stdout至FD4
+exec 1&gt;out.txt     # stdout重定向至out.txt
+exec 1&gt;&amp;4 4&gt;&amp;-     # 恢复stdout，然后关闭FD4
+
+# 打开文件读取
+cat &gt; myfile.txt &lt;&lt;EOF
+Line 1.
+Line 2.
+Line 3.
+EOF
+exec 3&lt;&gt;myfile.txt
+while read line &lt;&amp;3;do echo $line;(( Lines++ ));done
+exec 3&gt;&amp;-
+echo "Number of lines read = $Lines"
+
+# 查看文件描述符
+lsof -a -p $$ -d0,1,2
+ll /proc/$$/fd
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

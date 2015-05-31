@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>VirtualBox</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>VirtualBox</h1>
+
+<p>
+<a href="https://www.virtualbox.org/"><img src="https://www.virtualbox.org/graphics/vboxlogodown.png" alt="VirtualBox" /></a> 
+</p>
+
+<ul>
+<li>
+ubuntu下VirtualBox安装GhostXP蓝屏问题
+
+</ul>
+
+<p>
+原文：<a href="http://www.9wy.net/?p=836">http://www.9wy.net/?p=836</a>
+</p>
+
+<p>
+用VirtualBox虚拟系统安装了一个Ghost XP SP3，还原系统后，重启进入Windows XP时，出现蓝屏提示processr.sys，看单词应该是处理器方面的问题，蓝屏代码为0x000000CE，提示处理器驱动文件问题，于是开始着手找相关资料，终于找到一个解决办法。
+</p>
+
+<ol>
+<li>
+用Ghost XP SP3光盘启动，进行WinPE，在运行输入“cmd”，打开命令行窗口执行下面命令，把XP的注册表加载到WinPE系统的注册表：
+<pre>
+reg load hklm\!system c:\windows\system32\config\system
+</pre>
+
+<li>
+再次打开“开始”-&gt;“运行”，输入“regedit”，进入注册表编辑器:
+<pre>
+打开HKEY_LOCAL_MACHINE\!system\ControlSet001\services\processor，修改start值1改为4
+打开HKEY_LOCAL_MACHINE\!system\ControlSet002\services\processor，修改start值1改为4
+</pre>
+
+<li>
+接着回到命令行窗口，卸载注册表挂载：
+<pre>
+reg unload hklm\!system
+</pre>
+
+<li>
+重新电脑，就没有蓝屏的提示了。
+
+</ol>
+
+<ul>
+<li>
+windows修改CPU数:修改环境变量(测试无效)
+<pre>
+计算机/我的电脑-&gt;属性-&gt;高级-&gt;环境变量，设置NUMBER_OF_PROCESSORS。
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

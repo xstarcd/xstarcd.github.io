@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>replicate-do-db参数引起的MySQL复制错误及处理办法</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">replicate-do-db参数引起的MySQL复制错误及处理办法</a>
+<ul>
+<li><a href="#toc_1.1">问题概述</a>
+<li><a href="#toc_1.2">错误再现</a>
+<li><a href="#toc_1.3">排查处理</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">replicate-do-db参数引起的MySQL复制错误及处理办法</h1>
+
+<p>
+原文：<a href="http://www.banping.com/2010/09/03/replicate-do-db/">http://www.banping.com/2010/09/03/replicate-do-db/</a>
+</p>
+
+<p>
+By banping On 2010/09/03
+</p>
+
+<h2 id="toc_1.1">问题概述</h2>
+
+<p>
+replicate-do-db配置在MySQL从库的my.cnf文件中，可以指定只复制哪个库的数据。但是这个参数有个问题就是主库如果在其他的schema环境下操作，其binlog不会被从库应用，从而出现异常。可以简单的测试一下 --replicate-do-db参数引起的MySQL复制错误，步骤如下。
+</p>
+
+
+<h2 id="toc_1.2">错误再现</h2>
+
+<p>
+从库的my.cnf中有如下配置：
+</p>
+<pre>
+replicate-do-db = maopaodb
+</pre>
+<p>
+首先在主库切换到test这个库并建立maopaodb下的一个表：
+</p>
+<pre>
+mysql&gt; use test;
+Database changed
+
+mysql&gt; create table maopaodb.test(id int,name varchar(10));
+Query OK, 0 rows affected (0.09 sec)
+
+mysql&gt; use maopaodb;
+Database changed
+mysql&gt; show tables;
+
++--------------------------+
+| Tables_in_maopaodb       |
++--------------------------+
+......
+| test                     |
+......
++--------------------------+
+32 rows in set (0.01 sec)
+</pre>
+
+<p>
+可见这个表在maopaodb下创建成功，而这时去从库查看，是没有这个表的，因为我们是在test这个库下操作的，而从库的--replicate-do-db指定了maopaodb，因此这些信息不会在从库被应用。
+</p>
+
+<p>
+这时主库切换到maopaodb，并写入一条记录：
+</p>
+<pre>
+mysql&gt; use maopaodb;
+Database changed
+mysql&gt; insert into test values (1,'a');
+Query OK, 1 row affected (0.01 sec)
+</pre>
+<p>
+从库这时就会报错了：
+</p>
+<pre>
+mysql&gt; show slave status\G
+*************************** 1. row ***************************
+Slave_IO_State: Waiting for master to send event
+Master_Host: 192.168.0.33
+Master_User: repl
+Master_Port: 3306
+Connect_Retry: 60
+Master_Log_File: mysql-bin.000010
+Read_Master_Log_Pos: 93731745
+Relay_Log_File: mysql-relay-bin.000008
+Relay_Log_Pos: 5979038
+Relay_Master_Log_File: mysql-bin.000010
+Slave_IO_Running: Yes
+Slave_SQL_Running: No
+Replicate_Do_DB: maopaodb
+Replicate_Ignore_DB:
+Replicate_Do_Table:
+Replicate_Ignore_Table:
+Replicate_Wild_Do_Table:
+Replicate_Wild_Ignore_Table:
+Last_Errno: 1146
+Last_Error: Error 'Table 'maopaodb.test' doesn't exist' on query. Default database: 'maopaodb'. Query: 'insert into test values (1,'a')'
+Skip_Counter: 0
+Exec_Master_Log_Pos: 93709288
+Relay_Log_Space: 6001650
+Until_Condition: None
+Until_Log_File:
+Until_Log_Pos: 0
+Master_SSL_Allowed: No
+Master_SSL_CA_File:
+Master_SSL_CA_Path:
+Master_SSL_Cert:
+Master_SSL_Cipher:
+Master_SSL_Key:
+Seconds_Behind_Master: NULL
+Master_SSL_Verify_Server_Cert: No
+Last_IO_Errno: 0
+Last_IO_Error:
+Last_SQL_Errno: 1146
+Last_SQL_Error: Error 'Table 'maopaodb.test' doesn't exist' on query. Default database: 'maopaodb'. Query: 'insert into test values (1,'a')'
+1 row in set (0.00 sec)
+</pre>
+
+<h2 id="toc_1.3">排查处理</h2>
+
+<p>
+对于这种问题复制同步方面的问题，主要都是要在从库这边手动做一些动作，要么补充一些操作，要么跳过一些操作。我们看看如何跳过这个操作。
+</p>
+
+<p>
+首先我们要从上边的报错信息关注到以下三点：
+</p>
+<pre>
+Relay_Master_Log_File: mysql-bin.000010
+
+Skip_Counter: 0
+
+Exec_Master_Log_Pos: 93709288
+</pre>
+
+
+<p>
+就是我们要明白是主库的哪个日志文件，和日志文件中报错的具体位置，而Skip_Counter参数就是我们要利用的东西。这里我们看到是mysql-bin.000010这个日志文件的93709288位置报错，那么就到主库看看这个位置到底是在执行什么东西：
+</p>
+
+<pre>
+mysql&gt; SHOW BINLOG EVENTS in 'mysql-bin.000010' from 93709288;
++------------------+----------+------------+-----------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| Log_name         | Pos      | Event_type | Server_id | End_log_pos | Info                                                                                                                |
++------------------+----------+------------+-----------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| mysql-bin.000010 | 93709288 | Query      |         1 |    93709360 | BEGIN                                                                                                               |
+| mysql-bin.000010 | 93709360 | Query      |         1 |    93709458 | use `maopaodb`; insert into test values (1,'a')                                                                     |
+| mysql-bin.000010 | 93709458 | Xid        |         1 |    93709485 | COMMIT /* xid=28862936 */                                                                                           |
+| mysql-bin.000010 | 93709485 | Query      |         1 |    93709557 | BEGIN                                                                                                               |
+| mysql-bin.000010 | 93709557 | Query      |         1 |    93709723 | use `mogilefs`; UPDATE device SET mb_total = '9564', mb_used = '386', mb_asof = UNIX_TIMESTAMP() WHERE devid = '13' |
+| mysql-bin.000010 | 93709723 | Xid        |         1 |    93709750 | COMMIT /* xid=28863050 */
+
+......
+</pre>
+
+<p>
+可见正是导致出错的这个insert语句，MySQL的binary log每个SQL执行实际上是由一些event组成的，我们这里要设置的就是要跳过的event的个数。本例中就是BEGIN、具体SQL语句和COMMIT这3个event，因此我们可以在从库上这样跳过这个语句：
+</p>
+<pre>
+mysql&gt; SET GLOBAL SQL_SLAVE_SKIP_COUNTER = 3;
+Query OK, 0 rows affected (0.00 sec)
+</pre>
+
+<p>
+然后开启同步，一切正常：
+</p>
+<pre>
+mysql&gt; start slave;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql&gt; show slave status\G
+*************************** 1. row ***************************
+Slave_IO_State: Waiting for master to send event
+Master_Host: 192.168.0.33
+Master_User: repl
+Master_Port: 3306
+Connect_Retry: 60
+Master_Log_File: mysql-bin.000010
+Read_Master_Log_Pos: 93733865
+Relay_Log_File: mysql-relay-bin.000008
+Relay_Log_Pos: 6003615
+Relay_Master_Log_File: mysql-bin.000010
+Slave_IO_Running: Yes
+Slave_SQL_Running: Yes
+Replicate_Do_DB: maopaodb
+Replicate_Ignore_DB:
+Replicate_Do_Table:
+Replicate_Ignore_Table:
+Replicate_Wild_Do_Table:
+Replicate_Wild_Ignore_Table:
+Last_Errno: 0
+Last_Error:
+Skip_Counter: 0
+Exec_Master_Log_Pos: 93733865
+Relay_Log_Space: 6003770
+Until_Condition: None
+Until_Log_File:
+Until_Log_Pos: 0
+Master_SSL_Allowed: No
+Master_SSL_CA_File:
+Master_SSL_CA_Path:
+Master_SSL_Cert:
+Master_SSL_Cipher:
+Master_SSL_Key:
+Seconds_Behind_Master: 0
+Master_SSL_Verify_Server_Cert: No
+Last_IO_Errno: 0
+Last_IO_Error:
+Last_SQL_Errno: 0
+Last_SQL_Error:
+1 row in set (0.00 sec)
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

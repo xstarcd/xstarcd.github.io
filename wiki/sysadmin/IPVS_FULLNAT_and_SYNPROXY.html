@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>IPVS FULLNAT and SYNPROXY</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>IPVS FULLNAT and SYNPROXY</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">alibaba-LVS版本发布</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="http://kb.linuxvirtualserver.org/wiki/IPVS_FULLNAT_and_SYNPROXY">http://kb.linuxvirtualserver.org/wiki/IPVS_FULLNAT_and_SYNPROXY</a>
+
+<li>
+项目地址：<a href="https://github.com/alibaba/LVS">https://github.com/alibaba/LVS</a> 源码包中包含详细文档
+
+<li>
+<a href="../files/shell/alibaba-LVS.pdf">LVS在淘宝环境中的应用</a>：<a href="http://adc.alibabatech.org/ppts/up-1341918098-0.pdf">http://adc.alibabatech.org/ppts/up-1341918098-0.pdf</a>
+
+</ul>
+
+<h2 id="toc_0.1">alibaba-LVS版本发布</h2>
+
+<p>
+转至"运维生存时间": <a href="http://www.ttlsa.com/news/alibaba-lvs-publish/">http://www.ttlsa.com/news/alibaba-lvs-publish/</a>
+</p>
+
+<p>
+2013年7月15日 默北 
+</p>
+
+<p>
+新功能有：
+1. FullNAT: A new packet forwarding method for IPVS, other than DR/NAT/TUNNEL The main principle is as follows: the module introduces local ip address (IDC internal ip address, lip), IPVS translates cip-vip to/from lip-rip, in which lip and rip both are IDC internal ip address, so that LVS load balancer and real servers can be in different vlans, and real servers only need to access internal network. See Virtual Server via Full NAT for more information.
+FULLNAT是一种新的转发模式。主要思想：引入local address（内网ip地址），cip-vip转换为lip-&gt;rip，而 lip和rip均为IDC内网ip，可以跨vlan通讯。
+</p>
+
+<p>
+2. SYNPROXY: Defence module against synflooding attack The main principle: based on tcp syncookies, please refer to <a href="http://en.wikipedia.org/wiki/SYN_cookies;">http://en.wikipedia.org/wiki/SYN_cookies;</a>
+SYNPROXY用于防御synflood攻击。主要思想：参照linux tcp协议栈中syncookies癿思想，LVS-构造特殊seq癿synack包，验证ack包中ack_seq是否合法-实现了TCP三次握手代理。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

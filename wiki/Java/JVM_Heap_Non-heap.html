@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>JVM堆内存和非堆内存</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>JVM堆内存和非堆内存</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">堆和非堆内存</a>
+<li><a href="#toc_0.2">JVM内存限制(最大值)</a>
+<li><a href="#toc_0.3">JVM内存设置参数</a>
+<li><a href="#toc_0.4">内存回收算法</a>
+<ul>
+<li><a href="#toc_0.4.1">Serial Collector</a>
+<li><a href="#toc_0.4.2">Parallel Collector</a>
+<li><a href="#toc_0.4.3">Parallel Compact Collector (ParallelOld)</a>
+<li><a href="#toc_0.4.4">Concurrent Mark-Sweep(CMS) Collector</a>
+</ul>
+<li><a href="#toc_0.5">内存监控方法</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="http://www.bingfengsa.com/info/8153.html">http://www.bingfengsa.com/info/8153.html</a>
+
+</ul>
+
+
+<h2 id="toc_0.1">堆和非堆内存</h2>
+
+<p>
+按照官方的说法：“Java 虚拟机具有一个堆(Heap)，堆是运行时数据区域，所有类实例和数组的内存均从此处分配。堆是在 Java 虚拟机启动时创建的。”“在JVM中堆之外的内存称为非堆内存(Non-heap memory)”。
+</p>
+
+<p>
+JVM主要管理两种类型的内存：堆和非堆。
+</p>
+
+<table>
+<tr>
+<td rowspan="4">
+Heap memory
+</td>
+<td>
+Code Cache
+</td>
+</tr>
+<tr>
+<td>
+Eden Space
+</td>
+</tr>
+<tr>
+<td>
+Survivor Space
+</td>
+</tr>
+<tr>
+<td>
+Tenured Gen
+</td>
+</tr>
+<tr>
+<td rowspan="2">
+non-heap memory
+</td>
+<td>
+Perm Gen
+</td>
+</tr>
+<tr>
+<td>
+native heap?(I guess)
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+堆内存
+
+</ul>
+<p>
+Java 虚拟机具有一个堆，堆是运行时数据区域，所有类实例和数组的内存均从此处分配。堆是在 Java 虚拟机启动时创建的。对象的堆内存由称为垃圾回收器的自动内存管理系统回收。
+</p>
+
+<p>
+堆的大小可以固定，也可以扩大和缩小。堆的内存不需要是连续空间。
+</p>
+
+<ul>
+<li>
+非堆内存
+
+</ul>
+
+<p>
+Java 虚拟机管理堆之外的内存（称为非堆内存）。
+</p>
+
+<p>
+Java 虚拟机具有一个由所有线程共享的方法区。方法区属于非堆内存。它存储每个类结构，如运行时常数池、字段和方法数据，以及方法和构造方法的代码。它是在 Java 虚拟机启动时创建的。
+</p>
+
+<p>
+方法区在逻辑上属于堆，但 Java 虚拟机实现可以选择不对其进行回收或压缩。与堆类似，方法区的大小可以固定，也可以扩大和缩小。方法区的内存不需要是连续空间。
+</p>
+
+<p>
+除了方法区外，Java 虚拟机实现可能需要用于内部处理或优化的内存，这种内存也是非堆内存。例如，JIT 编译器需要内存来存储从 Java 虚拟机代码转换而来的本机代码，从而获得高性能。
+</p>
+
+<ul>
+<li>
+几个基本概念
+
+</ul>
+
+<p>
+PermGen space：全称是Permanent Generation space，即永久代。就是说是永久保存的区域,用于存放Class和Meta信息，Class在被Load的时候被放入该区域，GC(Garbage Collection)应该不会对PermGen space进行清理，所以如果你的APP会LOAD很多CLASS的话，就很可能出现PermGen space错误。
+</p>
+
+<p>
+Heap space：存放Instance。
+</p>
+
+<p>
+Java Heap分为3个区，Young即新生代，Old即老生代和Permanent。
+</p>
+
+<p>
+Young保存刚实例化的对象。当该区被填满时，GC会将对象移到Old区。Permanent区则负责保存反射对象。
+</p>
+
+<ul>
+<li>
+堆内存分配
+
+<ul>
+<li>
+JVM初始分配的堆内存由-Xms指定，默认是物理内存的1/64；
+
+<li>
+JVM最大分配的堆内存由-Xmx指定，默认是物理内存的1/4。
+
+<li>
+默认空余堆内存小于40%时，JVM就会增大堆直到-Xmx的最大限制；
+
+<li>
+空余堆内存大于70%时，JVM会减少堆直到-Xms的最小限制。
+
+<li>
+因此服务器一般设置-Xms、-Xmx 相等以避免在每次GC 后调整堆的大小。
+
+<li>
+说明：如果-Xmx 不指定或者指定偏小，应用可能会导致java.lang.OutOfMemory错误，此错误来自JVM，不是Throwable的，无法用try...catch捕捉。
+
+</ul>
+</ul>
+
+<ul>
+<li>
+非堆内存分配
+
+<ul>
+<li>
+JVM使用-XX:PermSize设置非堆内存初始值，默认是物理内存的1/64；
+
+<li>
+由XX:MaxPermSize设置最大非堆内存的大小，默认是物理内存的1/4。
+
+<ul>
+<li>
+还有一说：MaxPermSize缺省值和-server -client选项相关，-server选项下默认MaxPermSize为64m，-client选项下默认MaxPermSize为32m。这个我没有实验。
+
+</ul>
+<li>
+XX:MaxPermSize设置过小会导致java.lang.OutOfMemoryError: PermGen space 就是内存益出。
+
+<li>
+为什么会内存益出：
+
+<ol>
+<li>
+这一部分内存用于存放Class和Meta的信息，Class在被 Load的时候被放入PermGen space区域，它和存放Instance的Heap区域不同。
+
+<li>
+GC(Garbage Collection)不会在主程序运行期对PermGen space进行清理，所以如果你的APP会LOAD很多CLASS 的话,就很可能出现PermGen space错误。
+
+</ol>
+<li>
+这种错误常见在web服务器对JSP进行pre compile的时候。
+
+</ul>
+</ul>
+
+
+<h2 id="toc_0.2">JVM内存限制(最大值)</h2>
+
+<ul>
+<li>
+首先JVM内存限制于实际的最大物理内存，假设物理内存无限大的话，JVM内存的最大值跟操作系统有很大的关系。简单的说就32位处理器虽然可控内存空间有4GB,但是具体的操作系统会给一个限制，这个限制一般是2GB-3GB（一般来说Windows系统下为1.5G-2G，Linux系统下为2G-3G），而64bit以上的处理器就不会有限制了。
+
+</ul>
+
+<ul>
+<li>
+为什么有的机器我将-Xmx和-XX:MaxPermSize都设置为512M之后Eclipse可以启动，而有些机器无法启动？
+
+<ul>
+<li>
+通过上面对JVM内存管理的介绍我们已经了解到JVM内存包含两种：堆内存和非堆内存，另外JVM最大内存首先取决于实际的物理内存和操作系统。所以说设置VM参数导致程序无法启动主要有以下几种原因：
+
+<ol>
+<li>
+参数中-Xms的值大于-Xmx，或者-XX:PermSize的值大于-XX:MaxPermSize；
+
+<li>
+-Xmx的值和-XX:MaxPermSize的总和超过了JVM内存的最大限制，比如当前操作系统最大内存限制，或者实际的物理内存等等。说到实际物理内存这里需要说明一点的是，如果你的内存是1024MB，但实际系统中用到的并不可能是1024MB，因为有一部分被硬件占用了。
+
+</ol>
+</ul>
+</ul>
+
+<ul>
+<li>
+如果你有一个双核的CPU，也许可以尝试这个参数: -XX:+UseParallelGC 让GC可以更快的执行。（只是JDK 5里对GC新增加的参数）
+
+</ul>
+
+<ul>
+<li>
+如果你的WEB APP下都用了大量的第三方jar，其大小超过了服务器jvm默认的大小，那么就会产生内存益出问题了。解决方法： 设置MaxPermSize大小。
+
+<ul>
+<li>
+增加服务器启动的JVM参数设置： <code>-Xms128m -Xmx256m -XX:PermSize=128M -XX:MaxNewSize=256m -XX:MaxPermSize=256m</code>
+
+<li>
+如tomcat，修改TOMCAT_HOME/bin/catalina.sh，在<code>echo "Using CATALINA_BASE: $CATALINA_BASE"</code>上面加入以下行：<code>JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m</code>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+建议：将相同的第三方jar文件移置到tomcat/shared/lib目录下，这样可以减少jar 文档重复占用内存
+
+</ul>
+
+<h2 id="toc_0.3">JVM内存设置参数</h2>
+
+<ul>
+<li>
+内存设置参数
+
+</ul>
+
+<table>
+<tr>
+<th>
+设置项
+</th>
+<th>
+说明
+</th>
+</tr>
+<tr>
+<td>
+-Xms512m
+</td>
+<td>
+表示JVM初始分配的堆内存大小为512m（JVM Heap(堆内存)最小尺寸，初始分配）
+</td>
+</tr>
+<tr>
+<td>
+-Xmx1024m
+</td>
+<td>
+JVM最大允许分配的堆内存大小为1024m，按需分配（JVM Heap(堆内存)最大允许的尺寸，按需分配）
+</td>
+</tr>
+<tr>
+<td>
+-XX:PermSize=512M
+</td>
+<td>
+JVM初始分配的非堆内存
+</td>
+</tr>
+<tr>
+<td>
+-XX:MaxPermSize=1024M
+</td>
+<td>
+JVM最大允许分配的非堆内存，按需分配
+</td>
+</tr>
+<tr>
+<td rowspan="2">
+-XX:NewSize/-XX:MaxNewSize
+</td>
+<td>
+定义YOUNG段的尺寸，NewSize为JVM启动时YOUNG的内存大小；
+</td>
+</tr>
+<tr>
+<td>
+MaxNewSize为最大可占用的YOUNG内存大小。
+</td>
+</tr>
+<tr>
+<td>
+-XX:SurvivorRatio
+</td>
+<td>
+设置YOUNG代中Survivor空间和Eden空间的比例
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+说明：
+
+<ol>
+<li>
+如果-Xmx不指定或者指定偏小，应用可能会导致java.lang.OutOfMemory错误，此错误来自JVM不是Throwable的，无法用try...catch捕捉。
+
+<li>
+PermSize和MaxPermSize指明虚拟机为java永久生成对象（Permanate generation）如，class对象、方法对象这些可反射（reflective）对象分配内存限制，这些内存不包括在Heap（堆内存）区之中。
+
+<li>
+-XX:MaxPermSize分配过小会导致：java.lang.OutOfMemoryError: PermGen space。
+
+<li>
+MaxPermSize缺省值和-server -client选项相关：-server选项下默认MaxPermSize为64m、-client选项下默认MaxPermSize为32m。
+
+</ol>
+</ul>
+
+<ul>
+<li>
+申请一块内存的过程
+
+<ol>
+<li>
+JVM会试图为相关Java对象在Eden中初始化一块内存区域
+
+<li>
+当Eden空间足够时，内存申请结束。否则到下一步
+
+<li>
+JVM试图释放在Eden中所有不活跃的对象（这属于1或更高级的垃圾回收）；释放后若Eden空间仍然不足以放入新对象，则试图将部分Eden中活跃对象放入Survivor区/OLD区
+
+<li>
+Survivor区被用来作为Eden及OLD的中间交换区域，当OLD区空间足够时，Survivor区的对象会被移到Old区，否则会被保留在Survivor区
+
+<li>
+当OLD区空间不够时，JVM会在OLD区进行完全的垃圾收集（0级）
+
+<li>
+完全垃圾收集后，若Survivor及OLD区仍然无法存放从Eden复制过来的部分对象，导致JVM无法在Eden区为新对象创建内存区域，则出现”out of memory错误”
+
+</ol>
+</ul>
+
+<ul>
+<li>
+resin服务器典型的响应时间优先型的jvm配置：
+<pre>
+-Xmx2000M -Xms2000M -Xmn500M
+-XX:PermSize=250M -XX:MaxPermSize=250M
+-Xss256K
+-XX:+DisableExplicitGC
+-XX:SurvivorRatio=1
+-XX:+UseConcMarkSweepGC
+-XX:+UseParNewGC
+-XX:+CMSParallelRemarkEnabled
+-XX:+UseCMSCompactAtFullCollection
+-XX:CMSFullGCsBeforeCompaction=0
+-XX:+CMSClassUnloadingEnabled
+-XX:LargePageSizeInBytes=128M
+-XX:+UseFastAccessorMethods
+-XX:+UseCMSInitiatingOccupancyOnly
+-XX:CMSInitiatingOccupancyFraction=60
+-XX:SoftRefLRUPolicyMSPerMB=0
+-XX:+PrintClassHistogram
+-XX:+PrintGCDetails
+-XX:+PrintGCTimeStamps
+-XX:+PrintHeapAtGC
+-Xloggc:log/gc.log
+</pre>
+
+</ul>
+
+<h2 id="toc_0.4">内存回收算法</h2>
+
+<p>
+Java中有四种不同的回收算法，对应的启动参数为:
+</p>
+<pre>
+–XX:+UseSerialGC
+–XX:+UseParallelGC
+–XX:+UseParallelOldGC
+–XX:+UseConcMarkSweepGC
+</pre>
+
+<h3 id="toc_0.4.1">Serial Collector</h3>
+
+<p>
+大部分平台或者强制 java -client 默认会使用这种。
+</p>
+
+<p>
+young generation算法 = serial
+</p>
+
+<p>
+old generation算法 = serial (mark-sweep-compact)
+</p>
+
+<p>
+这种方法的缺点很明显, stop-the-world, 速度慢。服务器应用不推荐使用。
+</p>
+
+<h3 id="toc_0.4.2">Parallel Collector</h3>
+
+<p>
+在linux x64上默认是这种，其他平台要加 java -server 参数才会默认选用这种。
+</p>
+
+<p>
+young = parallel，多个thread同时copy
+</p>
+
+<p>
+old = mark-sweep-compact = 1
+</p>
+
+<p>
+优点：新生代回收更快。因为系统大部分时间做的gc都是新生代的，这样提高了throughput(cpu用于非gc时间)
+</p>
+
+<p>
+缺点：当运行在8G/16G server上old generation live object太多时候pause time过长
+</p>
+
+<h3 id="toc_0.4.3">Parallel Compact Collector (ParallelOld)</h3>
+
+<p>
+young = parallel = 2
+</p>
+
+<p>
+old = parallel，分成多个独立的单元，如果单元中live object少则回收，多则跳过
+</p>
+
+<p>
+优点：old old generation上性能较 parallel 方式有提高
+</p>
+
+<p>
+缺点：大部分server系统old generation内存占用会达到60%-80%, 没有那么多理想的单元live object很少方便迅速回收，同时compact方面开销比起parallel并没明显减少。
+</p>
+
+<h3 id="toc_0.4.4">Concurrent Mark-Sweep(CMS) Collector</h3>
+
+<p>
+young generation = parallel collector = 2
+</p>
+
+<p>
+old = cms
+</p>
+
+<p>
+同时不做 compact 操作。
+</p>
+
+<p>
+优点：pause time会降低, pause敏感但CPU有空闲的场景需要建议使用策略4.
+</p>
+
+<p>
+缺点：cpu占用过多，cpu密集型服务器不适合。另外碎片太多，每个object的存储都要通过链表连续跳n个地方，空间浪费问题也会增大。
+</p>
+
+<h2 id="toc_0.5">内存监控方法</h2>
+
+<ul>
+<li>
+jmap -heap 查看java 堆（heap）使用情况
+<pre class="brush:bash">
+jmap -heap pid 
+
+using thread-local object allocation.
+
+Parallel GC with 4 thread(s)   #GC 方式
+
+Heap Configuration:  #堆内存初始化配置
+
+MinHeapFreeRatio=40  #对应jvm启动参数-XX:MinHeapFreeRatio设置JVM堆最小空闲比率(default 40)
+MaxHeapFreeRatio=70  #对应jvm启动参数 -XX:MaxHeapFreeRatio设置JVM堆最大空闲比率(default 70)
+MaxHeapSize=512.0MB  #对应jvm启动参数-XX:MaxHeapSize=设置JVM堆的最大大小
+NewSize  = 1.0MB     #对应jvm启动参数-XX:NewSize=设置JVM堆的‘新生代’的默认大小
+MaxNewSize =4095MB   #对应jvm启动参数-XX:MaxNewSize=设置JVM堆的‘新生代’的最大大小
+OldSize  = 4.0MB     #对应jvm启动参数-XX:OldSize=&lt;value&gt;:设置JVM堆的‘老生代’的大小
+NewRatio  = 8        #对应jvm启动参数-XX:NewRatio=:‘新生代’和‘老生代’的大小比率
+SurvivorRatio = 8    #对应jvm启动参数-XX:SurvivorRatio=设置年轻代中Eden区与Survivor区的大小比值
+PermSize= 16.0MB     #对应jvm启动参数-XX:PermSize=&lt;value&gt;:设置JVM堆的‘永生代’的初始大小
+MaxPermSize=64.0MB   #对应jvm启动参数-XX:MaxPermSize=&lt;value&gt;:设置JVM堆的‘永生代’的最大大小
+
+Heap Usage:          #堆内存分步
+
+PS Young Generation
+
+Eden Space:         #Eden区内存分布
+
+capacity = 20381696 (19.4375MB)             #Eden区总容量
+used     = 20370032 (19.426376342773438MB)  #Eden区已使用
+free     = 11664 (0.0111236572265625MB)     #Eden区剩余容量
+99.94277218147106% used                     #Eden区使用比率
+
+From Space:        #其中一个Survivor区的内存分布
+
+capacity = 8519680 (8.125MB)
+used     = 32768 (0.03125MB)
+free     = 8486912 (8.09375MB)
+0.38461538461538464% used
+
+To Space:          #另一个Survivor区的内存分布
+
+capacity = 9306112 (8.875MB)
+used     = 0 (0.0MB)
+free     = 9306112 (8.875MB)
+0.0% used
+
+PS Old Generation  #当前的Old区内存分布
+
+capacity = 366280704 (349.3125MB)
+used     = 322179848 (307.25464630126953MB)
+free     = 44100856 (42.05785369873047MB)
+87.95982001825573% used
+
+PS Perm Generation #当前的 “永生代” 内存分布
+
+capacity = 32243712 (30.75MB)
+used     = 28918584 (27.57891082763672MB)
+free     = 3325128 (3.1710891723632812MB)
+89.68751488662348% used
+</pre>
+
+</ul>
+
+<ul>
+<li>
+JVM内存监控工具
+<pre class="brush:html">
+&lt;%@ page import="java.lang.management.*" %&gt;
+&lt;%@ page import="java.util.*" %&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;JVM Memory Monitor&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;table border="0" width="100%"&gt;
+    &lt;tr&gt;&lt;td colspan="2" align="center"&gt;&lt;h3&gt;Memory MXBean&lt;/h3&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td width="200"&gt;Heap Memory Usage&lt;/td&gt;&lt;td&gt;&lt;%=ManagementFactory.getMemoryMXBean().getHeapMemoryUsage()%&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Non-Heap Memory Usage&lt;/td&gt;&lt;td&gt;&lt;%=ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage()%&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td colspan="2"&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td colspan="2" align="center"&gt;&lt;h3&gt;Memory Pool MXBeans&lt;/h3&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;%
+        Iterator iter = ManagementFactory.getMemoryPoolMXBeans().iterator();
+        while (iter.hasNext()) {
+            MemoryPoolMXBean item = (MemoryPoolMXBean) iter.next();
+%&gt;
+&lt;tr&gt;&lt;td colspan="2"&gt;
+    &lt;table border="0" width="100%" style="border: 1px #98AAB1 solid;"&gt;
+        &lt;tr&gt;&lt;td colspan="2" align="center"&gt;&lt;b&gt;&lt;%= item.getName() %&gt;&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td width="200"&gt;Type&lt;/td&gt;&lt;td&gt;&lt;%= item.getType() %&gt;&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td&gt;Usage&lt;/td&gt;&lt;td&gt;&lt;%= item.getUsage() %&gt;&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td&gt;Peak Usage&lt;/td&gt;&lt;td&gt;&lt;%= item.getPeakUsage() %&gt;&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td&gt;Collection Usage&lt;/td&gt;&lt;td&gt;&lt;%= item.getCollectionUsage() %&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;/table&gt;
+&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td colspan="2"&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;
+&lt;%} %&gt;
+&lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

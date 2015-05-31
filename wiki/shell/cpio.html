@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>cpio</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>cpio</h1>
+
+<ul>
+<li>
+语法
+<pre>
+cpio -covB &gt; [file|device] &lt;==备份
+cpio -icduv &lt; [file|device] &lt;==还原
+</pre>
+
+<li>
+参数
+<pre>
+-o ：将资料 copy 输出到文件或装置上
+-i ：将资料自文件或装置 copy 出来系统当中
+-t ：查看 cpio 建立的文件或装置的内容
+-c ：一种较新的 portable format 方式储存
+-v ：让储存的过程中文件名称可以在萤幕上显示
+-B ：让预设的 Blocks 可以增加至 5120 bytes ，预设是 512 bytes ！
+　　 这样的好处是可以让大文件的储存速度加快(请参考 i-nodes 的观念)
+-d ：自动建立目录！由於 cpio 的内容可能不是在同一个目录内，如此的话在反备份的过程会有问题！ 这个时候加上 -d 的话，
+     就可以自动的将需要的目录建立起来了！
+-u ：自动的将较新的文件覆盖较旧的文件！
+</pre>
+
+<li>
+范例
+<pre class="brush:bash">
+# 范例一：将所有系统上的资料通通写入磁带机内！
+find / -print | cpio -covB &gt; /dev/st0
+# 一般来说，使用 SCSI 介面的磁带机，代号是 /dev/st0 喔！
+
+# 范例二：检查磁带机上面有什么文件？
+cpio -icdvt &lt; /dev/st0
+cpio -icdvt &lt; /dev/st0 &gt; /tmp/content
+# 第一个动作当中，会将磁带机内的档名列出到萤幕上面，而我们可以透过第二个动作，
+# 将所有的档名通通纪录到 /tmp/content 文件去！
+
+# 范例三：将磁带上的资料还原回来～
+cpio -icduv &lt; /dev/st0
+# 一般来说，使用 SCSI 介面的磁带机，代号是 /dev/st0 喔！
+
+# 范例四：将 /etc 底下的所有『文件』都备份到 /root/etc.cpio 中！
+find /etc -type f | cpio -o &gt; /root/etc.cpio
+# 这样就能够备份啰～您也可以将资料以 cpio -i &lt; /root/etc.cpio来将资料捉出来！！！！
+
+# 解开initramfs内容至当前目录
+mkdir inittmp &amp;&amp; cd inittmp &amp;&amp; zcat /boot/initrd.img-3.8.0-33-generic|cpio -i --make-directories
+</pre>
+
+<li>
+cpio --help
+<pre class="brush:bash">
+用法： cpio [选项...] [目标目录]
+GNU `cpio' 归档文件及从包中提取文件
+
+例子:
+  # 归档 name-list 中的文件到 archive
+  cpio -o &lt; name-list [&gt; archive]
+  # 从 archive 中提取文件
+  cpio -i [&lt; archive]
+  # 拷贝 name-list 中的文件到目标目录(destination-directory)
+  cpio -p destination-directory &lt; name-list
+
+ 主操作模式
+  -i, --extract              从包中提取文件 (运行 copy-in 模式)
+  -o, --create               创建包 (运行 copy-out 模式)
+  -p, --pass-through         运行 copy-pass 模式
+  -t, --list                 打印输入内容列表
+
+ 应用于所有模式的选项:
+
+      --block-size=BLOCK-SIZE   设置 I/O 块大小为 BLOCK-SIZE * 512
+                             字节
+  -B                         设置 I/O 块大小为 5120 字节
+  -c                         使用老的可移植的 (ASCII) 包格式
+  -C, --io-size=NUMBER       设置 I/O 块大小为指定的 NUMBER 字节
+      --force-local
+                             包文件是本地的，尽管名字中含有冒号
+  -f, --nonmatching          仅拷贝不匹配任意给定的模式的文件
+  -F, --file=[[用户@]主机:]文件名
+                             用“文件名”来替代标准输入和输出。如果是非本地的文件，则用可选的“用户”和“主机”来指定用户名和主机名。
+  -H, --format=格式        使用指定的包格式
+  -M, --message=STRING       当到达备份介质的尾部的时候打印
+                             STRING
+  -n, --numeric-uid-gid      在内容列表的详表中，显示数字的 UID
+                             和 GID
+      --quiet                不要打印已拷贝的块数
+      --rsh-command=COMMAND  用 COMMAND 替代 rsh
+  -v, --verbose              详细列出已处理的文件
+  -V, --dot                  每处理一个文件就打印一个“.”
+  -W, --warning=FLAG         控制警告信息显示。当前 FLAG
+                             可为“none”、“truncate”或“all”。多个选项可以累积。
+
+ 命令修饰仅在 copy-in 模式中有效:
+
+  -b, --swap
+                             交换数据中每个字的两个半字以及每个半字中的两个字节。等价于
+                             -sS
+  -r, --rename               交互式重命名文件
+  -s, --swap-bytes           交换文件中每个半字中的两个字节
+  -S, --swap-halfwords
+                             交换文件中每个字(4个字节)中的两个半字
+      --to-stdout            提取文件到标准输出
+
+  -E, --pattern-file=FILE    从 FILE
+                             中读取额外的用于指定提取或列表的文件名的模式
+      --only-verify-crc      当读取一个 CRC
+                             格式的包，仅检验包中每个文件的
+                             CRC，不提取文件
+
+ 应用于 copy-out 模式的选项
+
+  -A, --append               追加到已存在的归档文件。
+  -O [[用户@]主机:]文件名
+                             使用包文件名而不是标准输出。如果文件在远程机器上，则可指定用户和主机
+
+ 应用于 copy-pass 模式的选项:
+
+  -l, --link                 在可行时链接文件而不是拷贝文件
+
+ 应用于 copy-in 及 copy-out 模式的选项:
+
+      --absolute-filenames   文件名不去除文件系统前缀
+      --no-absolute-filenames   相对于当前目录来创建所有文件
+
+ 应用于 copy-out 及 copy-pass 模式的选项:
+
+  -0, --null                 文件名列表采用 NULL
+                             而不是换行作为分割符
+  -a, --reset-access-time    文件读取后恢复文件的访问时间
+  -I [[用户@]主机:]文件名
+                             从文件读入而不是从标准输入读入。
+                             如果文件在远程机器上，
+                             则可指定用户和主机
+  -L, --dereference          跟随符号链接
+                             (拷贝符号链接指向的文件而不是拷贝链接本身)
+  -R, --owner=[用户][:.][组]
+                             设置所有文件的所有权信息到指定的用户和/或组
+
+ 应用于 copy-in 和 copy-pass 模式的选项:
+
+  -d, --make-directories     需要时创建目录
+  -m, --preserve-modification-time
+                             创建文件时保留以前文件的修改时间
+      --no-preserve-owner    不改变文件的所有权
+      --sparse
+                             把含有大块零的文件以稀疏文件方式写出
+  -u, --unconditional        无条件覆盖所有文件
+
+  -?, --help                 显示此帮助列表
+      --usage                显示简短的用法说明
+      --version              打印程序版本
+
+对长选项必须或可选的参数同样适用于相应的短选项。
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Tomcat中Context元素详解</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Tomcat中Context元素详解</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">通用属性</a>
+<ul>
+<li><a href="#toc_0.1.1">标准实现</a>
+<li><a href="#toc_0.1.2">嵌套组件</a>
+</ul>
+<li><a href="#toc_0.2">专有特征</a>
+<ul>
+<li><a href="#toc_0.2.1">访问日志</a>
+<li><a href="#toc_0.2.2">Context的自动配置</a>
+<li><a href="#toc_0.2.3">Context参数</a>
+<ul>
+<li><a href="#toc_0.2.3.1">Parameter</a>
+<li><a href="#toc_0.2.3.2">环境条目Environment</a>
+<li><a href="#toc_0.2.3.3">生命期Listeners</a>
+<li><a href="#toc_0.2.3.4">请求过滤器Request Filters</a>
+<li><a href="#toc_0.2.3.5">资源定义Resource Definitions</a>
+<li><a href="#toc_0.2.3.6">资源参数ResourceParams</a>
+<li><a href="#toc_0.2.3.7">资源连接Resource Links</a>
+</ul>
+</ul>
+</ul>
+</ul>
+</div>
+
+<p>
+来源: <a href="http://www.cnblogs.com/shiyangxt/articles/1257052.html">http://www.cnblogs.com/shiyangxt/articles/1257052.html</a>
+</p>
+
+<p>
+Context元素代表一个web应用，运行在某个特定的虚拟主机上。
+</p>
+
+<p>
+如Servlet Specification 2.2或以后版本中描述的那样，每个web应用基于一个Web Application Archive(WAR)文件，或者是一个目录，包含WAR文件解压后的内容。有关Web Application Archive的更多信息，可以参考Servlet Specification和Tomcat 应用程序开发者指南。
+</p>
+ 
+<p>
+通过将请求URI的最长可能前缀与每个Context的context路径进行匹配，Catalina选择相应的web 应用处理HTTP请求。一旦选定，根据web application deployment descriptor 文件中定义的servlet映射，Context会选择一个正确的servlet来处理进来的请求。servlet映射必须定义在该web应用目录层次结构中的/WEB-INF/web.xml中。
+</p>
+
+<p>
+你可以在一个Host元素中嵌套任意多的Context元素。每个Context的路径必须是惟一的，由path属性定义。另外，你必须定义一个context路径长度为0的Context，这个Context称为该虚拟主机的缺省web应用，用来处理那些不能匹配任何Context的Context路径的请求。
+</p>
+
+<p>
+除了在Host元素中嵌套Context元素以外，你也可以将它们存储在单个文件中（以.xml为后缀），放在$CATALINA_HOME/conf/[enginename]/[hostname]/目录下面。有关这方面的更多信息，参考应用的自动发布。这种方法允许动态重新配置web应用，因为如果修改了conf/server.xml，就必须重新启动Tomcat。
+</p>
+
+
+<h2 id="toc_0.1">通用属性</h2>
+
+<p>
+所有Context的实现支持如下属性：
+</p>
+
+<table>
+<tr>
+<th>
+属性
+</th>
+<th>
+说明
+</th>
+</tr>
+<tr>
+<td>
+backgroundProcessorDelay
+</td>
+<td>
+这个值代表在context及其子容器（包括所有的wrappers）上调用backgroundProcess方法的延时，以秒为单位。如果延时值非负，子容器不会被调用，也就是说子容器使用自己的处理线程。如果该值为正，会创建一个新的线程。在等待指定的时间以后，该线程在主机及其 子容器上调用backgroundProcess方法。context利用后台处理session过期，监测类的变化用于重新载入。如果没有指定，该属性的缺省值是－1，说明context依赖其所属的Host的后台处理。
+</td>
+</tr>
+<tr>
+<td>
+className
+</td>
+<td>
+实现的Java类名。该类必须实现org.apache.catalina.Context接口。如果没有指定，使用标准实现（在下面定义）。
+</td>
+</tr>
+<tr>
+<td>
+cookies
+</td>
+<td>
+如果想利用cookies来传递session identifier（需要客户端支持cookies），设为ture。否则为false，这种情况下只能依靠URL Rewriting传递session identifier。
+</td>
+</tr>
+<tr>
+<td>
+crossContext
+</td>
+<td>
+如果想在应用内调用ServletContext.getContext()来返回在该虚拟主机上运行的其他web application的request dispatcher,设为true。在安全性很重要的环境中，设为false，使得getContext()总是返回null。缺省值为false。
+</td>
+</tr>
+<tr>
+<td>
+docBase
+</td>
+<td>
+该web应用的文档基准目录（Document Base，也称为Context Root），或者是WAR文件的路径。可以使用绝对路径，也可以使用相对于context所属的Host的appBase路径。
+</td>
+</tr>
+<tr>
+<td>
+override
+</td>
+<td>
+如果想利用该Context元素中的设置覆盖DefaultContext中相应的设置，设为true。缺省情况下使用DefaultContext中的设置。
+</td>
+</tr>
+<tr>
+<td>
+privileged
+</td>
+<td>
+设为true，允许context使用container servlets，比如manager servlet。
+</td>
+</tr>
+<tr>
+<td>
+path
+</td>
+<td>
+web应用的context路径。catalina将每个URL的起始和context path进行比较，选择合适的web应用处理该请求。特定Host下的context path必须是惟一的。如果context path为空字符串（""），这个context是所属Host的缺省web应用,用来处理不能匹配任何context path的请求。
+</td>
+</tr>
+<tr>
+<td>
+reloadable
+</td>
+<td>
+如果希望Catalina监视/WEB-INF/classes/和/WEB-INF/lib下面的类是否发生变化，在发生变化的时候自动重载web application，设为true。这个特征在开发阶段很有用，但也大大增加了服务器的开销。因此，在发布以后，不推荐使用。但是，你可以使用Manager应用在必要的时候触发应用的重载。
+</td>
+</tr>
+<tr>
+<td>
+wrapperClass
+</td>
+<td>
+org.apache.catalina.Wrapper实现类的名称，用于该Context管理的servlets。如果没有指定，使用标准的缺省值。
+</td>
+</tr>
+</table>
+
+<h3 id="toc_0.1.1">标准实现</h3>
+
+<p>
+Context的标准实现是org.apache.catalina.core.StandardContext.它还支持如下的附加属性：
+</p>
+
+<table>
+<tr>
+<th>
+属性
+</th>
+<th>
+描述
+</th>
+</tr>
+<tr>
+<td>
+debug
+</td>
+<td>
+与这个Engine关联的Logger记录的调试信息的详细程度。数字越大，输出越详细。如果没有指定，缺省为0。
+</td>
+</tr>
+<tr>
+<td>
+swallowOutput
+</td>
+<td>
+如果该值为true，System.out和System.err的输出被重定向到web应用的logger。如果没有指定，缺省值为false
+</td>
+</tr>
+<tr>
+<td>
+useNaming
+</td>
+<td>
+如果希望Catalina为该web应用使能一个JNDI InitialContext对象，设为true。该InitialialContext符合J2EE平台的约定，缺省值为true。
+</td>
+</tr>
+<tr>
+<td>
+workDir
+</td>
+<td>
+Context提供的临时目录的路径，用于servlet的临时读/写。利用javax.servlet.context.tempdir属性，servlet可以访问该目录。如果没有指定，使用$CATALINA_HOME/work下一个合适的目录。
+</td>
+</tr>
+</table>
+
+<h3 id="toc_0.1.2">嵌套组件</h3>
+
+<p>
+下列元素可以嵌套在Context元素中，但每个元素至多只能嵌套一次。
+</p>
+
+<p>
+Loader－配置该web应用用来加载servlet和javabean的类加载器。正常情况下，使用缺省的类加载器就足够了；
+Logger - 配置用来接收和处理所有日志消息的logger，包括调用ServletContext.log()函数记录的所有消息；
+Manager -配置用于创建，销毁，维持HTTP session的session manager.正常情况下，使用缺省的session manager配置就足够了；
+Realm - 配置Realm，该Realm的用户数据库以及相关的角色仅用于这个特定的web应用中。如果没有指定，该web应用使用所属的Host或Engine的Realm。
+Resources - 配置用于访问与这个web应用相关联的静态资源。正常情况下，使用缺省的resource manager就足够了。
+</p>
+
+<h2 id="toc_0.2">专有特征</h2>
+
+<h3 id="toc_0.2.1">访问日志</h3>
+
+<p>
+正常情况下，运行web服务器会生成访问日志。访问日志以标准格式为每个请求输出一行信息。Catalina包含一个可选的Valve实现，可以用标准格式生成日志,还可以使用任意定制的格式。
+</p>
+
+<p>
+通过在Engine，Host或者Context中嵌套一个Valve元素，Catalina会为该容器处理的所有请求创建访问日志，如下所示：
+</p>
+
+<pre class="brush:xml">
+&lt;Context path="/examples" ...&gt;
+...
+&lt;Valve className="org.apache.catalina.valves.AccessLogValve"
+prefix="localhost_access_log." suffix=".txt"
+pattern="common"/&gt;
+...
+&lt;/Context&gt;
+</pre>
+
+<h3 id="toc_0.2.2">Context的自动配置</h3>
+
+<p>
+如果使用标准的Context实现，当Catalina启动，或者重载web应用的时候，如下的配置步骤会自动发生，不需要特殊的配置来使能这个特征。
+</p>
+<ul>
+<li>
+如果没有定义自己的Loader元素，将会配置一个标准的web应用class loader；
+
+<li>
+如果没有定义自己的Manager元素，会配置一个标准的session manager；
+
+<li>
+如果没有定义自己的Resources元素，使用标准的resource manager。
+
+<li>
+在conf/web.xml中列出的web应用的属性会当做该web应用的缺省的属性。这被用于建立缺省的映射（比如将.jsp映射成对应的JSP servlet），以及其他的标准属性。
+
+<li>
+列举在/WEB-INF/web.xml资源中的属性被处理（如果资源存在）；
+
+<li>
+如果web应用指定了安全限制，并且可能需要对用户进行认证，Catalina会配置选定的Authenticator，该Authenticator实现了login方法。
+
+</ul>
+
+<h3 id="toc_0.2.3">Context参数</h3>
+
+<h4 id="toc_0.2.3.1">Parameter</h4>
+
+<p>
+可以在Context中元素中嵌套&lt;Parameter&gt;元素，配置带有名称的值，这些值作为servletcontext初始化参数，对整个web应用可见。比如，你可以像这样创建初始化参数:
+</p>
+
+<pre class="brush:xml">
+&lt;Context ...&gt;
+    ...
+    &lt;Parameter name="companyName" value="My Company, Incorporated"
+    override="false"/&gt;
+    ...
+&lt;/Context&gt;
+</pre>
+ 
+<p>
+这与在/WEB-INF/web.xml中包含如下元素相等：
+</p>
+
+<pre class="brush:xml">
+&lt;context-param&gt;
+    &lt;param-name&gt;companyName&lt;/param-name&gt;
+    &lt;param-value&gt;My Company, Incorporated&lt;/param-value&gt;
+&lt;/context-param&gt;
+</pre>
+
+<p>
+区别是，前者不需要修改deployment descriptor来定制这个值。
+</p>
+
+<ul>
+<li>
+&lt;Parameter&gt;元素的有效属性值如下：
+
+</ul>
+
+<table>
+<tr>
+<th>
+属性
+</th>
+<th>
+描述
+</th>
+</tr>
+<tr>
+<td>
+description
+</td>
+<td>
+关于该context初始化参数的文字描述（可选） 要创建的context初始化参数的名称
+</td>
+</tr>
+<tr>
+<td>
+override
+</td>
+<td>
+如果不希望/WEB-INF/web.xml中具有相同参数名称的&lt;context-param&gt;覆盖这里指定的值，设为false。缺省值为true。
+</td>
+</tr>
+<tr>
+<td>
+value
+</td>
+<td>
+调用ServletContext.getInitParameter()时，返回给应用的参数值。
+</td>
+</tr>
+</table>
+
+<h4 id="toc_0.2.3.2">环境条目Environment</h4>
+
+<p>
+可以在Context中嵌套&lt;Environment&gt;元素，配置命名的值，这些值作为环境条目资源(Environment Entry Resource），对整个web应用可见。比如，可以按照如下方法创建一个环境条目：
+</p>
+
+<pre class="brush:xml">
+&lt;Context ...&gt;
+    ...
+    &lt;Environment name="maxExemptions" value="10"
+    type="java.lang.Integer" override="false"/&gt;
+    ...
+&lt;/Context&gt;
+</pre>
+
+<p>
+这与在/WEB-INF/web.xml中包含如下元素是等价的：
+</p>
+
+<pre class="brush:xml">
+&lt;env-entry&gt;
+    &lt;env-entry-name&gt;maxExemptions&lt;/param-name&gt;
+    &lt;env-entry-value&gt;10&lt;/env-entry-value&gt;
+    &lt;env-entry-type&gt;java.lang.Integer&lt;/env-entry-type&gt;
+&lt;/env-entry&gt;
+</pre>
+
+<p>
+区别是，前者不需要修改deployment descriptor来定制这个值。
+</p>
+
+<ul>
+<li>
+&lt;Environment&gt;元素的有效属性所如下：
+
+</ul>
+
+<table>
+<tr>
+<th>
+属性
+</th>
+<th>
+描述
+</th>
+</tr>
+<tr>
+<td>
+description
+</td>
+<td>
+环境条目的文字描述（可选）
+</td>
+</tr>
+<tr>
+<td>
+name
+</td>
+<td>
+环境条目的名称，相对于java:comp/env context。
+</td>
+</tr>
+<tr>
+<td>
+override
+</td>
+<td>
+如果不希望/WEB-INF/web.xml中具有相同名称的&lt;env-entry&gt;覆盖这里指定的值，设为false。缺省值为true。
+</td>
+</tr>
+<tr>
+<td rowspan="3">
+type
+</td>
+<td>
+环境条目的Java类名的全称.在/WEB-INF/web.xml中，&lt;env-entry-type&gt;必须是如下的值：
+</td>
+</tr>
+<tr>
+<td>
+java.lang.Boolean, java.lang.Byte, java.lang.Character, java.lang.Double,java.lang.Float, java.lang.Integer,
+</td>
+</tr>
+<tr>
+<td>
+java.lang.Long, java.lang.Short, or java.lang.String.
+</td>
+</tr>
+<tr>
+<td>
+value
+</td>
+<td>
+通过JNDI context请求时，返回给应用的参数值。这个值必须转换成type属性定义的Java类型
+</td>
+</tr>
+</table>
+
+<h4 id="toc_0.2.3.3">生命期Listeners</h4>
+
+<p>
+如果一个Java对象需要知道Context什么时候启动，什么时候停止，可以在这个对象中嵌套一个Listener元素。
+该Listener元素必须实现了org.apache.catalina.LifecycleListener接口，在发生对应的生命期事件的时候，通知该Listener。可以按照如下的格式配置这样的Listener：
+</p>
+
+<pre class="brush:xml">
+&lt;Context path="/examples" ...&gt;
+    ...
+    &lt;Listener className="com.mycompany.mypackage.MyListener" ... &gt;
+    ...
+&lt;/Context&gt;
+</pre>
+
+<p>
+注意，一个listener可以具有任意多的附加属性。属性名与JavaBean的属性名相对应，使用标准的属性命名方法。
+</p>
+
+<h4 id="toc_0.2.3.4">请求过滤器Request Filters</h4>
+
+<p>
+对每个发送到Engine，Host或者Context的请求，可以要求Catalina检查IP地址或主机名称。Catalina使用一系列配置好的“接受”或者“拒绝”过滤器对客户端的地址或者主机名进行检查，过滤器是按照正则表达式语法定义的，由Jakarta Regexp正则表达式库支持。不被接受的请求会返回一个HTTP“Forbidden”错误。下面是过滤器的定义。
+</p>
+
+<pre class="brush:xml">
+&lt;Context path="/examples" ...&gt;
+    ...
+    &lt;Valve className="org.apache.catalina.valves.RemoteHostValve"
+    allow="*.mycompany.com,www.yourcompany.com"/&gt;
+    &lt;Valve className="org.apache.catalina.valves.RemoteAddrValve"
+    deny="192.168.1.*"/&gt;
+    ...
+&lt;/Context&gt;
+</pre>
+
+<h4 id="toc_0.2.3.5">资源定义Resource Definitions</h4>
+
+<p>
+可以在/WEB-INF/web.xml中定义资源的特性。使用JNDI查找&lt;resource-ref&gt;和&lt;resource-env-ref&gt;元素时，这些特性被返回。对同一资源名称，还必须定义资源参数（见下面“资源参数”小节），这些参数用来配置对象工厂（object factory）以及对象工厂的属性。
+</p>
+
+<p>
+比如，你可以按照如下方式创建资源定义：
+</p>
+
+
+<pre class="brush:xml">
+&lt;Context ...&gt;
+    ...
+    &lt;Resource name="jdbc/EmployeeDB" auth="Container"
+    type="javax.sql.DataSource"
+    description="Employees Database for HR Applications"/&gt;
+    ...
+&lt;/Context&gt;
+</pre>
+
+<p>
+这等价于在/WEB-INF/web.xml中包含如下元素：
+</p>
+
+<pre class="brush:xml">
+&lt;resource-ref&gt;
+    &lt;description&gt;Employees Database for HR Applications&lt;/description&gt;
+    &lt;res-ref-name&gt;jdbc/EmployeeDB&lt;/res-ref-name&gt;
+    &lt;res-ref-type&gt;javax.sql.DataSource&lt;/res-ref-type&gt;
+    &lt;res-auth&gt;Container&lt;/res-auth&gt;
+&lt;/resource-ref&gt;
+</pre>
+
+<p>
+区别是，前者不需要修改deployment descriptor来定制这个值。
+</p>
+
+<ul>
+<li>
+&lt;Resource&gt;元素的有效属性如下：
+
+</ul>
+
+<table>
+<tr>
+<th>
+属性
+</th>
+<th>
+描述
+</th>
+</tr>
+<tr>
+<td rowspan="2">
+auth
+</td>
+<td>
+指定时web应用代码本身sign on到对应的resource mananger，还是由container代表web应用sign on到resource manager。该属性的值必须是Application或者Container。
+</td>
+</tr>
+<tr>
+<td>
+如果在web application deployment descriptor中使用&lt;resource-ref&gt;，这个属性是必需的，如果使用&lt;resource-env-ref&gt;，这个属性是可选的。
+</td>
+</tr>
+<tr>
+<td>
+description
+</td>
+<td>
+资源的文字描述（可选）
+</td>
+</tr>
+<tr>
+<td>
+name
+</td>
+<td>
+资源的名称，相对于java:comp/env context
+</td>
+</tr>
+<tr>
+<td>
+scope
+</td>
+<td>
+指定通过这个resource manager得到的连接是否共享。该属性的值必须是Shareable或者Unshareable。缺省情况下，假定连接是共享的。
+</td>
+</tr>
+<tr>
+<td>
+type
+</td>
+<td>
+当web应用查找该资源的时候，返回的Java类名的全称。
+</td>
+</tr>
+</table>
+
+<h4 id="toc_0.2.3.6">资源参数ResourceParams</h4>
+
+<p>
+资源参数用来配置资源管理器（resource manager，或对象工厂,object factory）。在做JNDI查找时，资源管理器返回查找的对象。在资源可以被访问之前，对&lt;Context&gt;或&lt;DefaultContext&gt;元素的每个&lt;Resource&gt;元素，或者/WEB-INF/web.xml中定义的每个&lt;resource-ref&gt;或&lt;resource-env-ref&gt;元素，都必须定义资源参数。
+</p>
+
+<p>
+资源参数是用名称定义的，使用的资源管理器（或者object factory）不同，参数名称的集合也不一样。这些参数名和工厂类的JavaBeans属性相对应。JNDI实现通过调用对应的JavaBeans属性设置函数来配置特定的工厂类，然后通过lookup()调用使得该实例可见。
+</p>
+
+<p>
+一个JDBC数据源的资源参数可以按照如下方式定义：
+</p>
+
+<pre class="brush:xml">
+&lt;Context ...&gt;
+    ...
+    &lt;ResourceParams name="jdbc/EmployeeDB"&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;driverClassName&lt;/name&gt;
+            &lt;value&gt;org.hsql.jdbcDriver&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;url&lt;/name&gt;
+            &lt;/value&gt;jdbc:HypersonicSQL:database&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;user&lt;/name&gt;
+            &lt;value&gt;dbusername&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;password&lt;/name&gt;
+            &lt;value&gt;dbpassword&lt;/value&gt;
+        &lt;/parameter&gt;
+    &lt;/ResourceParams&gt;
+    ...
+&lt;/Context&gt;
+</pre>
+
+<p>
+如果你需要为某个特定的资源类型指定工厂内的Java类名，在&lt;ResourceParams&gt;元素中嵌套一个叫做factory的&lt;parameter&gt;条目。
+</p>
+
+<ul>
+<li>
+&lt;Resourceparams&gt;元素的有效属性如下：
+
+</ul>
+
+<table>
+<tr>
+<th>
+属性
+</th>
+<th>
+描述
+</th>
+</tr>
+<tr>
+<td rowspan="2">
+name
+</td>
+<td>
+配置的资源名称，相对于java:comp/env context。这个名称必须与$CATALINA_HOME/conf/server.xml中某个&lt;Resource&gt;元素定义的资源名称匹配，
+</td>
+</tr>
+<tr>
+<td>
+或者在/WEB-INF/web.xml中通过&lt;resource-ref&gt;或者&lt;resource-env-ref&gt;元素应用。
+</td>
+</tr>
+</table>
+
+<h4 id="toc_0.2.3.7">资源连接Resource Links</h4>
+<p>
+资源连接用于创建到全局JNDI资源的连接。在连接名称上进行JNDI查询会返回被连接的global 资源。
+</p>
+
+<p>
+比如，你可以按照如下方法创建一个资源连接：
+</p>
+
+<pre class="brush:xml">
+&lt;Context ...&gt;
+    ...
+    &lt;ResourceLink name="linkToGlobalResource"
+    global="simpleValue"
+    type="java.lang.Integer"
+    ...
+&lt;/Context&gt;
+</pre>
+
+<ul>
+<li>
+&lt;ResourceLink&gt;元素的有效属性如下：
+
+</ul>
+
+<table>
+<tr>
+<th>
+属性
+</th>
+<th>
+描述
+</th>
+</tr>
+<tr>
+<td>
+global
+</td>
+<td>
+被连接的连接全局资源的名称
+</td>
+</tr>
+<tr>
+<td>
+name
+</td>
+<td>
+创建的资源连接的名称，相对于java:comp/env context
+</td>
+</tr>
+<tr>
+<td>
+type
+</td>
+<td>
+当web应用在该资源连接上进行查找时，返回的Java类名的全称
+</td>
+</tr>
+</table>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

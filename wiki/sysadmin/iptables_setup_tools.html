@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>iptables设置脚本</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">iptables设置脚本</a>
+<ul>
+<li><a href="#toc_1.1">简要说明</a>
+<li><a href="#toc_1.2">配置文件</a>
+<li><a href="#toc_1.3">设置脚本</a>
+<li><a href="#toc_1.4">快速部署</a>
+<li><a href="#toc_1.5">kern日志设置</a>
+<li><a href="#toc_1.6">knock客户端</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">iptables设置脚本</h1>
+
+<p>
+Create: 2013-03-04
+</p>
+
+<p>
+Update: 2014-11-29
+</p>
+
+<h2 id="toc_1.1">简要说明</h2>
+
+<ul>
+<li>
+编辑配置文件
+<pre class="brush:bash">
+#各类策略的加载顺序，只有CONNLIMIT SPECIAL KNOCK三个是内定的
+#其可自由定义，并用"名称_IPs"保存IP列表、用"名称"保存策略，如WAN,WAN_IPs。
+ACTIVE_CONFs="LAN BAN CONNLIMIT WAN SPECIAL MNG KNOCK"
+
+WAN_IPs=0.0.0.0/0                     #这是对全网开放的
+LAN_IPs=192.168.18.0/24               #内部网段
+MNG_IPs=218.88.178.86,222.211.74.36   #网管网段地址
+NMC_IPs=                              #监控用的网段
+BAN_IPs=                              #IP黑名单
+...
+VPN_IP="192.168.18.0/24"              #VPN的地址段
+...
+
+#策略格式：
+# 协议|网口|IP地址段1,IP地址段2|端口|允许ACCEPT/拒绝REJECT/丢弃DROP
+# 多条以换行符分隔
+
+LAN="all|all|$LAN_IPs|all|ACCEPT"       #对内网网段的允许策略
+MNG="tcp|all|$MNG_IPs|22,2222|ACCEPT"   #对网段网段的允许策略
+WAN="icmp|all|$WAN_IPs||ACCEPT"         #对全网开放icmp
+#对网管网段允许策略
+NMC="udp|all|$NMC_IPs|161|ACCEPT
+icmp|all|$NMC_IPs||ACCEPT"
+
+BAN="all|all|$BAN_IPs|all|DROP"         #对黑名单IP的策略
+</pre>
+
+</ul>
+
+<ul>
+<li>
+加载策略命令
+<pre class="brush:bash">
+setiptables.sh load my.iptables
+</pre>
+
+</ul>
+
+<h2 id="toc_1.2">配置文件</h2>
+
+<ul>
+<li>
+简单配置
+
+</ul>
+
+<pre class="brush:bash">
+# /usr/local/bin/default.iptables
+# setiptables's config file
+
+# Common config
+# ----------------------------------------------------------------------------
+# ACTIVE_CONFs 
+ACTIVE_CONFs="LAN BAN CONNLIMIT WAN MNG"
+
+WAN_IPs=0.0.0.0/0
+LAN_IPs=192.168.0.0/24
+MNG_IPs=172.17.0.0/16,172.16.16.224/27,192.168.0.240/28
+NMC_IPs=172.16.16.180,172.16.16.150
+BAN_IPs=
+
+# Policy Desc:
+# Proto|Iface|srcIPs|dstPort|Target
+# tcp|eth0|192.168.0.100|80|ACCEPT
+# Proto: tcp,udp,icmp,all
+# Iface: eth0,eth1,all
+# Target: ACCEPT,DROP,REJECT
+
+LAN="all|all|$LAN_IPs|all|ACCEPT"
+MNG="tcp|all|$MNG_IPs|22|ACCEPT"
+WAN="icmp|all|$WAN_IPs||ACCEPT"
+NMC="udp|all|$NMC_IPs|161|ACCEPT
+icmp|all|$NMC_IPs||ACCEPT"
+BAN="all|all|$BAN_IPs|all|DROP"
+</pre>
+
+<ul>
+<li>
+复杂配置
+
+</ul>
+
+<pre class="brush:bash; collapse: true; toolbar:true;">
+# /usr/local/bin/default.iptables
+# setiptables's config file
+
+# Common config
+# ----------------------------------------------------------------------------
+# ACTIVE_CONFs 
+# Select which policy will apply,like "LAN,WAN,MNG"
+# You can define you onwer policy in config file.
+# Predefine ACTIVE_CONFs: CONNLIMIT SPECIAL KNOCK icmpKNOCK
+ACTIVE_CONFs="LAN CONNLIMIT BAN WAN SPECIAL MNG KNOCK"
+
+WAN_IPs=0.0.0.0/0
+LAN_IPs=192.168.0.0/24
+MNG_IPs=172.17.0.0/16,172.16.16.224/27,192.168.0.240/28
+NMC_IPs=172.16.16.180,172.16.16.150
+BAN_IPs=
+
+# Policy Desc:
+# Proto|Iface|srcIPs|dstPort|Target
+# tcp|eth0|192.168.0.100|80|ACCEPT
+# Proto: tcp,udp,icmp,all
+# Iface: eth0,eth1,all
+# Target: ACCEPT,DROP,REJECT
+
+LAN="all|all|$LAN_IPs|all|ACCEPT"
+MNG="tcp|all|$MNG_IPs|22|ACCEPT"
+WAN="icmp|all|$WAN_IPs||ACCEPT"
+NMC="udp|all|$NMC_IPs|161|ACCEPT
+icmp|all|$NMC_IPs||ACCEPT"
+BAN="all|all|$BAN_IPs|all|DROP"
+
+TYPE=$3
+case "$TYPE" in
+ap)
+    WAN="
+    tcp|all|$WAN_IPs|8080,9090,80,20:21,50000:50005|ACCEPT
+    $WAN"
+    ;;
+hbase)
+    WAN="$WAN
+    all|all|$WAN_IPs|53,123|ACCEPT
+    "
+    MNG="tcp|all|$MNG_IPs|22,50030,50070,50075,50060,60010,60030|ACCEPT"
+    ;;
+web)
+    WAN="
+    tcp|all|$WAN_IPs|80,8080|ACCEPT
+    $WAN"
+    ;;
+other|sp)
+    :
+    ;;
+*)
+    Usage &amp;&amp; cecho "Error: TYPE($TYPE) not in ap|sp|hbase|web|other\n" red &amp;&amp; return 1
+    ;;
+esac
+cecho "TYPE=$TYPE" blue
+
+# Other configs
+# ----------------------------------------------------------------------------
+CONNLIMIT=300
+# KNOCK="Port1,Port2,Port3|openPort1,openPort2"
+# icmpKNOCK="lenght1,lenght2,lenght3|openPort1,openPort2"
+LOGLEVEL=7
+ELSE_TARGET=DROP
+
+SPECIAL_POLICY(){
+:
+}
+
+</pre>
+
+<ul>
+<li>
+SPECIAL_POLICY
+
+</ul>
+
+<pre class="brush:bash; collapse: true; toolbar:true;">
+SPECIAL_POLICY(){
+# Define special policy by this function in config file, then add "SPECIAL" to ACTIVE_CONFs.
+:
+#setRule Proto Iface srcIPs dstPort Target
+# ------------------------------
+#setRule tcp all "192.168.0.0/24,192.168.1.0/24" "22,3306" "ACCEPT"
+
+# Local MAC address
+# ------------------------------
+#MAC="xx:xx:xx:xx:xx:xx xx:xx:xx:xx:xx:xx"
+#for mac in $MAC;do
+#   $IPTABLES -A INPUT -i "$lan_iface" -m mac --mac-source $mac -p tcp -m multiport --dport 3306,2222 -j ACCEPT
+#done
+ 
+# FTPd passive mode:
+# ------------------------------
+#$IPTABLES -A INPUT -s 192.168.0.0/24 -m state --state NEW -m tcp -p tcp --dport 21 -j ACCEPT
+#$IPTABLES -A INPUT -s 192.168.0.0/24 -m state --state NEW -m tcp -p tcp --dport 40000:41000 -j ACCEPT
+ 
+# PPTPD VPN Server:
+# ------------------------------
+#VPN_IP="192.168.18.0/24"
+#$IPTABLES -A INPUT -i eth0 -p tcp --dport 1723 -j ACCEPT
+#$IPTABLES -A INPUT -i ppp+ -p tcp --dport 2222 -j ACCEPT
+ 
+#$IPTABLES -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+#$IPTABLES -A FORWARD -o eth0 -s $VPN_IP -m state --state NEW -j ACCEPT
+#$IPTABLES -A FORWARD -i ppp+ -s $VPN_IP -j ACCEPT
+#$IPTABLES -A FORWARD -i eth0 -d $VPN_IP -j ACCEPT
+##$IPTABLES -A FORWARD -p tcp --syn -s $VPN_IP -j TCPMSS --set-mss 1356
+ 
+#$IPTABLES -t nat -A POSTROUTING  -o eth0 -s $VPN_IP -j MASQUERADE
+
+# Port Redirect
+# ------------------------------
+#$IPTABLES -t nat -A PREROUTING -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 8080
+# 测试不需添加下面的规则，删除：iptables -t nat -D OUTPUT 1
+#$IPTABLES -t nat -A OUTPUT -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 8080
+#$IPTABLES -t nat -A PREROUTING -p tcp --dport 80 -i eth0 -j DNAT --to 192.168.10.3:80
+
+# samba
+# ------------------------------
+#setRule tcp all "192.168.0.0/24" "139,445" "ACCEPT"
+#setRule udp all "192.168.0.0/24" "139,445" "ACCEPT"
+
+# NFS
+# Set follow in /etc/sysconfig/nfs:
+# RQUOTAD_PORT=875
+# LOCKD_TCPPORT=32803
+# LOCKD_UDPPORT=32769
+# MOUNTD_PORT=892
+# restart NFS service: service rpcbind restart;service nfs restart
+# ------------------------------
+# setRule tcp all "$WAN_IPs" "111,875,892,2049,32803" "ACCEPT"
+# setRule udp all "$WAN_IPs" "111,875,892,2049,32768" "ACCEPT"
+}
+</pre>
+
+<h2 id="toc_1.3">设置脚本</h2>
+
+<pre class="brush:bash; collapse: true; toolbar:true;">
+#!/bin/bash
+# /usr/local/bin/setiptables.sh
+# Set iptables on CentOS 6
+# Auther: YuanXing
+# Create: 2012-03-04
+# Update: 2014-11-29
+ 
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
+IPTABLES=/sbin/iptables
+SHELLPATH=`cd $(dirname $0) ; pwd`
+ 
+cecho(){
+    # cecho "strings" "color" "opts"
+    case $2 in
+    red)
+        echo -e $3 "\033[1;31m$1\033[0m"
+        ;;
+    green)
+        echo -e $3 "\033[1;32m$1\033[0m"
+        ;;
+    yellow)
+        echo -e $3 "\033[1;33m$1\033[0m"
+        ;;
+    blue)
+        echo -e $3 "\033[1;34m$1\033[0m"
+        ;;
+    *|bold)
+        echo -e $3 "\033[1m$1\033[0m"
+        ;;
+    esac
+}
+ 
+AreYouSure(){
+    #ask user for confirm
+    # AreYouSure "msg" "Yes/No"
+    local msg key keyyes
+    msg=$1
+    key=$2
+    [ -z "$msg" ] &amp;&amp; msg="Are you sure?"
+    [ -z "$key" ] &amp;&amp; key="y/n"
+    keyyes=`echo $key|cut -d"/" -f1`
+    input=""
+    cecho "\n$msg ($key):" yellow -n
+    read input
+    echo ""
+    if [ "$input" != "$keyyes" ];then
+        cecho "Aborted.\n" red
+        return 1
+    fi
+}
+ 
+setRule(){
+    # setRule Proto Iface srcIPs dstPort Target
+    #    Proto: tcp,udp,all or icmp
+    #    Iface: eth0,eth1 or all
+    #    srcIPs: 192.168.0.0/24,172.16.16.2
+    #    dstPort: 22,80,50000:50006
+    #    Target: ACCEPT|DROP|REJECT
+    local iface_opt proto_opt dport_opt Proto Iface srcIPs dstPort Target
+    Proto=$1
+    Iface=$2
+    srcIPs=`echo "$3"|sed -e 's/,/ /g'`
+    dstPort=$4
+    Target=$5
+    iface_opt=""
+    dport_opt=""
+    proto_opt=""
+    [ "$Iface" != 'all' ] &amp;&amp; iface_opt=" -i $Iface "
+    proto_opt=" -p $Proto "
+    [[ "$srcIPs" =~ all ]] &amp;&amp; srcIPs="0.0.0.0/0"
+    [[ ! "$Target" =~ ACCEPT|DROP|REJECT ]] \
+    &amp;&amp; cecho "setRule Error:Target($Target) not in ACCEPT|DROP|REJECT!" &amp;&amp; return 1
+ 
+    case "$Proto" in
+        tcp|udp|all)
+        [ -z "$dstPort" ] &amp;&amp; return 1
+        if [[ ! "$dstPort" =~ all ]];then
+            if [[ "$dstPort" =~ [,:] ]];then
+                dport_opt=" -m multiport --dport $dstPort "
+            else
+                dport_opt=" --dport $dstPort "
+            fi
+        fi
+        for ip in $srcIPs
+        do
+            if [[ "$Proto" = "all" &amp;&amp; -n "$dport_opt" ]];then
+                $IPTABLES -A INPUT $iface_opt -s $ip -p tcp $dport_opt -j $Target || return $?
+                $IPTABLES -A INPUT $iface_opt -s $ip -p udp $dport_opt -j $Target || return $?
+            else
+                $IPTABLES -A INPUT $iface_opt -s $ip $proto_opt $dport_opt -j $Target || return $?
+            fi
+        done
+        ;;
+    icmp)
+        for ip in $srcIPs
+        do
+          $IPTABLES -A INPUT $iface_opt -s $ip $proto_opt -j $Target || return $?
+          #$IPTABLES -A INPUT $iface_opt -s $ip $proto_opt --icmp-type echo-request -j $Target || return $?
+        done
+        ;;
+    *)
+        cecho "setRule Error: Proto($Proto) not in tcp|udp|all|icmp" red
+        return 1
+        ;;
+    esac
+}
+ 
+Usage(){
+    cecho "\nUsage:\n"
+    echo " $0 load ConfigFile [type] # Reload policy from config file."
+    echo " $0 save                   # Save iptable policy as default policy."
+    echo " $0 stop                   # Stop firewall and allowing everyone."
+    echo " $0 status                 # Show currently policy."
+    cecho "\nExample:\n"
+    cecho " setiptalbes.sh load default.iptables web" blue
+    echo
+}
+ 
+clean_iptables(){
+    cecho "Clean iptables ..."
+    if [ -f /etc/init.d/iptables ];then
+        service iptables stop
+        return $?
+    else
+        $IPTABLES -F
+        $IPTABLES -X
+        $IPTABLES -Z
+        $IPTABLES -F -t nat
+        $IPTABLES -X -t nat
+        $IPTABLES -Z -t nat
+        $IPTABLES -F -t mangle
+        $IPTABLES -X -t mangle
+        $IPTABLES -Z -t mangle
+        $IPTABLES -P INPUT ACCEPT
+        $IPTABLES -P OUTPUT ACCEPT
+        $IPTABLES -P FORWARD ACCEPT
+    fi
+}
+ 
+save_iptables(){
+    local F
+    if [ -f /etc/init.d/iptables ];then
+        cecho "Save iptables(CentOS) ..."
+        service iptables save &amp;&amp; chkconfig iptables on
+        [ "$?" != "0" ] &amp;&amp; cecho "Failed!" red &amp;&amp; return $?
+    elif [ -d "/etc/network/if-up.d"  ];then
+        cecho "Save iptables(Ubuntu) ..."
+        F=/etc/network/if-up.d/iptablesload
+        iptables-save -c &gt; /etc/iptables.rules \
+        &amp;&amp; echo -e "#!/bin/sh\niptables-restore &lt; /etc/iptables.rules" &gt; $F
+        [ "$?" != "0" ] &amp;&amp; cecho "Failed!" &amp;&amp; return $?
+        chown root:root $F &amp;&amp; chmod 700 $F
+    else
+        cecho "save_iptables only support CentOS/RedHat and Ubuntu/Debian." red
+        return 1
+    fi
+}
+ 
+setConnLimit(){
+    $IPTABLES -A INPUT -p tcp --syn -m connlimit --connlimit-above $1 -m limit --limit 5/min -j LOG \
+    --log-prefix "IPTABLES_CONNLIMIT:" --log-level 4 || return $?
+    $IPTABLES -A INPUT -p tcp --syn -m connlimit --connlimit-above $1 -j DROP || return $?
+}
+ 
+getconfItem(){
+    echo -e "`echo -e "${!1}"|grep -vE "^\s*#|^$" \
+    |sed -e 's/\s//g' -e 's/,\+/,/g' -e 's/|,/|/g' -e 's/,|/|/g' -e 's/^,//g' -e 's/,$//g'`"
+}
+
+SPECIAL_POLICY(){
+:
+}
+ 
+setKNOCK(){
+    local conf kp kp1 kp2 kp3 ops
+    [ -z "$1" ] &amp;&amp; cecho "KNOCK config error!" red &amp;&amp; return 1
+    # KNOCK="Port1,Port2,Port3|openPort1,openPort2"
+    kp=`echo $1|cut -d\| -f1`
+    kp1=`echo $kp|cut -d\, -f1`
+    kp2=`echo $kp|cut -d\, -f2`
+    kp3=`echo $kp|cut -d\, -f3`
+    ops=`echo $1|cut -d\| -f2`
+    [ -z "$kp1" -o -z "$kp2" -o -z "$kp3" -o -z "$ops" ] &amp;&amp; cecho "KNOCK config error!" red &amp;&amp; return 1
+ 
+    $IPTABLES -N knock1 || return $?
+    $IPTABLES -A knock1 -m recent --remove --name knock1 || return $?
+    $IPTABLES -A knock1 -m limit --limit 5/min -j LOG --log-prefix "IPTABLES_knock1:" --log-level 4 || return $?
+    $IPTABLES -A knock1 -p tcp --dport "$kp2" -m recent --set --name knock2 || return $?
+ 
+    $IPTABLES -N knock2 || return $?
+    $IPTABLES -A knock2 -m recent --remove --name knock2 || return $?
+    $IPTABLES -A knock2 -m limit --limit 5/min -j LOG --log-prefix "IPTABLES_knock2:" --log-level 4 || return $?
+    $IPTABLES -A knock2 -p tcp --dport "$kp3" -m recent --set --name knockOK || return $?
+ 
+    $IPTABLES -N knockOK || return $?
+    #$IPTABLES -A knockOK -m recent --remove --name knockOK || return $?
+    $IPTABLES -A knockOK -m limit --limit 5/min -j LOG --log-prefix "IPTABLES_knockOK:" --log-level 4 || return $?
+    $IPTABLES -A knockOK -p tcp -m multiport --dport "$ops" -j ACCEPT || return $?
+ 
+    $IPTABLES -A INPUT -p tcp --syn -m recent --rcheck --seconds 180 --name knockOK -j knockOK || return $?
+    $IPTABLES -A INPUT -p tcp --syn -m recent --rcheck --seconds 10 --name knock2 -j knock2 || return $?
+    $IPTABLES -A INPUT -p tcp --syn -m recent --rcheck --seconds 10 --name knock1 -j knock1 || return $?
+    $IPTABLES -A INPUT -p tcp --syn --dport "$kp1" -m recent --set --name knock1 || return $?
+}
+
+seticmpKNOCK(){
+    local conf len len1 len2 len3 ops
+    [ -z "$1" ] &amp;&amp; cecho "icmpKNOCK config error!" red &amp;&amp; return 1
+    # icmpKNOCK="length1,length2,length3|openPort1,openPort2"
+    # icmpKNOCK="78,128,148|22,2222"
+    # ip=x.x.x.x
+    # ping -c 1 -w 1 -n -s 78  $ip
+    # ping -c 1 -w 1 -n -s 128 $ip
+    # ping -c 1 -w 1 -n -s 148 $ip
+
+    len=`echo $1|cut -d\| -f1`
+    len1=`echo $len|cut -d\, -f1`
+    len2=`echo $len|cut -d\, -f2`
+    len3=`echo $len|cut -d\, -f3`
+    ops=`echo $1|cut -d\| -f2`
+    [ -z "$len1" -o -z "$len2" -o -z "$len3" -o -z "$ops" ] &amp;&amp; cecho "icmpKNOCK config error!" red &amp;&amp; return 1
+    # need add packet header 28
+    len1=`expr $len1 + 28`
+    len2=`expr $len2 + 28`
+    len3=`expr $len3 + 28`
+    $IPTABLES -N icmpknock1 || return $?
+    $IPTABLES -A icmpknock1 -m recent --remove --name icmpknock1 || return $?
+    $IPTABLES -A icmpknock1 -m limit --limit 5/min -j LOG --log-prefix "IPTABLES_icmpknock1:" --log-level 4 || return $?
+    $IPTABLES -A icmpknock1 -p icmp --icmp-type 8 -m length --length "$len2" -m recent --set --name icmpknock2 || return $?
+
+    $IPTABLES -N icmpknock2 || return $?
+    $IPTABLES -A icmpknock2 -m recent --remove --name icmpknock2 || return $?
+    $IPTABLES -A icmpknock2 -m limit --limit 5/min -j LOG --log-prefix "IPTABLES_icmpknock2:" --log-level 4 || return $?
+    $IPTABLES -A icmpknock2 -p icmp --icmp-type 8 -m length --length "$len3" -m recent --set --name icmpknockOK || return $?
+
+    $IPTABLES -N icmpknockOK || return $?
+    #$IPTABLES -A icmpknockOK -m recent --remove --name icmpknockOK || return $?
+    $IPTABLES -A icmpknockOK -m limit --limit 5/min -j LOG --log-prefix "IPTABLES_icmpknockOK:" --log-level 4 || return $?
+    $IPTABLES -A icmpknockOK -p tcp -m multiport --dport "$ops" -j ACCEPT || return $?
+
+    # TESTLOG
+    #$IPTABLES -A INPUT -p icmp --icmp-type 8 -j LOG --log-prefix "IPTABLES_icmpknocktest:" --log-level 4 || return $?
+
+    $IPTABLES -A INPUT -p icmp --icmp-type 8 -m recent --rcheck --seconds 180 --name icmpknockOK -j icmpknockOK || return $?
+    $IPTABLES -A INPUT -p icmp --icmp-type 8 -m recent --rcheck --seconds 10 --name icmpknock2 -j icmpknock2 || return $?
+    $IPTABLES -A INPUT -p icmp --icmp-type 8 -m recent --rcheck --seconds 10 --name icmpknock1 -j icmpknock1 || return $?
+    $IPTABLES -A INPUT -p icmp --icmp-type 8 -m length --length "$len1" -m recent --set --name icmpknock1 || return $?
+} 
+
+load_iptables(){
+    local ac item line
+    local Proto Iface srcIPs dstPort Target
+ 
+    [ -z "$ACTIVE_CONFs" ] &amp;&amp; cecho "Error: not ACTIVE_CONFs!" red &amp;&amp; return 1
+    for ac in $ACTIVE_CONFs
+    do
+        item="`getconfItem $ac`"
+        case "$ac" in
+        CONNLIMIT)
+            cecho "$ac=${item}" green
+            ;;
+        SPECIAL)
+            cecho "$ac" green
+            ;;
+        *)
+            cecho "$ac" green
+            echo -e "$item"
+            ;;
+        esac
+    done
+    AreYouSure || return $?
+  
+    cecho "Set default policy" green
+    clean_iptables || return $?
+    $IPTABLES -P INPUT ACCEPT
+    $IPTABLES -P OUTPUT ACCEPT
+    $IPTABLES -P FORWARD DROP
+ 
+    cecho "Accept ESTABLISHED,RELATED" green
+    $IPTABLES -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT || return $?
+ 
+    cecho "Accept loopback" green
+    $IPTABLES -A INPUT -i lo -p all -j ACCEPT || return $?
+ 
+    cecho "Set rules($ACTIVE_CONFs)" green
+    for ac in $ACTIVE_CONFs
+    do
+        item="`getconfItem $ac`"
+        case "$ac" in
+        CONNLIMIT)
+            [ -z "$item" ] &amp;&amp; continue
+            cecho "set $ac=${item} ..."
+            setConnLimit ${item} || return $?
+            ;;
+        SPECIAL)
+            cecho "load $ac ..."
+            SPECIAL_POLICY || return $?
+            ;;
+        KNOCK)
+            [ -z "$item" ] &amp;&amp; continue
+            cecho "set $ac ..."
+            setKNOCK "${!ac}" || return $?
+            ;;
+        icmpKNOCK)
+            [ -z "$item" ] &amp;&amp; continue
+            cecho "set $ac ..."
+            seticmpKNOCK "${!ac}" || return $?
+            ;;
+        *)
+            [ -z "$item" ] &amp;&amp; continue
+            cecho "setRule $ac ..."
+            for line in $item
+            do
+                # Proto|Iface|srcIPs|dstPort|Target
+                Proto=`echo "$line"|cut -d\| -f1`
+                Iface=`echo "$line"|cut -d\| -f2`
+                srcIPs=`echo "$line"|cut -d\| -f3`
+                dstPort=`echo "$line"|cut -d\| -f4`
+                Target=`echo "$line"|cut -d\| -f5`
+ 
+                # setRule Proto Iface srcIPs dstPort Target
+                setRule "$Proto" "$Iface" "$srcIPs" "$dstPort" "$Target" || return $?
+            done
+            ;;
+        esac
+    done
+ 
+    cecho "Set SaveLog(Log level:$LOGLEVEL)" green
+    $IPTABLES -A INPUT -m limit --limit 5/min -j LOG --log-prefix "IPTABLES_MISSINPUT:" --log-level $LOGLEVEL || return $?
+    cecho "Set else target:$ELSE_TARGET" green
+    case "$ELSE_TARGET" in
+    DROP|REJECT)
+        $IPTABLES -A INPUT -j $ELSE_TARGET || return $?
+        ;;
+    *)
+        cecho "WARNNING:all connect is ACCEPT!" red
+        return 1
+        ;;
+    esac
+    cecho "done." green
+}
+# ------------------------------------------------------------------------------
+case $1 in
+  stop)
+    clean_iptables
+    exit $?
+    ;;
+  save)
+    save_iptables
+    exit $?
+    ;;
+  status)
+    $IPTABLES -L -v -n
+    exit $?
+    ;;
+  load)
+    [ -z "$2" ] &amp;&amp; cecho "Error ConfigFile!" red &amp;&amp; exit 1
+    if [ -f "$2" ];then
+        ConfigFile="`cd $(dirname "$2");pwd`/`basename "$2"`"
+    elif [ -f "$SHELLPATH/$2" ];then
+        ConfigFile="$SHELLPATH/$2"
+    else
+        cecho "Error:ConfigFile not exist($ConfigFile)!" red &amp;&amp; exit 1
+    fi
+    cecho "Load ConfigFile:$ConfigFile" green
+    . "$ConfigFile"
+    [ "$?" != "0" ] &amp;&amp; cecho "Error:Load ConfigFile Fail!" red &amp;&amp; exit 1
+    [ -z "$LOGLEVEL" ] &amp;&amp; LOGLEVEL=7
+    [ -z "$ELSE_TARGET" ] &amp;&amp; ELSE_TARGET=DROP
+    load_iptables || exit $?
+    AreYouSure "Save as default policy?" || exit 0
+    save_iptables || exit $?
+    ;;
+  *)
+    Usage
+    exit 1
+    ;;
+esac
+exit 0
+</pre>
+
+<h2 id="toc_1.4">快速部署</h2>
+<p>
+复制以下代码，以root权限粘贴执行，即可生成缺省配置文件和设置脚本。
+</p>
+<pre class="brush:bash; collapse: true; toolbar:true;">
+F=/usr/local/bin/simple.iptables &amp;&amp; [ ! -f $F ] &amp;&amp; echo $F &amp;&amp; echo "\
+H4sIAI6feFQAA61RXW+CMBR9769ocMlemLTEoSPhQZAtLIrEkPloEMGRVEtofVjSH79bPsS9Dyjh
+nHvO7eV0gq2baCzG84xZx+pqnYoyuzE5rWqZHVkh0ASLQg7oWeCcX8vqjMuKFQiKAb9c+LVnAb/8
+4wXtlkEafYWHYBu/C4wekWeslzH2YQGM19EmSvEe0Cb+MBCCr0OUCI9M29siaN0z9M2eUmfRsvYM
+gbyj50DPW5Y6Zosc/dj2zLLn5uiyZ+BboHgTjL5WSRfkwUdfCfL7LXVOCWdV/oNXhchdDRsuuYrK
+LC+UaHJQqZOQCW+kSrPmXEjQyLxWhfwmatycEqIWRC2DIEzSoY2rlebtVJtVfqnNjDGotK1drP0m
+vGhPd81d3HUwV7ttYu7CzzBIkU7IM0Cm9Hrq82pBpzZ0WJ6hx2oVfXTKtu+CvW6hp+gU/Smoex1S
+8wyYtCv3GSrq0OGXRu9QvHv9P+P5D+Ppv4Az/wXCcIvAzAIAAA==" | base64 -d|gzip -d -c &gt; $F;
+</pre>
+
+<pre class="brush:bash; collapse: true; toolbar:true;">
+F=/usr/local/bin/setiptables.sh &amp;&amp; echo $F &amp;&amp; echo "\
+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"\
+|base64 -d|gzip -d -c &gt; $F &amp;&amp; chmod 755 $F &amp;&amp; $F -h
+</pre>
+
+<h2 id="toc_1.5">kern日志设置</h2>
+
+<pre class="brush:bash">
+#可不用设置，默认level=4的日志会记录到/var/log/messages中
+F=/etc/rsyslog.conf \
+&amp;&amp; grep ^kern "$F" &gt; /dev/null \
+|| (cp $F{,.bak} &amp;&amp; echo 'kern.warning /var/log/kern.log' &gt;&gt; "$F" &amp;&amp; service rsyslog restart)
+
+F=/etc/logrotate.d/syslog \
+&amp;&amp; test -f "$F" &amp;&amp; grep '/var/log/kern.log' "$F" &gt;/dev/null \
+|| (cp $F /root/ &amp;&amp; t=`cat "$F"` &amp;&amp; echo -e "/var/log/kern.log\n$t" &gt; "$F")
+</pre>
+
+<h2 id="toc_1.6">knock客户端</h2>
+
+<p>
+knockd是一个开源的服务端+客户端，这里只需要使用它的客户端即可。客户端有Debian,CentOS,Windows,Cygwin,MacOS,Android等版本。
+</p>
+
+<p>
+使用说明、更多版本见：<a href="http://www.zeroflux.org/projects/knock">http://www.zeroflux.org/projects/knock</a>
+</p>
+
+<ul>
+<li>
+Ubuntu包安装
+<pre class="brush:bash">
+apt-get install knockd
+</pre>
+
+<li>
+常用版本下载
+
+<ol>
+<li>
+<a href="../files/knock-0.5.tar.gz">Source Tarball</a>
+
+<li>
+<a href="../files/knock-cygwin.zip">Cygwin/Win32 Knock Client</a>
+
+<li>
+<a href="../files/knock-win32.zip">Native Win32 Client</a>
+
+<li>
+<a href="../files/knock-macos.tar.gz">MacOS Client</a>
+
+</ol>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

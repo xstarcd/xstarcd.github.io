@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>shell - IFS分隔符</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>shell - IFS分隔符</h1>
+
+<p>
+IFS是internal field separator的缩写，shell的特殊环境变量。ksh根据IFS存储的值，可以是空格、tab、换行符或者其他自定义符号，来解析输入和输出的变量值。
+</p>
+
+<ul>
+<li>
+用IFS定制分隔符的方式范例
+<pre class="brush:bash">
+IFS='|'
+text='a a a a|b b b b|c c c c'
+for i in $text;do echo "i=$i";done
+</pre>
+
+</ul>
+
+<ul>
+<li>
+IP地址倒序
+
+</ul>
+
+<p>
+如果有一IP地址220.112.253.111, 欲将这个IP地址颠倒顺序，你可以定义IFS为"."，然后直接echo这个地址即可得到此IP的4个数值，然后重新把IFS设为空格，重新组合四个IP&gt;地址的数值即可。
+</p>
+
+<pre class="brush:bash">
+# The following code segment will only work in ksh,
+# and it will fail in bash
+IP=220.112.253.111
+IFS="."
+TMPIP=$(echo $IP)
+IFS=" " # space
+echo $TMPIP | read ip1 ip2 ip3 ip4
+INVERT_IP=$ip4.$ip3.$ip2.$ip1
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>模拟说明du与df结果不一致的问题</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>模拟说明du与df结果不一致的问题</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">实验情况</a>
+<li><a href="#toc_0.2">说明</a>
+<li><a href="#toc_0.3">解决问题</a>
+<li><a href="#toc_0.4">补充</a>
+</ul>
+</ul>
+</div>
+
+
+<p>
+原文：<a href="http://www.linuxfly.org/post/575/">http://www.linuxfly.org/post/575/</a>
+</p>
+
+<p>
+常用Linux 等类Unix 平台的用户都可能会发现，du与df 的经过经常会不一致。其中，最常见的情况是，df 显示的已使用磁盘占用率比du 统计出来的结果要大很多。原因，主要是由于两者计算结果的方式不同。为了更清楚的说明问题，我下面做了一个简单的模拟实验。
+</p>
+
+<h2 id="toc_0.1">实验情况</h2>
+
+<ul>
+<li>
+创建并删除文件
+
+</ul>
+<p>
+创建文件前的磁盘容量情况：
+</p>
+<pre>
+df -h
+
+文件系统              容量  已用 可用 已用% 挂载点
+/dev/sda1              12G  5.7G  5.5G  51% /
+tmpfs                 506M     0  506M   0% /dev/shm
+</pre>
+
+<p>
+创建文件：
+</p>
+<pre>
+dd if=/dev/zero of=test.iso bs=1024k count=1000
+
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 14.3055 seconds, 73.3 MB/s
+</pre>
+
+<p>
+现在的磁盘情况：
+</p>
+<pre>
+df -h
+
+文件系统              容量  已用 可用 已用% 挂载点
+/dev/sda1              12G  6.7G  4.6G  60% /
+tmpfs                 506M     0  506M   0% /dev/shm
+</pre>
+
+<p>
+模拟某个进程正在使用该文件：
+</p>
+<pre>
+tail -f /tmp/test.iso
+</pre>
+
+<ul>
+<li>
+删除该文件
+
+</ul>
+<p>
+打开另一个终端，登陆到系统中。查看是否有进程正在使用上面创建的文件：
+</p>
+<pre>
+lsof |grep test.iso
+tail      2175      root    3r      REG        8,1 1048576000     752972 /tmp/test.iso
+</pre>
+
+<p>
+把该文件删掉，并确认：
+</p>
+<pre>
+rm /tmp/test.iso
+rm：是否删除 一般文件 “/tmp/test.iso”? y
+
+ls /tmp/test.iso
+ls: /tmp/test.iso: 没有那个文件或目录
+</pre>
+
+<p>
+查看是否还有进程在使用（注意结尾的标记）：
+</p>
+<pre>
+lsof |grep test.iso
+tail      2175      root    3r      REG        8,1 1048576000     752972 /tmp/test.iso (deleted)
+</pre>
+
+<p>
+查看磁盘使用情况：
+</p>
+<pre>
+df -h
+文件系统              容量  已用 可用 已用% 挂载点
+/dev/sda1              12G  6.7G  4.6G  60% /
+tmpfs                 506M     0  506M   0% /dev/shm
+# cat /proc/diskstats |grep sda1
+   8    1 sda1 54385 5184 1626626 130090 20434 635997 5251448 5345733 0 111685 5475829
+</pre>
+
+<p>
+可见，虽然从ls 已经无法找到该文件，但因为tail 进程仍在使用该文件，故实际上内核并没有把这文件所占用的空间释放出来（df 的结果）。
+</p>
+
+<ul>
+<li>
+停止相关进程
+
+</ul>
+<p>
+回到第一终端，用Ctrl+C 终止tail 进程，查看结果：
+</p>
+<pre>
+# df -h
+
+文件系统              容量  已用 可用 已用% 挂载点
+/dev/sda1              12G  5.7G  5.5G  51% /
+tmpfs                 506M     0  506M   0% /dev/shm
+
+cat /proc/diskstats |grep sda1
+   8    1 sda1 54473 5184 1627402 130617 20453 636042 5251960 5345756 0 112226 5476379
+</pre>
+
+<p>
+至此，文件所占用的空间已完全释放。
+</p>
+
+<h2 id="toc_0.2">说明</h2>
+
+<p>
+从上面的实验，可得出一些情况：
+</p>
+
+<ol>
+<li>
+若有进程在占用某个文件，而其他进程把这文件删掉，只会删除其在磁盘中的标记，而不会释放其占用的磁盘空间；直到所有访问该文件的进程退出为止；
+
+<li>
+df 是从内核中获取磁盘占用情况数据的，而du是统计当前磁盘文件大小的结果，由于磁盘标记已被删掉，因此du 不会计算上述被删除文件的空间，导致df 与 du的结果不一致。
+
+</ol>
+
+
+<h2 id="toc_0.3">解决问题</h2>
+
+<p>
+通常的解决方法有两个：
+</p>
+
+<ol>
+<li>
+把占用文件的相关进程关闭：这可通过下面的命令得到这些已被删除，但未释放空间的文件和进程信息，找到这些进程后，在安全的情况下把其关闭，空间自会马上释放。
+<pre>
+lsof |grep deleted
+</pre>
+
+<li>
+以清空的方式替代删除
+
+</ol>
+<p>
+归根到底，产生问题的原因是，访问该文件的文件指针（句柄），在rm 动作后，因为进程仍在访问，因此，仍处在文件里面（中间或结尾处）。所以，如果用清空的方式，把文件指针重置，该文件所占用的空间也会马上释放出来。
+</p>
+<pre>
+echo &gt; /tmp/test.iso
+df -h
+
+文件系统              容量  已用 可用 已用% 挂载点
+/dev/sda1              12G  5.7G  5.5G  51% /
+tmpfs                 506M     0  506M   0% /dev/shm
+
+tail -f /tmp/test.iso
+tail: /tmp/test.iso: file truncated
+</pre>
+
+<p>
+所以，对于常发生类似问题的文件，如：日志记录文件等。以改名、清空、删除的顺序操作可避免问题。
+</p>
+
+<h2 id="toc_0.4">补充</h2>
+
+<p>
+除rm外，有些不明显的操作，也会产生类似的问题。
+</p>
+
+<p>
+例如 gzip 命令，其对某个文件xxx.log进行压缩时，会产生一个新的xxx.log.gz文件，完成后，会把原来的xxx.log删除。
+</p>
+
+<p>
+这时，若仍有进程在使用xxx.log文件，那么，实际上，该文件还是只会标记为deleted，其空间也不会释放，问题与上面提到的情况是相同的。所以，在编写脚本时，可先判断是否仍有进程正在使用该文件，然后再进行gzip 操作。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

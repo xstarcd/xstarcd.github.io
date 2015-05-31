@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>log4j</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>log4j</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_1">log4j配置文件基本含义说明</a>
+<ul>
+<li><a href="#toc_1.1">配置根Logger</a>
+<li><a href="#toc_1.2">输出目的地</a>
+<li><a href="#toc_1.3">输出布局</a>
+<li><a href="#toc_1.4">范例</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+Java日志性能那些事:<a href="http://www.tuicool.com/articles/j2qQb2">http://www.tuicool.com/articles/j2qQb2</a>
+
+</ul>
+
+<h1 id="toc_1">log4j配置文件基本含义说明</h1>
+
+<h2 id="toc_1.1">配置根Logger</h2>
+
+<ul>
+<li>
+语法：
+<pre class="brush:bash">
+log4j.rootLogger = [ level ] , appenderName, appenderName, …
+log4j.rootLogger=INFO, A1 ,R
+</pre>
+
+<li>
+level 是日志记录的优先级，log4j中有五级logger
+
+<ul>
+<li>
+FATAL 0
+
+<li>
+ERROR 3
+
+<li>
+WARN 4
+
+<li>
+INFO 6
+
+<li>
+DEBUG 7
+
+</ul>
+<li>
+appenderName 就是指定日志信息输出到哪个地方。您可以同时指定多个输出目的地。
+
+<li>
+如果为log4j.rootLogger=WARN, 则意味着只有WARN,ERROR,FATAL被输出，DEBUG,INFO将被屏蔽掉.
+
+</ul>
+
+<h2 id="toc_1.2">输出目的地</h2>
+
+<ul>
+<li>
+配置日志信息输出目的地Appender，其语法为：
+<pre class="brush:bash">
+log4j.appender.appenderName=fully.qualified.name.of.appender.class
+log4j.appender.appenderName.option1=value1
+...
+log4j.appender.appenderName.option=valueN
+</pre>
+
+<li>
+log4j中Appender有几层如控制台、文件、GUI组件、甚至是套接口服务器、NT的事件记录器、UNIX Syslog守护进程等：
+
+</ul>
+<table>
+<tr>
+<td>
+org.apache.log4j.ConsoleAppender
+</td>
+<td>
+控制台
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.FileAppender
+</td>
+<td>
+文件
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.DailyRollingFileAppender
+</td>
+<td>
+每天产生一个日志文件
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.RollingFileAppender
+</td>
+<td>
+文件大小到达指定尺寸的时候产生一个新的文件
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.WriterAppender
+</td>
+<td>
+将日志信息以流格式发送到任意指定的地方
+</td>
+</tr>
+</table>
+
+<h2 id="toc_1.3">输出布局</h2>
+
+<ul>
+<li>
+配置日志信息的格式（布局），其语法为：
+<pre class="brush:bash">
+log4j.appender.appenderName.layout=fully.qualified.name.of.layout.class
+log4j.appender.appenderName.layout.option1=value1
+....
+log4j.appender.appenderName.layout.option=valueN
+</pre>
+
+<li>
+Log4j提供的layout有以下几种：
+
+</ul>
+<table>
+<tr>
+<td>
+org.apache.log4j.HTMLLayout
+</td>
+<td>
+以HTML表格形式布局
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.PatternLayout
+</td>
+<td>
+可以灵活地指定布局模式
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.SimpleLayout
+</td>
+<td>
+包含日志信息的级别和信息字符串
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.TTCCLayout
+</td>
+<td>
+包含日志产生的时间、线程、类别等等信息
+</td>
+</tr>
+</table>
+
+<h2 id="toc_1.4">范例</h2>
+
+<pre class="brush:bash">
+#灵活定义输出格式 具体查看log4j javadoc org.apache.log4j.PatternLayout
+log4j.appender.A1.layout=org.apache.log4j.PatternLayout
+#d 时间 ....
+log4j.appender.A1.layout.ConversionPattern=%-d{yyyy-MM-dd HH:mm:ss} [%c]-[%p] %m%n
+
+
+#R 输出到文件 RollingFileAppender的扩展，可以提供一种日志的备份功能。
+log4j.appender.R=org.apache.log4j.RollingFileAppender
+#日志文件的名称
+log4j.appender.R.File=log4j.log
+#日志文件的大小
+log4j.appender.R.MaxFileSize=100KB
+# 保存一个备份文件
+log4j.appender.R.MaxBackupIndex=1
+log4j.appender.R.layout=org.apache.log4j.TTCCLayout
+#log4j.appender.R.layout.ConversionPattern=%-d{yyyy-MM-dd HH:mm:ss} [%c]-[%p] %m%n
+</pre>
+
+<pre class="brush:bash">
+# level : 是日志记录的优先级，分为OFF、FATAL、ERROR、WARN、INFO、DEBUG、ALL或者您定义的级别。
+#Log4j建议只使用四个级别，优先级从高到低分别是ERROR、WARN、INFO、DEBUG。
+#Log4jTest.java中的Logger logger = Logger.getLogger(this.getClass().getName());可能对应了log4j.rootLogger=DEBUG,CONSOLE,A1的配置
+log4j.rootLogger=DEBUG,CONSOLE,A1
+log4j.addivity.org.apache=true
+
+#将DAO层log记录到DAOLog,allLog中；代码中使用Logger logger = Logger.getLogger("DAO")来获得此配置;
+log4j.logger.DAO=DEBUG,A2
+
+# 应用于控制台
+log4j.appender.CONSOLE=org.apache.log4j.ConsoleAppender
+
+# 本处设置为"WARN"以上级别在控制台输出(默认情况使用rootLogger中的设置)
+log4j.appender.CONSOLE.Threshold=WARN
+log4j.appender.CONSOLE.Target=System.out
+log4j.appender.CONSOLE.Encoding=GBK
+log4j.appender.CONSOLE.layout=org.apache.log4j.PatternLayout
+log4j.appender.CONSOLE.layout.ConversionPattern=[framework] %d - %c -%-4r [%t] %-5p %c %x - %m%n
+
+# 每天新建日志
+log4j.appender.A1=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.A1.File=C:/log4j/website.log
+log4j.appender.A1.Encoding=GBK
+log4j.appender.A1.Threshold=DEBUG
+log4j.appender.A1.DatePattern='.'yyyy-MM-dd
+log4j.appender.A1.layout=org.apache.log4j.PatternLayout
+log4j.appender.A1.layout.ConversionPattern=%d{ABSOLUTE} %5p %c{1}: %L: %m%n
+
+#A2--打印到文件DAOLog中--专门为DAO层服务
+log4j.appender.A2=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.A2.file=C:/log4j/DAOLog.log
+log4j.appender.A2.DatePattern='.'yyyy-MM-dd
+log4j.appender.A2.layout=org.apache.log4j.PatternLayout
+log4j.appender.A2.layout.ConversionPattern=[%-5p] %d{yyyy-MM-dd HH:mm:ss,SSS} method: %l : %m%n
+
+#  %n代表换行
+#  %d代表日期
+#  %c代表路径名（Logger.getLogger("DAO")时为DAO:，Logger.getLogger(this.getClass().getName())时为绝对类名）
+#  %c{1}为类名，如Log4jTest
+#  %l代表类路径及代码所在行数，%L仅代表代码所在行数
+#  [%-5p]代表该日志对应的日志级别（%5p），如DEBUG,ERROR，中间的-起到在[]中左对齐的作用
+#  %m代表“类名:”（Logger.getLogger("DAO")时为DAO:，Logger.getLogger(this.getClass().getName())时为类名）及日志信息
+
+#----------------------------------------------------------------------------------
+
+#分别说明如下：
+
+#1、使用Logger logger = Logger.getLogger("DAO")获得配置时，属性文件中必须要有对应设置：log4j.logger.DAO=DEBUG,A2
+#2、%c为DAO
+#3、%l为logger.debug("DAO: Debug info.");的类绝对路径以及代码所在行，
+#   log.DAOlogTest.doGet(DAOlogTest.java:23)
+#4、%L为logger.debug("DAO: Debug info.");代码所在行 23
+#5、%m为类名和日志信息     DAO: Debug info.
+
+#1、使用Logger logger = Logger.getLogger(this.getClass().getName())获得配置时
+#2、%c为log.Log4jTest    %c{1}为Log4jTest
+#3、%l为 log.Log4jTest.doGet(Log4jTest.java:23)
+#4、%L同上
+#5、%m为 Debug info.
+
+#－X号: X信息输出时左对齐；
+#%p: 日志信息级别
+#%d{}: 日志信息产生时间
+#%c: 日志信息所在地（类名）
+#%m: 产生的日志具体信息
+#%n: 输出日志信息换行
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

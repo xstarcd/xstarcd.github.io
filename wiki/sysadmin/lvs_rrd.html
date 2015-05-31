@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>lvs_rrd生成监控图形</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">lvs_rrd生成监控图形</a>
+<ul>
+<li><a href="#toc_1.1">net-snmp-lvs-module</a>
+<li><a href="#toc_1.2">lvs_rrd工具生成图形</a>
+<ul>
+<li><a href="#toc_1.2.1">安装rrdtool</a>
+<li><a href="#toc_1.2.2">设置采集</a>
+<li><a href="#toc_1.2.3">生成图形参数</a>
+<li><a href="#toc_1.2.4">为各services生成图表</a>
+<li><a href="#toc_1.2.5">nginx图表查看站点</a>
+</ul>
+<li><a href="#toc_1.3">Other</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">lvs_rrd生成监控图形</h1>
+
+<p>
+Update: 2012-12-24
+</p>
+
+<p>
+参考：<a href="http://salogs.com">http://salogs.com</a>
+</p>
+
+<h2 id="toc_1.1">net-snmp-lvs-module</h2>
+
+<p>
+利用net-snmp-lvs-module 给net-snmp加个模块，然后配合cacti的相关模板来实现监控。由于针对64位系统的net-snmp-lvs-module只支持到rhel4因此放弃使用。
+</p>
+
+<p>
+相关网址：net-snmp-lvs-module-0.0.4.tar.gz: <a href="http://www.austintek.com/LVS/LVS-HOWTO/HOWTO/files/net-snmp-lvs-module-0.0.4.tar.gz">http://www.austintek.com/LVS/LVS-HOWTO/HOWTO/files/net-snmp-lvs-module-0.0.4.tar.gz</a>
+</p>
+
+<h2 id="toc_1.2">lvs_rrd工具生成图形</h2>
+
+<p>
+lvs_rrd[ <a href="http://www.tepedino.org/lvs-rrd/">http://www.tepedino.org/lvs-rrd/</a> ]工具实现了网页的形式来查看lvs状态图功能。其主要有两个脚本组成：信息收集脚本和图像绘制脚本。信息收集脚本是将lvs的信息生成rrd格式的数据文件，然后利用图像绘制脚本生成图像，并生成一个php页面，这个页面中引用其所生成的图像，这样我们可以通过web页面的形式查看生成的php页面，就可以时时的查看lvs的状态信息了。
+</p>
+
+<p>
+lvs_rrd需要部署在LVS-Master和LVS-Backup上，更准确的说lvs_rrd中的信息收集脚本一定要在LVS director 上运行。通过配置图像生成脚本和图像的生成目录，我们可以将他们时时的复制到其他的服务器中。这里为了方便起见我将它们部署到了LVS director上。
+</p>
+
+<p>
+下面简单的介绍部署的步骤
+</p>
+
+<h3 id="toc_1.2.1">安装rrdtool</h3>
+<pre class="brush: bash">
+yum install rrdtool bc
+</pre>
+<ul>
+<li>
+开启LVS director 的apache，配置相关参数，注意端口一定不能为80，我这里修改为9160。指定DocumentRoot 为 "/data/web"
+
+<li>
+下载lvs_rrd软件。
+<pre class="brush: bash">
+mkdir -p /data/www &amp;&amp; cd /data/www
+wget http://www.tepedino.org/lvs-rrd/lvs-rrd-v0.7.tar.gz
+</pre>
+
+<li>
+将lvs-rrd-v0.7.tar.gz解压后将文件夹复制到/data/www/目录下并更名为lvs
+
+<li>
+配置lvs.rrd.update文件
+<pre class="brush: bash">
+RRDTOOL="/usr/bin/rrdtool"
+IPVSADM="/sbin/ipvsadm"
+WORKDIR="/data/www/lvs/rrd"
+</pre>
+
+<li>
+配置graph-lvs.sh
+<pre class="brush: bash">
+WORKDIR="/data/www/lvs/rrd"
+RRDTOOL="/usr/bin/rrdtool"
+#GRAPHS="$WORKDIR/graphs"
+GRAPHS="/data/www/lvs/graphs"
+WEBPATH=""
+</pre>
+
+</ul>
+<p>
+这两个文件根据自己的情况设置一下就可以了。
+</p>
+
+<ul>
+<li>
+将/data/www/lvs/graphs目录修改为web用户可读可写。
+<pre class="brush: bash">
+mkdir -p /data/www/lvs/rrd
+chown nginx:nginx /data/www/lvs/graphs -R
+</pre>
+
+</ul>
+
+<h3 id="toc_1.2.2">设置采集</h3>
+
+<p>
+将收集信息的脚本添加到计划任务中
+</p>
+
+<pre class="brush: bash">
+#/etc/crontab
+* * * * * root /data/www/lvs/lvs.rrd.update 2&gt; /dev/null &gt; /dev/null
+# 不安装php环境，每5分钟生成一次图表
+*/5 * * * * root /data/www/lvs/graph-lvs.sh -H 2&gt; /dev/null &gt; /data/www/lvs/graphs/index.html
+</pre>
+
+<h3 id="toc_1.2.3">生成图形参数</h3>
+<pre>
+graph-lvs.sh [-lH] [-I VIP] [-P port] [-i IP] [-p port]
+    -l      Lazy (Generate graphs at most once per 5 minutes)
+    -H      Output an HTML page.
+    -I VIP      Graph only servers in this virtual server
+    -P port     Graph only VIPs on this port
+    -i IP       Graph only this real server IP
+    -p port     Graph only this real server port
+    -r      Reverse (flip) active and inactive (positive to negative)
+    -s      Separate Active/Inactive graphs (nullifies -r)
+</pre>
+
+<ul>
+<li>
+等1分钟后，看lvs目录中是否生成了以rrd为扩展名的文件。如果有的话就可以启动apache通过<a href="http://ipaddress:9160/lvs/">http://ipaddress:9160/lvs/</a> 查看lvs的状态了。如图：
+
+</ul>
+
+<p>
+<img src="http://salogs.com/wp-content/uploads/2009/09/090709_0636_1.png" />
+</p>
+
+<p>
+<img src="http://salogs.com/wp-content/uploads/2009/09/090709_0636_2.png" />
+</p>
+
+<p>
+<img src="http://salogs.com/wp-content/uploads/2009/09/090709_0636_3.png" />
+</p>
+
+<ol>
+<li>
+prePROD_lvs图表: <a href="http://172.16.16.60/">http://172.16.16.60/</a>
+
+</ol>
+
+<h3 id="toc_1.2.4">为各services生成图表</h3>
+<pre class="brush: bash">
+#!/bin/sh
+# graphs.sh
+# add to /etc/crontab
+# */5 * * * * root /data/www/lvs/graphs.sh &gt;&gt; /data/www/lvs/graphs/log_`date +\%Y\%m`.txt 2&gt;&amp;1
+
+#name:vip:port
+PROD_services="
+ALL:ALL:ALL
+MGW:172.16.16.151:80
+VTGW:172.16.16.152:80
+CCGW:172.16.16.153:8080
+Portal:172.16.16.154:80
+DC:172.16.16.158:80
+FGW:172.16.16.159:8080"
+
+pre_PROD_services="
+ALL:ALL:ALL
+preMGW:172.16.16.102:80
+preVTGW:172.16.16.103:80
+preCCGW:172.16.16.104:8080
+prePortal:172.16.16.105:80
+preFGW:172.16.16.108:8080
+preDC:172.16.16.106:80"
+
+services=$PROD_services
+#services=$pre_PROD_services
+
+OUT="/data/www/lvs/graphs"
+GRAPH_LVS="/data/www/lvs/graph-lvs.sh"
+start_time=`date +'%Y-%m-%d %H:%M:%S'`
+Index_Body=""
+for s in `echo "$services"|grep -v ^$|grep -v ^#`
+do
+        name=`echo $s|cut -d\: -f 1`
+        vip=`echo $s|cut -d\: -f 2`
+        port=`echo $s|cut -d\: -f 3`
+        if [ "$name" = "ALL" ];then
+                $GRAPH_LVS -H &gt; ${OUT}/${name}.html
+        else
+                $GRAPH_LVS -H -I "$vip" -P "$port" &gt; ${OUT}/${name}.html
+        fi
+        Index_Body="${Index_Body}\n&lt;tr&gt;&lt;td&gt;$name&lt;/td&gt;&lt;td&gt;&lt;a href="${name}.html"&gt;${vip}:${port}&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;"
+done
+
+echo -e "&lt;html&gt;
+        &lt;head&gt;
+                &lt;title&gt;Linux Virtual Server&lt;/title&gt;
+                &lt;meta HTTP-EQUIV="Refresh" CONTENT="320"&gt;
+        &lt;/head&gt;
+         &lt;body bgcolor='E3E3E3'&gt;
+         &lt;table border=1&gt;
+         $Index_Body
+         &lt;/table&gt;
+         &lt;br&gt;
+         Last update: $start_time - `date +'%Y-%m-%d %H:%M:%S'`
+       &lt;/body&gt;
+ &lt;/html&gt;" &gt; ${OUT}/index.html
+
+exit 0
+
+</pre>
+
+<h3 id="toc_1.2.5">nginx图表查看站点</h3>
+
+<pre class="brush: bash">
+#nginx.conf
+#user nginx;
+worker_processes  2;
+ 
+error_log  /var/log/nginx/error.log;
+#pid        /var/run/nginx.pid;
+worker_rlimit_nofile 10240;
+ 
+events {
+    use epoll;
+    worker_connections  10240;
+}
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+     
+    access_log    /var/log/nginx/access.log;
+ 
+    log_format main
+          '$remote_addr - $remote_user [$time_local] '
+          '"$request" $status $bytes_sent '
+          '"$http_referer" "$http_user_agent" '
+          '"$gzip_ratio" "$connection" "$request_time"';
+ 
+    #server_names_hash_bucket_size 64
+    proxy_read_timeout 200;
+    keepalive_timeout 65;
+    sendfile on;
+    #tcp_nopush on;
+    tcp_nodelay on;
+    server_tokens off;
+ 
+    gzip on;
+    gzip_min_length 1k;
+    #gzip_proxied any;
+    gzip_buffers 4 32k;
+    #gzip_types text/plain text/css text/xml application/xml application/atom+xml;
+    gzip_types text/plain text/css text/xml;
+    gzip_disable "MSIE [1-6]\.";
+ 
+    ignore_invalid_headers    on;
+    client_header_buffer_size 32k;
+    large_client_header_buffers 4 128k;
+ 
+    include sites-enabled/*.conf;
+
+server {
+    #backends
+    listen 80 default;
+    #server_name 127.0.0.1;
+ 
+    charset utf-8;
+ 
+    # Allow file uploads
+    client_max_body_size 20M;
+    #index  index.html index.htm;
+
+    autoindex on;
+    autoindex_exact_size off;
+    autoindex_localtime on;
+ 
+    #access_log off;
+    access_log /var/log/nginx/lvs.access.log main;
+    error_log /var/log/nginx/lvs.error.log warn;
+
+    root   /data/www/lvs/graphs; 
+
+} #End server
+ 
+} #end http
+
+</pre>
+
+<h2 id="toc_1.3">Other</h2>
+<ul>
+<li>
+ipvsman - more than a GUI for ipvs : <a href="http://sourceforge.net/projects/ipvsman/">http://sourceforge.net/projects/ipvsman/</a>
+
+<li>
+Piranha : <a href="http://www.linux-vs.org/docs/ha/piranha.html">http://www.linux-vs.org/docs/ha/piranha.html</a>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

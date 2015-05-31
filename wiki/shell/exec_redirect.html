@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>linux exec与重定向</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">linux exec与重定向</a>
+<ul>
+<li><a href="#toc_1.1">fork概念</a>
+<li><a href="#toc_1.2">详解及应用实例</a>
+<ul>
+<li><a href="#toc_1.2.1">基本概念</a>
+<li><a href="#toc_1.2.2">常用重定向</a>
+<li><a href="#toc_1.2.3">恢复</a>
+</ul>
+</ul>
+<li><a href="#toc_2">I/O和I/O重定向的详细介绍</a>
+<ul>
+<li><a href="#toc_2.1">I/O重定向</a>
+<li><a href="#toc_2.2">使用exec</a>
+<li><a href="#toc_2.3">代码块重定向</a>
+<li><a href="#toc_2.4">重定向的应用</a>
+<li><a href="#toc_2.5">Appendix E. I/O和I/O重定向的详细介绍</a>
+</ul>
+</ul>
+</div>
+
+
+<p>
+<a href="http://hi.baidu.com/leejun_2005/item/50a4c525a10c93cca4275a46">http://hi.baidu.com/leejun_2005/item/50a4c525a10c93cca4275a46</a>
+</p>
+
+<h1 id="toc_1">linux exec与重定向</h1>
+
+<p>
+exec和source都属于bash内部命令（builtins commands），在bash下输入man exec或man source可以查看所有的内部命令信息。
+</p>
+
+<p>
+bash shell的命令分为两类：外部命令和内部命令。外部命令是通过系统调用或独立的程序实现的，如sed、awk等等。内部命令是由特殊的文件格式（.def）所实现，如cd、history、exec等等。
+</p>
+
+<h2 id="toc_1.1">fork概念</h2>
+
+<p>
+在说明exe和source的区别之前，先说明一下fork的概念。
+</p>
+
+<p>
+fork是linux的系统调用，用来创建子进程（child process）。子进程是父进程(parent process)的一个副本，从父进程那里获得一定的资源分配以及继承父进程的环境。子进程与父进程唯一不同的地方在于pid（process id）。
+</p>
+
+<p>
+环境变量（传给子进程的变量，遗传性是本地变量和环境变量的根本区别）只能单向从父进程传给子进程。不管子进程的环境变量如何变化，都不会影响父进程的环境变量。
+</p>
+
+<ul>
+<li>
+shell script
+
+</ul>
+<p>
+有两种方法执行shell scripts，一种是新产生一个shell，然后执行相应的shell scripts；一种是在当前shell下执行，不再启用其他shell。
+</p>
+
+<p>
+新产生一个shell然后再执行scripts的方法是在scripts文件开头加入以下语句:<code>#!/bin/sh</code>
+</p>
+
+<p>
+一般的script文件(.sh)即是这种用法。这种方法先启用新的sub-shell（新的子进程）,然后在其下执行命令。
+</p>
+
+<p>
+另外一种方法就是上面说过的source命令，不再产生新的shell，而在当前shell下执行一切命令。
+</p>
+
+<ul>
+<li>
+source
+
+</ul>
+<p>
+source命令即点(.)命令。
+</p>
+
+<p>
+在bash下输入man source，找到source命令解释处，可以看到解释”Read and execute commands from filename in the current shell environment and …”。从中可以知道，source命令是在当前进程中执行参数文件中的各个命令，而不是另起子进程(或sub-shell)。
+</p>
+
+<ul>
+<li>
+exec
+
+</ul>
+<p>
+在bash下输入man exec，找到exec命令解释处，可以看到有”No new process is created.”这样的解释，这就是说exec命令不产生新的子进程。那么exec与source的区别是什么呢？
+</p>
+
+<p>
+exec命令在执行时会把当前的shell process关闭，然后换到后面的命令继续执行。
+</p>
+
+<p>
+系统调用exec是以新的进程去代替原来的进程，但进程的PID保持不变。因此，可以这样认为，exec系统调用并没有创建新的进程，只是替换了原来进程上下文的内容。原进程的代码段，数据段，堆栈段被新的进程所代替。
+</p>
+
+<p>
+一个进程主要包括以下几个方面的内容:
+</p>
+<ol>
+<li>
+一个可以执行的程序
+
+<li>
+与进程相关联的全部数据(包括变量，内存，缓冲区)
+
+<li>
+程序上下文(程序计数器PC,保存程序执行的位置)
+
+</ol>
+
+<p>
+exec是一个函数簇，由6个函数组成，分别是以excl和execv打头的。
+</p>
+
+<p>
+执行exec系统调用，一般都是这样，用fork()函数新建立一个进程，然后让进程去执行exec调用。我们知道，在fork()建立新进程之后，父进各与子进程共享代码段，但数据空间是分开的，但父进程会把自己数据空间的内容copy到子进程中去，还有上下文也会copy到子进程中去。而为了提高效率，采用一种写时copy的策略，即创建子进程的时候，并不copy父进程的地址空间，父子进程拥有共同的地址空间，只有当子进程需要写入数据时(如向缓冲区写入数据),这时候会复制地址空间，复制缓冲区到子进程中去。从而父子进程拥有独立的地址空间。而对于fork()之后执行exec后，这种策略能够很好的提高效率，如果一开始就copy,那么exec之后，子进程的数据会被放弃，被新的进程所代替。
+</p>
+
+<ul>
+<li>
+exec与system的区别
+
+<ul>
+<li>
+exec是直接用新的进程去代替原来的程序运行，运行完毕之后不回到原先的程序中去。
+
+<li>
+system是调用shell执行你的命令，system=fork+exec+waitpid,执行完毕之后，回到原先的程序中去。继续执行下面的部分。
+
+</ul>
+</ul>
+
+<p>
+总之，如果你用exec调用，首先应该fork一个新的进程，然后exec. 而system不需要你fork新进程，已经封装好了。
+</p>
+
+<h2 id="toc_1.2">详解及应用实例</h2>
+
+<h3 id="toc_1.2.1">基本概念</h3>
+
+<p>
+(这是理解后面的知识的前提，请务必理解)
+</p>
+
+<ul>
+<li>
+I/O重定向通常与FD有关，shell的FD通常为10个，即0～9；
+
+<li>
+三个常用FD(默认与keyboard、monitor、monitor有关)：
+
+</ul>
+<table>
+<tr>
+<th>
+FD
+</th>
+<th>
+说明
+</th>
+</tr>
+<tr>
+<td>
+0
+</td>
+<td>
+stdin，标准输入
+</td>
+</tr>
+<tr>
+<td>
+1
+</td>
+<td>
+stdout，标准输出
+</td>
+</tr>
+<tr>
+<td>
+2
+</td>
+<td>
+stderr，标准错误输出
+</td>
+</tr>
+</table>
+
+<pre class=:brush:bash:>
+# 查看文件描述符
+lsof -a -p $$ -d0,1,2
+ll /proc/$$/fd
+</pre>
+
+<p>
+FD用来改变送出的数据信道(stdout, stderr)，使之输出到指定的档案；
+</p>
+
+<p>
+0 是 与 1&gt; 是一样的；
+</p>
+
+<p>
+在IO重定向中，stdout 与 stderr 的管道会先准备好，才会从 stdin 读进资料；
+</p>
+
+<p>
+管道<code>|</code>(pipe line):上一个命令的 stdout 接到下一个命令的 stdin;
+</p>
+
+<p>
+tee 命令是在不影响原本 I/O 的情况下，将 stdout 复制一份到档案去;
+</p>
+
+<p>
+bash（ksh）执行命令的过程：分析命令－变量求值－命令替代（``和$( )）－重定向－通配符展开－确定路径－执行命令；
+</p>
+
+<p>
+( ) 将 command group 置于 sub-shell 去执行，也称 nested sub-shell，它有一点非常重要的特性是：继承父shell的Standard input, output, and error plus any other open file descriptors。
+</p>
+
+<p>
+exec 命令：常用来替代当前 shell 并重新启动一个 shell，换句话说，并没有启动子shell。使用这一命令时任何现有环境都将会被清除。 <strong>exec在对文件描述符进行操作的时候，也只有在这时，exec不会覆盖你当前的 shell 环境。</strong>
+</p>
+
+<h3 id="toc_1.2.2">常用重定向</h3>
+
+<p>
+cmd &amp;n 使用系统调用 dup (2) 复制文件描述符 n 并把结果用作标准输出
+</p>
+
+<p>
+<code>&amp;-</code> 关闭标准输出
+</p>
+
+<p>
+<code>n&amp;-</code> 表示将 n 号输出关闭
+</p>
+
+<p>
+上述所有形式都可以前导一个数字，此时建立的文件描述符由这个数字指定而不是缺省的 0 或 1。如：
+</p>
+
+<p>
+... 2&gt;file 运行一个命令并把错误输出(文件描述符 2)定向到 file。
+</p>
+
+<p>
+... 2&gt;&amp;1 运行一个命令并把它的标准输出和输出合并。(严格的说是通过复制文件描述符 1 来建立文件描述符 2 ，但效果通常是合并了两个流。)
+</p>
+
+<p>
+我们对 2&gt;&amp;1详细说明一下 ：
+</p>
+
+<p>
+2&gt;&amp;1 也就是 FD2＝FD1 ，这里并不是说FD2 的值等于FD1的值，因为 &gt; 是改变送出的数据信道，也就是说把 FD2 的 “数据输出通道” 改为 FD1 的 “数据输出通道”。
+</p>
+
+<p>
+如果仅仅这样，这个改变好像没有什么作用，因为 FD2 的默认输出和 FD1 的默认输出本来都是 monitor，一样的！但是，当 FD1 是其他文件，甚至是其他 FD 时，这个就具有特殊的用途了。请大家务必理解这一点。
+</p>
+
+<h3 id="toc_1.2.3">恢复</h3>
+
+<p>
+如果 stdin, stdout, stderr 进行了重定向或关闭, 但没有保存原来的 FD, 可以将其恢复到 default 状态吗?
+</p>
+
+<p>
+如果关闭了stdin，因为会导致退出，那肯定不能恢复。
+</p>
+
+<p>
+如果重定向或关闭 stdout和stderr其中之一，可以恢复，因为他们默认均是送往monitor（但不知会否有其他影响）。
+</p>
+
+<p>
+如恢复重定向或关闭的 stdout： <code>exec 1&gt;&amp;2</code> ，恢复重定向或关闭的stderr：<code>exec 2&gt;&amp;1</code>。
+</p>
+
+<p>
+如果stdout和stderr全部都关闭了，又没有保存原来的FD，可以用：<code>exec 1&gt;/dev/tty</code> 恢复。
+</p>
+
+<ul>
+<li>
+cmd &gt;a 2&gt;a 和 cmd &gt;a 2&gt;&amp;1 为什么不同？
+
+</ul>
+
+<p>
+cmd &gt;a 2&gt;a ：stdout和stderr都直接送往文件 a ，a文件会被打开两遍，由此导致stdout和stderr互相覆盖。
+</p>
+
+<p>
+cmd &gt;a 2&gt;&amp;1 ：stdout直接送往文件a ，stderr是继承了FD1的管道之后，再被送往文件a 。a文件只被打开一遍，就是FD1将其打开。
+</p>
+
+<p>
+我想：他们的不同点在于：
+</p>
+
+<p>
+cmd &gt;a 2&gt;a 相当于使用了两个互相竞争使用文件a的管道；
+</p>
+
+<p>
+而cmd &gt;a 2&gt;&amp;1 只使用了一个管道，但在其源头已经包括了stdout和stderr。
+</p>
+
+<p>
+从IO效率上来讲，cmd &gt;a 2&gt;&amp;1的效率应该更高！
+</p>
+
+<ul>
+<li>
+ 常用命令语法及范例
+<pre class="brush:bash">
+exec 0
+exec 1&gt;outfilename # 打开文件outfilename作为stdout
+exec 2&gt;errfilename # 打开文件errfilename作为 stderr
+exec 1&amp;-           # 关闭 FD1
+exec 5&gt;&amp;-          # 关闭 FD5
+
+exec 4&lt;&amp;1          # 备份当前stdout至FD4
+exec 1&gt;1.txt       # stdout重定向至1.txt
+exec 1&lt;&amp;4          # 恢复stdout
+exec 4&gt;&amp;-          # 关闭 FD4
+
+# 重定向操作范例
+cat &gt; 1 &lt;&lt;EOF
+11 22 33 44 55
+66 22 33 11 33
+324 25 63 634 745
+EOF
+cat &gt; 2 &lt;&lt;EOF
+&gt; 1.txt
+EOF
+
+exec 4&lt;&amp;1          # 备份当前stdout
+exec 1&gt;1.txt
+
+while read line;do echo $line; done &lt; 1
+
+exec 1&lt;&amp;4          # 恢复stdout
+exec 4&gt;&amp;-
+
+sh ./2
+cat 1.txt
+</pre>
+
+</ul>
+
+
+<h1 id="toc_2">I/O和I/O重定向的详细介绍</h1>
+
+<p>
+取至《高级Bash脚本编程指南》中内容。
+</p>
+
+<p>
+<a href="http://www.tsnc.edu.cn/default/tsnc_wgrj/doc/abs-3.9.1_cn/html/ioredirintro.html">http://www.tsnc.edu.cn/default/tsnc_wgrj/doc/abs-3.9.1_cn/html/ioredirintro.html</a>
+</p>
+
+
+
+<h2 id="toc_2.1">I/O重定向</h2>
+
+<p>
+默认情况下始终有3个"文件"处于打开状态, stdin(键盘), stdout(屏幕), 和stderr(错误消息输出到屏幕上). 这3个文件和其他打开的文件都可以被重定向. 对于重定向简单的解释就是捕捉一个文件, 命令, 程序, 脚本, 或者是脚本中的代码块(请参考例子 3-1和例子 3-2)的输出, 然后将这些输出作为输入发送到另一个文件, 命令, 程序, 或脚本中.
+</p>
+
+<p>
+每个打开的文件都会被分配一个文件描述符. [1] stdin, stdout, 和stderr的文件描述符分别是0, 1, 和 2. 除了这3个文件, 对于其他那些需要打开的文件, 保留了文件描述符3到9. 在某些情况下, 将这些额外的文件描述符分配给stdin, stdout, 或stderr作为临时的副本链接是非常有用的. [2] 在经过复杂的重定向和刷新之后需要把它们恢复成正常状态(请参考例子 16-1).
+</p>
+<pre class="brush:bash">
+# --------------------------------------------------------------------
+COMMAND_OUTPUT &gt;
+   # 将stdout重定向到一个文件.
+   # 如果这个文件不存在, 那就创建, 否则就覆盖.
+
+ls -lR &gt; dir-tree.list
+   # 创建一个包含目录树列表的文件.
+
+: &gt; filename
+   # &gt;操作, 将会把文件"filename"变为一个空文件(就是size为0).
+   # 如果文件不存在, 那么就创建一个0长度的文件(与'touch'的效果相同).
+   # :是一个占位符, 不产生任何输出.
+
+&gt; filename
+   # &gt;操作, 将会把文件"filename"变为一个空文件(就是size为0).
+   # 如果文件不存在, 那么就创建一个0长度的文件(与'touch'的效果相同).
+   # (与上边的": &gt;"效果相同, 但是某些shell可能不支持这种形式.)
+
+COMMAND_OUTPUT &gt;&gt;
+   # 将stdout重定向到一个文件.
+   # 如果文件不存在, 那么就创建它, 如果存在, 那么就追加到文件后边.
+
+
+   # 单行重定向命令(只会影响它们所在的行):
+# --------------------------------------------------------------------
+1&gt;filename
+   # 重定向stdout到文件"filename".
+1&gt;&gt;filename
+   # 重定向并追加stdout到文件"filename".
+2&gt;filename
+   # 重定向stderr到文件"filename".
+2&gt;&gt;filename
+   # 重定向并追加stderr到文件"filename".
+&amp;&gt;filename
+   # 将stdout和stderr都重定向到文件"filename".
+
+M&gt;N
+  # "M"是一个文件描述符, 如果没有明确指定的话默认为1.
+  # "N"是一个文件名.
+  # 文件描述符"M"被重定向到文件"N".
+M&gt;&amp;N
+  # "M"是一个文件描述符, 如果没有明确指定的话默认为1.
+  # "N"是另一个文件描述符.
+
+# --------------------------------------------------------------------
+# 重定向stdout, 一次一行.
+LOGFILE=script.log
+
+echo "This statement is sent to the log file, \"$LOGFILE\"." 1&gt;$LOGFILE
+echo "This statement is appended to \"$LOGFILE\"." 1&gt;&gt;$LOGFILE
+echo "This statement is also appended to \"$LOGFILE\"." 1&gt;&gt;$LOGFILE
+echo "This statement is echoed to stdout, and will not appear in \"$LOGFILE\"."
+# 每行过后, 这些重定向命令会自动"reset".
+
+
+# --------------------------------------------------------------------
+# 重定向stderr, 一次一行.
+ERRORFILE=script.errors
+
+bad_command1 2&gt;$ERRORFILE       #  Error message sent to $ERRORFILE.
+bad_command2 2&gt;&gt;$ERRORFILE      #  Error message appended to $ERRORFILE.
+bad_command3                    #  Error message echoed to stderr,
+                                #+ and does not appear in $ERRORFILE.
+# 每行过后, 这些重定向命令也会自动"reset".
+
+# --------------------------------------------------------------------
+2&gt;&amp;1
+   # 重定向stderr到stdout.
+   # 将错误消息的输出, 发送到与标准输出所指向的地方.
+
+i&gt;&amp;j
+   # 重定向文件描述符i到j.
+   # 指向i文件的所有输出都发送到j.
+
+&gt;&amp;j
+   # 默认的, 重定向文件描述符1(stdout)到j.
+   # 所有传递到stdout的输出都送到j中去.
+
+0&lt; FILENAME
+ &lt; FILENAME
+   # 从文件中接受输入.
+   # 与"&gt;"是成对命令, 并且通常都是结合使用.
+   #
+   # grep search-word &lt;filename
+
+[j]&lt;&gt;filename
+   # 为了读写"filename", 把文件"filename"打开, 并且将文件描述符"j"分配给它.
+   # 如果文件"filename"不存在, 那么就创建它.
+   # 如果文件描述符"j"没指定, 那默认是fd 0, stdin.
+   #
+   # 这种应用通常是为了写到一个文件中指定的地方.
+   echo 1234567890 &gt; File    # 写字符串到"File".
+   exec 3&lt;&gt; File             # 打开"File"并且将fd 3分配给它.
+   read -n 4 &lt;&amp;3             # 只读取4个字符.
+   echo -n . &gt;&amp;3             # 写一个小数点.
+   exec 3&gt;&amp;-                 # 关闭fd 3.
+   cat File                  # ==&gt; 1234.67890
+   # 随机访问.
+
+|
+   # 管道.
+   # 通用目的处理和命令链工具.
+   # 与"&gt;", 很相似, 但是实际上更通用.
+   # 对于想将命令, 脚本, 文件和程序串连起来的时候很有用.
+   cat *.txt | sort | uniq &gt; result-file
+   # 对所有.txt文件的输出进行排序, 并且删除重复行.
+   # 最后将结果保存到"result-file"中.
+</pre>
+
+<ul>
+<li>
+可以将输入输出重定向和(或)管道的多个实例结合到一起写在同一行上.
+<pre>
+command &lt; input-file &gt; output-file
+command1 | command2 | command3 &gt; output-file
+</pre>
+
+</ul>
+
+<p>
+请参考例子 12-28和例子 A-15.
+</p>
+
+<ul>
+<li>
+可以将多个输出流重定向到一个文件上.
+<pre class="brush:bash">
+ls -yz &gt;&gt; command.log 2&gt;&amp;1
+#  将错误选项"yz"的结果放到文件"command.log"中.
+#  因为stderr被重定向到这个文件中,
+#+ 所有的错误消息也就都指向那里了.
+
+#   注意, 下边这个例子就不会给出相同的结果.
+ls -yz 2&gt;&amp;1 &gt;&gt; command.log
+#  输出一个错误消息, 但是并不写到文件中.
+
+#  如果将stdout和stderr都重定向,
+#+ 命令的顺序会有些不同.
+</pre>
+
+</ul>
+
+<ul>
+<li>
+关闭文件描述符
+<pre class="brush:bash">
+n&lt;&amp;-
+    #关闭输入文件描述符n.
+
+0&lt;&amp;-, &lt;&amp;-
+    #关闭stdin.
+n&gt;&amp;-
+    #关闭输出文件描述符n.
+1&gt;&amp;-, &gt;&amp;-
+    #关闭stdout.
+</pre>
+
+</ul>
+
+<p>
+子进程继承了打开的文件描述符. 这就是为什么管道可以工作. 如果想阻止fd被继承, 那么可以关掉它.
+</p>
+<pre class="brush:bash">
+# 只将stderr重定到一个管道.
+
+exec 3&gt;&amp;1                              # 保存当前stdout的"值"(将fd3指向fd0相同目标)
+ls -l 2&gt;&amp;1 &gt;&amp;3 3&gt;&amp;- | grep bad 3&gt;&amp;-    # 对'grep'关闭fd 3(但不关闭'ls'，正常输出内容不受grep影响)
+#              ^^^^   ^^^^
+ls -l 2&gt;&amp;1 &gt;&amp;3 | grep bad              # 这样输出内容被转到了fd3,也不会受grep影响
+ls badabc -l 2&gt;&amp;1 &gt;&amp;3 |grep bad        # stderr通过fd1输出，会受grep影响
+
+exec 3&gt;&amp;-                              # 对于剩余的脚本来说, 关闭它.
+
+# 感谢, S.C.
+</pre>
+
+<p>
+如果想了解关于I/O重定向更多的细节, 请参考Appendix E.
+注意事项
+</p>
+<ul>
+<li>
+一个文件描述符说白了就是文件系统为了跟踪这个打开的文件而分配给它的一个数字. 也可以的将其理解为文件指针的一个简单版本. 与C语言中文件句柄的概念很相似.
+
+<li>
+使用文件描述符5可能会引起问题. 当Bash使用exec创建一个子进程的时候, 子进程会继承fd5(参考Chet Ramey的归档e-mail, SUBJECT: RE: File descriptor 5 is held open). 最好还是不要去招惹这个特定的fd.
+
+</ul>
+
+<h2 id="toc_2.2">使用exec</h2>
+
+<p>
+exec &lt;filename命令会将stdin重定向到文件中. 从这句开始, 所有的stdin就都来自于这个文件了, 而不是标准输入(通常都是键盘输入). 这样就提供了一种按行读取文件的方法, 并且可以使用sed和/或awk来对每一行进行分析.
+</p>
+
+<ul>
+<li>
+例子 16-1. 使用exec重定向stdin
+<pre class="brush:bash">
+#!/bin/bash
+# 使用'exec'重定向stdin.
+
+
+exec 6&lt;&amp;0          # 将文件描述符#6与stdin链接起来.
+                   # 保存stdin.
+
+exec &lt; data-file   # stdin被文件"data-file"所代替.
+
+read a1            # 读取文件"data-file"的第一行.
+read a2            # 读取文件"data-file"的第二行.
+
+echo
+echo "Following lines read from file."
+echo "-------------------------------"
+echo $a1
+echo $a2
+
+echo; echo; echo
+
+exec 0&lt;&amp;6 6&lt;&amp;-
+#  现在将stdin从fd #6中恢复, 因为刚才我们把stdin重定向到#6了,
+#+ 然后关闭fd #6 ( 6&lt;&amp;- ), 好让这个描述符继续被其他进程所使用.
+#
+# &lt;&amp;6 6&lt;&amp;-    这么做也可以.
+
+echo -n "Enter data  "
+read b1  # 现在"read"已经恢复正常了, 就是能够正常的从stdin中读取.
+echo "Input read from stdin."
+echo "----------------------"
+echo "b1 = $b1"
+
+echo
+
+exit 0
+</pre>
+
+</ul>
+
+<p>
+同样的, exec &gt;filename命令将会把stdout重定向到一个指定的文件中. 这样所有命令的输出就都会发送到那个指定的文件, 而不是stdout.
+</p>
+
+<ul>
+<li>
+Important
+
+</ul>
+
+<p>
+exec N &gt; filename会影响整个脚本或当前shell. 对于这个指定PID的脚本或shell来说, 从这句命令执行之后, 就会重定向到这个文件中, 然而 . . .
+</p>
+
+<p>
+N &gt; filename只会影响新fork出来的进程, 而不会影响整个脚本或shell. not the entire script or shell.
+</p>
+
+<p>
+感谢你, Ahmed Darwish, 指出这个问题.
+</p>
+
+<ul>
+<li>
+例子 16-2. 使用exec来重定向stdout
+<pre class="brush:bash">
+#!/bin/bash
+# reassign-stdout.sh
+
+LOGFILE=logfile.txt
+
+exec 6&gt;&amp;1           # 将fd #6与stdout链接起来.
+                    # 保存stdout.
+
+exec &gt; $LOGFILE     # stdout就被文件"logfile.txt"所代替了.
+
+# ----------------------------------------------------------- #
+# 在这块中所有命令的输出都会发送到文件$LOGFILE中.
+
+echo -n "Logfile: "
+date
+echo "-------------------------------------"
+echo
+
+echo "Output of \"ls -al\" command"
+echo
+ls -al
+echo; echo
+echo "Output of \"df\" command"
+echo
+df
+
+# ----------------------------------------------------------- #
+
+exec 1&gt;&amp;6 6&gt;&amp;-      # 恢复stdout, 然后关闭文件描述符#6.
+
+echo
+echo "== stdout now restored to default == "
+echo
+ls -al
+echo
+
+exit 0
+</pre>
+
+</ul>
+
+<ul>
+<li>
+例子 16-3. 使用exec在同一个脚本中重定向stdin和stdout
+<pre class="brush:bash">
+#!/bin/bash
+# upperconv.sh
+# 将一个指定的输入文件转换为大写.
+
+E_FILE_ACCESS=70
+E_WRONG_ARGS=71
+
+if [ ! -r "$1" ]     # 判断指定的输入文件是否可读?
+then
+  echo "Can't read from input file!"
+  echo "Usage: $0 input-file output-file"
+  exit $E_FILE_ACCESS
+fi                   #  即使输入文件($1)没被指定
+                     #+ 也还是会以相同的错误退出(为什么?).
+
+if [ -z "$2" ]
+then
+  echo "Need to specify output file."
+  echo "Usage: $0 input-file output-file"
+  exit $E_WRONG_ARGS
+fi
+
+
+exec 4&lt;&amp;0
+exec &lt; $1            # 将会从输入文件中读取.
+
+exec 7&gt;&amp;1
+exec &gt; $2            # 将写到输出文件中.
+                     # 假设输出文件是可写的(添加检查?).
+
+# -----------------------------------------------
+    cat - | tr a-z A-Z   # 转换为大写.
+#   ^^^^^                # 从stdin中读取.
+#           ^^^^^^^^^^   # 写到stdout上.
+# 然而, stdin和stdout都被重定向了.
+# -----------------------------------------------
+
+exec 1&gt;&amp;7 7&gt;&amp;-       # 恢复stout.
+exec 0&lt;&amp;4 4&lt;&amp;-       # 恢复stdin.
+
+# 恢复之后, 下边这行代码将会如预期的一样打印到stdout上.
+echo "File \"$1\" written to \"$2\" as uppercase conversion."
+
+exit 0
+</pre>
+
+</ul>
+
+<p>
+I/O重定向是一种避免可怕的子shell中不可访问变量问题的方法.
+</p>
+
+<ul>
+<li>
+例子 16-4. 避免子shell
+<pre class="brush:bash">
+#!/bin/bash
+# avoid-subshell.sh
+# 由Matthew Walker所提出的建议.
+
+Lines=0
+
+echo
+
+cat myfile.txt | while read line;  #  (译者注: 管道会产生子shell)
+                 do {
+                   echo $line
+                   (( Lines++ ));  #  增加这个变量的值
+                                   #+ 但是外部循环却不能访问.
+                                   #  子shell问题.
+                 }
+                 done
+
+echo "Number of lines read = $Lines"     # 0
+                                         # 错误!
+
+echo "------------------------"
+
+exec 3&lt;&gt; myfile.txt
+while read line &lt;&amp;3
+do {
+  echo "$line"
+  (( Lines++ ));                   #  增加这个变量的值
+                                   #+ 现在外部循环就可以访问了.
+                                   #  没有子shell, 现在就没问题了.
+}
+done
+exec 3&gt;&amp;-
+
+echo "Number of lines read = $Lines"     # 8
+
+echo
+
+exit 0
+
+# 下边这些行是这个脚本的结果, 脚本是不会走到这里的.
+
+$ cat myfile.txt
+
+Line 1.
+Line 2.
+Line 3.
+Line 4.
+Line 5.
+Line 6.
+Line 7.
+Line 8.
+</pre>
+
+</ul>
+
+<h2 id="toc_2.3">代码块重定向</h2>
+
+<p>
+象while, until, 和for循环代码块, 甚至if/then测试结构的代码块, 都可以对stdin进行重定向. 即使函数也可以使用这种重定向方式(请参考例子 23-11). 要想做到这些, 都要依靠代码块结尾的&lt;操作符.
+</p>
+
+<ul>
+<li>
+例子 16-5. while循环的重定向
+<pre class="brush:bash">
+#!/bin/bash
+# redir2.sh
+
+if [ -z "$1" ]
+then
+  Filename=names.data       # 如果没有指定文件名, 则使用这个默认值.
+else
+  Filename=$1
+fi
+#+ Filename=${1:-names.data}
+#  这句可代替上面的测试(参数替换).
+
+count=0
+
+echo
+
+while [ "$name" != Smith ]  # 为什么变量$name要用引号?
+do
+  read name                 # 从$Filename文件中读取输入, 而不是在stdin中读取输入.
+  echo $name
+  let "count += 1"
+done &lt;"$Filename"           # 重定向stdin到文件$Filename.
+#    ^^^^^^^^^^^^
+
+echo; echo "$count names read"; echo
+
+exit 0
+
+#  注意在一些比较老的shell脚本编程语言中,
+#+ 重定向的循环是放在子shell里运行的.
+#  因此, $count 值返回后会是 0, 此值是在循环开始前的初始值.
+#  *如果可能的话*, 尽量避免在Bash或ksh中使用子shell,
+#+ 所以这个脚本能够正确的运行.
+#  (多谢Heiner Steven指出这个问题.)
+
+#  然而 . . .
+#  Bash有时还是*会*在一个使用管道的"while-read"循环中启动一个子shell,
+#+ 与重定向的"while"循环还是有区别的.
+
+abc=hi
+echo -e "1\n2\n3" | while read l
+     do abc="$l"
+        echo $abc
+     done
+echo $abc
+
+#  感谢, Bruno de Oliveira Schneider
+#+ 给出上面的代码片段来演示此问题.
+#  同时, 感谢, Brian Onn, 修正了一个注释错误.
+</pre>
+
+</ul>
+
+<ul>
+<li>
+例子 16-6. 重定向while循环的另一种形式
+<pre class="brush:bash">
+#!/bin/bash
+
+# 这是上个脚本的另一个版本.
+
+#  Heiner Steven建议,
+#+ 为了避免重定向循环运行在子shell中(老版本的shell会这么做), 最好让重定向循环运行在当前工作区内,
+#+ 这样的话, 需要提前进行文件描述符重定向,
+#+ 因为变量如果在(子shell上运行的)循环中被修改的话, 循环结束后并不会保存修改后的值.
+
+
+if [ -z "$1" ]
+then
+  Filename=names.data     # 如果没有指定文件名则使用默认值.
+else
+  Filename=$1
+fi
+
+exec 3&lt;&amp;0                 # 将stdin保存到文件描述符3.
+exec 0&lt;"$Filename"        # 重定向标准输入.
+
+count=0
+echo
+
+while [ "$name" != Smith ]
+do
+  read name               # 从stdin(现在已经是$Filename了)中读取.
+  echo $name
+  let "count += 1"
+done                      #  从文件$Filename中循环读取
+                          #+ 因为文件(译者注：指默认文件, 在本节最后)有20行.
+
+#  这个脚本原先在"while"循环的结尾还有一句:
+#+      done &lt;"$Filename"
+#  练习:
+#  为什么不需要这句了?
+
+exec 0&lt;&amp;3                 # 恢复保存的stdin.
+exec 3&lt;&amp;-                 # 关闭临时文件描述符3.
+
+echo; echo "$count names read"; echo
+
+exit 0
+</pre>
+
+</ul>
+
+<ul>
+<li>
+例子 16-7. 重定向until循环
+<pre class="brush:bash">
+#!/bin/bash
+# 和前面的例子相同, 但使用的是"until"循环.
+
+if [ -z "$1" ]
+then
+  Filename=names.data         # 如果没有指定文件名那就使用默认值.
+else
+  Filename=$1
+fi
+
+# while [ "$name" != Smith ]
+until [ "$name" = Smith ]     # 把!=改为=.
+do
+  read name                   # 从$Filename中读取, 而不是从stdin中读取.
+  echo $name
+done &lt;"$Filename"             # 重定向stdin到文件$Filename.
+#    ^^^^^^^^^^^^
+
+# 结果和前面例子的"while"循环相同.
+
+exit 0
+</pre>
+
+</ul>
+
+<ul>
+<li>
+例子 16-8. 重定向for循环
+<pre class="brush:bash">
+#!/bin/bash
+
+if [ -z "$1" ]
+then
+  Filename=names.data          # 如果没有指定文件名就使用默认值.
+else
+  Filename=$1
+fi
+
+line_count=`wc $Filename | awk '{ print $1 }'`
+#           目标文件的行数.
+#
+#  此处的代码太过做作, 并且写得很难看,
+#+ 但至少展示了"for"循环的stdin可以重定向...
+#+ 当然, 你得足够聪明, 才能看得出来.
+#
+# 更简洁的写法是     line_count=$(wc -l &lt; "$Filename")
+
+
+for name in `seq $line_count`  # "seq"打印出数字序列.
+# while [ "$name" != Smith ]   --   比"while"循环更复杂   --
+do
+  read name                    # 从$Filename中, 而非从stdin中读取.
+  echo $name
+  if [ "$name" = Smith ]       # 因为用for循环, 所以需要这个多余测试.
+  then
+    break
+  fi
+done &lt;"$Filename"              # 重定向stdin到文件$Filename.
+#    ^^^^^^^^^^^^
+
+exit 0
+</pre>
+
+</ul>
+
+<p>
+我们也可以修改前面的例子使其能重定向循环的标准输出.
+</p>
+
+<ul>
+<li>
+例子 16-9. 重定向for循环(stdin和stdout都进行重定向)
+<pre class="brush:bash">
+#!/bin/bash
+
+if [ -z "$1" ]
+then
+  Filename=names.data          # 如果没有指定文件名, 则使用默认值.
+else
+  Filename=$1
+fi
+
+Savefile=$Filename.new         # 保存最终结果的文件名.
+FinalName=Jonah                # 终止"read"时的名称.
+
+line_count=`wc $Filename | awk '{ print $1 }'`  # 目标文件的行数.
+
+
+for name in `seq $line_count`
+do
+  read name
+  echo "$name"
+  if [ "$name" = "$FinalName" ]
+  then
+    break
+  fi
+done &lt; "$Filename" &gt; "$Savefile"     # 重定向stdin到文件$Filename,
+#    ^^^^^^^^^^^^^^^^^^^^^^^^^^^       并且将它保存到备份文件中.
+
+exit 0
+</pre>
+
+</ul>
+
+<ul>
+<li>
+例子 16-10. 重定向if/then测试结构
+<pre class="brush:bash">
+#!/bin/bash
+
+if [ -z "$1" ]
+then
+  Filename=names.data   # 如果文件名没有指定, 使用默认值.
+else
+  Filename=$1
+fi
+
+TRUE=1
+
+if [ "$TRUE" ]          # if true    和   if :   都可以.
+then
+ read name
+ echo $name
+fi &lt;"$Filename"
+#  ^^^^^^^^^^^^
+
+# 只读取了文件的第一行.
+# An "if/then"测试结构不能自动地反复地执行, 除非把它们嵌到循环里.
+
+exit 0
+</pre>
+
+</ul>
+
+<ul>
+<li>
+例子 16-11. 用于上面例子的"names.data"数据文件
+<pre>
+Aristotle
+Belisarius
+Capablanca
+Euler
+Goethe
+Hamurabi
+Jonah
+Laplace
+Maroczy
+Purcell
+Schmidt
+Semmelweiss
+Smith
+Turing
+Venn
+Wilson
+Znosko-Borowski
+
+#  此数据文件用于:
+#+ "redir2.sh", "redir3.sh", "redir4.sh", "redir4a.sh", "redir5.sh".
+</pre>
+
+</ul>
+
+<p>
+重定向代码块的stdout, 与"将代码块的输出保存到文件中"具有相同的效果. 请参考例子 3-2.
+</p>
+
+<h2 id="toc_2.4">重定向的应用</h2>
+
+<p>
+巧妙地运用I/O重定向, 能够解析和粘合命令输出的各个片断(请参考例子 11-7). 这样就可以产生报告与日志文件.
+</p>
+
+<ul>
+<li>
+例子 16-12. 事件纪录
+<pre class="brush:bash">
+#!/bin/bash
+# logevents.sh, 由Stephane Chazelas所编写.
+
+# 把事件记录在一个文件中.
+# 必须以root身份运行 (这样才有权限访问/var/log).
+
+ROOT_UID=0     # 只有$UID值为0的用户才具有root权限.
+E_NOTROOT=67   # 非root用户的退出错误.
+
+
+if [ "$UID" -ne "$ROOT_UID" ]
+then
+  echo "Must be root to run this script."
+  exit $E_NOTROOT
+fi
+
+FD_DEBUG1=3
+FD_DEBUG2=4
+FD_DEBUG3=5
+
+# 去掉下边两行注释中的一行, 来激活脚本.
+# LOG_EVENTS=1
+# LOG_VARS=1
+
+
+log()  # 把时间和日期写入日志文件.
+{
+echo "$(date)  $*" &gt;&amp;7     # 这会把日期*附加*到文件中.
+                              # 参考下边的代码.
+}
+
+case $LOG_LEVEL in
+ 1) exec 3&gt;&amp;2         4&gt; /dev/null 5&gt; /dev/null;;
+ 2) exec 3&gt;&amp;2         4&gt;&amp;2         5&gt; /dev/null;;
+ 3) exec 3&gt;&amp;2         4&gt;&amp;2         5&gt;&amp;2;;
+ *) exec 3&gt; /dev/null 4&gt; /dev/null 5&gt; /dev/null;;
+esac
+
+FD_LOGVARS=6
+if [[ $LOG_VARS ]]
+then exec 6&gt;&gt; /var/log/vars.log
+else exec 6&gt; /dev/null               # 丢弃输出.
+fi
+
+FD_LOGEVENTS=7
+if [[ $LOG_EVENTS ]]
+then
+  # then exec 7 &gt;(exec gawk '{print strftime(), $0}' &gt;&gt; /var/log/event.log)
+  # 上面这行不能在2.04版本的Bash上运行.
+  exec 7&gt;&gt; /var/log/event.log        # 附加到"event.log".
+  log                                      # 记录日期与时间.
+else exec 7&gt; /dev/null                  # 丢弃输出.
+fi
+
+echo "DEBUG3: beginning" &gt;&amp;${FD_DEBUG3}
+
+ls -l &gt;&amp;5 2&gt;&amp;4                       # command1 &gt;&amp;5 2&gt;&amp;4
+
+echo "Done"                                # command2
+
+echo "sending mail" &gt;&amp;${FD_LOGEVENTS}   # 将字符串"sending mail"写到文件描述符#7.
+
+exit 0
+</pre>
+
+</ul>
+
+<h2 id="toc_2.5">Appendix E. I/O和I/O重定向的详细介绍</h2>
+
+<p>
+由Stephane Chazelas编写, 本书作者修订
+</p>
+
+<p>
+一个命令期望前3个文件描述符是可用的. 第一个, fd 0(标准输入, stdin), 用作读取. 另外两个, (fd 1, stdout和fd 2, stderr), 用来写入.
+</p>
+
+<p>
+每个命令都会关联到stdin, stdout, 和stderr. ls 2&gt;&amp;1意味着临时的将ls命令的stderr连接到shell的stdout.
+</p>
+
+<p>
+按惯例, 命令一般都是从fd 0(stdin)上读取输入, 打印输出到fd 1(stdout)上, 错误输出一般都输出到fd 2(stderr)上. 如果这3个文件描述中的某一个没打开, 你可能就会遇到麻烦了:
+</p>
+<pre>
+bash$ cat /etc/passwd &gt;&amp;-
+cat: standard output: Bad file descriptor
+</pre>
+
+<p>
+比如说, 当xterm运行的时候, 它首先会初始化自身. 在运行用户shell之前, xterm会打开终端设备(/dev/pts/&lt;n&gt; 或者类似的东西)三次.
+</p>
+
+<p>
+这里, Bash继承了这三个文件描述符, 而且每个运行在Bash上的命令(子进程)也都依次继承了它们, 除非你重定向了这些命令. 重定向意味着将这些文件描述符中的某一个, 重新分配到其他文件中(或者分配到一个管道中, 或者是其他任何可能的东西). 文件描述符既可以被局部重分配(对于一个命令, 命令组, 一个子shell, 一个while循环, if或case结构...), 也可以全局重分配, 对于余下的shell(使用exec).
+</p>
+
+<p>
+ls &gt; /dev/null 表示将运行的ls命令的fd 1连接到/dev/null上.
+</p>
+
+<pre>
+bash$ lsof -a -p $$ -d0,1,2
+COMMAND PID     USER   FD   TYPE DEVICE SIZE NODE NAME
+ bash    363 bozo        0u   CHR  136,1         3 /dev/pts/1
+ bash    363 bozo        1u   CHR  136,1         3 /dev/pts/1
+ bash    363 bozo        2u   CHR  136,1         3 /dev/pts/1
+
+bash$ exec 2&gt; /dev/null
+bash$ lsof -a -p $$ -d0,1,2
+COMMAND PID     USER   FD   TYPE DEVICE SIZE NODE NAME
+ bash    371 bozo        0u   CHR  136,1         3 /dev/pts/1
+ bash    371 bozo        1u   CHR  136,1         3 /dev/pts/1
+ bash    371 bozo        2w   CHR    1,3       120 /dev/null
+
+bash$ bash -c 'lsof -a -p $$ -d0,1,2' | cat
+COMMAND PID USER   FD   TYPE DEVICE SIZE NODE NAME
+ lsof    379 root    0u   CHR  136,1         3 /dev/pts/1
+ lsof    379 root    1w  FIFO    0,0      7118 pipe
+ lsof    379 root    2u   CHR  136,1         3 /dev/pts/1
+
+bash$ echo "$(bash -c 'lsof -a -p $$ -d0,1,2' 2&gt;&amp;1)"
+COMMAND PID USER   FD   TYPE DEVICE SIZE NODE NAME
+ lsof    426 root    0u   CHR  136,1         3 /dev/pts/1
+ lsof    426 root    1w  FIFO    0,0      7520 pipe
+ lsof    426 root    2w  FIFO    0,0      7520 pipe
+</pre>
+
+<p>
+这是用来展示不同类型的重定向.
+</p>
+
+<p>
+练习: 分析下面的脚本.
+</p>
+
+<pre class="brush:bash">
+#!/usr/bin/env bash
+
+mkfifo /tmp/fifo1 /tmp/fifo2
+
+while read a; do echo "FIFO1: $a"; done &lt; /tmp/fifo1 &amp;
+exec 7&gt; /tmp/fifo1
+exec 8&gt; &gt;(while read a; do echo "FD8: $a, to fd7"; done &gt;&amp;7)
+
+exec 3&gt;&amp;1
+(
+ (
+  (
+   while read a; do echo "FIFO2: $a"; done &lt; /tmp/fifo2 | tee /dev/stderr | tee /dev/fd/4 | tee /dev/fd/5 | tee /dev/fd/6 &gt;&amp;7 &amp;
+   exec 3&gt; /tmp/fifo2
+
+   echo 1st, to stdout
+   sleep 1
+   echo 2nd, to stderr &gt;&amp;2
+   sleep 1
+   echo 3rd, to fd 3 &gt;&amp;3
+   sleep 1
+   echo 4th, to fd 4 &gt;&amp;4
+   sleep 1
+   echo 5th, to fd 5 &gt;&amp;5
+   sleep 1
+   echo 6th, through a pipe | sed 's/.*/PIPE: &amp;, to fd 5/' &gt;&amp;5
+   sleep 1
+   echo 7th, to fd 6 &gt;&amp;6
+   sleep 1
+   echo 8th, to fd 7 &gt;&amp;7
+   sleep 1
+   echo 9th, to fd 8 &gt;&amp;8
+
+  ) 4&gt;&amp;1 &gt;&amp;3 3&gt;&amp;- | while read a; do echo "FD4: $a"; done 1&gt;&amp;3 5&gt;&amp;- 6&gt;&amp;-
+ ) 5&gt;&amp;1 &gt;&amp;3 | while read a; do echo "FD5: $a"; done 1&gt;&amp;3 6&gt;&amp;-
+) 6&gt;&amp;1 &gt;&amp;3 | while read a; do echo "FD6: $a"; done 3&gt;&amp;-
+
+rm -f /tmp/fifo1 /tmp/fifo2
+
+# 对于每个命令和子shell, 分别指出每个fd的指向.
+
+exit 0
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

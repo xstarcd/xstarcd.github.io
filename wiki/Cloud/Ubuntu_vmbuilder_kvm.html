@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>在Ubuntu 12.04 LTS服务器上借助KVM实现虚拟化</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>在Ubuntu 12.04 LTS服务器上借助KVM实现虚拟化</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">安装</a>
+<li><a href="#toc_0.2">配置网桥</a>
+<li><a href="#toc_0.3">创建基于镜像的虚拟机</a>
+<ul>
+<li><a href="#toc_0.3.1">虚拟机目录</a>
+<li><a href="#toc_0.3.2">模板</a>
+<li><a href="#toc_0.3.3">定义分区</a>
+<li><a href="#toc_0.3.4">boot.sh</a>
+<li><a href="#toc_0.3.5">vmbuilder</a>
+</ul>
+<li><a href="#toc_0.4">创建第二个虚拟机</a>
+<li><a href="#toc_0.5">管理虚拟机</a>
+<li><a href="#toc_0.6">创建基于LVM的虚拟机</a>
+<li><a href="#toc_0.7">相关链接</a>
+</ul>
+</ul>
+</div>
+
+<p>
+原文: <a href="http://virtual.51cto.com/art/201206/341911_all.htm">http://virtual.51cto.com/art/201206/341911_all.htm</a>
+</p>
+
+<h2 id="toc_0.1">安装</h2>
+
+<ul>
+<li>
+检查CPU支持
+<pre class="brush:bash">
+# Intel CPU:vmx
+# AMD CPU:svm
+egrep '(vmx|svm)' --color=always /proc/cpuinfo
+
+kvm-ok
+</pre>
+
+<li>
+安装kvm和vmbuilder
+
+</ul>
+
+<p>
+vmbuilder:创建基于Ubuntu的虚拟机的一个脚本
+</p>
+<pre class="brush:bash">
+apt-get install ubuntu-virt-server python-vm-builder kvm-ipxe
+</pre>
+<ul>
+<li>
+修改用户组
+<pre class="brush:bash">
+adduser `id -un` libvirtd
+adduser `id -un` kvm
+# 你需要退出，重新登录，那样新的群组成员资格才生效。
+</pre>
+
+<li>
+测试连接libvirtd
+<pre class="brush:bash">
+virsh -c qemu:///system list
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">配置网桥</h2>
+<ul>
+<li>
+安装网桥工具
+<pre class="brush:bash">
+apt-get install bridge-utils
+</pre>
+
+<li>
+配置网桥:/etc/network/interfaces
+
+<ul>
+<li>
+原始内容
+<pre>
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+    address 192.168.0.100
+    netmask 255.255.255.0
+    network 192.168.0.0
+    broadcast 192.168.0.255
+    gateway 192.168.0.1
+    dns-nameservers 8.8.8.8 8.8.4.4
+</pre>
+
+<li>
+修改后内容
+<pre>
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet manual
+
+auto br0
+iface br0 inet static
+    address 192.168.0.100
+    network 192.168.0.0
+    netmask 255.255.255.0
+    broadcast 192.168.0.255
+    gateway 192.168.0.1
+    dns-nameservers 8.8.8.8 8.8.4.4
+    bridge_ports eth0
+    bridge_fd 9
+    bridge_hello 2
+    bridge_maxage 12
+    bridge_stp off
+</pre>
+
+<li>
+重启动网络：<code>service networking restart</code>
+
+<li>
+ifconfig检查网络配置
+
+<li>
+reboot主机
+<pre>
+在我们开始运行第一个虚拟机之前，建议重新启动系统。
+如果你没有重启，可能会在/var/log/libvirt/qemu/目录的虚拟机日志中看到错误，比如/dev/kvm: Permission denied。
+</pre>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.3">创建基于镜像的虚拟机</h2>
+
+<p>
+现在我们可以创建第一个虚拟机：基于镜像的虚拟机（如果你预计该虚拟机会有大量的流量和频繁的读写操作，可以改而使用基于LVM的虚拟机，如下面第6节所示——基于镜像的虚拟机其硬盘输入/输出操作很频繁）。
+</p>
+
+<h3 id="toc_0.3.1">虚拟机目录</h3>
+
+<p>
+我想在/var/lib/libvirt/images/目录中创建虚拟机（无法在/root目录中创建虚拟机，因为libvirt-qemu用户在该目录中没有读取权限）。
+</p>
+
+<p>
+我们将为想要创建的每个虚拟机建立一个新的目录(每个虚拟机都会有一个名为ubuntu-kvm的子目录)，比如:
+</p>
+<ol>
+<li>
+/var/lib/libvirt/images/vm1
+
+<li>
+/var/lib/libvirt/images/vm2
+
+<li>
+/var/lib/libvirt/images/vm3
+
+</ol>
+
+<p>
+如果你试图在/var/lib/libvirt/images/vm1创建第二个虚拟机，就会看到错误消息，表明ubuntu-kvm已经存在(除非你使用--dest=DESTDIR变量运行vmbuilder)。
+</p>
+
+<p>
+我们会使用vmbuilder工具来创建虚拟机。你可以在<a href="https://help.ubuntu.com/community/JeOSVMBuilder">&lt;JeOSVMBuilder&gt;</a> 进一步了解vmbuilder。
+</p>
+
+<h3 id="toc_0.3.2">模板</h3>
+
+<ul>
+<li>
+vmbuilder使用模板来创建虚拟机——该模板位于/etc/vmbuilder/libvirt/目录中。我们先创建一个副本：
+<pre class="brush:bash">
+VMD=/var/lib/libvirt/images/vm1
+mkdir -p $VMD/mytemplates/libvirt
+cp /etc/vmbuilder/libvirt/* $VMD/vm1/mytemplates/libvirt/
+</pre>
+
+</ul>
+
+<h3 id="toc_0.3.3">定义分区</h3>
+<p>
+现在我们进入到虚拟机的分区。我们创建了一个文件，名为vmbuilder.partition……
+</p>
+<pre class="brush:bash">
+cd /var/lib/libvirt/images/vm1/
+cat &gt; vmbuilder.partition &lt;&lt;EOF
+# 定义所需的分区，如下所示：
+root 8000
+swap 4000
+---
+/var 20000
+EOF
+</pre>
+<p>
+这定义了:
+</p>
+<ol>
+<li>
+大小为8000MB的根分区（/）
+
+<li>
+4000MB的交换分区
+
+<li>
+20000MB的/var分区
+
+<li>
+---这一行表示:下列分区（本例中的/var）在另外的磁盘镜像上（也就是说这将创建两个磁盘镜像，一个用于根分区和交换分区，另一个用于/var分区）。
+
+</ol>
+
+<p>
+当然，你可以随意定义自己喜欢的任何分区（只要你定义了根分区和交换分区）；当然，它们可以在一个磁盘镜像中——这只是个例子。
+</p>
+
+<h3 id="toc_0.3.4">boot.sh</h3>
+
+<p>
+我想在虚拟机中安装openssh-server。为了确保每个虚拟机都获得一个独特的OpenSSH密钥，我们创建虚拟机时无法安装openssh-server。
+</p>
+
+<p>
+因此，我们创建了名为boot.sh的脚本，虚拟机第一次启动时，就会执行该脚本。它会安装openssh-server（生成独特密钥）；
+</p>
+
+<p>
+用户第一次登录后，它还会迫使用户更改密码。（让虚拟机使用默认的用户名administrator，默认密码是howtoforge）：
+</p>
+
+<pre class="brush:bash">
+cd /var/lib/libvirt/images/vm1/
+cat &gt; boot.sh &lt;&lt;EOF
+#!/bin/sh
+# 虚拟机第一次启动时，该脚本将运行。
+# 它以根用户来运行。
+# 到期终止用户帐户
+passwd -e administrator
+
+# 安装openssh-server
+apt-get update
+apt-get install -qqy --force-yes openssh-server
+EOF
+</pre>
+
+<p>
+确保你把用户名administrator换成了默认登录名。
+</p>
+
+<ul>
+<li>
+参考
+
+<ul>
+<li>
+<a href="https://help.ubuntu.com/community/JeOSVMBuilder#First_boot">https://help.ubuntu.com/community/JeOSVMBuilder#First_boot</a>
+
+<li>
+<a href="https://help.ubuntu.com/community/JeOSVMBuilder#First_login">https://help.ubuntu.com/community/JeOSVMBuilder#First_login</a>
+
+</ul>
+</ul>
+
+<h3 id="toc_0.3.5">vmbuilder</h3>
+
+<ul>
+<li>
+可用选项:<code>vmbuilder kvm ubuntu --help</code>
+
+</ul>
+
+<ul>
+<li>
+建第一个虚拟机vm1
+<pre class="brush:bash">
+# 进入到虚拟机目录……
+cd /var/lib/libvirt/images/vm1/
+
+# 运行vmbuilder
+vmbuilder kvm ubuntu --suite=precise --flavour=virtual --arch=amd64 \
+--mirror=http://de.archive.ubuntu.com/ubuntu -o --libvirt=qemu:///system \
+--ip=192.168.0.101 --gw=192.168.0.1 --part=vmbuilder.partition --templates=mytemplates \
+--user=administrator --name=Administrator --pass=howtoforge \
+--addpkg=vim-nox --addpkg=unattended-upgrades --addpkg=acpid \
+--firstboot=/var/lib/libvirt/images/vm1/boot.sh \
+--mem=256 --hostname=vm1 --bridge=br0
+</pre>
+
+</ul>
+
+<p>
+大多数选项不言自明。
+</p>
+
+<p>
+--part指定了有分区详细信息的文件，相对于我们的工作目录（在运行vmbuilder之前要进入到虚拟机目录）；
+</p>
+
+<p>
+--templates指定了保存模板文件的目录（再次相对于我们的工作目录）
+</p>
+
+<p>
+--firstboot指定了首次启动脚本。
+</p>
+
+<p>
+--libvirt=qemu:///system告诉KVM把该虚拟机添加到可用虚拟机的列表。
+</p>
+
+<p>
+--addpkg让你可以指定创建虚拟机过程中想安装的Ubuntu程序包（上文解释了为什么不该把openssh-server添加到该列表中，而是应该使用首次启动脚本）。
+</p>
+
+<p>
+--bridge建立了桥接网络；由于我们已在第2节建立了网桥br0，我们在此指定该网桥。
+</p>
+
+<p>
+--mirror可以使用--mirror来指定官方的Ubuntu库，比如<code>http://de.archive.ubuntu.com/ubuntu</code>。如果你略去--mirror，那么就会使用默认的Ubuntu库:<code>http://archive.ubuntu.com/ubuntu</code>
+</p>
+
+<p>
+如果你用--ip参数选项符指定IP地址，要确保你还使用--gw参数选项符指定了正确的网关IP（不然，vmbuilder会假设它是网络中的第一个有效地址，实则不然）。网关IP通常与你在/etc/network/interfaces中所用的一样（参阅第2节）。
+</p>
+
+<p>
+创建过程可能要花几分钟。
+</p>
+
+<p>
+之后，你能在/etc/libvirt/qemu/ (=&gt; /etc/libvirt/qemu/vm1.xml)中找到该虚拟机的XML配置文件：
+</p>
+<pre>
+ls -l /etc/libvirt/qemu/
+
+drwxr-xr-x 3 root root 4096 May 21 13:00 networks
+-rw------- 1 root root 2082 May 21 13:15 vm1.xml
+</pre>
+<p>
+磁盘镜像位于我们虚拟机目录的ubuntu-kvm/子目录中：
+</p>
+<pre>
+ls -l /var/lib/libvirt/images/vm1/ubuntu-kvm/
+
+-rw-r--r-- 1 root root 324337664 May 21 13:14 tmpE4IiRv.qcow2
+-rw-r--r-- 1 root root 294715392 May 21 13:15 tmpxvSVOT.qcow2
+</pre>
+
+<h2 id="toc_0.4">创建第二个虚拟机</h2>
+
+
+<p>
+如果你想创建第二个虚拟机（vm2），这里简要概述一下命令：
+</p>
+<pre class="brush:bash">
+VMD=/var/lib/libvirt/images/vm2
+
+mkdir -p $VMD/mytemplates/libvirt
+cp /etc/vmbuilder/libvirt/* $VMD/mytemplates/libvirt/
+
+vi /var/lib/libvirt/images/vm2/vmbuilder.partition
+vi /var/lib/libvirt/images/vm2/boot.sh
+
+cd /var/lib/libvirt/images/vm2/
+vmbuilder kvm ubuntu --suite=precise --flavour=virtual --arch=amd64 \
+--mirror=http://de.archive.ubuntu.com/ubuntu -o --libvirt=qemu:///system \
+--ip=192.168.0.102 --gw=192.168.0.1 --part=vmbuilder.partition --templates=mytemplates \
+--user=administrator --name=Administrator --pass=howtoforge \
+--addpkg=vim-nox --addpkg=unattended-upgrades --addpkg=acpid \
+--firstboot=/var/lib/libvirt/images/vm2/boot.sh \
+--mem=256 --hostname=vm2 --bridge=br0
+</pre>
+
+<p>
+请注意：如果你把-d DESTDIR变量传递给vmbuilder命令，就没必要为虚拟机创建新目录（/var/lib/libvirt/images/vm2）——它让你可以在你已经创建了另一个虚拟机的目录中创建虚拟机。这种情况下，你没必要创建新的vmbuilder.partition和boot.sh文件，也没必要改动模板，而是只要使用现有文件：
+</p>
+<pre class="brush:bash">
+cd /var/lib/libvirt/images/vm1/
+
+vmbuilder kvm ubuntu --suite=precise --flavour=virtual --arch=amd64 \
+--mirror=http://de.archive.ubuntu.com/ubuntu -o --libvirt=qemu:///system \
+--ip=192.168.0.102 --gw=192.168.0.1 --part=vmbuilder.partition --templates=mytemplates \
+--user=administrator --name=Administrator --pass=howtoforge \
+--addpkg=vim-nox --addpkg=unattended-upgrades --addpkg=acpid \
+--firstboot=/var/lib/libvirt/images/vm1/boot.sh \
+--mem=256 --hostname=vm2 --bridge=br0 -d vm2-kvm
+</pre>
+
+<h2 id="toc_0.5">管理虚拟机</h2>
+
+<p>
+可以通过virsh（虚拟外壳）来管理虚拟机。想连接到虚拟外壳，运行：
+</p>
+<pre class="brush:bash">
+virsh --connect qemu:///system
+
+# 虚拟外壳的样子如下：
+root@server1:~# virsh --connect qemu:///system
+Welcome to virsh, the virtualization interactive terminal.
+Type: 'help' for help with commands
+'quit' to quit
+
+virsh # help
+</pre>
+
+<ul>
+<li>
+域管理命令（帮助关键字'domain'）：
+<pre>
+attach-device 从XML文件附加设备
+attach-disk 附加磁盘设备
+attach-interface 附加网络接口
+autostart 自动启动域
+blkdeviotune 设定或查询块设备输入/输出调整参数
+blkiotune 获取或设定块输入/输出参数
+blockpull 从支持镜像填充磁盘
+blockjob 管理活动的块操作
+blockresize 为域的块设备调整大小
+console 连接到客户机控制台
+cpu-baseline 计算基准处理器
+cpu-compare 比较主机处理器与XML文件描述的处理器
+create 从XML文件创建域
+define 从XML文件定义（但不启动）域
+destroy 销毁（停止）域
+detach-device 从XML文件分离设备
+detach-disk 分离磁盘设备
+detach-interface 分享网络接口
+domid 把域名或UUID转换成域编号
+domif-setlink 设定虚拟接口的链路状态
+domjobabort 放弃活动的域任务
+domjobinfo 域任务信息
+domname 把域编号或UUID转换成域名
+domuuid 把域名或编号转换成域UUID
+domxml-from-native 把原生配置转换成域XML
+domxml-to-native 把域XML转换成原生配置
+dump 把域的核心转储到文件中，以便分析
+dumpxml XML中的域信息
+edit 为域编辑XML配置
+inject-nmi 把NMI注入到客户机
+send-key 将键码发送到客户机
+managedsave 域状态的托管保存
+managedsave-remove 清除域的托管保存
+maxvcpus 连接虚拟处理器最大值
+memtune 获取或设定内存参数
+migrate 把域迁移到另一个主机
+migrate-setmaxdowntime 设定可以容忍的最长停机时间
+migrate-setspeed 设定最大迁移带宽
+migrate-getspeed 获取最大迁移带宽
+reboot 重启域
+reset 重置域
+restore 从文件中的保存状态恢复域
+resume 恢复运行域
+save 将域状态保存到文件
+save-image-define 为域的保存状态文件重新定义XML
+save-image-dumpxml XML中的保存状态域信息
+save-image-edit 为域的保存状态文件编辑XML
+schedinfo 显示/设定调度器参数
+screenshot 获取当前域控制台的屏幕截图，并保存到文件中
+setmaxmem 改变最大内存限额
+setmem 改变内存分配
+setvcpus 改变虚拟处理器的数量
+shutdown 从容地关闭域
+start 启动（之前定义的）非活动域
+suspend 暂停域
+ttyconsole tty控制台
+undefine 取消定义域
+update-device 从XML文件更新设备
+vcpucount 域虚拟处理器数量
+vcpuinfo 详细的域虚拟处理器信息
+vcpupin 控制或查询域虚拟处理器亲近性
+version 显示版本
+vncdisplay vnc显示
+</pre>
+
+<li>
+域监控命令（帮助关键字'monitor'）：
+<pre>
+domblkinfo 域块设备大小信息
+domblklist 列出所有域块
+domblkstat 获取一个域的设备块统计信息
+domcontrol 域控制台界面状态
+domif-getlink 获取虚拟接口的链路状态
+domifstat 获取域的网络接口统计信息
+dominfo 域信息
+dommemstat 获取域的内存统计信息
+domstate 域状态
+list 列出域
+</pre>
+
+<li>
+主机和虚拟机管理程序命令（帮助关键字'host'）：
+<pre>
+capabilities 功能
+connect （重新）连接至虚拟机管理程序
+freecell NUMA闲置内存
+hostname 打印虚拟机管理程序主机名
+nodecpustats 打印节点的处理器统计信息
+nodeinfo 节点信息
+nodememstats 打印节点的内存统计信息.
+nodesuspend 将主机节点暂停一段特定的时间
+qemu-attach QEMU附加
+qemu-monitor-command QEMU监测器命令
+sysinfo 打印虚拟机管理程序的系统信息
+uri 打印虚拟机管理程序canonical URI
+</pre>
+
+<li>
+接口命令（帮助关键字'interface'）：
+<pre>
+iface-begin 拍摄当前接口设置的快照，以后可以提交（iface-commit）或恢复(iface-rollback)
+iface-bridge 建立网桥设备，并与现有网络设备相连
+iface-commit 实行自iface-begin和闲置恢复点以来所作的变化
+iface-define 从XML文件定义（但不启动）物理主机接口
+iface-destroy 销毁物理主机接口（禁用它/ "if-down"）
+iface-dumpxml XML中的接口信息
+iface-edit 为物理主机接口编辑XML配置
+iface-list 列出物理主机接口
+iface-mac 把接口名称转换成接口MAC地址
+iface-name 把接口MAC地址转换成接口名称
+iface-rollback 恢复到通过iface-begin创建的之前保存的配置
+iface-start 启动物理主机接口（启用它/ "if-up"）
+iface-unbridge 分离从属设备后，取消定义网桥设备
+iface-undefine 取消定义物理主机接口（将它从配置中移除）
+</pre>
+
+<li>
+网络过滤器命令（帮助关键字'filter'）：
+<pre>
+nwfilter-define 从XML文件定义或更新网络过滤器
+nwfilter-dumpxml XML中的网络过滤器信息
+nwfilter-edit 为网络过滤器编辑XML配置
+nwfilter-list 列出网络过滤器
+nwfilter-undefine 取消定义网络过滤器
+</pre>
+
+<li>
+网络命令（帮助关键字'network'）：
+<pre>
+net-autostart 自动启动网络
+net-create 从XML文件创建网络
+net-define 从XML文件定义（但不启动）网络
+net-destroy 销毁（停止）网络
+net-dumpxml XML中的网络信息
+net-edit 为网络编辑XML配置
+net-info 网络信息
+net-list 列出网络
+net-name 把网络UUID转换成网络名称
+net-start 启动（之前定义）的非活动网络
+net-undefine 取消定义非活动网络
+net-uuid 把网络名称转换成网络UUID
+</pre>
+
+<li>
+节点设备命令（帮助关键字'nodedev'）：
+<pre>
+nodedev-create 在节点上创建由XML文件定义的设备
+nodedev-destroy 销毁（停止）节点上的设备
+nodedev-dettach 将节点设备与设备驱动程序分离
+nodedev-dumpxml XML中的节点设备详细信息
+nodedev-list 列举该主机上的设备
+nodedev-reattach 重新将节点设备连接至设备驱动程序
+nodedev-reset 重置节点设备
+</pre>
+
+<li>
+密钥（帮助关键字'secret'）：
+<pre>
+secret-define 从XML文件定义或改动密钥
+secret-dumpxml XML中的密钥属性
+secret-get-value 输出密钥值
+secret-list 列出密钥
+secret-set-value 设定密钥值
+secret-undefine 取消定义密钥
+</pre>
+
+<li>
+快照命令（帮助关键字'snapshot'）：
+<pre>
+snapshot-create 从XML创建快照
+snapshot-create-as 从一组变更创建快照
+snapshot-current 获取或设定当前快照
+snapshot-delete 删除域的快照
+snapshot-dumpxml 转储域快照的XML
+snapshot-edit 编辑快照的XML
+snapshot-list 列出域的快照
+snapshot-parent 获取快照母版的名称
+snapshot-revert 使域回复到快照
+</pre>
+
+<li>
+存储池命令（帮助关键字'pool'）：
+<pre>
+find-storage-pool-sources-as 查找潜在的存储池来源
+find-storage-pool-sources 发现潜在的存储池来源
+pool-autostart 自动启动存储池
+pool-build 建立存储池
+pool-create-as 从一组变量创建存储池
+pool-create 从XML文件创建存储池
+pool-define-as 从一组变量定义存储池
+pool-define 从XML文件定义（但不启动）存储池
+pool-delete 删除存储池
+pool-destroy 销毁（停止）存储池
+pool-dumpxml XML中的存储池信息
+pool-edit 为存储池编辑XML配置
+pool-info 存储池信息
+pool-list 列出存储池
+pool-name 把存储池UUID转换成存储池名称
+pool-refresh 刷新存储池
+pool-start 启动（之前定义）的非活动存储池
+pool-undefine 取消定义非活动存储池
+pool-uuid 把存储池名称转换成存储池UUID
+</pre>
+
+<li>
+存储卷命令（帮助关键字'volume'）：
+<pre>
+vol-clone 克隆存储卷
+vol-create-as 从一组变量创建存储卷
+vol-create 从XML文件创建存储卷
+vol-create-from 创建存储卷，使用另一个存储卷作为输入
+vol-delete 删除存储卷
+vol-download 下载存储卷到文件
+vol-dumpxml XML中的存储卷信息
+vol-info 存储卷信息
+vol-key 返回某个存储卷名称或路径的存储卷密钥
+vol-list 列出存储卷
+vol-name 返回某个存储卷密钥或路径的存储卷名称
+vol-path 返回某个存储卷名称或密钥的存储卷路径
+vol-pool 返回某个存储卷密钥或路径的存储池
+vol-upload 将文件上传到存储池
+vol-wipe 清除存储卷
+</pre>
+
+<li>
+虚拟外壳命令（帮助关键字virsh'）：
+<pre>
+cd 变更当前目录
+echo 回显变量
+exit 退出这个交互式终端
+help 打印帮助
+pwd 打印当前目录
+quit 退出这个交互式终端
+</pre>
+
+</ul>
+
+<ul>
+<li>
+常用命令
+<pre class="brush:bash">
+list          # 显示所有运行中虚拟机：
+list --all    # 显示所有虚拟机，包括运行中虚拟机和非活动虚拟机：
+# 在你第一次启动新虚拟机之前，必须从XML文件来定义（该文件位于/etc/libvirt/qemu/目录）：
+define /etc/libvirt/qemu/vm1.xml
+# 请注意：只要你改动/etc/libvirt/qemu/中的虚拟机XML文件，就必须再次运行define命令！
+
+# 现在你可以启动虚拟机：
+start vm1
+# 片刻过后，你应该可以使用PuTTY等SSH客户程序，连接到虚拟机；以默认的用户名和密码登录。第一次登录后，你会看到要求更改密码的提示。
+# 现在应该显示虚拟机是运行中：
+list
+Id Name State
+----------------------------------
+1 vm1 running
+
+# 想停止虚拟机，运行
+shutdown vm1
+# 想立即停止虚拟机（也就是拔掉电源），运行
+destroy vm1
+# 暂停虚拟机：
+suspend vm1
+# 恢复运行虚拟机：
+resume vm1
+quit #退出虚拟管理界面
+</pre>
+
+</ul>
+
+<h2 id="toc_0.6">创建基于LVM的虚拟机</h2>
+
+<p>
+基于LVM的虚拟机与基于镜像的虚拟机相比有一些优点。它们的硬盘输入/输出不大频繁，而且更容易备份（使用LVM快照）。
+</p>
+
+<p>
+想使用基于LVM的虚拟机，你就需要一个卷组，它要有未分配给任何逻辑卷的一些闲置空间。在本例中，我使用了大小约为465GB的卷组/dev/vg0……
+</p>
+<pre>
+vgdisplay
+
+  --- Volume group ---
+  VG Name               vg0
+  System ID
+  Format                lvm2
+  Metadata Areas        1
+  Metadata Sequence No  3
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                2
+  Open LV               2
+  Max PV                0
+  Cur PV                1
+  Act PV                1
+  VG Size               465.29 GiB
+  PE Size               4.00 MiB
+  Total PE              119115
+  Alloc PE / Size       24079 / 94.06 GiB
+  Free  PE / Size       95036 / 371.23 GiB
+  VG UUID               PRenhH-0MvN-wXCL-nl4i-IfsQ-J6fc-2raYLD
+</pre>
+
+<p>
+该卷组包含大小约为100GB的逻辑卷/dev/vg0/root和大小约为1GB的逻辑卷/dev/vg0/swap_1，其余空间未分配，可供虚拟机使用：
+</p>
+<pre>
+lvdisplay
+  --- Logical volume ---
+  LV Name                /dev/vg0/root
+  VG Name                vg0
+  LV UUID                dwnORf-yG3U-x1ZC-Bet1-TOoc-q1Dd-KZnbtw
+  LV Write Access        read/write
+  LV Status              available
+  # open                 1
+  LV Size                93.13 GiB
+  Current LE             23841
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     256
+  Block device           252:0
+  --- Logical volume ---
+  LV Name                /dev/vg0/swap_1
+  VG Name                vg0
+  LV UUID                ZdPKO6-sZrr-tIRb-PPcl-aWBj-QAUU-fnYUuP
+  LV Write Access        read/write
+  LV Status              available
+  # open                 2
+  LV Size                952.00 MiB
+  Current LE             238
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     256
+  Block device           252:1
+</pre>
+
+<p>
+现在我将创建虚拟机vm5，作为基于LVM的虚拟机。我们可以再度使用vmbuilder命令。vmbuilder知道--raw选项，该选项允许将虚拟机写入到块设备（如/dev/vg0/vm5）——我试用了该选项；不过它没有返回错误，我也启动不了虚拟机（start vm5也没有显示任何错误，但是我根本无法访问该虚拟机。）
+</p>
+
+<p>
+因此，我将先创建vm5，作为基于镜像的虚拟机，然后转换成基于LVM的虚拟机。
+</p>
+<pre>
+mkdir -p /var/lib/libvirt/images/vm5/mytemplates/libvirt
+cp /etc/vmbuilder/libvirt/* /var/lib/libvirt/images/vm5/mytemplates/libvirt/
+</pre>
+<p>
+确保你在仅仅一个镜像文件中创建所有分区，所以在vmbuilder.partition文件中不要使用---：
+</p>
+<pre>
+vi /var/lib/libvirt/images/vm5/vmbuilder.partition
+root 8000
+swap 2000
+/var 10000
+</pre>
+
+<p>
+vi /var/lib/libvirt/images/vm5/boot.sh
+</p>
+<pre class="brush:bash">
+# 虚拟机第一次启动时，该脚本将运行。
+# 它以根用户来运行。
+# 到期终止用户帐户
+passwd -e administrator
+# 安装openssh-server
+apt-get update
+apt-get install -qqy --force-yes openssh-server
+</pre>
+
+<pre class="brush:bash">
+cd /var/lib/libvirt/images/vm5/
+vmbuilder kvm ubuntu --suite=precise --flavour=virtual --arch=amd64 \
+--mirror=http://de.archive.ubuntu.com/ubuntu -o --libvirt=qemu:///system \
+--ip=192.168.0.105 --gw=192.168.0.1 --part=vmbuilder.partition --templates=mytemplates \
+--user=administrator --name=Administrator --pass=howtoforge \
+--addpkg=vim-nox --addpkg=unattended-upgrades --addpkg=acpid \
+--firstboot=/var/lib/libvirt/images/vm5/boot.sh \
+--mem=256 --hostname=vm5 --bridge=br0
+</pre>
+
+<p>
+你可以从vmbuilder.partition文件看到，虚拟机将使用最多20GB的空间，于是我们现在创建一个大小为20GB的逻辑卷，名为/dev/vg0/vm5：
+</p>
+<pre>
+lvcreate -L20G -n vm5 vg0
+</pre>
+
+<p>
+别在新的逻辑卷中创建文件系统！我们将使用qemu-img命令，把镜像转换成基于LVM的虚拟机。
+</p>
+
+<p>
+现在我们进入到虚拟机的ubuntu-kvm/目录……即可发现我们的镜像是如何命名的：
+</p>
+
+<pre>
+cd /var/lib/libvirt/images/vm5/ubuntu-kvm/
+ls -l
+-rw-r--r-- 1 root root 606470144 May 21 14:06 tmpesHsUI.qcow2
+</pre>
+
+<p>
+由于我们已知道了镜像的名称（tmpN27tbO.qcow2），可按如下方式来转换它：
+</p>
+<pre class="brush:bash">
+qemu-img convert tmpesHsUI.qcow2 -O raw /dev/vg0/vm5
+
+# 之后，你可以删除磁盘镜像：
+rm -f tmpesHsUI.qcow2
+</pre>
+
+<p>
+现在，我们必须改动虚拟机的配置……
+</p>
+<pre class="brush:bash">
+virsh edit vm5
+
+# 并改变下列部分……
+[...]
+# 以便看起来像下面这样：
+[...]
+
+# 现在，你可以使用virsh来管理虚拟机：
+virsh --connect qemu:///system
+
+# 由于我们已改动了虚拟机的XML文件，必须先运行define命令……
+define /etc/libvirt/qemu/vm5.xml
+# 然后启动虚拟机：
+start vm5
+</pre>
+ 
+<h2 id="toc_0.7">相关链接</h2>
+<ul>
+<li>
+KVM（Ubuntu社区说明文档）：<a href="https://help.ubuntu.com/community/KVM">https://help.ubuntu.com/community/KVM</a>
+
+<li>
+vmbuilder：<a href="https://help.ubuntu.com/community/JeOSVMBuilder">https://help.ubuntu.com/community/JeOSVMBuilder</a>
+
+<li>
+JeOS和vmbuilder：<a href="http://doc.ubuntu.com/ubuntu/serverguide/C/jeos-and-vmbuilder.html">http://doc.ubuntu.com/ubuntu/serverguide/C/jeos-and-vmbuilder.html</a>
+
+<li>
+Ubuntu：<a href="http://www.ubuntu.com/">http://www.ubuntu.com/</a> 
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

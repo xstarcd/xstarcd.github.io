@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>系统基本设置</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">系统基本设置</a>
+<ul>
+<li><a href="#toc_1.1">主机名修改</a>
+<li><a href="#toc_1.2">网络参数配置</a>
+<li><a href="#toc_1.3">ntpdate时钟同步</a>
+<li><a href="#toc_1.4">sshd_config</a>
+<li><a href="#toc_1.5">sysctl.conf</a>
+<li><a href="#toc_1.6">limits.conf</a>
+<li><a href="#toc_1.7">服务启动管理</a>
+<li><a href="#toc_1.8">包管理工具</a>
+<ul>
+<li><a href="#toc_1.8.1">软件源设置</a>
+</ul>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">系统基本设置</h1>
+
+<h2 id="toc_1.1">主机名修改</h2>
+<pre class="brush: bash">
+# CentOS
+h="TMXLlvs2" \
+&amp;&amp; hostname $h \
+&amp;&amp; sed -i.bak "s/\(HOSTNAME=\).*$/\1$h/g" /etc/sysconfig/network \
+&amp;&amp; grep "127.0.0.1.*$h" /etc/hosts || sed -i "s/\(127.0.0.1.*$\)/\1 $h/g" /etc/hosts \
+&amp;&amp; ping -c 4 $h
+
+</pre>
+
+<pre class="brush: bash">
+# Ubuntu
+h="TMXLlvs2" \
+&amp;&amp; hostname $h \
+&amp;&amp; echo "$h" &gt; /etc/hostname \
+&amp;&amp; grep "127.0.0.1.*$h" /etc/hosts || sed -i "s/\(127.0.0.1.*$\)/\1 $h/g" /etc/hosts \
+&amp;&amp; ping -c 4 $h
+</pre>
+
+<h2 id="toc_1.2">网络参数配置</h2>
+<pre class="brush: bash">
+# CentOS
+/etc/sysconfig/network
+/etc/sysconfig/network-scripts/ifcfg-eth0
+/etc/resolv.conf
+</pre>
+<pre class="brush: bash">
+# Ubuntu
+/etc/network/interface
+</pre>
+
+<h2 id="toc_1.3">ntpdate时钟同步</h2>
+<pre class="brush: bash">
+
+ntpdate cn.pool.ntp.org &amp;&amp; hwclock -w
+
+# /etc/crontab
+#NTP update(cn.pool.ntp.org,time.stdtime.gov.tw,172.16.17.35)
+30 4,16 * * * root (/usr/sbin/ntpdate cn.pool.ntp.org;/sbin/hwclock -w;) &gt;&gt; /var/log/ntpdate_$(date +\%Y\%m) 2&gt;&amp;1
+</pre>
+
+<h2 id="toc_1.4">sshd_config</h2>
+
+<h2 id="toc_1.5">sysctl.conf</h2>
+
+<h2 id="toc_1.6">limits.conf</h2>
+
+<h2 id="toc_1.7">服务启动管理</h2>
+<ul>
+<li>
+CentOS
+<pre class="brush: bash">
+chkconfig --list nginx
+chkconfig --add nginx
+chkconfig nginx on|off
+</pre>
+
+</ul>
+
+<ul>
+<li>
+Ubuntu
+<pre class="brush: bash">
+update-rc.d nginx defaults
+update-rc.d -f nginx remove
+</pre>
+
+</ul>
+
+<h2 id="toc_1.8">包管理工具</h2>
+<ul>
+<li>
+CentOS: yum, rpm
+
+<li>
+Ubuntu: apt-get,apt-cache,dpkg
+
+</ul>
+<h3 id="toc_1.8.1">软件源设置</h3>
+<ul>
+<li>
+CentOS
+<pre class="brush: bash">
+#
+</pre>
+
+</ul>
+
+<ul>
+<li>
+Ubuntu
+<pre class="brush: bash">
+#
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

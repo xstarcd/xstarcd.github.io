@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>几个常用的Linux监控脚本</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>几个常用的Linux监控脚本</h1>
+
+<p>
+原文: <a href="http://turbomailtt.blog.51cto.com/934223/521336">http://turbomailtt.blog.51cto.com/934223/521336</a>
+</p>
+
+<ul>
+<li>
+查看主机网卡流量
+<pre class="brush:bash">
+#!/bin/bash
+#network
+#Mike.Xu
+while : ; do
+      time=`date +%m"-"%d" "%k":"%M`
+      day=`date +%m"-"%d`
+      rx_before=`ifconfig eth0|sed -n "8"p|awk '{print $2}'|cut -c7-`
+      tx_before=`ifconfig eth0|sed -n "8"p|awk '{print $6}'|cut -c7-`
+      sleep 2
+      rx_after=`ifconfig eth0|sed -n "8"p|awk '{print $2}'|cut -c7-`
+      tx_after=`ifconfig eth0|sed -n "8"p|awk '{print $6}'|cut -c7-`
+      rx_result=$[(rx_after-rx_before)/256]
+      tx_result=$[(tx_after-tx_before)/256]
+      echo "$time Now_In_Speed: "$rx_result"kbps Now_OUt_Speed: "$tx_result"kbps"
+      sleep 2
+done
+</pre>
+
+</ul>
+
+<ul>
+<li>
+系统状况监控
+<pre class="brush:bash">
+#!/bin/sh
+#systemstat.sh
+#Mike.Xu
+IP=192.168.1.227
+top -n 2| grep "Cpu" &gt;&gt;./temp/cpu.txt
+free -m | grep "Mem" &gt;&gt; ./temp/mem.txt
+df -k | grep "sda1" &gt;&gt; ./temp/drive_sda1.txt
+#df -k | grep sda2 &gt;&gt; ./temp/drive_sda2.txt
+df -k | grep "/mnt/storage_0" &gt;&gt; ./temp/mnt_storage_0.txt
+df -k | grep "/mnt/storage_pic" &gt;&gt; ./temp/mnt_storage_pic.txt
+time=`date +%m"."%d" "%k":"%M`
+connect=`netstat -na | grep "219.238.148.30:80" | wc -l`
+echo "$time  $connect" &gt;&gt; ./temp/connect_count.txt
+</pre>
+
+</ul>
+
+<ul>
+<li>
+监控主机的磁盘空间,当使用空间超过90％就通过发mail来发警告
+<pre class="brush:bash">
+#!/bin/bash
+#monitor available disk space
+SPACE='df | sed -n '/ \ / $ / p' | gawk '{print $5}' | sed  's/%//'
+if [ $SPACE -ge 90 ]
+    then
+    fty89@163.com
+fi
+</pre>
+
+</ul>
+
+<ul>
+<li>
+监控CPU和内存的使用情况
+<pre class="brush:bash">
+#!/bin/bash
+#script  to capture system statistics
+OUTFILE=/home/xu/capstats.csv
+DATE=`date +%m/%d/%Y`
+TIME=`date +%k:%m:%s`
+TIMEOUT=`uptime`
+VMOUT=`vmstat 1 2`
+USERS=`echo $TIMEOUT | gawk '{print $4}'`
+LOAD=`echo $TIMEOUT | gawk '{print $9}' | sed "s/,//'`
+FREE=`echo $VMOUT | sed -n '/[0-9]/p' | sed -n '2p' | gawk '{print $4}'`
+IDLE=`echo  $VMOUT | sed -n '/[0-9]/p' | sed -n '2p' |gawk '{print $15}'`
+echo "$DATE,$TIME,$USERS,$LOAD,$FREE,$IDLE" &gt;&gt; $OUTFILE
+</pre>
+
+</ul>
+
+<ul>
+<li>
+全方位监控主机
+<pre class="brush:bash">
+#!/bin/bash
+# check_xu.sh
+# 0 * * * * /home/check_xu.sh
+ 
+DAT="`date +%Y%m%d`"
+HOUR="`date +%H`"
+DIR="/home/oslog/host_${DAT}/${HOUR}"
+DELAY=60
+COUNT=60
+# whether the responsible directory exist
+if ! test -d ${DIR}
+then
+    /bin/mkdir -p ${DIR}
+fi
+# general check
+export TERM=linux
+/usr/bin/top -b -d ${DELAY} -n ${COUNT} &gt; ${DIR}/top_${DAT}.log 2&gt;&amp;1 &amp;
+# cpu check
+/usr/bin/sar -u ${DELAY} ${COUNT} &gt; ${DIR}/cpu_${DAT}.log 2&gt;&amp;1 &amp;
+#/usr/bin/mpstat -P 0 ${DELAY} ${COUNT} &gt; ${DIR}/cpu_0_${DAT}.log 2&gt;&amp;1 &amp;
+#/usr/bin/mpstat -P 1 ${DELAY} ${COUNT} &gt; ${DIR}/cpu_1_${DAT}.log 2&gt;&amp;1 &amp;
+# memory check
+/usr/bin/vmstat ${DELAY} ${COUNT} &gt; ${DIR}/vmstat_${DAT}.log 2&gt;&amp;1 &amp;
+# I/O check
+/usr/bin/iostat ${DELAY} ${COUNT} &gt; ${DIR}/iostat_${DAT}.log 2&gt;&amp;1 &amp;
+# network check
+/usr/bin/sar -n DEV ${DELAY} ${COUNT} &gt; ${DIR}/net_${DAT}.log 2&gt;&amp;1 &amp;
+#/usr/bin/sar -n EDEV ${DELAY} ${COUNT} &gt; ${DIR}/net_edev_${DAT}.log 2&gt;&amp;1 &amp;
+</pre>
+
+</ul>
+
+<p>
+放在crontab里每小时自动执行：
+</p>
+<pre>
+0 * * * * /home/check_xu.sh
+</pre>
+<p>
+这样会在/home/oslog/host_yyyymmdd/hh目录下生成各小时cpu、内存、网络，IO的统计数据。
+</p>
+
+<p>
+如果某个时间段产生问题了，就可以去看对应的日志信息，看看当时的主机性能如何。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

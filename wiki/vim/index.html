@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Vim</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Vim</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Vimwiki</a>
+<li><a href="#toc_2">Vim</a>
+</ul>
+</div>
+
+<p>
+Notepad,UltraEdit,EditPlus,Sublime Text2...它们的功能vim都有，加上vimwiki，在Ubuntu、Cygwin下使用都有十分的舒适、满意，不愿再放开它！
+</p>
+
+<p>
+优秀的工具很多，但无力一个个去比较或是深入学习，换来换去只能使用些皮毛功能，不如找一个公认优秀的，一点点地熟悉、学习、积累，它将成为你最称手的工具。
+</p>
+
+<h1 id="toc_1">Vimwiki</h1>
+
+<p>
+<a href="http://code.google.com/p/vimwiki/"><img src="http://code.google.com/p/vimwiki/logo?cct=1339049978" alt="vimwiki" /></a>
+</p>
+
+<ul>
+<li>
+<a href="vimwiki.html">关于vimwiki的使用</a>
+
+<li>
+<a href="vimwikiSyntax.html">vimwiki语法</a>
+
+<li>
+<a href="markdown_syntax.html">markdown_syntax</a>
+
+<li>
+<a href="vimwiki-guide.html">用 vimwiki 搭建你自己的维基世界</a>
+
+<li>
+<a href="SyntaxHighlighter.html">SyntaxHighlighter</a>
+
+<li>
+闲耘™. Wiki: <a href="http://wiki.hotoo.me/">http://wiki.hotoo.me/</a>
+
+<li>
+<a href="disqus.html">设置disqus评论</a>
+
+</ul>
+
+<p>
+<div style="width: 45em" class="lesser" id="whats-special">
+<div class="hd">下拉样式</div>
+<div class="cont" style="display: none;">
+这是丘迟的下拉样式，不是vimwiki直接支持，而是用css中的div样式实现。
+</p>
+
+<p>
+源码是这样的：
+</p>
+<pre class="brush:html">
+&lt;div style="width: 50em" class="lesser" id="whats-special"&gt;
+&lt;div class="hd"&gt;下拉标题文字&lt;/div&gt;
+&lt;div class="cont" style="display: none;"&gt;
+...下拉后的内容，也可以使用Vimwiki标记 ...
+&lt;/div&gt;&lt;/div&gt;
+</pre>
+<p>
+</div></div>
+</p>
+<ul>
+<li>
+多说评论
+<pre class="brush:html">
+&lt;!-- Duoshuo Comment BEGIN --&gt;
+&lt;div class="ds-thread"&gt;&lt;/div&gt;
+&lt;script type="text/javascript"&gt;
+var duoshuoQuery = {short_name:"xstar"};
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = 'http://static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0] 
+        || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+    &lt;/script&gt;
+&lt;!-- Duoshuo Comment END --&gt;
+</pre>
+
+<li>
+生成SiteMap脚本
+<pre class="brush:bash;collapse:true;toolbar:true;">
+#!/bin/sh
+#Scriptname: sitemap.sh
+#Auther: YuanXing
+#Create: 2013-12-17
+#Update: 2014-11-13
+
+WikiDir=/data/soft/Vimwiki/Mywiki
+SiteMap=${WikiDir}/SiteMap.wiki
+SiteMapold=${WikiDir}/SiteMap.old
+SiteMaptxt=${WikiDir}_html/SiteMap.txt
+WikiUrl=http://w.gdu.me/wiki
+EXCLUDE='/personal|/ogames|/gmxzd'
+
+export PATH=/usr/local/bin:/usr/bin
+
+# -----------------------------------------------------------------------------
+kernelname=$(uname -s)
+case "${kernelname%_*}" in
+Linux|CYGWIN)
+    alias STAT="stat -c %y"
+    alias ECHO_N="echo -n"
+    alias ECHO_BR="echo"
+    [ "${SHELL##*/}" = "bash" ] &amp;&amp; alias ECHO_BR="echo -e"
+    ;;
+Darwin)
+    # MacOS
+    alias STAT="stat -f %Sm -t '%Y-%m-%d %H:%M:%S'"
+    alias ECHO_N="printf"
+    alias ECHO_BR="echo"
+    ;;
+*)
+    echo "Sorry,The system type unknow(${kernelname%_*}),I cannot use stat to get file motify time."
+    exit 1
+esac
+rm -f "$SiteMapold"
+cp "$SiteMap" "$SiteMapold"
+ECHO_BR "%title 站点地图\n%toc 站点地图\n&lt;pre id='no-comment'&gt;本页不允许评论&lt;/pre&gt;" &gt; "$SiteMap"
+ECHO_BR "\n* Update: `date +'%Y-%m-%d %H:%M:%S'`" &gt;&gt; "$SiteMap"
+echo -n "" &gt; "$SiteMaptxt"
+for D in `find $WikiDir -type d|grep -vE "$EXCLUDE"|sort`;do
+    ECHO_N "${D}:"
+    dirurl=`echo $D|sed "s#$WikiDir/##g"`
+    if [ -n "$dirurl" -a "$D" != "$WikiDir" ];then
+        basename=$(basename "$D")
+        dirlevel=`echo "$dirurl"|sed -e 's#[^/]##g' -e 's#/#\*#g'`
+        if [ -z "$dirlevel" ];then
+            ECHO_BR "\n== [[$dirurl/index|$basename]] ==" &gt;&gt; "$SiteMap"
+        else
+            ECHO_BR "\n$dirlevel [[$dirurl/index|$basename]]" &gt;&gt; "$SiteMap"
+        fi
+        echo "$WikiUrl/$dirurl/index.html" &gt;&gt; "$SiteMaptxt"
+  
+        out=
+        cnt=0
+        for F in `find $D -maxdepth 1 -type f \( -name "*.wiki" -and ! -name "index.wiki" \)|grep -vE 'personal'|sort`;do
+            cnt=$(expr $cnt + 1)
+            url=`echo "$F"|sed -e "s#$WikiDir/##g" -e 's#\.wiki##g'`
+            #level=`echo "${url}"|sed -e 's#[^/]##g' -e 's#/#    #g'|awk '{print $0"*"}'`
+            level="`echo "${url}"|sed -e 's#[^/]##g' -e 's#/#    #g'`*"
+            title=$(head "$F"|grep '^%title'|head -1|sed 's/%title //g')
+            title=${title:-$url}
+            modify=`STAT $F|awk '{print $1}'`
+            echo "$WikiUrl/${url}.html" &gt;&gt; "$SiteMaptxt"
+            [ -n "$out" ] &amp;&amp; out="$out\n"
+            out="${out}$level [$modify][[$url|$title]]"
+            grep "\[\[$url\|$title]]" "$SiteMapold" &gt; /dev/null 2&gt;&amp;1
+            if [ "$?" = "0" ];then
+                ECHO_N "."
+            else
+                ECHO_N "+"
+            fi
+        done
+        ECHO_N "$cnt"
+        ECHO_BR "$out"|sort -r &gt;&gt; "$SiteMap"
+    fi
+    echo ""
+done
+ECHO_N "Total:";cat "$SiteMaptxt"|wc -l
+
+</pre>
+
+</ul>
+
+<ul>
+<li>
+关于Google Analytics/webmasters
+
+<ul>
+<li>
+<a href="https://www.google.cn/intl/zh-CN/analytics">https://www.google.cn/intl/zh-CN/analytics</a> 
+
+<li>
+<a href="https://www.google.com/analytics/">https://www.google.com/analytics/</a>
+
+<li>
+<a href="http://www.google.com.hk/webmasters/">http://www.google.com.hk/webmasters/</a>
+
+<li>
+PageSpeed Insights: <a href="https://developers.google.com/speed/pagespeed/insights/">https://developers.google.com/speed/pagespeed/insights/</a> 
+<pre class="brush:bash">
+&lt;script&gt;
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-46664569-1', 'gdu.me');
+  ga('send', 'pageview');
+
+&lt;/script&gt;
+</pre>
+
+</ul>
+</ul>
+
+
+<h1 id="toc_2">Vim</h1>
+
+<p>
+<a href="http://www.vim.org/"><img src="../img/vim_header.gif" alt="vim" /></a>
+</p>
+
+<ul>
+<li>
+vim配置及插件安装管理（超级详细）:<a href="http://blog.csdn.net/namecyf/article/details/7787479">http://blog.csdn.net/namecyf/article/details/7787479</a>
+
+<li>
+<a href="vim_simple.html">简明 Vim 练级攻略</a>
+
+<li>
+<a href="vim_study.html">vim使用技巧收集</a>
+
+<li>
+<a href="vim_regular.html">vim正规表达式</a>
+
+<li>
+<a href="BestofVimTips.html">BestofVimTips</a>
+
+<li>
+<a href="vimrc.html">vimrc</a>
+
+<li>
+<a href="vimrc_full.html">好全的vimrc</a>
+
+<li>
+<a href="vimrc_yiyun.html">依云的vimrc</a>
+
+<li>
+<a href="http://blog.sanctum.geek.nz/advanced-vim-registers/">vim高级功能blog</a>
+
+<li>
+<a href="../img/vim_cheat_sheet_for_programmers_print.png">给程序员的vim速查图</a>
+
+<ul>
+<li>
+<a href="http://coolshell.cn/articles/5479.html">http://coolshell.cn/articles/5479.html</a> 
+
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

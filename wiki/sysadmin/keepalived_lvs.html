@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Keepalived and LVS</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+
+<h1 id="toc_1">Keepalived &amp; LVS</h1>
+
+<p>
+<a href="http://www.linuxvirtualserver.org/index.html"><img src="http://www.linuxvirtualserver.org/logo/lvs4p-200.gif" alt="LVS" /></a>
+</p>
+
+<ul>
+<li>
+<a href="LVS_Nginx_HAProxy_comp.html">软件级负载均衡器(LVS/HAProxy/Nginx)的特点简介和对比</a>
+
+<li>
+<a href="keepalived_compile.html">CentOS安装keepalived &amp; LVS</a>
+
+<li>
+<a href="keepalived_Principles.html">Keepalived原理与实战精讲</a>
+
+<li>
+<a href="lvs_keepalived_conclusion.html">lvs+keepalived使用总结</a>
+
+<li>
+<a href="keepalived_misc_check.html">keepalived_misc_check</a>
+
+<li>
+<a href="keepalived_lvs_conf.html">keepalived_lvs_conf</a>
+
+<li>
+<a href="lvs_nat.html">lvs_nat</a>
+
+<li>
+<a href="lvs_tun.html">lvs_tun</a>
+
+<li>
+<a href="lvs_persistence.html">lvs的持久连接</a>
+
+<li>
+<a href="lvs_rrd.html">lvs_rrd生成监控图形</a>
+
+<li>
+<a href="Heartbeat.html">Heartbeat</a>
+
+<li>
+<a href="lvs_irq.html">lvs_irq</a>
+
+<li>
+<a href="IPVS_FULLNAT_and_SYNPROXY.html">IPVS_FULLNAT_and_SYNPROXY</a>
+
+<li>
+Layer4 session concurrency(Haproxy and LVS): <a href="http://www.mail-archive.com/haproxy@formilux.org/msg07116.html">http://www.mail-archive.com/haproxy@formilux.org/msg07116.html</a>
+
+<li>
+查看内核中包含的包含IP_VS模组
+<pre class="brush:bash">
+grep "CONFIG_IP_VS" /boot/config-$(uname -r)
+
+CONFIG_IP_VS=m
+CONFIG_IP_VS_IPV6=y
+# CONFIG_IP_VS_DEBUG is not set
+CONFIG_IP_VS_TAB_BITS=12
+CONFIG_IP_VS_PROTO_TCP=y
+CONFIG_IP_VS_PROTO_UDP=y
+CONFIG_IP_VS_PROTO_AH_ESP=y
+CONFIG_IP_VS_PROTO_ESP=y
+CONFIG_IP_VS_PROTO_AH=y
+CONFIG_IP_VS_PROTO_SCTP=y
+CONFIG_IP_VS_RR=m
+CONFIG_IP_VS_WRR=m
+CONFIG_IP_VS_LC=m
+CONFIG_IP_VS_WLC=m
+CONFIG_IP_VS_LBLC=m
+CONFIG_IP_VS_LBLCR=m
+CONFIG_IP_VS_DH=m
+CONFIG_IP_VS_SH=m
+CONFIG_IP_VS_SED=m
+CONFIG_IP_VS_NQ=m
+CONFIG_IP_VS_FTP=m
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

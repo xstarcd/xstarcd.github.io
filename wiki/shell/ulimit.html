@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>ulimit</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>ulimit</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">通过 ulimit 改善系统性能</a>
+<ul>
+<li><a href="#toc_0.1.1">概述</a>
+<li><a href="#toc_0.1.2">ulimit 的功能和用法</a>
+<ul>
+<li><a href="#toc_0.1.2.1">ulimit 功能简述</a>
+<li><a href="#toc_0.1.2.2">如何使用 ulimit</a>
+</ul>
+<li><a href="#toc_0.1.3">用户进程的有效范围</a>
+<li><a href="#toc_0.1.4">管理系统资源的例子</a>
+<ul>
+<li><a href="#toc_0.1.4.1">限制内存使用</a>
+<li><a href="#toc_0.1.4.2">限制创建的文件的大小</a>
+<li><a href="#toc_0.1.4.3">限制创建的socket数量</a>
+<li><a href="#toc_0.1.4.4">限制多线程程序堆栈大小</a>
+</ul>
+<li><a href="#toc_0.1.5">总结</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">通过 ulimit 改善系统性能</h2>
+
+<p>
+<a href="http://www.ibm.com/developerworks/cn/linux/l-cn-ulimit/">http://www.ibm.com/developerworks/cn/linux/l-cn-ulimit/</a>
+</p>
+
+<ul>
+<li>
+孙 翎, 软件工程师, WSO2 Inc
+
+<li>
+叶 光昶, 软件工程师, EMC
+
+<li>
+潘 宁河, 软件工程师, EMC
+
+</ul>
+
+<p>
+发布日期： 2009 年 11 月 26 日
+</p>
+
+<h3 id="toc_0.1.1">概述</h3>
+
+<p>
+系统性能一直是一个受关注的话题，如何通过最简单的设置来实现最有效的性能调优，如何在有限资源的条件下保证程序的运作，ulimit 是我们在处理这些问题时，经常使用的一种简单手段。ulimit 是一种 linux 系统的内键功能，它具有一套参数集，用于为由它生成的 shell 进程及其子进程的资源使用设置限制。本文将在后面的章节中详细说明 ulimit 的功能，使用以及它的影响，并以具体的例子来详细地阐述它在限制资源使用方面的影响。
+</p>
+
+<h3 id="toc_0.1.2">ulimit 的功能和用法</h3>
+
+<h4 id="toc_0.1.2.1">ulimit 功能简述</h4>
+
+<p>
+假设有这样一种情况，当一台 Linux 主机上同时登陆了 10 个人，在系统资源无限制的情况下，这 10 个用户同时打开了 500 个文档，而假设每个文档的大小有10M，这时系统的内存资源就会受到巨大的挑战。
+</p>
+
+<p>
+而实际应用的环境要比这种假设复杂的多，例如在一个嵌入式开发环境中，各方面的资源都是非常紧缺的，对于开启文件描述符的数量，分配堆栈的大小，CPU 时间，虚拟内存大小，等等，都有非常严格的要求。资源的合理限制和分配，不仅仅是保证系统可用性的必要条件，也与系统上软件运行的性能有着密不可分的联系。这时，ulimit 可以起到很大的作用，它是一种简单并且有效的实现资源限制的方式。
+</p>
+
+<p>
+ulimit 用于限制 shell 启动进程所占用的资源，支持以下各种类型的限制：所创建的内核文件的大小、进程数据块的大小、Shell 进程创建文件的大小、内存锁住的大小、常驻内存集的大小、打开文件描述符的数量、分配堆栈的最大大小、CPU 时间、单个用户的最大线程数、Shell 进程所能使用的最大虚拟内存。同时，它支持硬资源和软资源的限制。
+</p>
+
+<p>
+作为临时限制，ulimit 可以作用于通过使用其命令登录的 shell 会话，在会话终止时便结束限制，并不影响于其他 shell 会话。而对于长期的固定限制，ulimit 命令语句又可以被添加到由登录 shell 读取的文件中，作用于特定的 shell 用户。
+</p>
+
+<p>
+在下面的章节中，将详细介绍如何使用 ulimit 做相应的资源限制。
+</p>
+
+<h4 id="toc_0.1.2.2">如何使用 ulimit</h4>
+
+<p>
+ulimit 通过一些参数选项来管理不同种类的系统资源。在本节，我们将讲解这些参数的使用。
+</p>
+
+<p>
+ulimit 命令的格式为：<code>ulimit [options] [limit]</code>
+</p>
+
+<p>
+具体的 options 含义以及简单示例可以参考以下表格。
+</p>
+
+<ul>
+<li>
+表 1. ulimit 参数说明
+
+</ul>
+<table>
+<tr>
+<td>
+选项
+</td>
+<td>
+含义
+</td>
+<td>
+例子
+</td>
+</tr>
+<tr>
+<td>
+-H
+</td>
+<td>
+设置硬资源限制，一旦设置不能增加。
+</td>
+<td>
+ulimit – Hs 64；限制硬资源，线程栈大小为 64K。
+</td>
+</tr>
+<tr>
+<td>
+-S
+</td>
+<td>
+设置软资源限制，设置后可以增加，但是不能超过硬资源设置。
+</td>
+<td>
+ulimit – Sn 32；限制软资源，32 个文件描述符。
+</td>
+</tr>
+<tr>
+<td>
+-a
+</td>
+<td>
+显示当前所有的 limit 信息。
+</td>
+<td>
+ulimit – a；显示当前所有的 limit 信息。
+</td>
+</tr>
+<tr>
+<td>
+-c
+</td>
+<td>
+最大的 core 文件的大小，以 blocks 为单位。
+</td>
+<td>
+ulimit – c unlimited； 对生成的 core 文件的大小不进行限制。
+</td>
+</tr>
+<tr>
+<td>
+-d
+</td>
+<td>
+进程最大的数据段的大小，以 Kbytes 为单位。
+</td>
+<td>
+ulimit -d unlimited；对进程的数据段大小不进行限制。
+</td>
+</tr>
+<tr>
+<td>
+-f
+</td>
+<td>
+进程可以创建文件的最大值，以 blocks 为单位。
+</td>
+<td>
+ulimit – f 2048；限制进程可以创建的最大文件大小为 2048 blocks。
+</td>
+</tr>
+<tr>
+<td>
+-l
+</td>
+<td>
+最大可加锁内存大小，以 Kbytes 为单位。
+</td>
+<td>
+ulimit – l 32；限制最大可加锁内存大小为 32 Kbytes。
+</td>
+</tr>
+<tr>
+<td>
+-m
+</td>
+<td>
+最大内存大小，以 Kbytes 为单位。
+</td>
+<td>
+ulimit – m unlimited；对最大内存不进行限制。
+</td>
+</tr>
+<tr>
+<td>
+-n
+</td>
+<td>
+可以打开最大文件描述符的数量。
+</td>
+<td>
+ulimit – n 128；限制最大可以使用 128 个文件描述符。
+</td>
+</tr>
+<tr>
+<td>
+-p
+</td>
+<td>
+管道缓冲区的大小，以 Kbytes 为单位。
+</td>
+<td>
+ulimit – p 512；限制管道缓冲区的大小为 512 Kbytes。
+</td>
+</tr>
+<tr>
+<td>
+-s
+</td>
+<td>
+线程栈大小，以 Kbytes 为单位。
+</td>
+<td>
+ulimit – s 512；限制线程栈的大小为 512 Kbytes。
+</td>
+</tr>
+<tr>
+<td>
+-t
+</td>
+<td>
+最大的 CPU 占用时间，以秒为单位。
+</td>
+<td>
+ulimit – t unlimited；对最大的 CPU 占用时间不进行限制。
+</td>
+</tr>
+<tr>
+<td>
+-u
+</td>
+<td>
+用户最大可用的进程数。
+</td>
+<td>
+ulimit – u 64；限制用户最多可以使用 64 个进程。
+</td>
+</tr>
+<tr>
+<td>
+-v
+</td>
+<td>
+进程最大可用的虚拟内存，以 Kbytes 为单位。
+</td>
+<td>
+ulimit – v 200000；限制最大可用的虚拟内存为 200000 Kbytes。
+</td>
+</tr>
+</table>
+
+<p>
+我们可以通过以下几种方式来使用 ulimit：
+</p>
+
+<ul>
+<li>
+在用户的启动脚本中
+
+</ul>
+
+<p>
+如果用户使用的是 bash，就可以在用户的目录下的 .bashrc 文件中，加入 ulimit – u 64，来限制用户最多可以使用 64 个进程。
+</p>
+
+<p>
+此外，可以在与 .bashrc 功能相当的启动脚本中加入 ulimt。
+</p>
+
+<ul>
+<li>
+在应用程序的启动脚本中
+
+</ul>
+
+<p>
+如果用户要对某个应用程序 myapp 进行限制，可以写一个简单的脚本 startmyapp。
+</p>
+<pre>
+ulimit -s 512 
+myapp 
+</pre>
+<p>
+以后只要通过脚本 startmyapp 来启动应用程序，就可以限制应用程序 myapp 的线程栈大小为 512K。
+</p>
+
+<ul>
+<li>
+直接在控制台输入
+<pre>
+ulimit – p 256 
+</pre>
+
+</ul>
+<p>
+限制管道的缓冲区为 256K。
+</p>
+
+<h3 id="toc_0.1.3">用户进程的有效范围</h3>
+
+<p>
+ulimit 作为对资源使用限制的一种工作，是有其作用范围的。那么，它限制的对象是单个用户，单个进程，还是整个系统呢？
+</p>
+
+<p>
+事实上， <strong>ulimit 限制的是当前 shell 进程以及其派生的子进程</strong> 。举例来说，如果用户同时运行了两个 shell 终端进程，只在其中一个环境中执行了 ulimit – s 100，则该 shell 进程里创建文件的大小收到相应的限制，而同时另一个 shell 终端包括其上运行的子程序都不会受其影响：
+</p>
+
+<ul>
+<li>
+Shell 进程 1
+<pre>
+ulimit – s 100 
+cat testFile &gt; newFile 
+File size limit exceeded 
+</pre>
+
+</ul>
+
+<ul>
+<li>
+Shell 进程 2
+<pre>
+cat testFile &gt; newFile 
+ls -s newFile 
+323669 newFile 
+</pre>
+
+</ul>
+
+<p>
+那么，是否有针对某个具体用户的资源加以限制的方法呢？答案是有的，方法是通过修改系统的 <code>/etc/security/limits</code> 配置文件。该文件不仅能限制指定用户的资源使用，还能限制指定组的资源使用。该文件的每一行都是对限定的一个描述，格式如下：
+</p>
+<pre>
+&lt;domain&gt; &lt;type&gt; &lt;item&gt; &lt;value&gt; 
+</pre>
+
+<ul>
+<li>
+domain 表示用户或者组的名字，还可以使用 * 作为通配符。
+
+<li>
+Type 可以有两个值，soft 和 hard。
+
+<li>
+Item 则表示需要限定的资源，可以有很多候选值，如 stack，cpu，nofile 等等，分别表示最大的堆栈大小，占用的 cpu 时间，以及打开的文件数。
+
+</ul>
+
+<p>
+通过添加对应的一行描述，则可以产生相应的限制。例如：
+</p>
+<pre>
+* hard noflle 100 
+</pre>
+
+<p>
+该行配置语句限定了任意用户所能创建的最大文件数是 100。
+</p>
+
+<p>
+现在已经可以对进程和用户分别做资源限制了，看似已经足够了，其实不然。很多应用需要对整个系统的资源使用做一个总的限制，这时候我们需要修改 /proc 下的配置文件。/proc 目录下包含了很多系统当前状态的参数，例如 <code>/proc/sys/kernel/pid_max</code>，<code>/proc/sys/net/ipv4/ip_local_port_range</code> 等等，从文件的名字大致可以猜出所限制的资源种类。由于该目录下涉及的文件众多，在此不一一介绍。有兴趣的读者可打开其中的相关文件查阅说明。
+</p>
+
+<h3 id="toc_0.1.4">管理系统资源的例子</h3>
+
+<p>
+ulimit 提供了在 shell 进程中限制系统资源的功能。本章列举了一些使用 ulimit 对用户进程进行限制的例子，详述了这些限制行为以及对应的影响，以此来说明 ulimit 如何对系统资源进行限制，从而达到调节系统性能的功能。
+</p>
+
+<h4 id="toc_0.1.4.1">限制内存使用</h4>
+
+<p>
+使用 ulimit 限制 shell 的内存使用
+</p>
+
+<p>
+在这一小节里向读者展示如何使用 – d，– m 和 – v 选项来对 shell 所使用的内存进行限制。
+</p>
+
+<p>
+首先我们来看一下不设置 ulimit 限制时调用 ls 命令的情况：
+</p>
+
+<p>
+图 2. 未设置 ulimit 时 ls 命令使用情况
+</p>
+<pre>
+echo "test ulimit" &gt; test
+ls test -l
+-rw-rw-r-- 1 yuanxing yuanxing 12 11月  3 21:02 test
+</pre>
+
+<p>
+大家可以看到此时的 ls 命令运行正常。下面设置 ulimit：
+</p>
+<pre>
+ulimit -d 1000 -m 1000 -v 1000
+</pre>
+<p>
+这里再温习一下前面章节里介绍过的这三个选项的含义：
+</p>
+<ul>
+<li>
+-d：设置数据段的最大值。单位：KB。
+
+<li>
+-m：设置可以使用的常驻内存的最大值。单位：KB。
+
+<li>
+-v：设置虚拟内存的最大值。单位：KB。
+
+</ul>
+
+<p>
+通过上面的 ulimit 设置我们已经把当前 shell 所能使用的最大内存限制在 1000KB 以下。接下来我们看看这时运行 ls 命令会得到什么样的结果：
+</p>
+<pre>
+ls test -l
+Segmentation fault
+
+ls test -l 
+/bin/ls: error while loading shared libraries: libc.so.6: failed to map segment 
+from shared object: Cannot allocate memory 
+</pre>
+
+<p>
+从上面的结果可以看到，此时 ls 运行失败。根据系统给出的错误信息我们可以看出是由于调用 libc 库时内存分配失败而导致的 ls 出错。那么我们来看一下这个 libc 库文件到底有多大：
+</p>
+
+<ul>
+<li>
+图 3. 查看 libc 文件大小
+<pre>
+ll /lib/x86_64-linux-gnu/libc-2.17.so
+-rwxr-xr-x 1 root root 1852120  9月 30 22:01 /lib/x86_64-linux-gnu/libc-2.17.so
+</pre>
+
+</ul>
+
+<p>
+从上面的信息可以看出，这个 libc 库文件的大小是 1.5MB。而我们用 ulimit 所设置的内存使用上限是 1000KB，小于 1.5MB，这也就充分证明了 ulimit 所起到的限制 shell 内存使用的功能。
+</p>
+
+<h4 id="toc_0.1.4.2">限制创建的文件的大小</h4>
+
+<p>
+使用 ulimit 限制 shell 创建的文件的大小
+</p>
+
+<p>
+接下来向读者展示如何使用 -f 选项来对 shell 所能创建的文件大小进行限制。
+</p>
+
+<p>
+首先我们来看一下，没有设置 ulimit -f 时的情况：
+</p>
+
+<p>
+图 4. 查看文件
+</p>
+<pre>
+ls -l
+
+-rw-r--r-- haohe users 323669 2009-10-25 22:21 testFile
+</pre>
+
+<p>
+现有一个文件 testFile 大小为 323669 bytes，现在使用 cat 命令来创建一个 testFile 的 copy：
+</p>
+
+<p>
+图 5. 未设置 ulimit 时创建复本
+</p>
+<pre>
+cat testFile &gt; newFile
+
+-rw-r--r-- haohe users 323669 2009-10-25 22:22 newFile
+-rw-r--r-- haohe users 323669 2009-10-25 22:21 testFile
+</pre>
+<p>
+从上面的输出可以看出，我们成功的创建了 testFile 的拷贝 newFile。
+</p>
+
+<p>
+下面我们设置 ulimt – f 100：
+</p>
+<pre>
+ulimit -f 100
+</pre>
+<ul>
+<li>
+-f 选项的含义是：用来设置 shell 可以创建的文件的最大值。单位是 blocks。
+
+</ul>
+
+<p>
+现在我们再来执行一次相同的拷贝命令看看会是什么结果：
+</p>
+
+<p>
+图 6. 设置 ulimit 时创建复本
+</p>
+<pre>
+cat testFile &gt; newFile
+File size limit exceeded
+</pre>
+<p>
+这次创建 testFile 的拷贝失败了，系统给出的出错信息时文件大小超出了限制。在 Linux 系统下一个 block 的默认大小是 512 bytes。所以上面的 ulimit 的含义就是限制 shell 所能创建的文件最大值为 512 x 100 = 51200 bytes，小于 323669 bytes，所以创建文件失败，符合我们的期望。这个例子说明了如何使用 ulimit 来控制 shell 所能创建的最大文件。
+</p>
+
+<h4 id="toc_0.1.4.3">限制创建的socket数量</h4>
+
+<p>
+使用 ulimit 限制程序所能创建的 socket 数量
+</p>
+
+<p>
+考虑一个现实中的实际需求。对于一个 C/S 模型中的 server 程序来说，它会为多个 client 程序请求创建多个 socket 端口给与响应。如果恰好有大量的 client 同时向 server 发出请求，那么此时 server 就会需要创建大量的 socket 连接。
+</p>
+
+<p>
+但在一个系统当中，往往需要限制单个 server 程序所能使用的最大 socket 数，以供其他的 server 程序所使用。那么我们如何来做到这一点呢？答案是我们可以通过 ulimit 来实现！细心的读者可能会发现，通过前面章节的介绍似乎没有限制 socket 使用的 ulimit 选项。
+</p>
+
+<p>
+是的，ulimit 并没有哪个选项直接说是用来限制 socket 的数量的。但是，我们有 -n 这个选项，它是用于限制一个进程所能打开的文件描述符的最大值。在 Linux 下一切资源皆文件，普通文件是文件，磁盘打印机是文件，socket 当然也是文件。在 Linux 下创建一个新的 socket 连接，实际上就是创建一个新的文件描述符。如下图所示（查看某个进程当前打开的文件描述符信息）：
+</p>
+
+<p>
+图 7. 查看进程打开文件描述符
+</p>
+<pre>
+ls -l /proc/20118/fd
+
+lr-x------ 1 yuanxing yuanxing 64 11月  2 23:02 0 -&gt; /dev/null
+l-wx------ 1 yuanxing yuanxing 64 11月  2 23:02 1 -&gt; /dev/null
+lr-x------ 1 yuanxing yuanxing 64 11月  2 23:02 10 -&gt; pipe:[74503]
+l-wx------ 1 yuanxing yuanxing 64 11月  2 23:02 11 -&gt; pipe:[74503]
+lr-x------ 1 yuanxing yuanxing 64 11月  2 23:02 16 -&gt; /dev/urandom
+lrwx------ 1 yuanxing yuanxing 64 11月  2 23:02 17 -&gt; socket:[74505]
+lrwx------ 1 yuanxing yuanxing 64 11月  2 23:02 18 -&gt; anon_inode:[eventfd]
+lrwx------ 1 yuanxing yuanxing 64 11月  2 23:02 19 -&gt; anon_inode:[eventfd]
+lrwx------ 1 yuanxing yuanxing 64 11月  2 23:02 20 -&gt; socket:[76991]
+lrwx------ 1 yuanxing yuanxing 64 11月  2 23:02 25 -&gt; socket:[76992]
+lrwx------ 1 yuanxing yuanxing 64 11月  2 23:02 27 -&gt; socket:[76357]
+lrwx------ 1 yuanxing yuanxing 64 11月  2 23:02 28 -&gt; anon_inode:[eventfd]
+lrwx------ 1 yuanxing yuanxing 64 11月  2 23:02 33 -&gt; socket:[76359]
+...
+</pre>
+<p>
+因此，我们可以通过使用 ulimit – n 来限制程序所能打开的最大文件描述符数量，从而达到限制 socket 创建的数量。
+</p>
+
+<h4 id="toc_0.1.4.4">限制多线程程序堆栈大小</h4>
+
+<p>
+使用 ulimit 限制 shell 多线程程序堆栈的大小（增加可用线程数量）
+</p>
+
+<p>
+在最后一个例子中，向大家介绍如何使用 -s（单位 KB）来对线程的堆栈大小进行限制，从而减少整个多线程程序的内存使用，增加可用线程的数量。这个例子取自于一个真实的案例。我们所遇到的问题是系统对我们的多线程程序有如下的限制：
+</p>
+<pre>
+ulimit -v 200000
+</pre>
+<p>
+根据本文前面的介绍，这意味着我们的程序最多只能使用不到 200MB 的虚拟内存。由于我们的程序是一个多线程程序，程序在运行时会根据需要创建新的线程，这势必会增加总的内存需求量。一开始我们对堆栈大小的限制是 1024 （本例子中使用 1232 来说明）：
+</p>
+<pre>
+ulimit – s 1232
+</pre>
+
+<p>
+当我们的程序启动后，通过 pmap 来查看其内存使用情况，可以看到多个占用 1232KB 的数据段，这些就是程序所创建的线程所使用的堆栈：
+</p>
+
+<p>
+图 8. 程序线程所使用的堆栈
+</p>
+
+<p>
+每当一个新的线程被创建时都需要新分配一段大小为 1232KB 的内存空间，而我们总的虚拟内存限制是 200MB，所以如果我们需要创建更多的线程，那么一个可以改进的方法就是减少每个线程的固定堆栈大小，这可以通过 ulimit – s 来实现：
+</p>
+<pre>
+ulimit -s 512 
+</pre>
+
+<p>
+我们将堆栈大小设置为 512KB，这时再通过 pmap 查看一下我们的设置是否起作用：
+</p>
+
+<p>
+图 9. 设置 ulimit 后堆栈大小
+</p>
+
+<p>
+从上面的信息可以看出，我们已经成功的将线程的堆栈大小改为 512KB 了，这样在总内存使用限制不变的情况下，我们可以通过本小节介绍的方法来增加可以创建的线程数，从而达到改善程序的多线程性能。
+</p>
+
+<h3 id="toc_0.1.5">总结</h3>
+
+<p>
+综上所述，linux 系统中的 ulimit 指令，对资源限制和系统性能优化提供了一条便捷的途径。从用户的 shell 启动脚本，应用程序启动脚本，以及直接在控制台，都可以通过该指令限制系统资源的使用，包括所创建的内核文件的大小、进程数据块的大小、Shell 进程创建文件的大小、内存锁住的大小、常驻内存集的大小、打开文件描述符的数量、分配堆栈的最大大小、CPU 时间、单个用户的最大线程数、Shell 进程所能使用的最大虚拟内存，等等方面。本文中的示例非常直观的说明了 ulimit 的使用及其产生的效果，显而易见，ulimit 对我们在 Linux 平台的应用和开发工作是非常实用的。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>ssh/scp</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>ssh/scp</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">ssh_config</a>
+<ul>
+<li><a href="#toc_0.1.1">ProxyCommand</a>
+</ul>
+<li><a href="#toc_0.2">ssh_config</a>
+<li><a href="#toc_0.3">sshd_config</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">ssh_config</h2>
+
+<h3 id="toc_0.1.1">ProxyCommand</h3>
+
+<pre class="brush:bash">
+# 通过ssh建立ssh tunnel(sock5)
+ssh -D 2223 bnet
+# 通过sock5 proxy连接（connect-proxy,netcat）
+ProxyCommand connect-proxy -S 127.0.0.1:2223 %h %p
+ProxyCommand nc -X 5 -x 127.0.0.1:2223 %h %p
+ 
+# 通过ssh远程执行netcat工具转发
+ProxyCommand ssh bnet nc -w 1 %h %p
+</pre>
+
+<h2 id="toc_0.2">ssh_config</h2>
+
+
+<h2 id="toc_0.3">sshd_config</h2>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

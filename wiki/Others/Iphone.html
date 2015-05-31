@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Iphone</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Iphone</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">更改itunes文件备份路径</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+Apple服务状态: <a href="http://www.apple.com/cn/support/systemstatus/">http://www.apple.com/cn/support/systemstatus/</a>
+
+</ul>
+
+<h2 id="toc_0.1">更改itunes文件备份路径</h2>
+
+<p>
+原文:<a href="http://jingyan.baidu.com/article/219f4bf7d71a9ede452d384b.html">http://jingyan.baidu.com/article/219f4bf7d71a9ede452d384b.html</a>
+</p>
+
+<p>
+在itunes里面，可以更改媒体资料库的路径，但是不能更改备份文件夹的路径。每次同步之后就会自动备份，然后就会在<code>C:\Users\%username%\AppData\Roaming\Apple Computer\MobileSync</code>下面生成一个很大的备份文件。为了减少C盘的占用率，特制作本教程。
+</p>
+
+<ul>
+<li>
+工具/原料
+
+<ul>
+<li>
+windows操作系统、itunes软件
+
+<li>
+NTFS格式的C盘
+
+</ul>
+</ul>
+
+<ul>
+<li>
+方法/步骤
+
+</ul>
+
+<ul>
+<li>
+打开<code>C:\Users\%username%\AppData\Roaming\AppleComputer\MobileSync</code>这个文件夹(%username%是指你开机时登录所用的用户名)；
+
+<li>
+并把MobileSync下的全部文件剪切到你想存放的路径，如:<code>F:\iTunes\MobileSync</code>下（剪切前先关闭itunes软件）；
+
+<li>
+删除<code>C:\Users\%username%\AppData\Roaming\Apple Computer\MobileSync</code>这个文件夹；
+
+<li>
+打开cmd窗口，快捷键为win+r,然后输入cmd,再点击右键以管理员身份运行。输入以下命令：
+<pre class="brush:bash">
+mklink /J "C:\Users\%username%\AppData\Roaming\Apple Computer\MobileSync" "F:\iTunes\MobileSync"
+# F:\iTunes\MobileSync是自己想要存放大文件的目录路径。
+# 如果出现“创建的连接”表示成功。如果没有重复上面两个步骤即可。
+# 成功后可以看到在C:\Users\%username%\AppData\Roaming\Apple Computer 下面MobileSync 的文件夹，其左下有一个箭头。
+# 如果没有重复检查上述操作。
+</pre>
+
+</ul>
+
+<ul>
+<li>
+注意事项
+
+</ul>
+
+<p>
+本经验在win7 64位下测试成功。其他windows系统适用。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>防止ssh密码扫描</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>防止ssh密码扫描</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">东北大学ssh黑名单</a>
+<li><a href="#toc_0.2">巧用Recent模块加固Linux安全</a>
+<ul>
+<li><a href="#toc_0.2.1">防止穷举主机口令</a>
+</ul>
+<li><a href="#toc_0.3">防止端口扫描</a>
+<li><a href="#toc_0.4">使用hosts.deny拒绝ssh试探连接</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">东北大学ssh黑名单</h2>
+
+<p>
+原文:<a href="http://neucert.neu.edu.cn/archives/174">http://neucert.neu.edu.cn/archives/174</a>
+</p>
+
+
+<p>
+相信不少Linux或Unix管理员都会发现自己系统每时每刻都在被大量的主机试探密码，并试图控制该主机。目前大部分用户都是通过防火墙封锁TCP/22端口，有部分管理员习惯把SSH监听端口改成2222等一些非默认端口，也可以在一定程度上防止密码试探。同样在互联网上也有一些稍微智能一些的方法，如：
+</p>
+
+<ul>
+<li>
+<a href="http://www.wenzk.com/archives/43">巧用Recent模块加固Linux安全</a>
+
+<li>
+<a href="http://www.wenzk.com/archives/610">通过iptables的recent模块保护某些私有服务</a>
+
+</ul>
+
+<p>
+但是对于一些非Linux主机或不支持recent模块的主机，这个方法就无效了。
+</p>
+
+<p>
+经过努力，东北大学网络应急响应组通过部署相应的SSH攻击采集程序，收集了部分发起SSH攻击的主机IP地址，连接地址为：<a href="http://antivirus.neu.edu.cn/ssh/lists/neu.txt">http://antivirus.neu.edu.cn/ssh/lists/neu.txt</a> ，列表每5分钟更新一次，同时本站还同步sshbl.org的黑名单数据，详见：<a href="http://antivirus.neu.edu.cn/ssh/lists/">http://antivirus.neu.edu.cn/ssh/lists/</a> 目录下的base.txt等。
+</p>
+
+<p>
+我们将本站收集的IP地址列表与sshbl.org提供的列表进行合并，生成新的hosts.deny列表，链接地址：<a href="http://antivirus.neu.edu.cn/ssh/lists/neu_sshbl_hosts.deny">http://antivirus.neu.edu.cn/ssh/lists/neu_sshbl_hosts.deny</a> ，Linux或Unix管理员可以通过更新hosts.deny文件来防止主机被攻击。
+</p>
+
+<ul>
+<li>
+hosts.deny内容范本
+<pre>
+# NEU SSH Black list + sshbl.org + Dragon Research Group (DRG) hosts.deny
+# Thu Nov 27 22:20:51 CST 2014
+#
+sshd: 100.1.150.118
+sshd: 100.2.174.38
+sshd: 100.34.106.98
+sshd: 100.34.28.69
+</pre>
+
+</ul>
+
+<p>
+同时我们还提供一个自动更新脚本：
+</p>
+
+<pre class="brush:bash">
+#!/bin/sh
+# Fetch NEU SSH Black list to /etc/hosts.deny
+#
+
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+
+URL=http://antivirus.neu.edu.cn/ssh/lists/neu_sshbl_hosts.deny.gz
+HOSTSDENY=/etc/hosts.deny
+TMP_DIR=/dev/shm
+FILE=hosts.deny
+
+cd $TMP_DIR
+
+curl $URL 2&gt; /dev/null | gzip -dc &gt; $FILE
+
+LINES=`grep "^sshd:" $FILE | wc -l`
+
+if [ $LINES -gt 10 ]
+then
+sed -i '/^####SSH BlackList START####/,/^####SSH BlackList END####/d' $HOSTSDENY
+echo "####SSH BlackList START####" &gt;&gt; $HOSTSDENY
+cat $FILE &gt;&gt; $HOSTSDENY
+echo "####SSH BlackList END####" &gt;&gt; $HOSTSDENY
+fi
+</pre>
+
+<p>
+脚本定期运行即可。
+</p>
+
+<h2 id="toc_0.2">巧用Recent模块加固Linux安全</h2>
+
+<ul>
+<li>
+原文： <a href="http://www.wenzk.com/archives/43">http://www.wenzk.com/archives/43</a>
+
+<li>
+作者：温占考
+
+</ul>
+
+
+<p>
+众所周知，Linux可以通过编写iptables规则对进出Linux主机的数据包进行过滤等操作，在一定程度上可以提升Linux主机的安全 性，在新版本内核中，新增了recent模块，该模块可以根据源地址、目的地址统计最近一段时间内经过本机的数据包的情况，并根据相应的规则作出相应的决策，详见：<a href="http://snowman.net/projects/ipt_recent/">http://snowman.net/projects/ipt_recent/</a>
+</p>
+
+<h3 id="toc_0.2.1">防止穷举主机口令</h3>
+
+<p>
+通过recent模块可以防止穷举猜测Linux主机用户口令，通常可以通过iptables限制只允许某些网段和主机连接Linux机器的 22/TCP端口，如果管理员IP地址经常变化，此时iptables就很难适用这样的环境了。通过使用recent模块，使用下面这两条规则即可解决问题：
+</p>
+<pre>
+-A INPUT -p tcp -m tcp --dport 22 -m state --state NEW -m recent --update --seconds 60 --hitcount 4 --name SSH --rsource -j DROP
+-A INPUT -p tcp -m tcp --dport 22 -m state --state NEW -m recent --set --name SSH --rsource -j ACCEPT
+</pre>
+
+<p>
+应用该规则后，如果某IP地址在一分钟之内对Linux主机22/TCP端口新发起的连接超过4次，之后的新发起的连接将被丢弃。
+</p>
+
+<h2 id="toc_0.3">防止端口扫描</h2>
+
+<pre>
+-A INPUT -m recent --update --seconds 60 --hitcount 20 --name PORTSCAN --rsource -j DROP
+-A INPUT -m recent --set --name PORTSCAN --rsource -j DROP
+</pre>
+
+<p>
+应用该规则后，如果某个IP地址对非Linux主机允许的端口发起连接，并且一分钟内超过20次，则系统将中断该主机与本机的连接。
+</p>
+
+<p>
+详细配置如下：
+</p>
+
+<pre class="brush:bash">
+*filter
+:INPUT DROP [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [458:123843]
+-A INPUT -i lo -j ACCEPT
+-A INPUT -i tap+ -j ACCEPT
+-A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
+-A INPUT -m recent --update --seconds 60 --hitcount 20 --name PORTSCAN --rsource -j DROP
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -m state --state NEW -m recent --update --seconds 60 --hitcount 4 --name SSH --rsource -j DROP
+-A INPUT -p tcp -m tcp --dport 22 -m state --state NEW -m recent --set --name SSH --rsource -j ACCEPT
+-A INPUT -p udp -m udp --dport 53 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 53 -m state --state NEW -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 80 -m state --state NEW -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 443 -m state --state NEW -j ACCEPT
+-A INPUT -m recent --set --name PORTSCAN --rsource -j DROP
+COMMIT
+</pre>
+
+<p>
+以上配置说明，本机开放可供服务的端口有22/TCP（有连接频率限制）,53/TCP/UDP, 80/TCP, 443/TCP，所有发往本机的其他ip报文则认为是端口扫描，如果一分钟之内超过20次，则封禁该主机，攻击停止一分钟以上自动解封。
+</p>
+
+<p>
+在这只是取个抛砖引玉的作用，通过recent模块还可以实现很多更复杂的功能，例如：22/TCP端口对所有主机都是关闭的，通过顺序访问23/TCP 24/TCP 25/TCP之后，22/TCP端口就对你一个IP地址开放等等。
+</p>
+
+
+<h2 id="toc_0.4">使用hosts.deny拒绝ssh试探连接</h2>
+
+<p>
+原文: <a href="http://www.2cto.com/Article/201204/127018.html">http://www.2cto.com/Article/201204/127018.html</a>
+</p>
+
+<p>
+利用hosts.deny拒绝ssh试探登陆。主要是为了考虑到在公网打开ssh后，不断有人试探连接，自动实现拒绝。
+</p>
+
+<p>
+XStar:以下脚本似乎并未调试通过，其利用lastb/wtmp来解析异常IP、加锁和解锁的方式可以参考。
+</p>
+
+<pre class="brush:bash">
+#!/bin/bash
+#赵云
+#自动监控ssh试探登陆,将其添加在/etc/hosts.deny实现拒绝
+ 
+#设置尝试次数,尝试操作3次，就实现拒绝连接
+number=3
+ 
+#设置运行间隔时间,单位秒
+sleep=60
+ 
+#设置锁定试探IP地址时间，单位秒
+locktime=120
+ 
+lockfile=/tmp/lock-ipadd
+touch $lockfile
+ 
+while true
+do
+#执行锁定检查
+for badip in `lastb  |awk '{print $3}' |grep -v ^$  |grep -v [A-Z] |sort |uniq -c |awk -vn="$number" '$1 &gt; n {print $2}' `
+do
+   time=`date +%s`
+   bip=`echo $badip |tail -n1`
+   echo $bip |grep [0-9] &amp;&gt;/dev/null
+ 
+   if [ $? -eq 0 ] ; then
+ 
+       grep $bip $lockfile &amp;&gt;/dev/null
+ 
+       if [ $? -eq 1 ] ; then
+          echo $bip.$time &gt;&gt;$lockfile
+       fi
+ 
+       grep $bip /etc/hosts.deny &amp;&gt;/dev/null
+       [ ! $? -eq 0 ] &amp;&amp; (echo "SSHD:$bip" &gt;&gt;/etc/hosts.deny; logger "lock ip address $bip ")
+       cat /var/log/btmp &gt;&gt; /var/log/btmp.bak
+       &gt;/var/log/btmp
+   fi
+done
+ 
+#解除锁定操作
+nowtime=`date +%s`
+rows=`wc -l  $lockfile |awk '{print $1}' `
+for (( i=1;i&lt;=rows;i++))
+do
+       line=`cat -n $lockfile |head -n $i |tail -n1 |awk -F. '{print $5" "$1}' |awk -vt="$nowtime" '{print t-$1" "$2}' |awk -vt="$locktime" '$1&gt;t {print $2}'`
+       echo $line |grep [0-9] &amp;&gt;/dev/null
+    if [ $? -eq 0 ] ; then
+       unlockip=`cat -n $lockfile |column -t | grep ^$line |awk '{print $2}' | awk -F. '{print $1"."$2"."$3"."$4}'`
+       sed -i "/SSHD:$unlockip/d" /etc/hosts.deny
+       logger "unlock ip address $unlockip "
+       sed -i "/$unlockip/d" $lockfile
+    fi
+done
+ 
+sleep $sleep
+ 
+done
+</pre>
+ 
+<ul>
+<li>
+日志查看
+<pre>
+tail /var/log/messages
+Apr  6 19:49:58 localhost sess: lock ip address 192.168.0.31
+Apr  6 19:50:47 localhost sess: unlock ip address 192.168.0.31
+Apr  6 19:51:02 localhost sess: unlock ip address 192.168.0.56 
+</pre>
+
+</ul>
+
+<ul>
+<li>
+另一类似的脚本
+
+</ul>
+
+<p>
+来源：<a href="http://netsecurity.51cto.com/art/201104/253064_all.htm">http://netsecurity.51cto.com/art/201104/253064_all.htm</a>
+</p>
+
+<pre class="brush:bash">
+#!/bin/bash
+#/root/ssh_deny.sh
+# /etc/crontab
+# * */1 * * * root sh /root/ssh_deny.sh
+
+cat /var/log/secure|awk '/Failed/{print $(NF-3)}'|sort|uniq -c|awk '{print $2"="$1;}'  &gt;/root/black.txt
+DEFINE="10"
+for i in `cat /root/black.txt`
+do
+    IP=`echo $i |awk -F= '{print $1}'`
+    NUM=`echo $i|awk -F= '{print $2}'`
+    if [ $NUM -gt $DEFINE ];
+    then
+        grep $IP /etc/hosts.deny &gt; /dev/null
+        if [ $? -gt 0 ];
+            then
+            echo "sshd:$IP" &gt;&gt; /etc/hosts.deny
+        fi
+    fi
+done
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

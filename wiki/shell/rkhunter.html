@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>rkhunter</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>rkhunter</h1>
+
+<ul>
+<li>
+<a href="http://sourceforge.net/projects/rkhunter/">http://sourceforge.net/projects/rkhunter/</a>
+
+<li>
+<a href="http://www.rootkit.nl/projects/">http://www.rootkit.nl/projects/</a>
+
+</ul>
+
+<pre class="brush:bash">
+# Ubuntu下安装
+apt-get install rkhunter
+
+# 下载
+cd /tmp
+wget http://ncu.dl.sourceforge.net/project/rkhunter/rkhunter/1.4.0/rkhunter-1.4.0.tar.gz
+
+# 安装
+tar -xvf rkhunter-1.4.0.tar.gz
+cd rkhunter-1.4.0
+./installer.sh --layout default --install
+
+# 更新
+/usr/local/bin/rkhunter --update
+/usr/local/bin/rkhunter --propupd
+
+# Setting Cronjob and Email Alerts
+cat &gt; /etc/cron.daily/rkhunter.sh &lt;&lt;EOF
+#!/bin/sh
+(
+/usr/local/bin/rkhunter --versioncheck
+/usr/local/bin/rkhunter --update
+/usr/local/bin/rkhunter --cronjob --report-warnings-only
+) | /bin/mail -s 'rkhunter Daily Run (PutYourServerNameHere)' your@email.com
+EOF
+chmod 755 /etc/cron.daily/rkhunter.sh
+
+# Manual Scan and Usage
+rkhunter --check
+rkhunter --help
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

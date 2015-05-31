@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>Ubuntu手动实现显示屏背光调节</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Ubuntu手动实现显示屏背光调节</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">强制手工调节方式</a>
+<li><a href="#toc_0.2">Sony VPCEA28EC设置自动背光调节</a>
+</ul>
+</ul>
+</div>
+
+<p>
+Ubuntu 9.04版时，SONY笔记本不能调节背光，通过修改/proc/acpi/video/VGA/LCD/brightness数值来调节背光，并通过acpi/events绑定热键。
+</p>
+
+<h2 id="toc_0.1">强制手工调节方式</h2>
+
+<pre>
+cat /proc/acpi/video/VGA/LCD/brightness
+echo 70 |sudo tee /proc/acpi/video/VGA/LCD/brightness
+</pre>
+
+<h2 id="toc_0.2">Sony VPCEA28EC设置自动背光调节</h2>
+
+<ul>
+<li>
+设置热键绑定
+<pre class="brush:bash">
+cat &gt; /etc/acpi/events/sony-brightness-down &lt;&lt;EOF
+event=sony/hotkey (SPIC|SNC) 00000001 00000010
+action=/etc/acpi/sony-brn-updown.sh down
+EOF
+
+cat &gt; /etc/acpi/events/sony-brightness-up &lt;&lt;EOF
+event=sony/hotkey (SPIC|SNC) 00000001 00000011
+action=/etc/acpi/sony-brn-updown.sh up
+EOF
+</pre>
+
+</ul>
+
+<ul>
+<li>
+调节脚本：/etc/acpi/sony-brn-updown.sh
+<pre class="brush:bash">
+#!/bin/sh
+#levels:  5 8 11 16 23 34 48 70 100
+#current: 70
+
+current=`cat /proc/acpi/video/VGA/LCD/brightness |grep current|awk '{print $2}'`
+#echo "current=$current" #&gt;&gt;/tmp/test
+new=100
+case "$current" in
+5)
+    [ "$1" = "down" ] &amp;&amp; new=5 
+    [ "$1" = "up" ] &amp;&amp; new=8
+    ;;
+8)
+    [ "$1" = "down" ] &amp;&amp; new=5
+    [ "$1" = "up" ] &amp;&amp; new=11
+    ;;
+11)
+    [ "$1" = "down" ] &amp;&amp; new=8
+    [ "$1" = "up" ] &amp;&amp; new=16
+    ;;
+16)
+    [ "$1" = "down" ] &amp;&amp; new=11
+    [ "$1" = "up" ] &amp;&amp; new=23
+    ;;
+23)
+    [ "$1" = "down" ] &amp;&amp; new=16
+    [ "$1" = "up" ] &amp;&amp; new=34
+    ;;
+34)
+    [ "$1" = "down" ] &amp;&amp; new=23
+    [ "$1" = "up" ] &amp;&amp; new=48
+    ;;
+48)
+    [ "$1" = "down" ] &amp;&amp; new=34
+    [ "$1" = "up" ] &amp;&amp; new=70
+    ;;
+70)
+    [ "$1" = "down" ] &amp;&amp; new=48
+    [ "$1" = "up" ] &amp;&amp; new=100
+    ;;
+100|*)
+    [ "$1" = "up" ] &amp;&amp; new=100
+    [ "$1" = "down" ] &amp;&amp; new=70
+    ;;
+esac
+#echo "new=$new" #&gt;&gt;/tmp/test
+[ "$new" != "$current" ] &amp;&amp; echo "$new" &gt; /proc/acpi/video/VGA/LCD/brightness
+exit 0
+</pre>
+
+<li>
+启用
+<pre class="brush:bash">
+sudo chmod +x /etc/acpi/sony-brn-updown.sh
+sudo /etc/init.d/acpi-support restart
+sudo /etc/init.d/acpid restart
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

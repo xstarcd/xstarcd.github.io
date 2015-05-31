@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>以GRUB引导安装CentOS</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">以GRUB引导安装CentOS</a>
+<ul>
+<li><a href="#toc_1.1">描述</a>
+<li><a href="#toc_1.2">取得开机内核及 initrd</a>
+<li><a href="#toc_1.3">创建 GRUB 的开机设置</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">以GRUB引导安装CentOS</h1>
+
+<p>
+原文： <a href="http://wiki.centos.org/zh/TipsAndTricks/InstallFromGRUB">http://wiki.centos.org/zh/TipsAndTricks/InstallFromGRUB</a>
+</p>
+
+<h2 id="toc_1.1">描述</h2>
+
+<p>
+这个提示会教你如何以 CentOS 或其它发行版本的现有 GRUB 开机程序引导网络或硬盘的安装。这对没有 CD 或 DVD 开机设备，而且不能或不便于从其它可卸除媒体开机的系统很有用。这里的样例采用 CentOS 5 i386，不过亦应该适用于其它版本及结构。
+</p>
+
+<h2 id="toc_1.2">取得开机内核及 initrd</h2>
+
+<p>
+你可以通过以 loopback 挂载 ISO 映像、从就近的镜站、或硬盘上的安装树取得安装时所须的 vmlinux 及 initrd.img 文件。这个例子示范从 centos.org 取得它们：
+</p>
+<pre class="brush:bash">
+cd /boot
+wget http://mirror.centos.org/centos/5/os/i386/isolinux/vmlinuz
+mv vmlinuz vmlinuz-c5
+wget http://mirror.centos.org/centos/5/os/i386/isolinux/initrd.img
+mv initrd.img initrd-c5.img
+</pre>
+
+<h2 id="toc_1.3">创建 GRUB 的开机设置</h2>
+
+<p>
+下面假设 /dev/sda1（或 /dev/hda1 —— 首个硬盘上的头一个分区）是开机分区。/dev/sdb3 的话请以 (hd1,2) 取代 (hd0,0)，如此类推。
+</p>
+<pre>
+title CentOS 5 Install
+    root (hd0,0)
+    kernel /vmlinuz-c5 ro
+    initrd /initrd-c5.img
+</pre>
+
+<p>
+若果 /boot 分区并不存在，而根文件系统位于首个分区上，请用
+</p>
+
+<pre>
+title CentOS 5 Install
+    root (hd0,0)
+    kernel /boot/vmlinuz-c5 ro
+    initrd /boot/initrd-c5.img
+</pre>
+
+<p>
+选择性的参数可以被加进内核。譬如
+</p>
+
+<pre>
+title CentOS 5 Install
+    root (hd0,0)
+    kernel /vmlinuz-c5 ro keymap=no lang=en_US.UTF-8 method=http://10.0.0.10/repos/CentOS/5.5/os/i386
+    initrd /initrd-c5.img
+</pre>
+
+<p>
+或者
+</p>
+
+
+<pre>
+title CentOS 5 Install
+    root (hd0,0)
+    kernel /vmlinuz-c5 ro vnc vncconnect=192.168.15.2 ip=dhcp upgradeany lang=en_US keymap=us
+           method=http://192.168.15.40/mrepo/centos5-x86_64/disc1/ ksdevice=link
+    initrd /initrd-c5.img
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

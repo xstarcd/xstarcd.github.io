@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>screen</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>screen</h1>
+
+<ul>
+<li>
+~/.screenrc
+<pre class="brush:bash">
+#
+# ~/.screenrc
+#
+# 启动时不显示欢迎屏幕
+startup_message off
+
+# 定义screen的功能键为Ctrl-A。向终端输入Ctrl-A时应按 Ctrl-A a。
+#escape ^Aa
+
+# 屏幕缓冲区 1024 行。
+defscrollback 1024
+
+# 显示窗口列表
+caption always "%-w%{= BW}%50&gt;%n %t%{-}%+w%&lt;"
+
+# 按 Ctrl-A w 或 Ctrl-A Ctrl-W 显示窗口列表
+bind w windowlist -b
+#bind ^w windowlist -b
+
+#在使用screen过程中，经常会遇到“闪屏”的问题，这是可以关掉的。
+#快速关掉：也就是先输入CTRL + a，再输入CTRL + g。
+#永久关闭：修改/etc/screenrc 加入
+vbell off
+
+</pre>
+
+</ul>
+
+<ul>
+<li>
+新开标签页运行命令
+<pre class="brush:bash">
+# 在screen内部执行该命令
+screen -x -X screen top
+
+# 先建好会话TEST:Start as daemon: Screen session in detached mode.
+screen -dmS TEST
+# 在外面执行，会在screen会话中开一个top标签运行top
+screen -S TEST -t top -x -X screen top
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

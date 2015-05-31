@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>设置disqus评论</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>设置disqus评论</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">注册Disqus</a>
+<li><a href="#toc_0.2">设置Disqus</a>
+<li><a href="#toc_0.3">安装Disqus</a>
+<li><a href="#toc_0.4">Vimwiki中设置</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="http://disqus.com/">http://disqus.com/</a>
+
+<li>
+<a href="http://help.writings.io/articles/3-disqus">http://help.writings.io/articles/3-disqus</a>
+
+<li>
+<a href="http://chxt6896.github.io/blog/2011/12/07/blog-disqus.html">http://chxt6896.github.io/blog/2011/12/07/blog-disqus.html</a>
+
+</ul>
+
+<h2 id="toc_0.1">注册Disqus</h2>
+
+<p>
+到 <a href="http://disqus.com/">http://disqus.com/</a> 注册 disqus 帐号。
+</p>
+
+<p>
+注册 Disqus 帐号，用邮箱注册下就可以了，注册需要填写：Site URL，Site Name，Site Shortname。
+</p>
+
+<p>
+提示：一个 disqus 帐号可以申请多个 Site Shortname。不同空间的文章 ID 有可能重合，所以请为不同的空间配置不同 Site Shortname。
+</p>
+
+<h2 id="toc_0.2">设置Disqus</h2>
+
+<p>
+接下来会有一些简单的设置，比如语言；如果你有一些社交化工具，例如 twitter，也可以填上；还有一些评论的选项，例如过滤垃圾评论，回调评论等。
+</p>
+
+<h2 id="toc_0.3">安装Disqus</h2>
+
+<p>
+安装，因为没有用到插件安装，所以选择的 <code>Universal Code</code>。所谓安装，其实就是将一段 js 代码嵌入到你的博客源代码里面。
+</p>
+
+<p>
+在开始之前，你需要确认：
+</p>
+
+<ol>
+<li>
+已经注册了 Disqus
+
+<li>
+有权限编辑网站上的代码
+
+<li>
+获取你的短域名，就是上面说的那个 Shortname
+
+</ol>
+
+<p>
+获取 js 代码。DisQus 已经为我们生成了这样的一段代码：
+</p>
+<pre class="brush:html">
+&lt;div id="disqus_thread"&gt;&lt;/div&gt;
+&lt;script type="text/javascript"&gt;
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'longber'; // required: replace example with your forum shortname
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+&lt;/script&gt;
+&lt;noscript&gt;Please enable JavaScript to view the &lt;a href="http://disqus.com/?ref_noscript"&gt;comments powered by Disqus.&lt;/a&gt;&lt;/noscript&gt;
+&lt;a href="http://disqus.com" class="dsq-brlink"&gt;comments powered by &lt;span class="logo-disqus"&gt;Disqus&lt;/span&gt;&lt;/a&gt;
+</pre>
+
+<p>
+只需按照代码中的提示将 ‘example’ 替换为你的 Shortname ，然后将它嵌入到所需页面中，自此成功<sup><small>..</small></sup>
+</p>
+
+
+<h2 id="toc_0.4">Vimwiki中设置</h2>
+
+<p>
+vimwiki.js中用"#no-comment"检查页面是否不允许评论，在不允许评论的wiki页中添加如下内容即可：
+</p>
+<pre>
+&lt;pre id="no-comment"&gt;本页不允许评论&lt;/pre&gt;
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

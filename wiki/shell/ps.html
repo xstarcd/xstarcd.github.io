@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>ps</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+
+<h1 id="toc_1">ps</h1>
+
+
+<pre class="brush: bash">
+# 查看进程准确启动时间
+ps -eo pid,tty,user,comm,stime,etime | grep -E "PID|mysql"
+# ELAPSED: day-HH:MM:SS，用当前时间减去ELAPSED，即为启动时间。
+ls -l /proc/`ps aux|grep java|grep -v grep |awk '{print $2}'`/cmdline
+
+ps -AlF   #显示进程结构
+ps -AlFH  #在进程后显示线程
+
+# 只显示Lighttpd的进程ID
+ps -C lighttpd -o pid=
+pgrep lighttpd
+pgrep -u vivek php-cgi
+
+ps -auxf | sort -nr -k 4 | head -10 #找出消耗内存最多的前10名进程
+ps -auxf | sort -nr -k 3 | head -10 #找出使用CPU最多的前10名进程
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

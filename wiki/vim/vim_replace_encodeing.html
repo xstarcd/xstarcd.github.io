@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>vim字符串替换及小技巧</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">vim字符串替换及小技巧</a>
+<ul>
+<li><a href="#toc_1.1">字符串替换</a>
+<li><a href="#toc_1.2">VIM对中文编码的支持</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">vim字符串替换及小技巧</h1>
+
+<p>
+原文：<a href="http://blog.csdn.net/nitweihong/article/details/7221930">http://blog.csdn.net/nitweihong/article/details/7221930</a>
+</p>
+
+<h2 id="toc_1.1">字符串替换</h2>
+
+<p>
+vi/vim 中可以使用 :s 命令来替换字符串。以前只会使用一种格式来全文替换，今天发现该命令有很多种写法(vi 真是强大啊，还有很多需要学习)，记录几种在此，方便以后查询。
+</p>
+
+<p>
+　　:s/vivian/sky/ 替换当前行第一个 vivian 为 sky
+</p>
+
+<p>
+　　:s/vivian/sky/g 替换当前行所有 vivian 为 sky
+</p>
+
+<p>
+　　:n,$s/vivian/sky/ 替换第 n 行开始到最后一行中每一行的第一个 vivian 为 sky
+</p>
+
+<p>
+　　:n,$s/vivian/sky/g 替换第 n 行开始到最后一行中每一行所有 vivian 为 sky
+</p>
+
+<p>
+　　n 为数字，若 n 为 .，表示从当前行开始到最后一行
+</p>
+
+<p>
+　　:%s/vivian/sky/(等同于 :g/vivian/s//sky/) 替换每一行的第一个 vivian 为 sky
+</p>
+
+<p>
+　　:%s/vivian/sky/g(等同于 :g/vivian/s//sky/g) 替换每一行中所有 vivian 为 sky
+</p>
+
+<p>
+　　可以使用 # 作为分隔符，此时中间出现的 / 不会作为分隔符
+</p>
+
+<p>
+　　:s#vivian/#sky/# 替换当前行第一个 vivian/ 为 sky/
+</p>
+
+<p>
+　　:%s+/oradata/apras/+/user01/apras1+ (使用+ 来 替换 / )： /oradata/apras/替换成/user01/apras1/
+</p>
+
+<p>
+　　* ************************************
+</p>
+
+<p>
+　　1.:s/vivian/sky/ 替换当前行第一个 vivian 为 sky
+</p>
+
+<p>
+　　:s/vivian/sky/g 替换当前行所有 vivian 为 sky
+</p>
+
+<p>
+　　2. :n,$s/vivian/sky/ 替换第 n 行开始到最后一行中每一行的第一个 vivian 为 sky
+</p>
+
+<p>
+　　:n,$s/vivian/sky/g 替换第 n 行开始到最后一行中每一行所有 vivian 为 sky
+</p>
+
+<p>
+　　(n 为数字，若 n 为 .，表示从当前行开始到最后一行)
+</p>
+
+<p>
+　　3. :%s/vivian/sky/(等同于 :g/vivian/s//sky/) 替换每一行的第一个 vivian 为 sky
+</p>
+
+<p>
+　　:%s/vivian/sky/g(等同于 :g/vivian/s//sky/g) 替换每一行中所有 vivian 为 sky
+</p>
+
+<p>
+　　4. 可以使用 # 作为分隔符，此时中间出现的 / 不会作为分隔符
+</p>
+
+<p>
+　　:s#vivian/#sky/# 替换当前行第一个 vivian/ 为 sky/
+</p>
+
+<p>
+　　5. 删除文本中的^M
+</p>
+
+<p>
+　　问题描述：对于换行,window下用回车换行(0A0D)来表示，linux下是回车(0A)来表示。这样，将window上的文件拷到unix上用时，总会有个^M.请写个用在unix下的过滤windows文件的换行符(0D)的shell或c程序。
+</p>
+
+<p>
+　　· 使用命令：cat filename1 | tr -d “<sup><small>V</small></sup>M” &gt;newfile;
+</p>
+
+<p>
+　　· 使用命令：sed -e “s/<sup><small>V</small></sup>M//” filename &gt;outputfilename。需要注意的是在1、2两种方法中，<sup><small>V和</small></sup>M指的是Ctrl+V和Ctrl+M。你必须要手工进行输入，而不是粘贴。
+</p>
+
+<p>
+　　· 在vi中处理：首先使用vi打开文件，然后按ESC键，接着输入命令：%s/<sup><small>V</small></sup>M//。
+</p>
+
+<p>
+　　· :%s/^M$//g
+</p>
+
+<p>
+　　如果上述方法无用，则正确的解决办法是：
+</p>
+
+<p>
+　　· tr -d "r" &lt;src &gt;dest
+</p>
+
+<p>
+　　· tr -d "5" dest
+</p>
+
+<p>
+　　· strings A&gt;B
+</p>
+
+<p>
+　　6. 其它
+</p>
+
+<p>
+　　利用 :s 命令可以实现字符串的替换。具体的用法包括：
+</p>
+
+<p>
+　　:s/str1/str2/ 用字符串 str2 替换行中首次出现的字符串 str1
+</p>
+
+<p>
+　　:s/str1/str2/g 用字符串 str2 替换行中所有出现的字符串 str1
+</p>
+
+<p>
+　　:.,$ s/str1/str2/g 用字符串 str2 替换正文当前行到末尾所有出现的字符串 str1
+</p>
+
+<p>
+　　:1,$ s/str1/str2/g 用字符串 str2 替换正文中所有出现的字符串 str1
+</p>
+
+<p>
+　　:g/str1/s//str2/g 功能同上
+</p>
+
+<p>
+　　从上述替换命令可以看到：g 放在命令末尾，表示对搜索字符串的每次出现进行替换;不加 g，表示只对搜索
+</p>
+
+<p>
+　　字符串的首次出现进行替换;g 放在命令开头，表示对正文中所有包含搜索字符串的行进行替换操作。
+</p>
+
+
+<p>
+前几天我记录一下如何在vim中替换文字。只是很简单的给出了两个命令。其实还只是初级功能，今天来看看稍微复杂一点的。
+用:%s/from/to 命令只替换每行的第一个匹配字符，如果要替换每行的所有匹配项，需要在后面加上g命令。如： :%s/from/to/g
+</p>
+
+<p>
+另外，我们往往在替换的时候需要很小心，不能够这样就全部替换了，需要我们一个个的确认，那么我们可以加上c命令，意思就是confirm。如： :%s/from/to/gc 输入这个命令之后，vim会把所有匹配的文字高亮，并会询问你 <code>replace with to (y/n/a/q/l/^E/^Y)</code> ,输入y表示替换当前这个，n表示这个不要替换，a表示全部替换，q表示退出，不替换了，l表示把当前这个替换后就退出，<code>^E</code>(ctrl+e,好像大小写都可以)表示向下滚动一行，<code>^Y</code>表示向上滚动一行.
+</p>
+
+<p>
+上次我们说了可以在s前面加上范围,比如:1,5s/from/to表示替换1到5行的from,在vim中有些字符可以很方便的表示一些特殊行,比如.表示当前行,<code>\(</code>表示最后一行,第一行当然就是1了.所以我们可以用:.s/from/to命令替换当前行的from,用:.,\)s/from/to替换从当前行到结束行的每行的第一个匹配的from.
+</p>
+
+<p>
+好了现在对于vim的文字替换功能有了更一步的了解了.其实这样的替换还是最简单的,并且很容易出错,因为它并不会断词,会把fromxxx也当成匹配项,这当然是错误的,我们可以加上\&lt;来表示匹配一个单词的开始,\&gt;来表示单词的结束, 命令看起来就像这个样子:%s/\&lt;from\&gt;/to/g
+</p>
+
+<p>
+<code>:%s/\r//g</code> 清除那个^M
+</p>
+
+<p>
+linux使用grep或者vim删除空行
+</p>
+
+<p>
+<code>grep -v ^$ oldfile &gt; newfile</code>
+但是似乎在FreeBSD下面不行，会不会是grep版本的问题?
+后来想到了很刁的vim的全局替换，最后成功
+</p>
+
+<p>
+vim的命令为：<code>%s/^\n//g</code>
+意思是全局替换所有以回车开头的字符，替换为空。
+</p>
+
+<p>
+顺便研究了一下
+如果有多个连续的空行，想保留一个
+vim的命令为：%s/^\n$//g
+</p>
+
+<h2 id="toc_1.2">VIM对中文编码的支持</h2>
+
+<p>
+1、支持中文编码的基础
+</p>
+
+<p>
+Vim要更好地支持中文编码需要两个特性：+multi_byte和+iconv，可以用|:version|命令检查当前使用的Vim是否支持，否则的话需要重新编译。
+</p>
+
+<p>
+2、影响中文编码的设置项
+</p>
+
+<p>
+Vim中有几个选项会影响对多字节编码的支持：
+</p>
+<blockquote>
+encoding（enc）：encoding是Vim的内部使用编码，encoding的设置会影响Vim内部的Buffer、消息文字等。在 Unix环境下，encoding的默认设置等于locale；Windows环境下会和当前代码页相同。在中文Windows环境下encoding的 默认设置是cp936（GBK）。
+fileencodings（fenc）：Vim在打开文件时会根据fileencodings选项来识别文件编码，fileencodings可以同时设置多个编码，Vim会根据设置的顺序来猜测所打开文件的编码。
+fileencoding（fencs） ：Vim在保存新建文件时会根据fileencoding的设置编码来保存。如果是打开已有文件，Vim会根据打开文件时所识别的编码来保存，除非在保存时重新设置fileencoding。
+termencodings（tenc）：在终端环境下使用Vim时，通过termencoding项来告诉Vim终端所使用的编码。
+</blockquote>
+
+<p>
+3、Vim中的编码转换
+</p>
+
+<p>
+Vim内部使用iconv库进行编码转换，如果这几个选项所设置的编码不一致，Vim就有可能会转换编码。打开已有文件时会从文件编码转换到 encoding所设置的编码；保存文件时会从encoding设置的编码转换到fileencoding对应的编码。经常会看到Vim提示[已转换]，这是表明Vim内部作了编码转换。终端环境下使用Vim，会从termencoding设置的编码转换到encoding设置的编码。
+</p>
+
+<p>
+可以用|:help encoding-values|列出Vim支持的所有编码。
+</p>
+
+<p>
+4、具体应用环境的设置
+</p>
+<blockquote>
+只编辑GBK编码的文件
+</blockquote>
+<blockquote>
+set fileencodings=cp936
+set fileencoding=cp936
+set encoding=cp936
+</blockquote>
+<blockquote>
+只编辑UTF-8编码的中文文件
+</blockquote>
+<blockquote>
+set fileencodings=utf-8
+set fileencoding=utf-8
+set encoding=cp936 或者 set encoding=utf-8
+</blockquote>
+<blockquote>
+同时支持GBK和UTF-8编码
+</blockquote>
+<blockquote>
+set fileencodings=ucs-bom,utf-8,cp936
+set fileencoding=utf-8
+set encoding=cp936 或者 set encoding=utf-8
+</blockquote>
+<blockquote>
+如果在终端环境下使用Vim，需要设置termencoding和终端所使用的编码一致。例如：
+</blockquote>
+<blockquote>
+set termencoding=cp936 或者 set termencoding=utf-8
+</blockquote>
+
+<p>
+Windows记事本编辑UTF-8编码文件时会在文件头上加上三个字节的BOM：EFBBBF。如果fileencodings中设 置ucs-bom的目的就是为了能够兼容用记事本编辑的文件，不需要的话可以去掉。Vim在保存UTF-8编码的文件时会去掉BOM。去掉BOM的最大好处是在Unix下能够使用cat a b&gt;c来正确合并文件，这点经常被忽略。
+</p>
+
+<p>
+5、FAQ
+</p>
+<blockquote>
+为什么在Vim中一次只能删除半个汉字？
+</blockquote>
+<blockquote>
+因为encoding设置错误，把encoding设置为cp936就可以解决此问题。在Unix环境下Vim会根据locale来设置默认的encoding，如果没有正确设置locale并且没有设置encoding就会一次只能删除半个汉字。
+</blockquote>
+<blockquote>
+VIM为什么不能输入繁体字？
+</blockquote>
+<blockquote>
+把euc-cn或者GB2312改为cp936就可以了。euc-cn是GB2312的别名，不支持繁体汉字。cp936是GBK的别名，是GB2312的超集，可以支持繁体汉字。
+</blockquote>
+<blockquote>
+VIM为什么提示不能转换？
+</blockquote>
+<blockquote>
+因为在编译Vim时没有加入iconv选项，重新编译Vim才能解决。
+</blockquote>
+<blockquote>
+如何打开一个GBK编码的文件并另存为UTf-8编码？
+</blockquote>
+<blockquote>
+保存文件时运行命令|:set fileencoding=utf-8|就可以了。
+</blockquote>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

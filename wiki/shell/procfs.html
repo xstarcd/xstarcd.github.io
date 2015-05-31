@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>procfs虚拟文件系统</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>procfs虚拟文件系统</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">/proc/loadavg:负载</a>
+<li><a href="#toc_0.2">/proc/meminfo:存储器信息</a>
+<li><a href="#toc_0.3">/proc/net/dev:网卡数据</a>
+<li><a href="#toc_0.4">/proc/stat:系统状态</a>
+<li><a href="#toc_0.5">/proc/uptime:工作时间</a>
+<li><a href="#toc_0.6">tsdb采集loadavg采集脚本</a>
+</ul>
+</ul>
+</div>
+
+<p>
+/proc虚拟文件系统（也叫procfs）是Unix操作系统所使用的虚拟文件系统的Linux实现，包括Sun Solaris、LinuxBSD。在/proc开始时，它以一个标准文件系统出现，并包含与正在运行的进程IDs同样名字的文件。
+</p>
+
+<p>
+然而，在/proc中的文件不占用磁盘空间，它们存在于工作存储器（内存）中。/proc最初的目的是便于进程信息的存取，但是现在，在Linux中，它可被内核的每一部分使用来报告某些事情。
+</p>
+
+<p>
+在/proc文件系统提供的成百上千的值当中，我们将集中考虑集群监控所需的最小集，它们包括：
+</p>
+<ul>
+<li>
+/proc/loadavg：包含系统负载平均值；
+
+<li>
+/proc/meminfo：包含存储管理统计量；
+
+<li>
+/proc/net/dev：包含网卡度量；
+
+<li>
+/proc/stat：包含内核统计量；
+
+<li>
+/proc/uptime：包含总的系统正常工作时间及空闲时间。
+
+</ul>
+
+<p>
+每个文件提供的值的数量是不同的。这些文件的完整有效值列表如下。
+</p>
+
+<h2 id="toc_0.1">/proc/loadavg:负载</h2>
+<ul>
+<li>
+1秒钟平均负载；
+
+<li>
+5秒钟平均负载；
+
+<li>
+15秒钟平均负载；
+
+<li>
+总作业数；
+
+<li>
+正在运行的作业总数。
+
+</ul>
+
+<h2 id="toc_0.2">/proc/meminfo:存储器信息</h2>
+<ul>
+<li>
+活动存储器；
+
+<li>
+不活动存储器；
+
+<li>
+缓冲存储器；
+
+<li>
+高速缓冲存储器；
+
+<li>
+总的自由存储器；
+
+<li>
+总的高位存储器；
+
+<li>
+自由高位存储器；
+
+<li>
+总的低位存储器；
+
+<li>
+自由低位存储器；
+
+<li>
+共享存储器；
+
+<li>
+交换存储器；
+
+<li>
+交换高速缓冲存储器；
+
+<li>
+交换自由存储器；
+
+<li>
+总存储器。
+
+</ul>
+
+<h2 id="toc_0.3">/proc/net/dev:网卡数据</h2>
+<ul>
+<li>
+接收到的字节；
+
+<li>
+接收到的压缩字节；
+
+<li>
+收到的误码数；
+
+<li>
+收到的漏失误码；
+
+<li>
+收到的FIFO误码；
+
+<li>
+收到的帧误码；
+
+<li>
+收到的多播误码；
+
+<li>
+收到的总包数；
+
+<li>
+已传输的字节；
+
+<li>
+已传输的压缩字节；
+
+<li>
+传输误码总数；
+
+<li>
+传输载波误码；
+
+<li>
+传输冲突误码；
+
+<li>
+传输漏失误码；
+
+<li>
+传输FIFO误码；
+
+<li>
+传输的总包数。
+
+</ul>
+
+<h2 id="toc_0.4">/proc/stat:系统状态</h2>
+<ul>
+<li>
+引导时间；
+
+<li>
+上下文切换数量；
+
+<li>
+中断总量；
+
+<li>
+进页面总数；
+
+<li>
+出页面总数；
+
+<li>
+进程总数；
+
+<li>
+换入总数；
+
+<li>
+换出总数；
+
+<li>
+合计CPU空闲时间；
+
+<li>
+合计CPU nice时间；
+
+<li>
+合计CPU系统时间；
+
+<li>
+合计CPU用户时间。
+
+<li>
+同时提供对每个CPU的:
+
+<li>
+单个CPU空闲时间；
+
+<li>
+单个CPU nice时间；
+
+<li>
+单个CPU系统时间；
+
+<li>
+单个CPU用户时间。
+
+<li>
+以及对每个磁盘驱动器的如下数据：
+
+<li>
+单个磁盘块读；
+
+<li>
+单个磁盘块写；
+
+<li>
+单个磁盘I/O总数；
+
+<li>
+单个磁盘I/O读；
+
+<li>
+单个磁盘I/O写。
+
+</ul>
+
+<h2 id="toc_0.5">/proc/uptime:工作时间</h2>
+<ul>
+<li>
+系统总工作时间；
+
+<li>
+系统总空闲时间。
+
+</ul>
+
+<p>
+值得注意的是，每次某个/proc被读时，一个句柄函数都被内核或特有模块调用,来产生数据。数据在运行中产生，不管是读一个字符还是一个大的字块，整个文件都将被重建。这对效率是至关重要的一点，因为使用/proc的任何系统监控器将吞下整个文件，而不是一点一点地处理它。 
+</p>
+
+<h2 id="toc_0.6">tsdb采集loadavg采集脚本</h2>
+
+<pre class="brush:bash">
+#!/bin/bash
+# loadavg-collector.sh
+
+# /proc/loadavg
+# 0.00 0.00 0.00 1/173 30545
+# The first three fields in this file are load average figures giving the number of jobs in the run queue (state R)  or  waiting
+# for  disk  I/O (state D) averaged over 1, 5, and 15 minutes.  They are the same as the load average numbers given by uptime(1)
+# and other programs.
+# The fourth field consists of two numbers separated by a slash (/).  The first of these is the  number  of currently  executing
+# kernel  scheduling entities (processes, threads); this will be less than or equal to the number of CPUs.
+# The value after the slash is the number of kernel scheduling entities that currently exist on the system. 
+# The fifth field  is the PID of the process that was most recently created on the system.
+
+# 该脚本每15秒输出如下格式内容，并直接通过nc提交给open-tsdb：
+# put proc.loadavg.1m 1398245238 0.00 host=tyunwei2.tsptest
+# put proc.loadavg.5m 1398245238 0.00 host=tyunwei2.tsptest
+set -e 
+while true;do
+    awk -v now=`date +%s` -v host=`hostname` \
+    '{ print "put proc.loadavg.1m "now " "$1" host="host;print "put proc.loadavg.5m "now " "$2" host="host }' /proc/loadavg
+    sleep 15
+done | nc -w 30 192.168.0.75 4242
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

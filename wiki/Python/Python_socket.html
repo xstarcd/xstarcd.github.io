@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Python Socket</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Python Socket</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">TCPServer/Client</a>
+<li><a href="#toc_0.2">Tornado TCPServer</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">TCPServer/Client</h2>
+
+<ul>
+<li>
+clientsocket.py
+<pre class="brush:python">
+# clientsocket.py
+
+import socket
+
+def Main():
+    try:
+        # Address Family : AF_INET (this is IP version 4 or IPv4)
+        # Type :  SOCK_STREAM (this means connection oriented TCP protocol)
+        #         SOCK_DGRAM indicates the UDP protocol. 
+        new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    except socket.error, msg:
+        print 'Failed to creat socket. Error code:', str(msg[0]), 
+        print 'Error message:', msg[1]
+        return
+    print 'Socket Created'
+    
+    host = 'www.baidu.com'
+    port = 80
+    try:
+        remote_ip = socket.gethostbyname(host)
+    except socket.gaierror:
+        print 'Hostname could not be resolved. Exiting.'
+        return 
+    print 'Ip address of', host, 'is', remote_ip
+    
+    # Connect to remote server
+    new_socket.connect((host, port))
+    print 'Socket Connected to', host, 'on ip', remote_ip
+    
+    # Send some data to remote server | socket.sendall(string[, flags]) 
+    message = 'GET / HTTP/1.1\r\n\r\n'
+    try:
+        new_socket.sendall(message)
+    except socket.error:
+        print 'Send fail.'
+        return 
+    print 'Message send successfully.'
+
+    # Receive data | socket.recv(bufsize[, flags]) 
+    reply = new_socket.recv(4096)
+    print reply
+    
+    # Close the socket
+    new_socket.close()
+    
+    
+if __name__ == '__main__':
+    Main()
+</pre>
+
+</ul>
+
+<ul>
+<li>
+serversockethand.py
+<pre class="brush:python">
+#! /usr/bin/env python
+
+# serversockethand.py
+
+"""
+To handle every connection we need a separate handling code to run along 
+with the main server accepting connections. One way to achieve this is 
+using threads. The main server program accepts a connection and creates
+a new thread to handle communication for the connection, and then the
+ server goes back to accept more connections.
+"""
+
+import socket
+import thread
+
+def Main():
+    HOST = ''
+    PORT = 8888
+    
+    new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print 'Socket created.'
+    
+    # Bind socket to local host and port 
+    try:
+        new_socket.bind((HOST, PORT))
+    except socket.error, msg:
+        print 'Bind failed. Error code:', str(msg[0]) + 'Message' + msg[1]
+        return 
+    print 'Socket bind complete'
+
+    # Listening on socket
+    new_socket.listen(10)
+    print 'Socket now listening..'
+    
+    # Now keep talking with client
+    while 1:
+        # Wait to accept a connection 
+        conn, addr = new_socket.accept()
+        print 'Connected with', addr[0], ':', str(addr[1])
+        
+        thread.start_new_thread(clientThread, (conn, ))
+    
+    new_socket.close()
+    
+    
+# Function for handling connections. This will be used to create threads.
+def clientThread(conn):
+    # Sending message to connected client
+    conn.send('Welcome to the server. Type something and hit enter\n')
+    
+    while 1:
+        data = conn.recv(1024)
+        if not data:
+            break
+        reply = 'OK..' + data
+        conn.sendall(reply)
+    
+    conn.close()
+    
+
+if __name__ == '__main__':
+    Main()
+</pre>
+
+</ul>
+
+
+<h2 id="toc_0.2">Tornado TCPServer</h2>
+
+<ul>
+<li>
+ChatServer
+<pre class="brush:python">
+#!/usr/bin/env python
+#coding=utf-8
+
+from tornado.tcpserver import TCPServer
+from tornado.ioloop  import IOLoop
+
+class Connection(object):
+    clients = set()
+    def __init__(self, stream, address):
+        Connection.clients.add(self)
+        self._stream = stream
+        self._address = address
+        self._stream.set_close_callback(self.on_close)
+        self.read_message()
+        print "A new user has entered the chat room.", address
+
+    def read_message(self):
+        self._stream.read_until('\n', self.broadcast_messages)
+
+    def broadcast_messages(self, data):
+        print "User said:", data[:-1], self._address
+        for conn in Connection.clients:
+            conn.send_message(data)
+        self.read_message()
+
+    def send_message(self, data):
+        self._stream.write(data)
+
+    def on_close(self):
+        print "A user has left the chat room.", self._address
+        Connection.clients.remove(self)
+
+class ChatServer(TCPServer):
+    def handle_stream(self, stream, address):
+        print "New connection :", address, stream
+        Connection(stream, address)
+        print "connection num is:", len(Connection.clients)
+
+if __name__ == '__main__':
+    print "Server start ......"
+    server = ChatServer()
+    server.listen(8000)
+    IOLoop.instance().start()
+</pre>
+
+</ul>
+<p>
+运行输出内容：
+</p>
+<pre>
+Server start ......
+New connection : ('127.0.0.1', 39860) &lt;tornado.iostream.IOStream object at 0x101e6d0&gt;
+A new user has entered the chat room. ('127.0.0.1', 39860)
+connection num is: 1
+User said: Hello,  ('127.0.0.1', 39860)
+User said: word!  ('127.0.0.1', 39860)
+New connection : ('127.0.0.1', 39861) &lt;tornado.iostream.IOStream object at 0x101e750&gt;
+A new user has entered the chat room. ('127.0.0.1', 39861)
+connection num is: 2
+User said: Hello,  ('127.0.0.1', 39861)
+User said: word!  ('127.0.0.1', 39861)
+</pre>
+
+<p>
+经测试后发现，tornado的接收方法里，已经做了粘包处理。比如第18行的代码，就是用的tornado.iostream.BaseIOStream类的read_until(delimiter, callback) 方法。这个方法，将会从缓冲区里，直到读到截止标记（比如'\n'），就产生一次回调。如果没有截止标记，缓冲区就攒数据，直到等到截止标记出现，才会产生回调。看了一下源码，缓冲区默认是max_buffer_size=104857600。
+</p>
+
+<ul>
+<li>
+客户端
+<pre class="brush:python">
+#!/usr/bin/env python
+#coding=utf-8
+
+import socket
+import time
+import thread
+import sys
+
+def clientThread():
+    print "input some thing,and press Enter!"
+    while True:
+        msg=None
+        msg = raw_input()
+        if msg &lt;&gt; None and msg &lt;&gt; "":
+            s.sendall("%s\n" % msg)
+thread.start_new_thread(clientThread,())
+
+HOST = '127.0.0.1'    # The remote host
+PORT = 8000           # The same port as used by the server
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((HOST, PORT))
+
+s.sendall('Hello, \nw')
+time.sleep(1)
+s.sendall('ord! \n')
+while True:
+    time.sleep(1)
+    data = s.recv(1024)
+    print "&gt;",data
+
+s.close()
+
+</pre>
+
+</ul>
+
+<p>
+运行后，可以看到，服务器端，会打出：
+</p>
+<pre>
+input some thing,and press Enter!
+&gt; ('127.0.0.1', 39860) Hello, 
+('127.0.0.1', 39860) word! 
+
+&gt; ('127.0.0.1', 39861) Hello, 
+
+&gt; ('127.0.0.1', 39861) word! 
+
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

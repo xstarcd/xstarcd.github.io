@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>initramfs</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>initramfs</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">制作initramfs/initrd镜像</a>
+<ul>
+<li><a href="#toc_0.1.1">initramfs</a>
+<li><a href="#toc_0.1.2">initrd</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<p>
+详细的initramfs的资料可以参考如下：
+</p>
+<ul>
+<li>
+黃敬群先生的blog：深入理解 Linux 2.6 的 initramfs 機制: <a href="http://blog.linux.org.tw/~jserv/archives/001954.html">http://blog.linux.org.tw/~jserv/archives/001954.html</a>
+
+<ul>
+<li>
+<a href="ShengRuLiJie_linux_2.6_initramfs.html">深入理解 Linux 2.6 的 initramfs 機制</a>
+
+</ul>
+<li>
+initramfs, a new model for initial RAM: <a href="http://www.linuxdevices.com/articles/AT4017834659.html">http://www.linuxdevices.com/articles/AT4017834659.html</a>
+
+</ul>
+
+<h2 id="toc_0.1">制作initramfs/initrd镜像</h2>
+
+<p>
+原文：<a href="http://www.cnblogs.com/wwang/archive/2010/10/27/1862222.html">http://www.cnblogs.com/wwang/archive/2010/10/27/1862222.html</a>
+</p>
+
+<h3 id="toc_0.1.1">initramfs</h3>
+
+<p>
+下面是一些使用initramfs的简单帮助
+</p>
+
+<ul>
+<li>
+查看initramfs的内容
+<pre class="brush:bash">
+mkdir initrdtmp &amp;&amp; cd initrdtmp \
+&amp;&amp; zcat /boot/initrd.img-2.6.24-16 initrd.img-2.6.24-16.gz|cpio -i --make-directories
+</pre>
+
+</ul>
+
+<ul>
+<li>
+创建initramfs
+
+</ul>
+
+<p>
+命令：mkinitramfs, update-initramfs
+</p>
+
+<p>
+mkinitramfs
+</p>
+<pre class="brush:bash">
+mkinitramfs -o /boot/initrd.img 2.6.24-16
+</pre>
+
+<p>
+Note: 2.6.24-16是需要创建initramfs的kernel版本号，如果是给当前kernel制作initramfs，可以用uname -r查看当前的版本号。提供kernel版本号的主要目的是为了在initramfs中添加指定kernel的驱动模块。mkinitramfs会把/lib/modules/${kernel_version}/ 目录下的一些启动会用到的模块添加到initramfs中。
+</p>
+
+<p>
+update-initramfs
+</p>
+<pre class="brush:bash">
+# 更新当前kernel的initramfs
+update-initramfs -u
+</pre>
+
+<p>
+在添加模块时，initramfs tools只会添加一些必要模块，用户可以通过在/etc/initramfs-tools/modules文件中加入模块名称来指定必须添加的模块。
+</p>
+ 
+<h3 id="toc_0.1.2">initrd</h3>
+
+<p>
+目前还是有不少Linux发行版采用initrd（即RAM disk的方式）来实现引导，所以了解一下mkinitrd这个命令也很有必要。
+</p>
+
+<p>
+mkinitrd类似于mkinitramfs，是用于生成initrd的一个工具。最基本的用法参考下面：
+</p>
+
+<pre class="brush:bash">
+mkinitrd /boot/initrd.img $(uname -r)
+</pre>
+
+<p>
+如果需要指定哪些module在启动时必须load，需要加上--preload=module或者 --with=module这样的选项。这两者的区别在于--preload指定的module会在/etc/modprobe.d/* 里声明的任何SCSI模块之前被加载，--with指定的module会在/etc/modprobe.d/* 里声明的任何SCSI模块之后被加载。
+</p>
+
+<p>
+另外还有一个选项需要被注意，即--builtin=module。在manual里这个选项的解释是：Act as if module is built into the kernel being used. mkinitrd will not look for this module, and will not emit an error if it does not exist. This option may be used multiple times.
+</p>
+
+<p>
+根据上面的解释，可以看出builtin选项另外还有一个取巧的用处。以我所用的平台Acer Aspire One为例， 我在用mkinitrd制作RAM disk镜像是出现一个错误“No module ohci-hcd found ...”，遇到这个情况，builtin选项就起作用了，用--builtin=ohci-hcd， mkinitrd就可以忽略ohci-hcd不存在这个事实了。
+</p>
+
+<p>
+initrd有两种格式，initrd-image和initrd-cpio。
+</p>
+
+<ul>
+<li>
+办法一:通过ramdisk来制作的方法比较简单(以ext2文件系统为例)：
+<pre class="brush:bash">
+mkfs.ext2 /dev/ram0
+mount /dev/ram0 /mnt/rd
+cp _what_you_like_ /mnt/rd      # 把需要的文件复制过去
+dd if=/dev/ram0 of=/tmp/initrd
+gzip -9 /tmp/initrd
+</pre>
+
+</ul>
+<p>
+这个过程也最能够解释initrd的本质，对于Linux来说，Ramdisk的一个块设备，而initrd是这个块设备上所有内容的“克隆”(由命令dd来完成)而生成的文件。核心中加载initrd相关的代码则用于完成将相反的过程，即将这一个文件恢复到Ramdisk中去。
+</p>
+
+<ul>
+<li>
+办法二:通过loop设备来制作initrd的过程(losetup,mkfs.ext2)：
+<pre class="brush:bash">
+dd if=/dev/zero of=/tmp/initrd bs=1024 count=4096 # 制作一个4M的空白文件
+losetup /dev/loop0 /tmp/initrd                    # 映射到loop设备上；
+mkfs.ext2 /dev/loop0                              # 创建文件系统；
+mount /dev/loop0 /mnt/rd
+cp _what_you_like_ /mnt/rd                        # 复制需要的文件；
+umount /mnt/rd
+losetup -d /dev/loop0
+gzip -9 /tmp/initrd
+</pre>
+
+</ul>
+
+<ul>
+<li>
+办法三:mount -o loop
+<pre class="brush:bash">
+dd if=/dev/zero of=../initrd.img bs=512k count=5
+mkfs.ext2 -F -m0 ../initrd.img
+mount -t ext2 -o loop ../initrd.img   /mnt
+cp -r * /mnt
+umount /mnt
+gzip -9 ../initrd.img
+</pre>
+
+</ul>
+
+<ul>
+<li>
+办法四（新式INITRD:cpio-initrd的制作)
+<pre class="brush:bash">
+find . | cpio -c -o &gt; ../initrd.img
+gzip ../initrd.img
+</pre>
+
+</ul>
+
+<ul>
+<li>
+cpio-initrd
+<pre class="brush:bash">
+# 假设当前目录位于准备好的initrd文件系统的根目录下
+find . | cpio -c -o &gt; ../initrd.img
+gzip ../initrd.img
+
+# gen_init_cpio是编译内核时得到的，在内核源代码的 usr 目录下，我们可以通过以下步骤获取它，进入内核源代码 执行：
+make menuconfig
+make usr/
+
+# gen_initramfs_list.sh 在内核源代码的 script 目录下，将这两个文件copy 到/tmp 目录下，
+# /tmp/initrd为解压好的initrd目录，执行以下命令制作initrd ：
+gen_initramfs_list.sh initrd/ &gt; filelist
+gen_init_cpio filelist &gt;initrd.img
+gzip initrd.img
+mv initrd.img initrd-`uname –r`.img
+
+# 只有用这个方式压缩的initrd ，在Linux系统重启的时候才能一正确的文件格式 boot 起来，也可以用
+# 这种方式修改安装光盘的initrd文件 然后进行系统安装。
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

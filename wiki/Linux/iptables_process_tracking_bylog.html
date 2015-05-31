@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>通过日志跟踪iptables处理过程</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>通过日志跟踪iptables处理过程</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">基础信息</a>
+<li><a href="#toc_0.2">设置脚本</a>
+<li><a href="#toc_0.3">日志结果</a>
+<ul>
+<li><a href="#toc_0.3.1">外部访问http</a>
+<li><a href="#toc_0.3.2">icmp测试</a>
+<li><a href="#toc_0.3.3">其它</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<p>
+Update:2014-09-24
+</p>
+
+<h2 id="toc_0.1">基础信息</h2>
+<ul>
+<li>
+netfilter处理流程图
+
+</ul>
+<p>
+<img src="../img/iptables_netfilter_chains.png" alt="iptables包处理流程" />
+</p>
+
+<ul>
+<li>
+实验环境
+
+<ul>
+<li>
+在运行Openstack nova-network的主机上记录日志，虚拟机网段为172.17.51.0/24；
+
+<li>
+网络连接使用了trunk vlan的方式，连接情况如下：
+
+<ul>
+<li>
+eth3-&gt;vlan51-&gt;br51-&gt;vnet396-&gt;测试虚拟机172.17.51.3；
+
+<li>
+在虚拟网络中使用vlan模式+trunk的方式接入物理网段中的vlan；
+
+<li>
+172.17.51.4为br上的网关(虚拟机缺省路由指向)、172.17.51.1为物理网段中的路由；
+
+<li>
+宿主机缺省路由:<code>0.0.0.0 172.17.46.1 0.0.0.0 UG 0 0 0 eth1.46</code>
+
+<li>
+实验环境中，只要iptables允许FORWARD，虚拟机网络则是畅通的；
+
+</ul>
+<li>
+测试虚拟机172.17.51.3运行在该主机上，并使用apache开放http服务用于访问测试；
+
+</ul>
+</ul>
+
+<ul>
+<li>
+实验目的
+
+</ul>
+
+<p>
+跟踪数据包在iptables各表、链中的流转过程，便于理解netfilter的处理流程，从而更有效地理解Openstack中各种iptables规则定义。
+</p>
+
+<p>
+测试中iptables设置为全ACCEPT方式，并且清除了所有Openstack的规则，只添加日志记录规则。
+</p>
+
+<h2 id="toc_0.2">设置脚本</h2>
+
+<p>
+由于宿主机其它的通讯量很多，为避免记录大量无关日志，在INPUT、OUTPUT链中只记录了所关心的172.17.51.0/24网段流量。
+</p>
+
+<pre class="brush:bash">
+#!/bin/sh
+loglan=172.17.51.0/24
+case "$1" in
+"set")
+    echo "set log..."
+    iptables -F
+    iptables -X
+    iptables -Z
+    iptables -F -t nat
+    iptables -X -t nat
+    iptables -Z -t nat
+    iptables -F -t mangle
+    iptables -X -t mangle
+    iptables -Z -t mangle
+    iptables -P INPUT ACCEPT
+    iptables -P OUTPUT ACCEPT
+    iptables -P FORWARD ACCEPT
+
+    iptables -t filter -A INPUT -d $loglan -j LOG --log-prefix "IPTABLES_filter_INPUT-d:" --log-level 4
+    iptables -t filter -A INPUT -s $loglan -j LOG --log-prefix "IPTABLES_filter_INPUT-s:" --log-level 4
+    iptables -t filter -A OUTPUT -d $loglan -j LOG --log-prefix "IPTABLES_filter_OUTPUT-d:" --log-level 4
+    iptables -t filter -A OUTPUT -s $loglan -j LOG --log-prefix "IPTABLES_filter_OUTPUT-s:" --log-level 4
+    iptables -t filter -A FORWARD -j LOG --log-prefix "IPTABLES_filter_FORWARD:" --log-level 4
+
+    iptables -t nat -A PREROUTING -j LOG --log-prefix "IPTABLES_nat_PREROUTING:" --log-level 4
+    iptables -t nat -A POSTROUTING -j LOG --log-prefix "IPTABLES_nat_POSTROUTING:" --log-level 4
+    iptables -t nat -A OUTPUT -j LOG --log-prefix "IPTABLES_nat_OUTPUT:" --log-level 4
+    ;;
+"unset")
+    echo "unset log..."
+    iptables -F
+    iptables -X
+    iptables -Z
+    iptables -F -t nat
+    iptables -X -t nat
+    iptables -Z -t nat
+    iptables -F -t mangle
+    iptables -X -t mangle
+    iptables -Z -t mangle
+    iptables -P INPUT ACCEPT
+    iptables -P OUTPUT ACCEPT
+    iptables -P FORWARD ACCEPT
+    ;;
+*)
+    echo "$0 set|unset"
+    ;;
+esac
+exit 0
+</pre>
+
+<h2 id="toc_0.3">日志结果</h2>
+
+<h3 id="toc_0.3.1">外部访问http</h3>
+
+<p>
+设置好日志策略后，从外部网络用curl访问<a href="http://172.17.51.3">http://172.17.51.3</a> (只会产生一个请求)，截取日志内容如下：
+</p>
+
+<p>
+实验环境中，入流量直接从物理网关转到虚拟机，未经过宿主机的iptables规则链？
+</p>
+
+<p>
+bridge和vlan中的流量并不会经过iptables？
+</p>
+
+<pre class="brush:bash">
+# FORWARD
+# 虚拟机172.17.51.3回应浏览器的包，在br51上进行FORWARD,OUT接口是eth1.46(宿主机缺省路由接口)
+&lt;4&gt;Sep 24 12:22:08 node-12 kernel: IPTABLES_filter_FORWARD:IN=br51 OUT=eth1.46 SRC=172.17.51.3 DST=192.168.0.247 LEN=60 TOS=0x00 PREC=0x00 TTL=63 ID=0 DF PROTO=TCP SPT=80 DPT=44301 WINDOW=14480 RES=0x00 ACK SYN URGP=0 
+
+# PREROUTING
+# 172.17.51.3 eth0 HWaddr FA:16:3E:95:FF:38，和下面的MAC并不一致？
+&lt;4&gt;Sep 24 12:22:08 node-12 kernel: IPTABLES_nat_PREROUTING:IN=br51 OUT= MAC=fa:16:3e:3d:5a:37:fa:16:3e:95:ff:38:08:00 SRC=172.17.51.3 DST=192.168.0.247 LEN=52 TOS=0x00 PREC=0x00 TTL=64 ID=35547 DF PROTO=TCP SPT=80 DPT=44301 WINDOW=122 RES=0x00 ACK URGP=0 
+
+# FORWARD
+&lt;4&gt;Sep 24 12:22:08 node-12 kernel: IPTABLES_filter_FORWARD:IN=br51 OUT=eth1.46 SRC=172.17.51.3 DST=192.168.0.247 LEN=52 TOS=0x00 PREC=0x00 TTL=63 ID=35547 DF PROTO=TCP SPT=80 DPT=44301 WINDOW=122 RES=0x00 ACK URGP=0 
+
+# POSTROUTING
+&lt;4&gt;Sep 24 12:22:08 node-12 kernel: IPTABLES_nat_POSTROUTING:IN= OUT=eth1.46 SRC=172.17.51.3 DST=192.168.0.247 LEN=52 TOS=0x00 PREC=0x00 TTL=63 ID=35547 DF PROTO=TCP SPT=80 DPT=44301 WINDOW=122 RES=0x00 ACK URGP=0 
+
+# FORWARD
+&lt;4&gt;Sep 24 12:22:08 node-12 kernel: IPTABLES_filter_FORWARD:IN=br51 OUT=eth1.46 SRC=172.17.51.3 DST=192.168.0.247 LEN=2948 TOS=0x00 PREC=0x00 TTL=63 ID=35548 DF PROTO=TCP SPT=80 DPT=44301 WINDOW=122 RES=0x00 ACK URGP=0 
+&lt;4&gt;Sep 24 12:22:08 node-12 kernel: IPTABLES_filter_FORWARD:IN=br51 OUT=eth1.46 SRC=172.17.51.3 DST=192.168.0.247 LEN=1500 TOS=0x00 PREC=0x00 TTL=63 ID=35550 DF PROTO=TCP SPT=80 DPT=44301 WINDOW=122 RES=0x00 ACK URGP=0 
+&lt;4&gt;Sep 24 12:22:08 node-12 kernel: IPTABLES_filter_FORWARD:IN=br51 OUT=eth1.46 SRC=172.17.51.3 DST=192.168.0.247 LEN=864 TOS=0x00 PREC=0x00 TTL=63 ID=35551 DF PROTO=TCP SPT=80 DPT=44301 WINDOW=122 RES=0x00 ACK PSH URGP=0 
+&lt;4&gt;Sep 24 12:22:08 node-12 kernel: IPTABLES_filter_FORWARD:IN=br51 OUT=eth1.46 SRC=172.17.51.3 DST=192.168.0.247 LEN=52 TOS=0x00 PREC=0x00 TTL=63 ID=35552 DF PROTO=TCP SPT=80 DPT=44301 WINDOW=122 RES=0x00 ACK FIN URGP=0 
+&lt;4&gt;Sep 24 12:22:08 node-12 kernel: IPTABLES_filter_FORWARD:IN=br51 OUT=eth1.46 SRC=172.17.51.3 DST=192.168.0.247 LEN=52 TOS=0x00 PREC=0x00 TTL=63 ID=35553 DF PROTO=TCP SPT=80 DPT=44301 WINDOW=122 RES=0x00 ACK URGP=0 
+
+# POSTROUTING
+&lt;4&gt;Sep 24 12:22:08 node-12 kernel: IPTABLES_nat_PREROUTING:IN=br36 OUT= MAC=fa:16:3e:26:4c:48:fa:16:3e:1f:9e:63:08:00 SRC=172.17.36.5 DST=172.17.36.4 LEN=328 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=UDP SPT=68 DPT=67 LEN=308 
+</pre>
+
+<h3 id="toc_0.3.2">icmp测试</h3>
+
+<ul>
+<li>
+从172.17.51.3发起对网桥网关icmp操作:<code>ping -n -c 1 172.17.51.4</code>。
+<pre class="brush:bash">
+# PREROUTING:51.3-&gt;51.4
+&lt;4&gt;Sep 24 13:37:27 node-12 kernel: IPTABLES_nat_PREROUTING:IN=br51 OUT= MAC=fa:16:3e:3d:5a:37:fa:16:3e:95:ff:38:08:00 SRC=172.17.51.3 DST=172.17.51.4 LEN=84 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=ICMP TYPE=8 CODE=0 ID=46086 SEQ=1 
+
+# INPUT:51.3-&gt;51.4
+&lt;4&gt;Sep 24 13:37:27 node-12 kernel: IPTABLES_filter_INPUT-d:IN=br51 OUT= MAC=fa:16:3e:3d:5a:37:fa:16:3e:95:ff:38:08:00 SRC=172.17.51.3 DST=172.17.51.4 LEN=84 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=ICMP TYPE=8 CODE=0 ID=46086 SEQ=1 
+&lt;4&gt;Sep 24 13:37:27 node-12 kernel: IPTABLES_filter_INPUT-s:IN=br51 OUT= MAC=fa:16:3e:3d:5a:37:fa:16:3e:95:ff:38:08:00 SRC=172.17.51.3 DST=172.17.51.4 LEN=84 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=ICMP TYPE=8 CODE=0 ID=46086 SEQ=1 
+
+# OUTPUT:51.4-&gt;51.3
+&lt;4&gt;Sep 24 13:37:27 node-12 kernel: IPTABLES_filter_OUTPUT-d:IN= OUT=br51 SRC=172.17.51.4 DST=172.17.51.3 LEN=84 TOS=0x00 PREC=0x00 TTL=64 ID=12128 PROTO=ICMP TYPE=0 CODE=0 ID=46086 SEQ=1 
+&lt;4&gt;Sep 24 13:37:27 node-12 kernel: IPTABLES_filter_OUTPUT-s:IN= OUT=br51 SRC=172.17.51.4 DST=172.17.51.3 LEN=84 TOS=0x00 PREC=0x00 TTL=64 ID=12128 PROTO=ICMP TYPE=0 CODE=0 ID=46086 SEQ=1 
+
+# PREROUTING:51.3-&gt;51.4
+&lt;4&gt;Sep 24 13:37:47 node-12 kernel: IPTABLES_nat_PREROUTING:IN=br51 OUT= MAC=fa:16:3e:3d:5a:37:fa:16:3e:95:ff:38:08:00 SRC=172.17.51.3 DST=172.17.51.4 LEN=84 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=ICMP TYPE=8 CODE=0 ID=46342 SEQ=1 
+
+# INPUT:51.3-&gt;51.4
+&lt;4&gt;Sep 24 13:37:47 node-12 kernel: IPTABLES_filter_INPUT-d:IN=br51 OUT= MAC=fa:16:3e:3d:5a:37:fa:16:3e:95:ff:38:08:00 SRC=172.17.51.3 DST=172.17.51.4 LEN=84 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=ICMP TYPE=8 CODE=0 ID=46342 SEQ=1 
+&lt;4&gt;Sep 24 13:37:47 node-12 kernel: IPTABLES_filter_INPUT-s:IN=br51 OUT= MAC=fa:16:3e:3d:5a:37:fa:16:3e:95:ff:38:08:00 SRC=172.17.51.3 DST=172.17.51.4 LEN=84 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=ICMP TYPE=8 CODE=0 ID=46342 SEQ=1 
+
+# OUTPUT:51.4-&gt;51.3
+&lt;4&gt;Sep 24 13:37:47 node-12 kernel: IPTABLES_filter_OUTPUT-d:IN= OUT=br51 SRC=172.17.51.4 DST=172.17.51.3 LEN=84 TOS=0x00 PREC=0x00 TTL=64 ID=12129 PROTO=ICMP TYPE=0 CODE=0 ID=46342 SEQ=1 
+&lt;4&gt;Sep 24 13:37:47 node-12 kernel: IPTABLES_filter_OUTPUT-s:IN= OUT=br51 SRC=172.17.51.4 DST=172.17.51.3 LEN=84 TOS=0x00 PREC=0x00 TTL=64 ID=12129 PROTO=ICMP TYPE=0 CODE=0 ID=46342 SEQ=1 
+</pre>
+
+</ul>
+
+<ul>
+<li>
+从172.17.51.3发起对物理路由器icmp操作:<code>ping -n -c 1 172.17.51.1</code>，在iptables中没有相关日志。
+
+</ul>
+
+
+<ul>
+<li>
+从172.17.51.3发起对外部IP的icmp操作:<code>ping -n -c 1 172.17.19.1</code>：只有51.3-&gt;19.1的流量：
+
+</ul>
+
+<pre class="brush:bash">
+# PREROUTING
+&lt;4&gt;Sep 24 13:44:35 node-12 kernel: IPTABLES_nat_PREROUTING:IN=br51 OUT= MAC=fa:16:3e:3d:5a:37:fa:16:3e:95:ff:38:08:00 SRC=172.17.51.3 DST=172.17.19.1 LEN=84 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=ICMP TYPE=8 CODE=0 ID=13831 SEQ=1
+
+# FORWARD
+&lt;4&gt;Sep 24 13:44:35 node-12 kernel: IPTABLES_filter_FORWARD:IN=br51 OUT=eth1.46 SRC=172.17.51.3 DST=172.17.19.1 LEN=84 TOS=0x00 PREC=0x00 TTL=63 ID=0 DF PROTO=ICMP TYPE=8 CODE=0 ID=13831 SEQ=1 
+
+# POSTROUTING
+&lt;4&gt;Sep 24 13:44:35 node-12 kernel: IPTABLES_nat_POSTROUTING:IN= OUT=eth1.46 SRC=172.17.51.3 DST=172.17.19.1 LEN=84 TOS=0x00 PREC=0x00 TTL=63 ID=0 DF PROTO=ICMP TYPE=8 CODE=0 ID=13831 SEQ=1 
+</pre>
+
+<h3 id="toc_0.3.3">其它</h3>
+
+<ul>
+<li>
+从172.17.51.3访问互联网网站时，只有51.3外出的FORWARD流量：
+<pre class="brush:bash">
+...
+&lt;4&gt;Sep 24 13:57:38 node-12 kernel: IPTABLES_filter_FORWARD:IN=br51 OUT=eth1.46 SRC=172.17.51.3 DST=219.143.204.117 LEN=64 TOS=0x00 PREC=0x00 TTL=63 ID=17923 DF PROTO=TCP SPT=49588 DPT=80 WINDOW=468 RES=0x00 ACK URGP=0 
+...
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

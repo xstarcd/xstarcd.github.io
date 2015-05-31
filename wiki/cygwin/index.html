@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Cygwin使用</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Cygwin使用</a>
+<ul>
+<li><a href="#toc_1.1">常用软件安装</a>
+<ul>
+<li><a href="#toc_1.1.1">安装apt-cyg</a>
+<li><a href="#toc_1.1.2">安装常用工具</a>
+<li><a href="#toc_1.1.3">安装python环境</a>
+</ul>
+<li><a href="#toc_1.2">常用工具设置</a>
+<ul>
+<li><a href="#toc_1.2.1">Cygwin终端</a>
+<li><a href="#toc_1.2.2">bashrc</a>
+<li><a href="#toc_1.2.3">screen设置</a>
+<li><a href="#toc_1.2.4">~/.vimrc</a>
+<li><a href="#toc_1.2.5">~/.ssh/config</a>
+</ul>
+<li><a href="#toc_1.3">其他设置</a>
+<ul>
+<li><a href="#toc_1.3.1">SSH Server</a>
+<li><a href="#toc_1.3.2">crontab</a>
+<li><a href="#toc_1.3.3">nontsec</a>
+</ul>
+<li><a href="#toc_1.4">中文乱码设置</a>
+<li><a href="#toc_1.5">技巧收集</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">Cygwin使用</h1>
+
+<p>
+Update: 2013-01-04
+</p>
+
+<ul>
+<li>
+<a href="http://www.cygwin.com/">Cygwin</a>
+
+<li>
+<a href="http://www.redhat.com/services/custom/cygwin/">RedHat Cygwin</a>
+
+<li>
+<a href="KeepassX_SecureCRT.html">KeepassX_SecureCRT</a>
+
+</ul>
+
+<h2 id="toc_1.1">常用软件安装</h2>
+
+<ul>
+<li>
+安装Cygwin时，应安装上：wget, tar, gawk, bzip2, nc, xz, openssh
+
+</ul>
+
+<h3 id="toc_1.1.1">安装apt-cyg</h3>
+<ul>
+<li>
+修改x86/x86_64源、xz压缩包支持、sha512sum的apt-cyg:<a href="../files/shell/apt-cyg">apt-cyg</a>
+<pre class="brush: bash">
+#wget http://apt-cyg.googlecode.com/svn/trunk/apt-cyg
+wget http://w.gdu.me/wiki/files/shell/apt-cyg -O /usr/local/bin/apt-cyg
+chmod +x /usr/local/bin/apt-cyg
+apt-cyg --help
+cygcheck --help
+# 修改软件源
+#apt-cyg --mirror http://mirrors.163.com/cygwin
+apt-cyg --mirror http://mirrors.aliyun.com/cygwin
+
+# ftp://mirror.mcs.anl.gov/pub/cygwin
+# http://mirrors.163.com/cygwin
+# ftp://ftp.ges.redhat.com/private/releng/cygwin-1.8
+</pre>
+
+<li>
+201308后Cygwin版本变更，需修改apt-cyg
+
+<ul>
+<li>
+软件源路径变更
+
+<ul>
+<li>
+2013-08-08后Cygwin分为x86、x86_64两个安装包，源路径也改不同路径(x86、x86_64)，因此apt-cyg下载setup.bz2和setup.ini时发生404错误。
+
+<li>
+在apt-cyg增加MPath来支持x86、x86_64版本。
+
+</ul>
+<li>
+添加xz压缩包支持:修改apt-cyg根据包文件扩展名选择binzip2或xz来进行解压。
+
+</ul>
+<li>
+cygwin 2.0.0中改用sha512sum替代md5校验，执行报<code>cygwin64 MD5 sum did not match, exiting</code>错误
+
+<ul>
+<li>
+修改apt-cyg，将md5sum 换成 sha512sum
+
+</ul>
+</ul>
+
+<h3 id="toc_1.1.2">安装常用工具</h3>
+<pre class="brush: bash">
+# apt-cyg install man cygwin-doc
+apt-cyg install vim screen wget subversion openssh pwgen gzip bzip2 curl rsync bash-completion \
+ lftp nc tree p7zip connect-proxy util-linux bind-utils inetutils
+</pre>
+
+<h3 id="toc_1.1.3">安装python环境</h3>
+<pre class="brush: bash">
+apt-cyg install python python-crypto
+</pre>
+
+<ul>
+<li>
+安装easy_install
+
+<ul>
+<li>
+参考：<a href="http://atbrox.com/2009/09/21/how-to-get-pipvirtualenvfabric-working-on-cygwin/">http://atbrox.com/2009/09/21/how-to-get-pipvirtualenvfabric-working-on-cygwin/</a>
+<pre class="brush: bash">
+#wget http://pypi.python.org/packages/2.6/s/setuptools/setuptools-0.6c11-py2.6.egg
+#sh setuptools-0.6c11-py2.6.egg
+
+apt-cyg install python-setuptools
+
+easy_install pip
+pip install moin
+
+</pre>
+
+</ul>
+</ul>
+
+<h2 id="toc_1.2">常用工具设置</h2>
+
+<h3 id="toc_1.2.1">Cygwin终端</h3>
+<ul>
+<li>
+~/.minttyrc
+<pre class="brush:bash">
+BoldAsFont=no
+Font=YaHei Consolas hybrid
+FontHeight=12
+#BackgroundColour=0,43,53
+BackgroundColour=11,22,33
+ForegroundColour=191,191,191
+FontSmoothing=full
+</pre>
+
+<li>
+颜色、字体选择参数
+<pre>
+背景颜色：(RGB)0,40,51;或11,22,33(就是这个Wiki页面的背景色)
+字体颜色：(RGB)31,148,150(较暗);或191,191,191
+目录颜色：(RGB)255,128,128
+压缩文件颜色：(RGB)128,128,0
+
+字体：Consolas,Courier New,Fixedsys,YaHei Consolas hybrid
+</pre>
+
+<li>
+YaHei Consolas hybrid.1.12字体下载：
+
+<ul>
+<li>
+<a href="../files/YaHei.Consolas.1.12.7z">YaHei.Consolas.1.12.7z</a>
+
+<li>
+<a href="http://pan.baidu.com/s/1qWJc7oC">百度网盘下载：YaHei.Consolas.1.12.7z</a>
+
+</ul>
+</ul>
+
+<h3 id="toc_1.2.2">bashrc</h3>
+<ul>
+<li>
+~/.bashrc
+<pre class="brush:bash">
+alias grep='grep --color'                     # show differences in colour
+alias egrep='egrep --color=auto'              # show differences in colour
+alias fgrep='fgrep --color=auto'              # show differences in colour
+alias ls='ls -hF --color=tty'                 # classify files in colour
+alias ll='ls -la'                             # long list
+alias la='ls -A'                              # all but . and ..
+alias l='ls -CF'                              #
+
+# 关闭ControlMaster auto，避免ssh连接时报错
+alias ssh="ssh -S none"
+
+# 将Windows命令输出转换为utf8，解决乱码问题
+_runiconv () { _cmd=$1;shift;$_cmd $* 2&gt;&amp;1|iconv -f gbk -t utf8; }
+alias ping='_runiconv ping'
+alias ifconfig='_runiconv ipconfig'
+alias netstat='_runiconv netstat'
+alias tracert='_runiconv tracert'
+alias route='_runiconv route'
+</pre>
+
+</ul>
+
+<ul>
+<li>
+~/.bash_profile
+<pre class="brush:bash">
+PS1="[\w]$"
+#彩色的PS1会造成命令编辑时光标定位错误
+#PS1="\e[0;32m[\u@\h \W]\$ \e[m"
+</pre>
+
+</ul>
+
+<h3 id="toc_1.2.3">screen设置</h3>
+<pre class="brush: bash">
+#
+# ~/.screenrc
+#
+# 启动时不显示欢迎屏幕
+startup_message off
+
+# 定义screen的功能键为Ctrl-A。向终端输入Ctrl-A时应按 Ctrl-A a。
+#escape ^Aa
+
+# 屏幕缓冲区 1024 行。
+defscrollback 1024
+
+# 显示窗口列表
+caption always "%-w%{= BW}%50&gt;%n %t%{-}%+w%&lt;"
+
+# 按 Ctrl-A w 或 Ctrl-A Ctrl-W 显示窗口列表
+bind w windowlist -b
+#bind ^w windowlist -b
+
+#在使用screen过程中，经常会遇到“闪屏”的问题，这是可以关掉的。
+#快速关掉：也就是先输入CTRL + a，再输入CTRL + g。
+#永久关闭：修改/etc/screenrc 加入
+vbell off
+
+</pre>
+
+<h3 id="toc_1.2.4">~/.vimrc</h3>
+
+<ul>
+<li>
+vim没有语法高亮，需加载基本设置
+<pre class="brush: bash">
+cd /usr/share/vim &amp;&amp; cp vim74/vimrc_example.vim vimrc
+</pre>
+
+</ul>
+
+<ul>
+<li>
+.vimrc设置
+
+</ul>
+
+<p>
+详见：<a href="../vim/vimrc.html">vimrc</a>
+</p>
+<pre class="brush: bash">
+" ~/.vimrc
+set mouse=c
+set nobackup
+
+" set paste
+
+set fileformats=unix,dos,mac
+set fileencodings=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
+set encoding=utf-8
+" set termencoding=cp936
+let &amp;termencoding = &amp;encoding
+language messages en_US.UTF-8
+"language messages zh_CN.UTF-8
+
+" colo murphy
+
+" tab
+set tabstop=4
+set cindent shiftwidth=4
+set autoindent shiftwidth=4
+" TAB -&gt; Space
+set expandtab
+
+</pre>
+
+<h3 id="toc_1.2.5">~/.ssh/config</h3>
+<pre class="brush: bash">
+#ssh_config
+#~/.ssh/config
+IdentitiesOnly yes
+ServerAliveInterval 60
+GSSAPIAuthentication no
+
+Host m*
+    Port 22
+    User root
+    ControlMaster auto
+    ControlPath ~/.ssh/master-%r@%h:%p
+    #ProxyCommand connect-proxy -S 127.0.0.1:2223 %h %p
+Host mNagios
+    Hostname 172.16.16.150
+
+</pre>
+
+
+<h2 id="toc_1.3">其他设置</h2>
+
+<h3 id="toc_1.3.1">SSH Server</h3>
+
+<ul>
+<li>
+OS修改环境变量：path增加c:/cygwin/bin
+
+<li>
+OS增加环境变量：CYGWIN=ntsec tty
+
+<li>
+Cygwin安裝必要的套件：OpenSSH，cygrunsrv
+
+<li>
+Change permissions and ownership on some files:
+<pre class="brush: bash">
+# 以下代码没测试过，慎用
+cd /; chmod -R og-w . 
+chmod og+w /tmp 
+touch /var/log/sshd.log 
+chown system:system /var/log/sshd.log /var/empty /etc/ssh_h* 
+chmod 755 /var/empty
+</pre>
+
+<li>
+Cygwin設定OpenSSH：
+<pre class="brush: bash">
+    ssh-host-config
+</pre>
+<pre>
+    Should privilege separation be used? (yes/no) ：yes
+    Should this script create a local user 'sshd' on this machine? (yes/no) ：yes
+    Do you want to install sshd as service? (yes/no) ：yes
+    Default is "ntsec" . CYGWIN=ntsec tty
+</pre>
+
+<li>
+启动OpenSSH：net start sshd
+<pre class="brush: bash">
+cygrunsrv -S sshd
+</pre>
+
+<li>
+停止OpenSSH：net stop sshd 
+
+</ul>
+
+
+<h3 id="toc_1.3.2">crontab</h3>
+
+<ul>
+<li>
+在Windows上安装系统服务 cron，开机即运行。
+<pre class="brush: bash">
+cygrunsrv -I cron -p /usr/sbin/cron -a -D
+</pre>
+
+<li>
+启动服务
+<pre class="brush: bash">
+cygrunsrv -S cron
+</pre>
+
+</ul>
+
+<h3 id="toc_1.3.3">nontsec</h3>
+<p>
+这在 Cygwin 下创建的文件，其他管理员不可写，是所谓的 ntsec 在起作用。通过 NTFS 的权限设置，模拟 UNIX 的权限。可以通过 CYGWIN 环境变量修改。如：
+</p>
+<pre class="brush: bash">
+export CYGWIN="nontsec nosmbntsec"
+</pre>
+
+<h2 id="toc_1.4">中文乱码设置</h2>
+
+<p>
+**<strong>若存在中文问题才进行以下设置。</strong>**
+</p>
+
+<ul>
+<li>
+Rethat Cygwin安装后目录中文即正常，以下设置不一定需要。
+
+<li>
+~/.bashrc
+<pre class="brush: bash">
+export SVN_EDITOR=vim
+
+# Redhat Cygwin中未做以下设置，中文正常
+alias ls='ls --color --show-control-chars'
+export LESSCHARSET=latin1
+alias less='/bin/less -r'
+#export LC_ALL=zh_CN.UTF-8
+#export LC_CTYPE=zh_CN.UTF-8
+#export LANG=zh_CN.UTF-8
+#export OUTPUT_CHARSET="GBK"
+
+#stty cs8 -istrip
+#stty pass8
+
+export CYGWIN="nontsec nosmbntsec"
+
+</pre>
+
+</ul>
+
+<ul>
+<li>
+~/.inputrc
+<pre class="brush: bash">
+# Allow 8-bit input/output
+set meta-flag on
+set convert-meta off
+set input-meta on
+set output-meta on
+</pre>
+
+</ul>
+
+<h2 id="toc_1.5">技巧收集</h2>
+
+<ul>
+<li>
+Howto get version info? 
+<pre class="brush: bash">
+cygcheck -c cygwin
+</pre>
+
+<li>
+查看系统信息、软件包
+<pre class="brush:bash">
+cygcheck -h #帮助
+cygcheck -s #sysinfo
+cygcheck -l #已安装包列表
+cygcheck -c #列出并校验已安装的包
+cygcheck -p vim #从cygwin.com源查询包
+</pre>
+
+<li>
+给curl安装CA Certificates
+<pre class="brush: bash">
+curl http://curl.haxx.se/ca/cacert.pem &gt; /usr/ssl/certs/ca-bundle.crt
+</pre>
+
+<li>
+同步Windows用户和组
+<pre class="brush:bash">
+mkpasswd -l &gt; /etc/passwd
+mkgroup -l &gt; /etc/group
+
+# 如果有Domain的话，需要加上-d domainname 
+</pre>
+
+<li>
+设置Cygwin/mintty字体和大小
+
+<ul>
+<li>
+界面中设置：右键菜单-&gt;Options-&gt;Text，然后选择你喜欢的字体和大小。
+
+<li>
+如果没有你相要的字体，但Windows中有，可修改配置文件：<code>~/.minttyrc</code>，添加以下设置：
+<pre>
+BoldAsFont=no
+#Font=Courier New
+Font=YaHei Consolas hybrid
+FontHeight=12
+</pre>
+
+</ul>
+<li>
+给Cygwin添加more/col/whereis等命令：安装util-linux包:<code>apt-cyg install util-linux</code>
+
+<li>
+给Cygwin添加telnet/ftp工具:<code>apt-cyg install inetutils</code>
+
+<li>
+给Cygwin安装dig命令
+
+<ul>
+<li>
+安装<code>bind-utils</code>包:<code>apt-cyg install bind-utils</code>
+
+<li>
+检查系统中已设置好DNS: <code>ipconfig /all</code>
+
+</ul>
+<li>
+得到Windows格式的路径名?
+<pre class="brush: bash">
+cygpath -d -m "`pwd`"
+</pre>
+
+<li>
+用Explorer打开当前目录
+<pre class="brush:bash">
+#!/bin/sh
+# openexplorer.sh
+d=$1;[ -z "$d" ] &amp;&amp; d=$(pwd)
+d=$(cd "$d" &gt; /dev/null 2&gt;&amp;1;pwd)
+Explorer /e,"$(cygpath -d -w $d)"
+</pre>
+
+<li>
+Cygwin error: <code>-bash: fork: retry: Resource temporarily unavailable</code>
+
+<ul>
+<li>
+<a href="http://stackoverflow.com/questions/9300722/cygwin-error-bash-fork-retry-resource-temporarily-unavailable">http://stackoverflow.com/questions/9300722/cygwin-error-bash-fork-retry-resource-temporarily-unavailable</a>
+
+<li>
+<a href="http://cygwin.wikia.com/wiki/Rebaseall">http://cygwin.wikia.com/wiki/Rebaseall</a>
+
+<li>
+错误现象
+<pre>
+-bash-4.1$ wc m1.txt
+      3 [main] bash 2216 child_info_fork::abort: data segment start: parent(0x26D000) !=     child(0x38D000)
+      -bash: fork: retry: Resource temporarily unavailable
+      2013930  4027950 74968256 m1.txt
+</pre>
+
+<li>
+处理办法
+<pre>
+rkosegi's Answer seems to be working for everyone (myself included). But, just so you don't have to follow the daisy chain of links:
+
+(assuming Cygwin is installed at C:\cygwin):
+
+1.Open Task Manager and close any processes that look to be Cygwin related.
+2.Open C:\Cygwin\bin in Windows Explorer
+3.Verify that dash.exe, ash.exe, rebase.exe, and rebaseall exist in this folder
+    - If any of them are missing, re-run Cygwin setup and select the dash, ash, and rebase packages
+4.right-click your C:\Cygwin folder, uncheck Read-only (if its checked), and press OK.
+    - When an error about not being able to switch some files comes up, select "Ignore All". Wait for this process to complete.
+5.Browse to C:\Cygwin\bin in Windows Explorer
+6.Right click dash.exe and click "Run as Administrator". A command Prompt should appear with nothing but a $
+7.Type /usr/bin/rebaseall -v, hit enter, and wait for the process to complete.
+    - If you get errors about Cygwin processes running, try Step 1 again. If that still doesn't work, Restart your computer into safe mode and try these steps again.
+8.Try opening Cygwin again.
+
+This process worked for me. I hope it works for you guys too.
+
+Source: http://cygwin.wikia.com/wiki/Rebaseall
+</pre>
+
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

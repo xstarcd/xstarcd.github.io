@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>keepalived_LVS</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">keepalived编译安装</a>
+<ul>
+<li><a href="#toc_1.1">编译环境</a>
+<li><a href="#toc_1.2">keepalived编译安装</a>
+<li><a href="#toc_1.3">keepalived配置</a>
+<li><a href="#toc_1.4">keepalived启动</a>
+<li><a href="#toc_1.5">其他</a>
+</ul>
+<li><a href="#toc_2">LVS监控</a>
+<ul>
+<li><a href="#toc_2.1">用ipvsadm命令</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">keepalived编译安装</h1>
+
+<p>
+Update: 2012-12-10
+</p>
+
+<h2 id="toc_1.1">编译环境</h2>
+
+<ul>
+<li>
+CentOS 6.3
+
+<li>
+RedHat 6.0
+
+<li>
+CentOS 6.4源中已添加keepalived，直接用yum安装即可。
+
+</ul>
+
+<pre class="brush: bash">
+yum -y install unzip wget gcc autoconf automake make libtool pkgconfig glib2-devel \
+    libxml2 libxml2-devel bzip2-devel libtool-ltdl-devel libuuid-devel libxslt-devel;
+yum -y install ipvsadm kernel-devel;
+yum -y install openssl openssl-devel popt-devel popt libnl libnl-devel;
+</pre>
+
+<h2 id="toc_1.2">keepalived编译安装</h2>
+<pre class="brush: bash">
+mkdir -p ~/down &amp;&amp; cd ~/down \
+&amp;&amp; wget http://www.keepalived.org/software/keepalived-1.2.7.tar.gz
+</pre>
+
+<pre class="brush: bash">
+cd ~/down \
+&amp;&amp; tar zxvf keepalived-1.2.7.tar.gz \
+&amp;&amp; cd keepalived-1.2.7 \
+&amp;&amp; CFLAGS="-O3 -pipe" ./configure --sysconf=/etc --with-kernel-dir=/usr/src/kernels/$(uname -r) \
+&amp;&amp; make &amp;&amp; make install \
+&amp;&amp; ln -sf /usr/local/sbin/keepalived /usr/sbin/keepalived
+</pre>
+<pre>
+    Keepalived configuration
+    ------------------------
+    Keepalived version       : 1.2.7
+    Compiler                 : gcc
+    Compiler flags           : -O3 -pipe
+    Extra Lib                : -lpopt -lssl -lcrypto  -lnl
+    Use IPVS Framework       : Yes
+    IPVS sync daemon support : Yes
+    IPVS use libnl           : Yes
+    Use VRRP Framework       : Yes
+    Use VRRP VMAC            : Yes
+    SNMP support             : No
+    Use Debug flags          : No
+</pre>
+
+<h2 id="toc_1.3">keepalived配置</h2>
+<blockquote>
+/etc/keepalived/keepalived.conf
+</blockquote>
+
+<h2 id="toc_1.4">keepalived启动</h2>
+<blockquote>
+/etc/init.d/keepalived start|stop|restart
+</blockquote>
+
+<h2 id="toc_1.5">其他</h2>
+<ul>
+<li>
+arping
+<pre class="brush: bash">
+/sbin/arping -I eth0 -c 5 -s $WEB_VIP $GW
+</pre>
+
+<li>
+ifconfig可能看不到vip，用ip addr试试
+
+</ul>
+
+
+<h1 id="toc_2">LVS监控</h1>
+
+<p>
+引用：<a href="http://salogs.com">http://salogs.com</a>
+</p>
+
+<h2 id="toc_2.1">用ipvsadm命令</h2>
+
+<p>
+通常情况下lvs的运行情况以及资源使用情况是无法使用top或vmstat命令时来查看的。对于LVS-DR结构的LVS来说，其只会转发网络包。几乎不会耗费CPU资源，这时我们查看系统负载应该为0.00。
+</p>
+
+<ul>
+<li>
+通过使用ipvsadm命令可以查看当前LVS的运行情况，如下：
+<pre>
+[root@LVS-Master]# ipvsadm
+Prot LocalAddress:Port Scheduler Flags
+-&gt; RemoteAddress:Port Forward Weight ActiveConn InActConn
+TCP localhost:https wlc persistent 50
+-&gt; localhost:https Route 1 0 0
+-&gt; localhost:https Route 1 0 0
+TCP localhost:http wlc persistent 50
+-&gt; localhost:http Route 1 0 0
+-&gt; localhost:http Route 3 0 0
+</pre>
+
+</ul>
+<p>
+当有新连接过来时，其相关的计数就会增加。
+</p>
+
+<ul>
+<li>
+查看连接数/进入包（字节）/输出包（字节）：
+<pre>
+命令：ipvsadm -Ln --stats -t |u|f service-address
+-t, --tcp-service
+-u, --udp-service
+-f, --fwmark-service
+-L, -l, --list List the virtual server table if no argument is specified.
+-n, --numeric Numeric output.
+--stats Output of statistics information.
+</pre>
+
+</ul>
+
+<p>
+示例：
+</p>
+<pre>
+[root@experiment ~]# ipvsadm -Ln --stats -t 192.168.108.180:80
+Prot LocalAddress:Port Conns InPkts OutPkts InBytes OutBytes
+-&gt; RemoteAddress:Port
+TCP 192.168.108.180:80 5771754 101697K 0 5338M 0
+-&gt; 192.168.108.162:80 454297 13736280 0 761572K 0
+-&gt; 192.168.108.161:80 5317457 87961304 0 4576M 0
+</pre>
+
+<ul>
+<li>
+另外通过查看cat /proc/net/ip_vs_stats 也可以查看lvs信息，只不过这里的输出时16进制的。
+<pre>
+[root@LVS-Master] # cat /proc/net/ip_vs_stats
+Total Incoming Outgoing         Incoming         Outgoing
+Conns  Packets  Packets            Bytes            Bytes
+594BFC  6335751        0        145F90EC1                0
+Conns/s   Pkts/s   Pkts/s          Bytes/s          Bytes/s
+0              0             0                     0                     0
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

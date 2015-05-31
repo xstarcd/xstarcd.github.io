@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>CentOS技巧收集</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">CentOS技巧收集</a>
+<ul>
+<li><a href="#toc_1.1">CentOS-语言设置</a>
+<li><a href="#toc_1.2">自动创建用户HOME目录</a>
+<li><a href="#toc_1.3">yum获取GPG密钥失败：[Errno 14]</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">CentOS技巧收集</h1>
+
+<h2 id="toc_1.1">CentOS-语言设置</h2>
+
+<pre class="brush:bash">
+#查看支持的locale语言
+locale -a 
+locale -a|grep en 
+
+#查看当前使用的语言
+echo $LANG
+
+# 设置系统locale语言
+# vi /etc/sysconfig/i18n
+#LANG="zh_CN.UTF-8"
+LANG="en_US.UTF-8"
+
+# 临时改变系统locale语言
+export LANG=zh_CN.UTF-8
+</pre>
+
+
+<h2 id="toc_1.2">自动创建用户HOME目录</h2>
+<p>
+对于cfengine自动添加的用户或ldap认证的用户，通常需要自动创建他们的HOME目录，好在pam模块pam_mkhomedir.so解决了这一问题，只要把下面内容添加到 /etc/pam.d/system-auth的session部分的第一行即可：
+</p>
+<pre>
+session required pam_mkhomedir.so skel=/etc/skel/ umask=0066
+</pre>
+<p>
+但如果没在sshd_config里启用pam，则通过ssh登录的用户没机会运行这个模块。因此，需要如下设置sshd_config：
+</p>
+<pre>
+UsePAM yes
+</pre>
+
+
+<h2 id="toc_1.3">yum获取GPG密钥失败：[Errno 14]</h2>
+
+<p>
+<a href="http://blog.sina.com.cn/s/blog_741c82ba0101pv31.html">http://blog.sina.com.cn/s/blog_741c82ba0101pv31.html</a>
+</p>
+
+<p>
+(2013-03-13 12:24:30)
+</p>
+<pre>
+GPG key retrieval failed: [Errno 14] PYCURL ERROR 7 - "couldn't connect to host"
+</pre>
+<p>
+简单的翻译：GPG密钥检索失败：[14] PYCURL errno的错误 - “无法连接到主机”
+</p>
+
+<p>
+解决办法：
+</p>
+
+<ul>
+<li>
+检查自己的DNS是不是正常，ping centos.org 和ping www.baidu.com
+
+</ul>
+
+<p>
+如果都是正常，那DNS配置就不存在问题了。如果感觉DNS还是有问题就换个
+</p>
+
+<ul>
+<li>
+实质性问题就是自己系统没有yum的GPG密钥
+
+</ul>
+
+<p>
+查看自己系统版本:cat /etc/issue
+</p>
+
+<p>
+登陆mirrors.163.com 找到自己系统对应的密钥
+</p>
+
+<ol>
+<li>
+RPM-GPG-KEY-CentOS-3
+
+<li>
+RPM-GPG-KEY-CentOS-4
+
+<li>
+RPM-GPG-KEY-CentOS-5
+
+<li>
+RPM-GPG-KEY-CentOS-6
+
+</ol>
+
+<p>
+使用命令rpm --import进行导入
+</p>
+<pre>
+rpm --import http://mirrors.163.com/centos/RPM-GPG-KEY-CentOS-6
+</pre>
+
+<p>
+然后你再试一下Yum -y update 你就会发现一切正常了！
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

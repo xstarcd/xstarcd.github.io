@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>vimrc设置</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+
+<h1 id="toc_1">vimrc设置</h1>
+
+<pre class="brush: bash">
+set mouse=c
+set nobackup
+
+" set paste
+" set filetype=shell
+
+set fileformats=unix,dos,mac
+set fileencodings=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
+set encoding=utf-8
+" set termencoding=cp936
+let &amp;termencoding = &amp;encoding
+language messages en_US.UTF-8
+"language messages zh_CN.UTF-8
+
+" colo murphy
+
+" tab
+set tabstop=4
+set cindent shiftwidth=4
+set autoindent shiftwidth=4
+" TAB -&gt; Space
+set expandtab
+
+" vimwiki
+"     是否在词条文件保存时就输出html  这个会让保存大词条比较慢
+"     所以我默认没有启用  有需要的话就把这一行复制到下面去
+"     \ 'auto_export': 1,
+
+" 多个维基项目的配置
+let g:vimwiki_list = [
+  \ {'path': '/data/soft/Vimwiki/Mywiki/',
+  \ 'path_html': '/data/soft/Vimwiki/Mywiki_html/',
+  \ 'template_path': '/data/soft/Vimwiki/templates/',
+  \ 'template_default': 'def_template',
+  \ 'template_ext': '.htm',
+  \ 'diary_link_count': 5,
+  \ 'nested_syntaxes' : {'python': 'python', 'R': 'R', 'bash': 'sh', 'perl': 'perl'}}
+  \ ]
+
+
+" 对中文用户来说，我们并不怎么需要驼峰英文成为维基词条
+let g:vimwiki_camel_case = 0
+ 
+" 标记为完成的 checklist 项目会有特别的颜色
+let g:vimwiki_hl_cb_checked = 1
+ 
+" 我的 vim 是没有菜单的，加一个 vimwiki 菜单项也没有意义
+let g:vimwiki_menu = ''
+ 
+" 是否开启按语法折叠  会让文件比较慢
+" vimwiki 2.0: 'list', 'expr', 'syntax'
+" let g:vimwiki_folding = 1
+let g:vimwiki_folding = 'expr'
+ 
+" 是否在计算字串长度时用特别考虑中文字符
+let g:vimwiki_CJK_length = 1
+ 
+" 详见下文...
+" let g:vimwiki_valid_html_tags='b,i,s,u,sub,sup,kbd,del,br,hr,div,code,h1'
+let g:vimwiki_valid_html_tags='a,b,i,s,u,sub,sup,kbd,br,hr,div,del,code,red,center,left,right,h4,h5,h6,pre,script,img'
+
+" 绑定
+nmap &lt;F5&gt; :VimwikiAll2HTML&lt;cr&gt;
+nmap &lt;F4&gt; :Vimwiki2HTML&lt;cr&gt;
+nmap &lt;leader&gt;tt &lt;Plug&gt;VimwikiToggleListItem
+
+
+" editmoin
+au! BufRead,BufNewFile *.moin
+   \ let l=search("^$", 'n')
+   \ | if search('^#format rst$', 'n', l) &gt; 0 | setf rst
+   \ | elseif search('^#format text_markdown$', 'n', l) &gt; 0 | setf mkd
+   \ | elseif getline(1) =~ '^@@ Syntax: 1\.5$' | setf moin1_5
+   \ | else | setf moin1_6
+   \ | endif
+
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>shell_tips</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">shell tips</a>
+</ul>
+</div>
+<h1 id="toc_1">shell tips</h1>
+
+<ul>
+<li>
+使用HISTTIMEFORMAT在历史中显示TIMESTAMP:将<code>export HISTTIMEFORMAT='%F %T '</code>加到.bash_profile中。
+
+<li>
+检查日期合法
+<pre class="brush:bash">
+# grep正规表示式方式，只能检查格式
+echo -e "2003-12-31\n1993-10-17" | egrep '^(19|20)[0-9]{2}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$'
+# 日期命令方式，可检查出日期是否合法
+date -d "2013-02-26" +%Y%m%d 2&gt;/dev/null
+</pre>
+
+</ul>
+
+<ul>
+<li>
+统计程序的内存耗用
+<pre class="brush:bash">
+ps -eo fname,rss|awk '{arr[$1]+=$2} END {for (i in arr) {print i,arr[i]}}'|sort -k2 -nr
+</pre>
+
+</ul>
+
+<ul>
+<li>
+shell快捷键
+
+</ul>
+<table>
+<tr>
+<th>
+热键
+</th>
+<th>
+作用
+</th>
+</tr>
+<tr>
+<td>
+CTRL + a
+</td>
+<td>
+可以快速切换到命令行开始处
+</td>
+</tr>
+<tr>
+<td>
+CTRL + e
+</td>
+<td>
+切换到命令行末尾
+</td>
+</tr>
+<tr>
+<td>
+CTRL + r
+</td>
+<td>
+在历史命令中查找
+</td>
+</tr>
+<tr>
+<td>
+CTRL + u
+</td>
+<td>
+删除光标所在位置之前的所有字符
+</td>
+</tr>
+<tr>
+<td>
+CTRL + k
+</td>
+<td>
+删除光标所在位置之后的所有字符
+</td>
+</tr>
+<tr>
+<td>
+CTRL + c
+</td>
+<td>
+终止命令
+</td>
+</tr>
+<tr>
+<td>
+CTRL + d
+</td>
+<td>
+结束当前输入、退出shell
+</td>
+</tr>
+<tr>
+<td>
+CTRL + z
+</td>
+<td>
+转入后台运行
+</td>
+</tr>
+<tr>
+<td>
+CTRL + s
+</td>
+<td>
+刷屏信息过快，可用来停留在当前屏
+</td>
+</tr>
+<tr>
+<td>
+CTRL + q
+</td>
+<td>
+恢复刷屏
+</td>
+</tr>
+<tr>
+<td>
+CTRL + 左右方向
+</td>
+<td>
+在命令行按词为单位进行移动
+</td>
+</tr>
+<tr>
+<td>
+CTRL + w
+</td>
+<td>
+删除光标之前的一个单词
+</td>
+</tr>
+<tr>
+<td>
+CTRL + l
+</td>
+<td>
+清屏，clear
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+最短死循环
+<pre class="brush:bash">
+:(){:|:&amp;;};
+</pre>
+
+</ul>
+
+<ul>
+<li>
+逐个处理命令行参数
+<pre class="brush:bash">
+#!/bin/sh
+echo "total=$#"
+for v in "$@";do
+    echo $v
+done
+
+until [ $# -eq 0 ];do
+    echo $1
+    shift
+done
+</pre>
+
+</ul>
+
+<ul>
+<li>
+Linux下/var/log/btmp文件:此文件是记录错误登录的日志，此日志需要使用lastb程序打开，查看恶意ip试图登录次数：
+<pre class="brush:bash">
+lastb | awk '{print $3}' | sort | uniq -c | sort -n
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

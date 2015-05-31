@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>mount</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>mount</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">参数说明</a>
+<li><a href="#toc_0.2">常用挂载命令</a>
+<li><a href="#toc_0.3">挂接UNIX系统NFS</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">参数说明</h2>
+
+<pre>
+mount [-t vfstype] [-o options] device dir
+</pre>
+
+<ul>
+<li>
+<code>-t vfstype</code>:指定文件系统的类型，通常不必指定。mount 会自动选择正确的类型。常用类型有：
+
+<ul>
+<li>
+光盘或光盘镜像：iso9660
+
+<li>
+DOS fat16文件系统：msdos
+
+<li>
+Windows 9x fat32文件系统：vfat
+
+<li>
+Windows NT ntfs文件系统：ntfs,ntfs-3g
+
+<li>
+Mount Windows文件网络共享：smbfs
+
+<li>
+UNIX(LINUX) 文件网络共享：nfs
+
+</ul>
+</ul>
+
+<ul>
+<li>
+<code>-o options</code>:主要用来描述设备或档案的挂接方式。常用的参数有：
+
+<ul>
+<li>
+loop：用来把一个文件当成硬盘分区挂接上系统
+
+<li>
+ro：采用只读方式挂接设备
+
+<li>
+rw：采用读写方式挂接设备
+
+<li>
+iocharset：指定访问文件系统所用字符集
+
+</ul>
+</ul>
+
+<ul>
+<li>
+device 要挂接(mount)的设备。
+
+<li>
+dir设备在系统上的挂接点(mount point)。
+
+</ul>
+
+<h2 id="toc_0.2">常用挂载命令</h2>
+
+<ul>
+<li>
+挂载Windows共享
+<pre class="brush:bash">
+sudo mount -t cifs -o user=Administrator,pass=123456 //192.168.1.2/d smb
+sudo mount -t cifs -o user=xing.yuan,pass=mypasswd,domain=mydomain //192.168.0.88/c$ /mnt/smbc
+
+#/etc/fstab
+//192.168.0.88/tima-share /home/yuanxing/smb88 cifs user=xing.yuan,pass=mypasswd,domain=tima 0 0
+
+# smbmount以后中文乱码:
+sudo mount -t smbfs -o unicode,codepage=unicode,iocharset=utf8,uid=dubuntu,username=knoppix,password=knoppix //192.168.0.1/knoppix /mnt/knoppix
+</pre>
+
+</ul>
+
+<ul>
+<li>
+挂载nfs
+<pre class="brush:bash">
+showmount -e nfs_server
+sudo mount -t nfs nfs_server:/opt/src1 /mnt
+</pre>
+
+</ul>
+
+<ul>
+<li>
+挂载ISO镜像
+<pre class="brush:bash">
+mount -o loop -t iso9660 /home/sunky/mydisk.iso /mnt/vcdrom
+</pre>
+
+</ul>
+
+<ul>
+<li>
+挂载U盘(中文)
+<pre class="brush:bash">
+mount -t vfat -o iocharset=cp936 /dev/sdd1 /mnt/usb
+</pre>
+
+</ul>
+
+<ul>
+<li>
+mount --bind
+<pre class="brush:bash">
+# 目录挂载mount --bind：
+mount --bind /soft/media /home/ftpusers/media
+
+# 对应的fstab写法：
+/soft/media /home/ftpusers/media    none    rw,bind 0   0
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">挂接UNIX系统NFS</h2>
+
+<p>
+在linux客户端挂接(mount)NFS磁盘共享之前，必须先配置好NFS服务端。
+</p>
+
+<ul>
+<li>
+Solaris系统NFS服务端配置方法如下：
+
+<ul>
+<li>
+修改 /etc/dfs/dfstab, 增加共享目录:<code>share -F nfs -o rw /export/home/sunky</code>
+
+<li>
+启动nfs服务: <code>/etc/init.d/nfs.server start</code>
+
+<li>
+NFS服务启动以后，也可以使用下面的命令增加新的共享
+
+<ul>
+<li>
+share /export/home/sunky1
+
+<li>
+share /export/home/sunky2
+
+<li>
+/export/home/sunky和/export/home/sunky1是准备共享的目录
+
+</ul>
+</ul>
+</ul>
+
+<ul>
+<li>
+linux系统NFS服务端配置方法如下：
+
+<ul>
+<li>
+修改 /etc/exports,增加共享目录
+<pre>
+/export/home/sunky 10.140.133.23(rw)
+/export/home/sunky1 *(rw)
+/export/home/sunky2 linux-client(rw)
+</pre>
+
+<li>
+/export/home/目录下的sunky、sunky1、sunky2是准备共享的目录；
+
+<li>
+10.140.133.23、*、linux- client是被允许挂接此共享linux客户机的IP地址或主机名。
+
+<li>
+如果要使用主机名linux-client必须在服务端主机/etc/hosts文件里增加linux-client主机ip定义。格式如下：
+<pre>
+10.140.133.23 linux-client
+</pre>
+
+<li>
+启动与停止NFS服务
+<pre class="brush:bash">
+/etc/rc.d/init.d/portmap start  # 在REDHAT中PORTMAP是默认启动的
+/etc/rc.d/init.d/nfs start      # 启动NFS服务
+/etc/rc.d/init.d/nfs stop       # 停止NFS服务
+</pre>
+
+<li>
+注：若修改/etc/exports文件增加新的共享，应先停止NFS服务，再启动NFS服务方能使新增加的共享起作用。
+
+<li>
+使用命令exportfs -rv也可以达到同样的效果。
+
+</ul>
+</ul>
+
+<ul>
+<li>
+linux客户端挂接(mount)其他linux系统或UNIX系统的NFS共享
+<pre>
+mkdir –p /mnt/nfs
+mount -t nfs -o rw 10.140.133.9:/export/home/sunky /mnt/nfs
+</pre>
+
+<ul>
+<li>
+这里我们假设10.140.133.9是NFS服务端的主机IP地址，当然这里也可以使用主机名，但必须在本机/etc/hosts文件里增加服务端ip定义。
+
+<li>
+/export/home/sunky为服务端共享的目录。
+
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

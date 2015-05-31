@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>named</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">构建域名服务器--DNS</a>
+<ul>
+<li><a href="#toc_1.1">DNS系统的作用</a>
+<li><a href="#toc_1.2">DNS的系统类型</a>
+<li><a href="#toc_1.3">BIND域名服务器基础</a>
+<li><a href="#toc_1.4">BIND的配置文件</a>
+<ul>
+<li><a href="#toc_1.4.1">主配置文件</a>
+<li><a href="#toc_1.4.2">区域数据库配置文件</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">构建域名服务器--DNS</h1>
+
+<p>
+原文: <a href="http://hi.baidu.com/benet1990/item/f48d5f007d38c7c8dde5b0d6">http://hi.baidu.com/benet1990/item/f48d5f007d38c7c8dde5b0d6</a>
+</p>
+
+
+<h2 id="toc_1.1">DNS系统的作用</h2>
+
+<p>
+主要作用：维护一个主机域名与IP地址的对应关系数据库，在需要的时候为客户端网络程序提供以下两个方面的地址解析功能
+</p>
+
+<ol>
+<li>
+正向解析：将主机的名称（域名）解析为对应的IP地址。最基本功能。
+
+<li>
+反向解析：将主机的IP地址解析为对应的域名。
+
+</ol>
+
+<h2 id="toc_1.2">DNS的系统类型</h2>
+
+<p>
+缓存域名服务器,主要功能是提供域名解析记录的缓存。该类服务器不包含注册的DNS区域设置，而只对用户查询过的域名解析记录进行缓存，当用户首次执行某个域名查询时，缓存服务器通过向根域服务器及其他DNS服务器查询并将结果保存到本地缓存中。提供了常用域名的查询速度。适合局域网内部使用
+</p>
+
+<p>
+主域名服务器，是特定的DNS区域的官方服务器，对于某个指定域，主域名服务器是唯一存在的，其管理的域名解析记录具有权威性。主域名服务器需要在本地设置所管理区域的地址数据库文件。
+</p>
+
+<p>
+从域名服务器，其功能主要是提供备份，通常与主域名服务器同时提供服务，对于客户端来说，从域名服务器提供与主域名服务器完全相同的功能。但是从域名服务器提供的地址解析记录并不由自己决定，而是取决于对于的主域名服务器。
+</p>
+
+<h2 id="toc_1.3">BIND域名服务器基础</h2>
+
+<ul>
+<li>
+安装和服务控制
+
+</ul>
+
+<p>
+bind域名服务相关软件包如下：
+</p>
+
+<ol>
+<li>
+bind，提供了域名服务器的主要程序及相关文件。
+
+<li>
+bind-utils，提供了对DNS服务器的测试工具程序（nslookup，dig等）
+
+<li>
+bind-chroot，为bind提供一个伪装的根目录以增强安全性（将"/var/named/chroot"文件夹作为BIND的根目录）
+
+<li>
+caching-nameserver，为配置BIND作为缓存域名服务器提供必须的默认配置文件，这些文件在配置主，从域名服务器时也可作为参考。
+
+</ol>
+
+<ul>
+<li>
+BIND服务控制
+
+</ul>
+
+<p>
+ BIND软件在安装完后，提供的主程序默认位于“/usr/sbin/named”，系统中会自动增加一个名为named的系统服务。通过脚本文件“etc/init.d/named”可以控制域名服务的运行。
+</p>
+
+<p>
+启动named服务：/etc/init.d/named start   或者 service named start
+</p>
+
+<p>
+在named服务已经运行的情况下重新加载配置：service named reload
+</p>
+
+<h2 id="toc_1.4">BIND的配置文件</h2>
+
+<h3 id="toc_1.4.1">主配置文件</h3>
+
+<p>
+  named主配置文件位于named.conf。一般在/etc目录中，如果使用bind-chroot功能。可能位于“var/named/chroot/etc”目录
+</p>
+
+<ul>
+<li>
+全局配置部分最常见的配置项
+<pre>
+     options {
+         listen-on port 53 { 173.16.16.1};                 //设置named监听的端口号，IP地址
+         directory   “/var/named”;                         //设置区域数据库文件的默认存放位置
+         allow-query { 192.168.2.0/24;173.16.16.0/24 };    //允许DNS查询的客户端地址
+         recursion yes ;                                   //设置运行递归查询
+    };
+</pre>
+
+</ul>
+
+<p>
+  以上配置除了directory项通常保留外，其他的配置项都可以省略。若不指定listen-on配置项，named默认在所有可用的IP地址上监听服务。服务器处理客户端的DNS解析请求时，如果在named.conf文件中找不到相匹配的区域，将会向根域服务器或者由forwarders项指定的其他DNS服务器提交查询，
+</p>
+
+
+<ul>
+<li>
+区域配置部分最常见的配置项
+<pre>
+zone “." IN {                                 //设置根区域
+              type hint;                      //设置区域类型（hint表示根域，master表示主域，slave表示从域）
+              file “named.ca”;                //设置对应的根域地址数据库文件
+};
+
+zone “benet.com” IN {                          //设置正向DNS区域名称
+              type master;
+              file “benet.com.zone”;           //设置对应的正向区域地址数据库文件
+              allow-transfer { 173.16.16.2 ;}; //设置允许下载区域数据库信息的从域名服务器地址
+              allow-update    { none;};        //设置允许动态更新的客户端地址(none为禁止)
+};
+
+zone "16.16.173.in-addr.arpa" IN               //设置反向DNS区域名称
+              type master;
+              file "173.16.16.arpa";           //设置对应的反向区域地址数据库文件
+};
+</pre>
+
+</ul>
+
+ 
+
+<ul>
+<li>
+以上配置中，有几个地方需要注意
+
+</ul>
+
+<ol>
+<li>
+每个zone区域都是可选的（包括根域，回环域，反向域），具体根据实际需要而定，zone区域配置部分的”IN“关键字可以省略。
+
+<li>
+反向区域的名称由倒序的网络地址和“.in-addr.arpa”组合而成
+
+<li>
+file配置项后边的文件名由管理员自行设定，只有实际的地址数据库文件名与其保持一致即可
+
+<li>
+区域设置中的一部分配置内容（如allow-transfer ，allow-update等）也可以放在全局配置里
+
+</ol>
+
+<p>
+修改完后可以执行named-checkconf /var/named/chroot/etc/named.conf检查语法错误。
+</p>
+
+<h3 id="toc_1.4.2">区域数据库配置文件</h3>
+
+<p>
+区域数据库文件位于“/var/named”目录中，如果使用bind-chroot功能可能位于“/var/named/chroot/var/named”目录中。根域“.”的数据库文件比较特殊，internet中所有的DNS服务器都是有相同的根域数据库，文件名为namrd.ca或者named.root(可以从地址<a href="http://www.internic.net/zones/named.root">http://www.internic.net/zones/named.root</a> 获得最新版本的根域数据库)；其他区域地址数据库文件，由该域的管理者自行设置。
+</p>
+ 
+
+<p>
+在区域数据库配置文件中，通常包括TTL配置项，SOA（授权信息开始）记录和地址解析记录，以“;”开头的为注释信息
+</p>
+
+<ul>
+<li>
+全局TTL配置项及SOA记录
+<pre>
+$TTL     86400                                    ;设置有效地址解析记录的默认缓存时间
+@   IN       SOA  benet.com.admin.benet.com. （   ;设置SOA标记，域名，域管理邮箱
+                  2009021901                      ;更新序列号，用于标记地址数据库的变化，可以是10位以内的整数（加大后复制到辅助服务器）
+                  3H                              ;刷新时间，从域名服务器更新该地址数据库文件的间隔时间
+                  15M                             ;重试延时，从域名服务器更新该地址数据库失败以后，等待多长时间再次尝试
+                  1W                              ;失效时间，超过该时间任无法更新地址数据库，则不再尝试
+                  1D )                            ;设置无效地址解析记录（该数据库中不存在的地址）的默认缓存时间
+</pre>
+
+</ul>
+
+<p>
+文件中的“@”表示当前的DNS区域名，“admin.benet.com”表示域管理员的邮箱地址（由于“@”符号已有其他含义，因此邮件地址中的@用“.”代替了）
+</p>
+
+<ul>
+<li>
+最常见的地址解析记录配置项
+<pre>
+@           IN      NS       ns1.benet.com.
+            IN      MX 10    mail.benet.com.
+ns1         IN      A        173.16.16.1
+mail        IN      A        173.16.16.1
+www         IN      A        173.16.16.1
+ftp         IN      CNAME    www
+</pre>
+
+</ul>
+ 
+
+<p>
+上述配置中涉及常用的地址解析记录。
+</p>
+
+<p>
+NS域名服务器记录，用于设置当前域的DNS服务器的域名地址。
+</p>
+
+<p>
+MX邮件交换记录，用于设置当前域的邮件服务器域名地址，数字“10”代表（当有多个MX记录时）选择服务器的优先级，数字越大优先级越低
+</p>
+
+<p>
+A地址记录,用于记录正向域名解析
+</p>
+
+<p>
+CNAME别名记录“ftp            IN        CNAME       www”表示域名“ftp.benet.com”是地址”www.benet.com“的别名。
+</p>
+
+<p>
+其中NS，MX记录行首的@符号可以省略（默认继承SOA记录行首的@信息），但是必须保留一个空位或者制表位
+</p>
+
+<p>
+如果区域数据库文件用于反向区域，则文件中的地址记录应该使用PRT指针记录
+</p>
+
+<p>
+例如在反向区域16.16.173.in-addr.arpa数据库文件中添加PTR反向解析记录
+</p>
+
+<pre>
+1  IN PTR WWW.BENET.COM.
+4  IN PTR STUDY.BENET.COM.
+</pre>
+
+<p>
+使用ptr指针记录。第一列只需要指明对应IP地址的”主机地址“部分即可，如”1和4“，等系统在查找地址记录的时候会自动将当前反向域的网络地址作为前缀。
+</p>
+
+<p>
+4  IN PTR STUDY.BENET.COM. 就表示IP地址为173.16.16.4的主机域名是”study.benet.com“
+</p>
+
+<p>
+修改完区域数据库文件后。可以执行named-checkconf命令对文件进行语法检查，named-checkzone检查区域配置文件
+</p>
+
+
+<ul>
+<li>
+基于DNS解析的负载均衡
+
+</ul>
+
+<p>
+当同一个域名对应多个不同IP地址的服务器时，可以通过DNS区域数据库文件失效简单的轮询负载均衡，只需要在地址中添加相应的多条A记录即可
+</p>
+
+<p>
+如:movie.benet.com对应的、四台互为镜像的流媒体服务器，在DNS区域“benet.com”的地址数据库中设置该域名解析的负载均衡记录
+</p>
+<pre>
+movie  IN   A   173.16.116.11 
+movie  IN   A   173.16.116.12
+movie  IN   A   173.16.116.13
+movie  IN   A   173.16.116.14
+</pre>
+
+<ul>
+<li>
+泛域名解析
+
+</ul>
+
+<p>
+当同一个IP地址的服务器对应有相同域内大量不同域名时 （如IDC的虚拟主机服务器，提供个人站点的空间服务器等），可以通过DNS区域数据库文件使用泛域名解析，只需要添加一条主机地址为“*”的A记录即可（作用类似于通配符），如：
+</p>
+<pre>
+*    IN     A   173.16.16.173
+</pre>
+
+<ul>
+<li>
+子域授权
+
+</ul>
+
+<p>
+当DNS区域层次较多，域名数量巨大时，就可以使用子域授权，将某个子域内各域名的解析工作交给另外一台服务器来完成。例如，在“.net.cn”域的主DNS服务器中，“.jv.net.cn”子域授权给JV公司的DNS服务器来完成，这样一来，Internet中的用户向".net.cn"域名服务器也可以解析到“mail.jv.net.cn”的IP地址。当然实际的权威数据来自于“.jv.net.cn”域的DNS服务器
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

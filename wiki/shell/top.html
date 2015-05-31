@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>top - display Linux processes</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+
+<ul>
+<li>
+linux下CPU使用率与机器负载的关系与区别:<a href="http://blog.chinaunix.net/uid-28541347-id-4926054.html">http://blog.chinaunix.net/uid-28541347-id-4926054.html</a>
+
+<ul>
+<li>
+load average:系统平均负载是CPU的Load，它所包含的信息不是CPU的使用率状况，而是在一段时间内CPU正在处理以及等待CPU处理的进程数之和的统计信息，也就是CPU使用队列的长度的统计信息。这个数字越小越好。
+
+<li>
+Cpu负载和cpu利用率的区别
+
+<ul>
+<li>
+CPU利用率:显示的是程序在运行期间实时占用的CPU百分比
+
+<li>
+CPU负载:显示的是一段时间内正在使用和等待使用CPU的平均任务数。CPU利用率高，并不意味着负载就一定大。举例来说：如果我有一个程序它需要一直使用cpu的运算功能，那么此时cpu的使用率可能达到100%，但是cpu的工作负载则是趋近于“1”，因为cpu仅负责一个工作嘛！如果同时执行这样的程序两个呢？cpu的使用率还是100%，但是工作负载则变成2了。所以也就是说，当cpu的工作负载越大，代表cpu必须要在不同的工作之间进行频繁的工作切换。
+
+</ul>
+</ul>
+</ul>
+
+<h1 id="toc_1">top</h1>
+
+<p>
+top提供一个当前运行系统实时动态的视图，也就是正在运行进程。在默认情况下，显示系统中CPU使用率最高的任务，并每5秒钟刷新一次。
+</p>
+
+<ul>
+<li>
+<a href="http://hi.baidu.com/imlidapeng/blog/item/c33b42e41170b925b83820e3.html">Linux系统管理员必备工具系列之top</a>
+
+</ul>
+
+<pre class="brush:bash">
+# 只显示一次即退出
+top -n 1
+</pre>
+
+<ul>
+<li>
+常用选项：
+
+<ul>
+<li>
+d：指定更新的间隔，以秒计算。
+
+<li>
+q：没有任何延迟的更新。如果使用者有超级用户，则top命令将会以最高的优先序执行。
+
+<li>
+c：显示进程完整的路径与名称。
+
+<li>
+S：累积模式，会将已完成或消失的子进程的CPU时间累积起来。
+
+<li>
+s：安全模式。
+
+<li>
+i：不显示任何闲置（Idle）或无用（Zombie）的进程。
+
+<li>
+n：显示更新的次数，完成后将会退出top。
+
+</ul>
+</ul>
+
+<ul>
+<li>
+top内容范例
+<pre>
+top - 00:30:13 up 41 min,  4 users,  load average: 0.18, 0.26, 0.24
+Tasks: 200 total,   2 running, 197 sleeping,   0 stopped,   1 zombie
+%Cpu(s):  3.3 us,  0.5 sy,  0.0 ni, 95.9 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st
+KiB Mem:   7969160 total,  1748180 used,  6220980 free,    90196 buffers
+KiB Swap:  8000508 total,        0 used,  8000508 free,   925484 cached
+
+  PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND
+ 1206 yuanxing  20   0  496m  50m  25m S  10.9  0.6   0:32.47 /usr/lib/firefox/plugin-container /usr/lib/flashplugin-installer/libfla
+ 1054 yuanxing  20   0  666m  24m  15m S   2.2  0.3   0:04.86 gnome-terminal
+ 1551 yuanxing  20   0 24860 1724 1196 R   2.2  0.0   0:00.05 top
+ 1465 root      20   0  269m  36m  15m S   1.1  0.5   1:15.24 /usr/bin/X :0 -core -auth /var/run/lightdm/root/:0 -nolisten tcp vt7 -n
+ 2170 yuanxing  20   0 26356 2756  764 S   1.1  0.0   0:03.20 //bin/dbus-daemon --fork --print-pid 5 --print-address 7 --session
+ 2174 yuanxing  20   0  265m 3524 2368 S   1.1  0.0   0:14.57 /usr/bin/ibus-daemon --daemonize --xim
+ 2404 yuanxing  20   0 1494m  74m  31m R   1.1  1.0   0:48.44 compiz
+ 2502 yuanxing  20   0  661m  21m  12m S   1.1  0.3   0:12.01 /usr/lib/unity/unity-panel-service
+    1 root      20   0 27068 2860 1428 S   0.0  0.0   0:01.52 /sbin/init
+    2 root      20   0     0    0    0 S   0.0  0.0   0:00.00 [kthreadd]
+    3 root      20   0     0    0    0 S   0.0  0.0   0:00.92 [ksoftirqd/0]
+    5 root       0 -20     0    0    0 S   0.0  0.0   0:00.00 [kworker/0:0H]
+    7 root       0 -20     0    0    0 S   0.0  0.0   0:00.00 [kworker/u:0H]
+    8 root      rt   0     0    0    0 S   0.0  0.0   0:00.05 [migration/0]
+    9 root      20   0     0    0    0 S   0.0  0.0   0:00.00 [rcu_bh]
+</pre>
+
+</ul>
+
+<ul>
+<li>
+top内容说明
+
+<ul>
+<li>
+第一行表示的项目依次为当前时间、系统启动时间、当前系统登录用户数目、平均负载。
+
+<li>
+第二行显示的是所有启动的、目前运行的、挂起（Sleeping）的和无用（Zombie）的进程。
+
+<li>
+第三行显示的是目前CPU的使用情况，包括系统占用的比例、用户使用比例、闲置（Idle）比例。
+
+<li>
+第四行显示物理内存的使用情况，包括总的可以使用的内存、已用内存、空闲内存、缓冲区占用的内存。
+
+<li>
+第五行显示交换分区的使用情况，包括总的交换分区、使用的、空闲的和用于高速缓存的交换分区。
+
+<li>
+第六行显示的项目最多，下面列出了详细解释。
+
+<ul>
+<li>
+PID（Process ID）：进程标志号，是非零正整数。
+
+<li>
+USER：进程所有者的用户名。
+
+<li>
+PR：进程的优先级别。
+
+<li>
+NI：进程的优先级别数值。
+
+<li>
+VIRT：进程占用的虚拟内存值。
+
+<li>
+RES：进程占用的物理内存值。
+
+<li>
+SHR：进程使用的共享内存值。
+
+<li>
+STAT：进程的状态，其中S表示休眠，R表示正在运行，Z表示僵死状态，N表示该进程优先值是负数。
+
+<li>
+%CPU：该进程占用的CPU使用率。
+
+<li>
+%MEM：该进程占用的物理内存和总内存的百分比。
+
+<li>
+TIME：该进程启动后占用的总的CPU时间。
+
+<li>
+COMMAND：进程启动的启动命令名称，如果这一行显示不下，进程会有一个完整的命令行。
+
+</ul>
+</ul>
+</ul>
+
+<ul>
+<li>
+top命令使用过程中，还可以使用一些交互的命令来完成其他参数的功能。这些命令是通过快捷键启动的。
+
+<ul>
+<li>
+&lt;空格&gt;：立刻刷新。
+
+<li>
+P：根据CPU使用大小进行排序。
+
+<li>
+T：根据时间、累计时间排序。
+
+<li>
+q：退出top命令。
+
+<li>
+m：切换显示内存信息。
+
+<li>
+t：切换显示进程和CPU状态信息。
+
+<li>
+c：切换显示命令名称和完整命令行。
+
+<li>
+M：根据使用内存大小进行排序。
+
+<li>
+W：将当前设置写入～/.toprc文件中。这是写top配置文件的推荐方法。
+
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

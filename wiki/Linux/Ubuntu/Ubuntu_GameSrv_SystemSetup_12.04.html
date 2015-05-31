@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>系统加固及应用环境安装说明(Ubuntu 12.04)</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>系统加固及应用环境安装说明(Ubuntu 12.04)</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">系统加固及设置</a>
+<ul>
+<li><a href="#toc_0.1.1">相关准备工作</a>
+<li><a href="#toc_0.1.2">配置备份</a>
+<li><a href="#toc_0.1.3">系统补丁更新</a>
+<li><a href="#toc_0.1.4">管理用户</a>
+<li><a href="#toc_0.1.5">ssh_key生成</a>
+<li><a href="#toc_0.1.6">禁用econet协议</a>
+<li><a href="#toc_0.1.7">sshd设置</a>
+<li><a href="#toc_0.1.8">限制su</a>
+<li><a href="#toc_0.1.9">sysctl.conf设置</a>
+<li><a href="#toc_0.1.10">系统limits参数</a>
+<li><a href="#toc_0.1.11">时区及时间同步</a>
+<li><a href="#toc_0.1.12">其它工具</a>
+</ul>
+<li><a href="#toc_0.2">应用环境安装</a>
+<ul>
+<li><a href="#toc_0.2.1">apt包安装</a>
+<li><a href="#toc_0.2.2">python支持包</a>
+<li><a href="#toc_0.2.3">memcached自启动</a>
+</ul>
+<li><a href="#toc_0.3">应用环境部署</a>
+<ul>
+<li><a href="#toc_0.3.1">获取tools</a>
+<li><a href="#toc_0.3.2">配置iptables</a>
+<li><a href="#toc_0.3.3">建立工作目录</a>
+<li><a href="#toc_0.3.4">配置mysqld服务</a>
+</ul>
+<li><a href="#toc_0.4">其它</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+author: YuanXing
+
+<li>
+CREATE DATE: 2011/12/19
+
+<li>
+Rework Date: 2012/05/03
+
+</ul>
+
+
+<h2 id="toc_0.1">系统加固及设置</h2>
+
+<h3 id="toc_0.1.1">相关准备工作</h3>
+<pre class="brush:bash">
+# 添加语言信息到/etc/environment，解决locale settings问题(需重新登录生效)
+cat &gt;&gt; /etc/environment &lt;&lt;EOF
+LC_ALL="en_US.UTF-8"
+LANG="en_US.UTF-8"
+EOF
+cat /etc/environment
+
+# 解决vim无法查看中文问题
+#start
+cat &gt; /var/lib/locales/supported.d/local &lt;&lt;EOF
+en_US.UTF-8 UTF-8
+zh_CN.UTF-8 UTF-8
+zh_CN.GBK GBK
+zh_CN.GB2312 GB2312
+EOF
+cat /var/lib/locales/supported.d/local
+
+#locale-gen --purge
+dpkg-reconfigure --force locales
+
+cat &gt;&gt; /etc/vim/vimrc &lt;&lt;EOF
+set fileencodings=utf-8,gb2312,gbk,gb18030
+set termencoding=utf-8
+set fileformats=unix
+"set encoding=prc
+set encoding=utf-8
+EOF
+#end
+
+# 卸载ufw包
+yes|apt-get purge ufw &amp;&amp; sh /root/stand_iptables.sh
+</pre>
+
+<ul>
+<li>
+修改DNS(接入商DNS+备用DNS)
+<pre class="brush:bash">
+cat &gt; /etc/resolv.conf &lt;&lt;EOF
+nameserver 61.139.2.69
+nameserver 8.8.8.8
+EOF
+cat /etc/resolv.conf
+</pre>
+
+</ul>
+
+<h3 id="toc_0.1.2">配置备份</h3>
+<pre class="brush:bash">
+#Start
+if [ ! -d "/bak" ];then mkdir -p "/data/bak"; ln -sf "/data/bak" "/bak";fi \
+&amp;&amp; bakdir=/bak/backups/confbak/default_`date +'%Y%m%d_%H%M%S'` \
+&amp;&amp; mkdir -p $bakdir &amp;&amp; cd $bakdir \
+&amp;&amp; dpkg -l &gt;dpkg_list
+iptables -L -v -n &gt;showiptables
+ls -la /etc/init.d &gt;init.d_list.txt
+ls -la /etc/rc2.d &gt;rc2.d_list.txt
+cp -R /etc/init.d/ .
+cp -R /etc/rc2.d/ .
+
+cp \
+/etc/network/interfaces \
+/etc/passwd \
+/etc/group \
+/etc/ssh/sshd_config \
+/etc/rc.local \
+/etc/sysctl.conf \
+/etc/security/limits.conf \
+/etc/securetty \
+/etc/profile \
+/etc/apt/sources.list \
+.
+#End
+</pre>
+
+<h3 id="toc_0.1.3">系统补丁更新</h3>
+<ul>
+<li>
+确定版本名称
+<pre class="brush:bash">
+#   查看Release、Codename项
+#   precise(12.04)
+#   Natty (11.04)
+#   Maverick (10.10)
+#   Lucid (10.04)
+#   Karmic (9.10)
+#   Jaunty (9.04)
+#   Intrepid (8.10)
+#   Hardy (8.04)
+#   Dapper (6.06)
+lsb_release -a
+</pre>
+
+<li>
+确定源站点、生成源站点设置方式
+<pre class="brush:bash">
+#   Official Archive Mirrors for Ubuntu：
+#   https://launchpad.net/ubuntu/+archivemirrors
+#
+#   deb http://mirrors.sohu.com/ubuntu/ YOUR_UBUNTU_VERSION_HERE main  restricted
+#   deb-src http://mirrors.sohu.com/ubuntu/ YOUR_UBUNTU_VERSION_HERE main  restricted
+
+# 备份原配置、修改源配置
+cp /etc/apt/sources.list /etc/apt/sources.list.default
+# 中国:ubuntu.cn99.com,mirrors.163.com
+# 越南:mirror-fpt-telecom.fpt.net--有问题！
+# 官方:archive.ubuntu.com
+# 马来西亚: mirror.oscc.org.my
+MIRROR="mirrors.163.com" \
+Release="precise" \
+&amp;&amp; cat &gt; /etc/apt/sources.list &lt;&lt; EOF
+deb http://$MIRROR/ubuntu/ ${Release} main restricted
+deb-src http://$MIRROR/ubuntu/ ${Release} main restricted
+
+deb http://$MIRROR/ubuntu/ ${Release}-updates main restricted
+deb-src http://$MIRROR/ubuntu/ ${Release}-updates main restricted
+
+deb http://$MIRROR/ubuntu/ ${Release} universe
+deb-src http://$MIRROR/ubuntu/ ${Release} universe
+deb http://$MIRROR/ubuntu/ ${Release}-updates universe
+deb-src http://$MIRROR/ubuntu/ ${Release}-updates universe
+
+deb http://$MIRROR/ubuntu/ ${Release} multiverse
+deb-src http://$MIRROR/ubuntu/ ${Release} multiverse
+deb http://$MIRROR/ubuntu/ ${Release}-updates multiverse
+deb-src http://$MIRROR/ubuntu/ ${Release}-updates multiverse
+
+deb http://$MIRROR/ubuntu/ ${Release}-backports main restricted universe multiverse
+deb-src http://$MIRROR/ubuntu/ ${Release}-backports main restricted universe multiverse
+
+deb http://$MIRROR/ubuntu ${Release}-security main restricted
+deb-src http://$MIRROR/ubuntu ${Release}-security main restricted
+deb http://$MIRROR/ubuntu ${Release}-security universe
+deb-src http://$MIRROR/ubuntu ${Release}-security universe
+deb http://$MIRROR/ubuntu ${Release}-security multiverse
+deb-src http://$MIRROR/ubuntu ${Release}-security multiverse
+#
+EOF
+</pre>
+
+<li>
+更新系统
+<pre class="brush:bash">
+apt-get update &amp;&amp; apt-get dist-upgrade
+</pre>
+
+</ul>
+
+<h3 id="toc_0.1.4">管理用户</h3>
+<pre class="brush:bash">
+# 新建备用用户（新系统暂只建myga、dfbak两个用户，并只对myga生成sshkey）：
+useradd -c comment -G "sudo" -m dfjsb -s /bin/bash
+passwd dfjsb
+
+# 锁定root用户密码、修改初始帐户用户组及密码
+passwd -l root
+usermod -a -G root dfjsb
+passwd dfjsb
+
+# 删除无用帐户
+# userdel -r &lt;username&gt;
+
+# 建立异地备份用户、设置异地备份目录
+useradd -c remotebackup -m dfbak -s /bin/bash
+passwd -l dfbak
+
+if [ ! -d "/bak" ];then mkdir -p "/data/bak"; ln -sf "/data/bak" "/bak";fi
+install -m 750 -o root -g dfbak -d /bak/backups
+install -m 755 -o dfbak -g dfbak -d /data/rsync
+su - dfbak -c "ln -sfT /bak/backups ~/backups"
+</pre>
+
+<h3 id="toc_0.1.5">ssh_key生成</h3>
+<pre class="brush:bash">
+# 本地生成sshkey文件
+user="dfjsb" &amp;&amp; keyfile="./${user}_`date +%Y%m%d`_dsa" &amp;&amp; ssh-keygen -b 1024 -t dsa -f "$keyfile"
+user="myga" &amp;&amp; keyfile="./${user}_`date +%Y%m%d`_dsa" &amp;&amp; ssh-keygen -b 1024 -t dsa -f "$keyfile"
+user="root" &amp;&amp; keyfile="./${user}_`date +%Y%m%d`_dsa" &amp;&amp; ssh-keygen -b 1024 -t dsa -f "$keyfile"
+
+# 将公钥放至服务器对应帐号~/.ssh/authorized_keys
+</pre>
+
+<h3 id="toc_0.1.6">禁用econet协议</h3>
+<pre class="brush:bash">
+# 禁用econet协议(CVE-2010-4258 bug)
+echo -e '#econet bug\nblacklist econet' &gt;&gt; /etc/modprobe.d/blacklist.conf \
+&amp;&amp; cat /etc/modprobe.d/blacklist.conf|grep econet
+lsmod|grep econet &amp;&amp; modprobe -r econet &amp;&amp; lsmod|grep econet
+</pre>
+
+<h3 id="toc_0.1.7">sshd设置</h3>
+<pre class="brush:bash">
+# 注意：需先对管理用户开ssh证书。
+sed -i.bak \
+-e 's/^Port 22/#&amp;/g' \
+-e 's/^UsePAM/#&amp;/g' \
+-e 's/^ServerKeyBits/#&amp;/g' \
+-e 's/^UseDNS/#&amp;/g' \
+-e 's/^PrintMotd/#&amp;/g' \
+-e 's/^RSAAuthentication/#&amp;/g' \
+-e 's/^GSSAPIAuthentication/#&amp;/g' \
+-e 's/^PasswordAuthentication/#&amp;/g' \
+-e 's/^PermitRootLogin/#&amp;/g' \
+/etc/ssh/sshd_config
+
+cat &gt;&gt; /etc/ssh/sshd_config &lt;&lt;EOF
+Port 2222
+UsePAM yes
+ServerKeyBits 1024
+UseDNS no
+PrintMotd no
+RSAAuthentication no
+GSSAPIAuthentication no
+PasswordAuthentication no
+PermitRootLogin no
+
+EOF
+#   重启ssh服务，使用设置生效
+/etc/init.d/ssh restart
+</pre>
+
+<h3 id="toc_0.1.8">限制su</h3>
+<pre class="brush:bash">
+# 限制使用su的用户、清除登录提示
+echo "auth required pam_wheel.so" | sudo tee -a /etc/pam.d/su
+cp /etc/securetty /etc/securetty.old &amp;&amp; echo "console" | sudo tee /etc/securetty
+
+cp /etc/issue /etc/issue.bak &amp;&amp; echo "" | sudo tee /etc/issue
+cp /etc/issue.net /etc/issue.net.bak &amp;&amp; echo "" | sudo tee /etc/issue.net
+</pre>
+
+<h3 id="toc_0.1.9">sysctl.conf设置</h3>
+<pre class="brush:bash">
+cp /etc/sysctl.conf /etc/sysctl.conf.bak
+cat &gt;&gt; /etc/sysctl.conf &lt;&lt;EOF
+# Add
+net.ipv4.tcp_max_syn_backlog = 65536
+net.core.netdev_max_backlog =  32768
+net.core.somaxconn = 32768
+
+net.core.wmem_default = 8388608
+net.core.rmem_default = 8388608
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+
+net.ipv4.tcp_timestamps = 0
+net.ipv4.tcp_synack_retries = 2
+net.ipv4.tcp_syn_retries = 2
+
+net.ipv4.tcp_tw_recycle = 1
+#net.ipv4.tcp_tw_len = 1
+net.ipv4.tcp_tw_reuse = 1
+
+net.ipv4.tcp_mem = 94500000 915000000 927000000
+net.ipv4.tcp_max_orphans = 3276800
+
+#net.ipv4.tcp_fin_timeout = 30
+#net.ipv4.tcp_keepalive_time = 120
+net.ipv4.ip_local_port_range = 1024 65535
+EOF
+#   使用更改生效：
+sysctl -p
+</pre>
+
+<h3 id="toc_0.1.10">系统limits参数</h3>
+<pre class="brush:bash">
+cat &gt;&gt; /etc/security/limits.conf &lt;&lt;EOF
+# Add
+* soft nproc 20480
+* hard nproc 20480
+* soft nofile 20480
+* hard nofile 20480
+#
+EOF
+</pre>
+
+<h3 id="toc_0.1.11">时区及时间同步</h3>
+<pre class="brush:bash">
+ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+ntpdate cn.pool.ntp.org &amp;&amp; hwclock -w
+
+#   修改/etc/crontab，添加以时间同步任务(注意：末行保留一个#注释的空行，避免任务无效)
+vi /etc/crontab
+
+#NTP update(cn.pool.ntp.org,time.stdtime.gov.tw)
+30 4,16 * * * root (/usr/sbin/ntpdate cn.pool.ntp.org;/sbin/hwclock -w;) &gt;&gt; /var/log/ntpdate_$(date +\%Y\%m) 2&gt;&amp;1
+#
+
+# 越南
+ln -sf /usr/share/zoneinfo/Asia/Vientiane /etc/localtime
+ntpdate vn.pool.ntp.org &amp;&amp; hwclock -w
+
+#NTP update(cn.pool.ntp.org,time.stdtime.gov.tw)
+30 4,16 * * * root (/usr/sbin/ntpdate vn.pool.ntp.org;/sbin/hwclock -w;) &gt;&gt; /var/log/ntpdate_$(date +\%Y\%m) 2&gt;&amp;1
+#
+</pre>
+
+<h3 id="toc_0.1.12">其它工具</h3>
+<ul>
+<li>
+安装设置snmpd、sysstat及常用工具
+<pre class="brush:bash">
+apt-get install snmpd sysstat tree
+
+#   修改snmpd.conf，增加readonly行
+vi /etc/snmp/snmpd.conf
+    com2sec readonly  default         Leemai8a
+
+
+#   修改/etc/default/snmpd，去除SNMPDOPTS行最后的127.0.0.1:
+vi /etc/default/snmpd
+    SNMPDOPTS='-Lsd -Lf /dev/null -u snmp -g snmp -I -smux -p /var/run/snmpd.pid'
+
+#   启用sysstat(修改ENABLED="true")
+sed -i -e 's/^ENABLED="false"/ENABLED="true"/g' /etc/default/sysstat
+
+#   重启snmpd、sysstat服务
+/etc/init.d/snmpd restart
+/etc/init.d/sysstat restart
+</pre>
+
+<li>
+安全检查及审核
+<pre class="brush:bash">
+apt-get install rkhunter tree
+rkhunter --check
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">应用环境安装</h2>
+
+<h3 id="toc_0.2.1">apt包安装</h3>
+<p>
+apt-get install memcached mysql-server libmysqlclient-dev libcurl4-gnutls-dev \
+</p>
+<blockquote>
+python2.7-dev python-pip python-imaging python-libxml2 python-libxslt1 python-memcache python-pycurl python-m2crypto
+</blockquote>
+
+
+<h3 id="toc_0.2.2">python支持包</h3>
+<pre class="brush:bash">
+easy_install -U distribute
+mkdir -p /data/packages &amp;&amp; cd /data/packages \
+&amp;&amp; pip install MySQL_python sqlalchemy simplejson pyamf blinker Twisted pycrypto tornado pyzmq txzmq
+
+#需先编译安装zeromq
+pip install pyzmq txzmq
+</pre>
+
+<ul>
+<li>
+安装检查工具(可在后续步骤中用syschk.sh检查)
+<pre class="brush:bash">
+/data/rsync/tools/scripts/pythonchk.py
+</pre>
+
+</ul>
+
+<h3 id="toc_0.2.3">memcached自启动</h3>
+<pre class="brush:bash">
+# 关闭memcached自启动
+/etc/init.d/memcached stop
+sed -i 's/\(ENABLE_MEMCACHED=\).*$/\1no/g' /etc/default/memcached
+</pre>
+
+<h2 id="toc_0.3">应用环境部署</h2>
+
+<h3 id="toc_0.3.1">获取tools</h3>
+<pre class="brush:bash">
+# 将tools上传至/data/rsync/tools/目录
+svn co svn://x.x.x.x/tools /data/rsync/tools
+</pre>
+
+
+<h3 id="toc_0.3.2">配置iptables</h3>
+<pre class="brush:bash">
+# 复制策略配置脚本
+pkgsDir="/data/rsync/tools" &amp;&amp; cp -R "$pkgsDir/scripts/iptables" /root/
+
+# 检查参数设置（GMIP地址等）
+vi /root/iptables/set.iptables.sh.info
+
+# 启用策略、并检查策略是否正确
+/root/iptables/set.iptables.sh load
+
+# yuenan
+pkgsDir="/data/rsync/tools" &amp;&amp; cp -R "$pkgsDir/scripts/iptables" /root/
+cd /root/iptables/ &amp;&amp; cp set.iptables.sh.info.yue set.iptables.sh.info \
+&amp;&amp; /root/iptables/set.iptables.sh load
+</pre>
+
+<h3 id="toc_0.3.3">建立工作目录</h3>
+<pre class="brush:bash">
+install -m 750 -o root -g www-data -d /data/www
+install -m 750 -o root -g dfbak -d /bak/backups
+install -m 755 -o www-data -g root -d /var/log/game
+
+# 平台及ceo网关
+install -m 755 -o www-data -g root -d /var/log/passport
+install -m 755 -o www-data -g root -d /var/log/ceogw
+</pre>
+
+<h3 id="toc_0.3.4">配置mysqld服务</h3>
+<pre class="brush:bash">
+pkgsDir="/data/rsync/tools" \
+&amp;&amp; usrsbinmysqld="$pkgsDir/conf/usr.sbin.mysqld.5.5.local" \
+&amp;&amp; mycnf="$pkgsDir/conf/my.cnf" \
+&amp;&amp; install -m 700 -o mysql -g mysql -d /data/mysql \
+&amp;&amp; install -m 644 -o root -g root $usrsbinmysqld /etc/apparmor.d/local/usr.sbin.mysqld \
+&amp;&amp; /etc/init.d/apparmor reload \
+&amp;&amp; mv /etc/mysql/my.cnf /etc/mysql/my.cnf.default \
+&amp;&amp; install -m 644 -o root -g root $mycnf /etc/mysql/ \
+&amp;&amp; /etc/init.d/mysql restart
+
+#越南服务器需修改my.cnf中默认时区设置
+default-time-zone = +7:00
+</pre>
+
+<h2 id="toc_0.4">其它</h2>
+
+<ul>
+<li>
+配置备份
+<pre class="brush:bash">
+#Start
+bakdir=/bak/backups/confbak/complete_`date +'%Y%m%d_%H%M%S'` &amp;&amp; mkdir -p $bakdir \
+&amp;&amp; cd $bakdir &amp;&amp; dpkg -l &gt;dpkg_list
+iptables -L -v -n &gt;showiptables
+ls -la /etc/init.d &gt;init.d_list.txt
+ls -la /etc/rc2.d &gt;rc2.d_list.txt
+cp -R /etc/init.d/ .
+cp -R /etc/rc2.d/ .
+
+cp \
+/etc/network/interfaces \
+/etc/passwd \
+/etc/group \
+/etc/ssh/sshd_config \
+/etc/rc.local \
+/etc/sysctl.conf \
+/etc/security/limits.conf \
+/etc/securetty \
+/etc/profile \
+/etc/apt/sources.list \
+.
+#End
+
+# 与安装前生成的缺省配置文件备份目录进行diff比较。
+# cd /bak/backups/confbak/ &amp;&amp; diff -r default_* complete_*
+</pre>
+
+<li>
+执行检查脚本(访问控制、系统用户、启动服务端口、组件版本等)
+<pre class="brush:bash">
+/data/rsync/tools/scripts/syschk.sh|more
+</pre>
+
+<li>
+补丁更新、crontab核查
+
+<li>
+应用配置参数设置核查（mysql）
+
+<li>
+安全扫描
+
+<li>
+备份及异地备份部署
+
+<ul>
+<li>
+nginx日志截断、压缩及过期日志删除
+
+<li>
+mysql数据自动备份及过期备份包删除
+
+<li>
+异地备份抓取、性能状态采集
+
+<li>
+Web日志分析设置
+
+<li>
+监控告警设置
+
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

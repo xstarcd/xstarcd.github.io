@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>SELinux_Howto学习</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">SELinux_Howto学习</a>
+<ul>
+<li><a href="#toc_1.1">SELinux模式</a>
+<li><a href="#toc_1.2">查看安全性脉络</a>
+<li><a href="#toc_1.3">查看错误</a>
+<li><a href="#toc_1.4">重新标签文件</a>
+<li><a href="#toc_1.5">撤消缺省的安全性脉络</a>
+<li><a href="#toc_1.6">重新标签整个文件系统</a>
+<li><a href="#toc_1.7">允许访问某个端口</a>
+<li><a href="#toc_1.8">其他</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">SELinux_Howto学习</h1>
+
+<h2 id="toc_1.1">SELinux模式</h2>
+
+<p>
+SELinux 拥有三个基本的操作模式，当中 Enforcing 是缺省的模式。此外，它还有一个 targeted 或 mls 的修饰语。这管制 SELinux 规则的应用有多广泛，当中 targeted 是较宽松的级别。
+</p>
+
+<ul>
+<li>
+Enforcing： 这个缺省模式会在系统上启用并实施 SELinux 的安全性政策，拒绝访问及记录行动
+
+<li>
+Permissive： 在 Permissive 模式下，SELinux 会被启用但不会实施安全性政策，而只会发出警告及记录行动。Permissive 模式在排除 SELinux 的问题时很有用
+
+<li>
+Disabled： SELinux 已被停用 
+
+</ul>
+
+<p>
+SELinux 的模式可以通过 Adminstration 选单里的 SELinux 图像管理界面、或者在命令行执行 system-config-selinux 来查看及更改（SELinux 图像管理界面是 policycoreutils-gui 组件的一部份，缺省是不会被安装的）。
+</p>
+
+<p>
+较喜欢命令行的用户可使用 sestatus 这个指令来查看现时的 SELinux 状况：
+</p>
+
+<pre>
+# sestatus
+SELinux status:                 enabled
+SELinuxfs mount:                /selinux
+Current mode:                   enforcing
+Mode from config file:          enforcing
+Policy version:                 21
+Policy from config file:        targeted
+</pre>
+
+<p>
+setenforce 这个指令可以即时切换 Enforcing 及 Permissive 这两个模式，但请注意这些改动在系统重新开机时不会被保留。
+</p>
+
+<p>
+要令改动过渡系统开机，请在 /etc/selinux/config 内修改 SELINUX= 这一行为 enforcing、permissive 或 disabled。例如：SELINUX=permissive。
+</p>
+
+<p>
+注： 当你由 Diabled 切换至 Permissive 或 Enforcing 模式时，我们强烈推荐你重新引导系统并重新标签文件系统。 
+</p>
+
+<h2 id="toc_1.2">查看安全性脉络</h2>
+<pre>
+$ ls -Z /var/www/html/index.html
+-rw-r--r--  username username system_u:object_r:httpd_sys_content_t /var/www/html/index.html
+
+$ ps axZ | grep httpd
+system_u:system_r:httpd_t        3234 ?        Ss     0:00 /usr/sbin/httpd
+</pre>
+
+<h2 id="toc_1.3">查看错误</h2>
+
+<p>
+SELinux 缺省会通过 Linux 审计系统 auditd 将日志写在 /var/log/audit/audit.log 内，而该务服缺省为启用的。假若 auditd 长驻程序并未运行，信息将会被写进 /var/log/messages。SELinux 的日志都以 AVC 这个关键字作标签，让 grep 等程序可轻易地把它们从其它信息中过滤出来。
+</p>
+<ul>
+<li>
+安装工具包
+<pre>
+yum install setroubleshoot
+</pre>
+
+</ul>
+
+<ul>
+<li>
+分析报告
+<pre>
+sealert -a /var/log/audit/audit.log &gt; /path/to/mylogfile.txt 
+</pre>
+
+</ul>
+
+<h2 id="toc_1.4">重新标签文件</h2>
+<pre>
+chcon -Rv --type=httpd_sys_content_t /html 
+</pre>
+
+<p>
+以这个方式更改安全性脉络在系统重新开机后仍会获保留，直至该部份文件系统被重新标签。这个动作也算颇常，因此正确的解决方法，就是于测试后编写一条自定的规则（所谓的政策模块），并把它与本地的规则进行合并。它将会是原有的 200 多条规则外的一条规则。要作出永久性、能过渡文件系统重新标签的安全性脉络改动，我们可以采用 SELinux 管理工具，或者在命令行执行 semanage 这个指令：
+</p>
+<pre>
+semanage fcontext -a -t httpd_sys_content_t "/html(/.*)?" 
+</pre>
+<p>
+如此便会将 /html 以下的一切加入 httpd_sys_content_t 这个文件脉络类型。 
+</p>
+
+<h2 id="toc_1.5">撤消缺省的安全性脉络</h2>
+<pre>
+restorecon -Rv /var/www/html
+</pre>
+
+<p>
+只检查哪些文件的安全性脉络需要被撤消：
+</p>
+<pre>
+restorecon -Rv -n /var/www/html 
+</pre>
+
+<h2 id="toc_1.6">重新标签整个文件系统</h2>
+
+<p>
+要在重新开机后自动将整个文件系统重新标签，请执行：
+</p>
+<pre>
+touch /.autorelabel
+reboot 
+</pre>
+
+<p>
+假若一个系统在升级至 CentOS-5.2 时停用了 SELinux，然后 SELinux 被启用，重新标签整个文件系统时或许会失败。如果以上的步骤不能正确地将整个文件系统重新标签，请尝试先执行 genhomedircon 这个指令：
+</p>
+<pre>
+genhomedircon
+touch /.autorelabel
+reboot
+</pre>
+
+<h2 id="toc_1.7">允许访问某个端口</h2>
+
+<p>
+我们或许会想容让 Apache 连结至某个非标准的端口并聆听对内的连接。SELinux 的政策缺省只允许每个服务访问被公认与该服务有关的端口。如果我们想容让 Apache 在 tcp 端口 81 上聆听，我们可以利用 semanage 这个指令来新增一条规则批准此事：
+</p>
+<pre>
+semanage port -a -t http_port_t -p tcp 81 
+</pre>
+
+<p>
+你可以这样令 SELinux 完整地列出每个服务可访问的端口：
+</p>
+<pre>
+semanage port -l
+</pre>
+
+<h2 id="toc_1.8">其他</h2>
+<ul>
+<li>
+自定SELinux政策
+
+<li>
+利用 audit2allow 创建自定 SELinux 政策模块
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>SNMP监控一些常用OID的总结</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>SNMP监控一些常用OID的总结</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">系统参数:1.3.6.1.2.1.1</a>
+<li><a href="#toc_0.2">网络接口:1.3.6.1.2.1.2</a>
+<li><a href="#toc_0.3">CPU及负载</a>
+<li><a href="#toc_0.4">内存及磁盘:1.3.6.1.2.1.25</a>
+<li><a href="#toc_0.5">其它</a>
+</ul>
+</ul>
+</div>
+
+<p>
+原文:<a href="http://www.cnblogs.com/aspx-net/p/3554044.html">http://www.cnblogs.com/aspx-net/p/3554044.html</a>
+</p>
+
+<h2 id="toc_0.1">系统参数:1.3.6.1.2.1.1</h2>
+
+<table>
+<tr>
+<th>
+OID
+</th>
+<th>
+描述
+</th>
+<th>
+备注
+</th>
+<th>
+请求方式
+</th>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.1.1.0
+</td>
+<td>
+获取系统基本信息
+</td>
+<td>
+SysDesc
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.1.3.0
+</td>
+<td>
+监控时间
+</td>
+<td>
+sysUptime
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.1.4.0
+</td>
+<td>
+系统联系人
+</td>
+<td>
+sysContact
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.1.5.0
+</td>
+<td>
+获取机器名
+</td>
+<td>
+SysName
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.1.6.0
+</td>
+<td>
+机器坐在位置
+</td>
+<td>
+SysLocation
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.1.7.0
+</td>
+<td>
+机器提供的服务
+</td>
+<td>
+SysService
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.25.4.2.1.2
+</td>
+<td>
+系统运行的进程列表
+</td>
+<td>
+hrSWRunName
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.25.6.3.1.2
+</td>
+<td>
+系统安装的软件列表
+</td>
+<td>
+hrSWInstalledName
+</td>
+<td>
+WALK
+</td>
+</tr>
+</table>
+
+<h2 id="toc_0.2">网络接口:1.3.6.1.2.1.2</h2>
+
+<table>
+<tr>
+<th>
+OID
+</th>
+<th>
+描述
+</th>
+<th>
+备注
+</th>
+<th>
+请求方式
+</th>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.2.1.0
+</td>
+<td>
+网络接口的数目
+</td>
+<td>
+IfNumber
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.2.2.1.2
+</td>
+<td>
+网络接口信息描述
+</td>
+<td>
+IfDescr
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.2.2.1.3
+</td>
+<td>
+网络接口类型
+</td>
+<td>
+IfType
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.2.2.1.4
+</td>
+<td>
+接口发送和接收的最大IP数据报[BYTE]
+</td>
+<td>
+IfMTU
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.2.2.1.5
+</td>
+<td>
+接口当前带宽[bps]
+</td>
+<td>
+IfSpeed
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.2.2.1.6
+</td>
+<td>
+接口的物理地址
+</td>
+<td>
+IfPhysAddress
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.2.2.1.8
+</td>
+<td>
+接口当前操作状态[up/down]
+</td>
+<td>
+IfOperStatus
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.2.2.1.10
+</td>
+<td>
+接口收到的字节数
+</td>
+<td>
+IfInOctet
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.2.2.1.16
+</td>
+<td>
+接口发送的字节数
+</td>
+<td>
+IfOutOctet
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.2.2.1.11
+</td>
+<td>
+接口收到的数据包个数
+</td>
+<td>
+IfInUcastPkts
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.2.2.1.17
+</td>
+<td>
+接口发送的数据包个数
+</td>
+<td>
+IfOutUcastPkts
+</td>
+<td>
+WALK
+</td>
+</tr>
+</table>
+
+<h2 id="toc_0.3">CPU及负载</h2>
+
+<table>
+<tr>
+<th>
+OID
+</th>
+<th>
+描述
+</th>
+<th>
+备注
+</th>
+<th>
+请求方式
+</th>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.9.0
+</td>
+<td>
+用户CPU百分比
+</td>
+<td>
+ssCpuUser
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.10.0
+</td>
+<td>
+系统CPU百分比
+</td>
+<td>
+ssCpuSystem
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.11.0
+</td>
+<td>
+空闲CPU百分比
+</td>
+<td>
+ssCpuIdle
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.50.0
+</td>
+<td>
+原始用户CPU使用时间
+</td>
+<td>
+ssCpuRawUser
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.51.0
+</td>
+<td>
+原始nice占用时间
+</td>
+<td>
+ssCpuRawNice
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.52.0
+</td>
+<td>
+原始系统CPU使用时间
+</td>
+<td>
+ssCpuRawSystem.
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.53.0
+</td>
+<td>
+原始CPU空闲时间
+</td>
+<td>
+ssCpuRawIdle
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.25.3.3.1.2
+</td>
+<td>
+CPU的当前负载，N个核就有N个负载
+</td>
+<td>
+hrProcessorLoad
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.3.0
+</td>
+<td>
+ssSwapIn
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.4.0
+</td>
+<td>
+SsSwapOut
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.5.0
+</td>
+<td>
+ssIOSent
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.6.0
+</td>
+<td>
+ssIOReceive
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.7.0
+</td>
+<td>
+ssSysInterrupts
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.8.0
+</td>
+<td>
+ssSysContext
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.54.0
+</td>
+<td>
+ssCpuRawWait
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.56.0
+</td>
+<td>
+ssCpuRawInterrupt
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.57.0
+</td>
+<td>
+ssIORawSent
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.58.0
+</td>
+<td>
+ssIORawReceived
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.59.0
+</td>
+<td>
+ssRawInterrupts
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.60.0
+</td>
+<td>
+ssRawContexts
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.61.0
+</td>
+<td>
+ssCpuRawSoftIRQ
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.62.0
+</td>
+<td>
+ssRawSwapIn.
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.11.63.0
+</td>
+<td>
+ssRawSwapOut
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.10.1.3.1
+</td>
+<td>
+Load5
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.10.1.3.2
+</td>
+<td>
+Load10
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.10.1.3.3
+</td>
+<td>
+Load15
+</td>
+<td>
+GET
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+</table>
+
+<h2 id="toc_0.4">内存及磁盘:1.3.6.1.2.1.25</h2>
+
+<table>
+<tr>
+<th>
+OID
+</th>
+<th>
+描述
+</th>
+<th>
+备注
+</th>
+<th>
+请求方式
+</th>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.25.2.2.0
+</td>
+<td>
+获取内存大小
+</td>
+<td>
+hrMemorySize
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.25.2.3.1.1
+</td>
+<td>
+存储设备编号
+</td>
+<td>
+hrStorageIndex
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.25.2.3.1.2
+</td>
+<td>
+存储设备类型
+</td>
+<td>
+hrStorageType[OID]
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.25.2.3.1.3
+</td>
+<td>
+存储设备描述
+</td>
+<td>
+hrStorageDescr
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.25.2.3.1.4
+</td>
+<td>
+簇的大小
+</td>
+<td>
+hrStorageAllocationUnits
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.25.2.3.1.5
+</td>
+<td>
+簇的的数目
+</td>
+<td>
+hrStorageSize
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.2.1.25.2.3.1.6
+</td>
+<td>
+使用多少，跟总容量相除就是占用率
+</td>
+<td>
+hrStorageUsed
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.4.3.0
+</td>
+<td>
+Total Swap Size(虚拟内存)
+</td>
+<td>
+memTotalSwap
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.4.4.0
+</td>
+<td>
+Available Swap Space
+</td>
+<td>
+memAvailSwap
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.4.5.0
+</td>
+<td>
+Total RAM in machine
+</td>
+<td>
+memTotalReal
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.4.6.0
+</td>
+<td>
+Total RAM used
+</td>
+<td>
+memAvailReal
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.4.11.0
+</td>
+<td>
+Total RAM Free
+</td>
+<td>
+memTotalFree
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.4.13.0
+</td>
+<td>
+Total RAM Shared
+</td>
+<td>
+memShared
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.4.14.0
+</td>
+<td>
+Total RAM Buffered
+</td>
+<td>
+memBuffer
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.4.15.0
+</td>
+<td>
+Total Cached Memory
+</td>
+<td>
+memCached
+</td>
+<td>
+GET
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.9.1.2
+</td>
+<td>
+Path where the disk is mounted
+</td>
+<td>
+dskPath
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.9.1.3
+</td>
+<td>
+Path of the device for the partition
+</td>
+<td>
+dskDevice
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.9.1.6
+</td>
+<td>
+Total size of the disk/partion (kBytes)
+</td>
+<td>
+dskTotal
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.9.1.7
+</td>
+<td>
+Available space on the disk
+</td>
+<td>
+dskAvail
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.9.1.8
+</td>
+<td>
+Used space on the disk
+</td>
+<td>
+dskUsed
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.9.1.9
+</td>
+<td>
+Percentage of space used on disk
+</td>
+<td>
+dskPercent
+</td>
+<td>
+WALK
+</td>
+</tr>
+<tr>
+<td>
+.1.3.6.1.4.1.2021.9.1.10
+</td>
+<td>
+Percentage of inodes used on disk
+</td>
+<td>
+dskPercentNode
+</td>
+<td>
+WALK
+</td>
+</tr>
+</table>
+
+<h2 id="toc_0.5">其它</h2>
+
+<pre>
+System Group
+sysDescr 1.3.6.1.2.1.1.1
+sysObjectID 1.3.6.1.2.1.1.2
+sysUpTime 1.3.6.1.2.1.1.3
+sysContact 1.3.6.1.2.1.1.4
+sysName 1.3.6.1.2.1.1.5
+sysLocation 1.3.6.1.2.1.1.6
+sysServices 1.3.6.1.2.1.1.7
+Interfaces Group
+ifNumber 1.3.6.1.2.1.2.1
+ifTable 1.3.6.1.2.1.2.2
+ifEntry 1.3.6.1.2.1.2.2.1
+ifIndex 1.3.6.1.2.1.2.2.1.1
+ifDescr 1.3.6.1.2.1.2.2.1.2
+ifType 1.3.6.1.2.1.2.2.1.3
+ifMtu 1.3.6.1.2.1.2.2.1.4
+ifSpeed 1.3.6.1.2.1.2.2.1.5
+ifPhysAddress 1.3.6.1.2.1.2.2.1.6
+ifAdminStatus 1.3.6.1.2.1.2.2.1.7
+ifOperStatus 1.3.6.1.2.1.2.2.1.8
+ifLastChange 1.3.6.1.2.1.2.2.1.9
+ifInOctets 1.3.6.1.2.1.2.2.1.10
+ifInUcastPkts 1.3.6.1.2.1.2.2.1.11
+ifInNUcastPkts 1.3.6.1.2.1.2.2.1.12
+ifInDiscards 1.3.6.1.2.1.2.2.1.13
+ifInErrors 1.3.6.1.2.1.2.2.1.14
+ifInUnknownProtos 1.3.6.1.2.1.2.2.1.15
+ifOutOctets 1.3.6.1.2.1.2.2.1.16
+ifOutUcastPkts 1.3.6.1.2.1.2.2.1.17
+ifOutNUcastPkts 1.3.6.1.2.1.2.2.1.18
+ifOutDiscards 1.3.6.1.2.1.2.2.1.19
+ifOutErrors 1.3.6.1.2.1.2.2.1.20
+ifOutQLen 1.3.6.1.2.1.2.2.1.21
+ifSpecific 1.3.6.1.2.1.2.2.1.22
+IP Group
+ipForwarding 1.3.6.1.2.1.4.1
+ipDefaultTTL 1.3.6.1.2.1.4.2
+ipInReceives 1.3.6.1.2.1.4.3
+ipInHdrErrors 1.3.6.1.2.1.4.4
+ipInAddrErrors 1.3.6.1.2.1.4.5
+ipForwDatagrams 1.3.6.1.2.1.4.6
+ipInUnknownProtos 1.3.6.1.2.1.4.7
+ipInDiscards 1.3.6.1.2.1.4.8
+ipInDelivers 1.3.6.1.2.1.4.9
+ipOutRequests 1.3.6.1.2.1.4.10
+ipOutDiscards 1.3.6.1.2.1.4.11
+ipOutNoRoutes 1.3.6.1.2.1.4.12
+ipReasmTimeout 1.3.6.1.2.1.4.13
+ipReasmReqds 1.3.6.1.2.1.4.14
+ipReasmOKs 1.3.6.1.2.1.4.15
+ipReasmFails 1.3.6.1.2.1.4.16
+ipFragsOKs 1.3.6.1.2.1.4.17
+ipFragsFails 1.3.6.1.2.1.4.18
+ipFragCreates 1.3.6.1.2.1.4.19
+ipAddrTable 1.3.6.1.2.1.4.20
+ipAddrEntry 1.3.6.1.2.1.4.20.1
+ipAdEntAddr 1.3.6.1.2.1.4.20.1.1
+ipAdEntIfIndex 1.3.6.1.2.1.4.20.1.2
+ipAdEntNetMask 1.3.6.1.2.1.4.20.1.3
+ipAdEntBcastAddr 1.3.6.1.2.1.4.20.1.4
+ipAdEntReasmMaxSize 1.3.6.1.2.1.4.20.1.5
+ICMP Group
+icmpInMsgs 1.3.6.1.2.1.5.1
+icmpInErrors 1.3.6.1.2.1.5.2
+icmpInDestUnreachs 1.3.6.1.2.1.5.3
+icmpInTimeExcds 1.3.6.1.2.1.5.4
+icmpInParmProbs 1.3.6.1.2.1.5.5
+icmpInSrcQuenchs 1.3.6.1.2.1.5.6
+icmpInRedirects 1.3.6.1.2.1.5.7
+icmpInEchos 1.3.6.1.2.1.5.8
+icmpInEchoReps 1.3.6.1.2.1.5.9
+icmpInTimestamps 1.3.6.1.2.1.5.10
+icmpInTimestampReps 1.3.6.1.2.1.5.11
+icmpInAddrMasks 1.3.6.1.2.1.5.12
+icmpInAddrMaskReps 1.3.6.1.2.1.5.13
+icmpOutMsgs 1.3.6.1.2.1.5.14
+icmpOutErrors 1.3.6.1.2.1.5.15
+icmpOutDestUnreachs 1.3.6.1.2.1.5.16
+icmpOutTimeExcds 1.3.6.1.2.1.5.17
+icmpOutParmProbs 1.3.6.1.2.1.5.18
+icmpOutSrcQuenchs 1.3.6.1.2.1.5.19
+icmpOutRedirects 1.3.6.1.2.1.5.20
+icmpOutEchos 1.3.6.1.2.1.5.21
+icmpOutEchoReps 1.3.6.1.2.1.5.22
+icmpOutTimestamps 1.3.6.1.2.1.5.23
+icmpOutTimestampReps 1.3.6.1.2.1.5.24
+icmpOutAddrMasks 1.3.6.1.2.1.5.25
+icmpOutAddrMaskReps 1.3.6.1.2.1.5.26
+TCP Group
+tcpRtoAlgorithm 1.3.6.1.2.1.6.1
+tcpRtoMin 1.3.6.1.2.1.6.2
+tcpRtoMax 1.3.6.1.2.1.6.3
+tcpMaxConn 1.3.6.1.2.1.6.4
+tcpActiveOpens 1.3.6.1.2.1.6.5
+tcpPassiveOpens 1.3.6.1.2.1.6.6
+tcpAttemptFails 1.3.6.1.2.1.6.7
+tcpEstabResets 1.3.6.1.2.1.6.8
+tcpCurrEstab 1.3.6.1.2.1.6.9
+tcpInSegs 1.3.6.1.2.1.6.10
+tcpOutSegs 1.3.6.1.2.1.6.11
+tcpRetransSegs 1.3.6.1.2.1.6.12
+tcpConnTable 1.3.6.1.2.1.6.13
+tcpConnEntry 1.3.6.1.2.1.6.13.1
+tcpConnState 1.3.6.1.2.1.6.13.1.1
+tcpConnLocalAddress 1.3.6.1.2.1.6.13.1.2
+tcpConnLocalPort 1.3.6.1.2.1.6.13.1.3
+tcpConnRemAddress 1.3.6.1.2.1.6.13.1.4
+tcpConnRemPort 1.3.6.1.2.1.6.13.1.5
+tcpInErrs 1.3.6.1.2.1.6.14
+tcpOutRsts 1.3.6.1.2.1.6.15
+UDP Group
+udpInDatagrams 1.3.6.1.2.1.7.1
+udpNoPorts 1.3.6.1.2.1.7.2
+udpInErrors 1.3.6.1.2.1.7.3
+udpOutDatagrams 1.3.6.1.2.1.7.4
+udpTable 1.3.6.1.2.1.7.5
+udpEntry 1.3.6.1.2.1.7.5.1
+udpLocalAddress 1.3.6.1.2.1.7.5.1.1
+udpLocalPort 1.3.6.1.2.1.7.5.1.2
+SNMP Group
+snmpInPkts 1.3.6.1.2.1.11.1
+snmpOutPkts 1.3.6.1.2.1.11.2
+snmpInBadVersions 1.3.6.1.2.1.11.3
+snmpInBadCommunityNames 1.3.6.1.2.1.11.4
+snmpInBadCommunityUses 1.3.6.1.2.1.11.5
+snmpInASNParseErrs 1.3.6.1.2.1.11.6
+NOT USED 1.3.6.1.2.1.11.7
+snmpInTooBigs 1.3.6.1.2.1.11.8
+snmpInNoSuchNames 1.3.6.1.2.1.11.9
+snmpInBadValues 1.3.6.1.2.1.11.10
+snmpInReadOnlys 1.3.6.1.2.1.11.11
+snmpInGenErrs 1.3.6.1.2.1.11.12
+snmpInTotalReqVars 1.3.6.1.2.1.11.13
+snmpInTotalSetVars 1.3.6.1.2.1.11.14
+snmpInGetRequests 1.3.6.1.2.1.11.15
+snmpInGetNexts 1.3.6.1.2.1.11.16
+snmpInSetRequests 1.3.6.1.2.1.11.17
+snmpInGetResponses 1.3.6.1.2.1.11.18
+snmpInTraps 1.3.6.1.2.1.11.19
+snmpOutTooBigs 1.3.6.1.2.1.11.20
+snmpOutNoSuchNames 1.3.6.1.2.1.11.21
+snmpOutBadValues 1.3.6.1.2.1.11.22
+NOT USED 1.3.6.1.2.1.11.23
+snmpOutGenErrs 1.3.6.1.2.1.11.24
+snmpOutGetRequests 1.3.6.1.2.1.11.25
+snmpOutGetNexts 1.3.6.1.2.1.11.26
+snmpOutSetRequests 1.3.6.1.2.1.11.27
+snmpOutGetResponses 1.3.6.1.2.1.11.28
+snmpOutTraps 1.3.6.1.2.1.11.29
+snmpEnableAuthenTraps 1.3.6.1.2.1.11.30
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

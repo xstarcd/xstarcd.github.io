@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>用vimwiki搭建你自己的维基世界</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>用vimwiki搭建你自己的维基世界</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">为什么要使用 vimwiki</a>
+<li><a href="#toc_0.2">安装 vimwiki</a>
+<li><a href="#toc_0.3">开始使用 vimwiki</a>
+<ul>
+<li><a href="#toc_0.3.1">基本的 Wiki 语法</a>
+<li><a href="#toc_0.3.2">特殊占位符</a>
+<li><a href="#toc_0.3.3">生成HTML</a>
+<li><a href="#toc_0.3.4">键操作</a>
+<ul>
+<li><a href="#toc_0.3.4.1">快捷键总览</a>
+<li><a href="#toc_0.3.4.2">编辑时的按键</a>
+</ul>
+</ul>
+<li><a href="#toc_0.4">进阶操作</a>
+<ul>
+<li><a href="#toc_0.4.1">日记功能</a>
+<li><a href="#toc_0.4.2">多个维基项目</a>
+<ul>
+<li><a href="#toc_0.4.2.1">任务管理 TODO-list</a>
+<li><a href="#toc_0.4.2.2">编辑表格</a>
+</ul>
+</ul>
+<li><a href="#toc_0.5">调教你的 vimwiki</a>
+<ul>
+<li><a href="#toc_0.5.1">做一个你自己的模板</a>
+<li><a href="#toc_0.5.2">HTML 模板增强</a>
+<ul>
+<li><a href="#toc_0.5.2.1">使footer也可以引用 %root_path%</a>
+<li><a href="#toc_0.5.2.2">在wiki里使用更多的HTML标签</a>
+</ul>
+</ul>
+</ul>
+</ul>
+</div>
+
+<p>
+原文: <a href="http://wiki.ktmud.com/tips/vim/vimwiki-guide.html">http://wiki.ktmud.com/tips/vim/vimwiki-guide.html</a>
+</p>
+
+<p>
+Vim 里有个 [<a href="http://code.google.com/p/vimwiki/">http://code.google.com/p/vimwiki/</a> vimwiki] 插件，正在使用 Vim 的同学一定有所耳闻。有了vimwiki， 搭配Vim本身强大的编辑功能，你就拥有了一个快速、轻巧、功能强大的个人笔记本。通过 vimwiki 输出HTML页面，你还能方便地和别人分享自己的知识积累。您现在看到的这个[<a href="http://wiki.ktmud.com">http://wiki.ktmud.com</a> 丘迟的维基世界]即是通过 vimwiki
+搭建。为什么要叫做“维基世界”？因为只要你懂一点前端知识，它可以不仅仅是一个简单的知识管理系统，还能成为一个 playground ，任你自由发挥。
+</p>
+
+<h2 id="toc_0.1">为什么要使用 vimwiki</h2>
+<p>
+众所周知，维基语法的作用有三点。1. 使条目更规范。通过一定转换，wiki 能输出为拥有约定俗成格式的HTML；2. 节约编辑时间。 显然，你不用写出完整的HTML标签，也不用在可视化编辑器中点来点去；3. 充分的可读性。使用维基语法书写的文档，即使未被转为HTML，内容的语义也是一目了然，甚至表格也能清晰地阅读。相较而言，UBB什么的简直就是扯淡嘛。
+</p>
+
+<p>
+使用 vimwiki ，当然是为了享受维基语法的这些优点。但 vimwiki 提供的不仅这些，它还可以帮你维护 TODO-LIST 和个人日记。它生成的HTML文件可以轻松自定义，只要你愿意，你完全能把它打造成个人网站，甚至是拥有评论系统的博客。正如[<a href="http://wiki.ktmud.com">http://wiki.ktmud.com</a> 我]和[<a href="http://hotoo.github.com/blog/index.html">http://hotoo.github.com/blog/index.html</a> 闲耘]这样。
+</p>
+
+
+<h2 id="toc_0.2">安装 vimwiki</h2>
+<p>
+vimwiki 的安装同其他vim插件一样，把[<a href="http://code.google.com/p/vimwiki/downloads/list">http://code.google.com/p/vimwiki/downloads/list</a> 下载回来的东西]解压到 vimfiles 里就好了。有 zip 包和 vba 包两种格式。其中 vba 是 Vim 独有的插件安装包。推荐使用 vba 安装，因为它能保存你的安装信息，不高兴了还可以卸载（详细说明请<code>:h vba</code>）。要使用这种安装方式，需要有 <strong>vimball</strong> 插件。Windows 下的 gvim 已经自带。如果你还没有这东西，可以先到 [<a href="http://www.vim.org">http://www.vim.org</a> vim.org] [<a href="http://www.vim.org/scripts/script.php?script_id=1502">http://www.vim.org/scripts/script.php?script_id=1502</a> 自行下载]。
+</p>
+
+<p>
+使用 Vim 打开 <strong>vimwiki.vba</strong> ，然后执行 <code>:so %</code> ，就这么简单。
+</p>
+
+<p>
+如果你选择了 zip 包，解压完成后你可能还需要重建帮助文件索引。请执行 <code>:helptags $VIMFILES/doc</code> 。其中
+\(VIMFILES 就是您的 vimfiles 目录。这是需要在 vimrc 中定义的系统变量， Windows 下应该是 <code>\)VIM/vimfiles</code> ， Linux 下是 <code>~/.vim/</code> 。请检查您的 vimrc 里是否有这样的代码：
+</p>
+<pre>
+if has("win32")
+  let $VIMFILES = $VIM.'/vimfiles'
+else
+  let $VIMFILES = $HOME.'/.vim'
+endif
+</pre>
+
+<p>
+如果还没有，就赶快加上吧。
+</p>
+
+<p>
+如果你正在使用 [<a href="http://www.vim.org/scripts/script.php?script_id=521">http://www.vim.org/scripts/script.php?script_id=521</a> MRU] ，并且设置了 <code>MRU_Include_Files</code> ，记得把 .wiki 也包括进去。
+</p>
+
+<p>
+装好之后，您可以马上使用 <code>:h vimwiki</code> 查看帮助。相信我，查看帮助文档绝对是最管用的学习方式（虽然耗时更久，但学得更全面，省去许多将来求助搜索引擎的时间）。当然，如果你英文不好，看不太懂，本文的存在就是为了帮助你，别急，慢慢来。
+</p>
+
+<h2 id="toc_0.3">开始使用 vimwiki</h2>
+<p>
+使用快捷键 <code>&lt;leader&gt;ww</code> 开始编辑您的第一个 vimwiki 吧！ 首次使用 vimwiki 时， 它默认会在操作系统用户目录（即 <code>~/</code> ）建立一个 vimwiki 文件夹，保存所有你的 wiki 条目。如果你调用 :!Vimwiki2HTML 命令把 wiki 条目转为 html 页面，它会创建一个名为 vimwiki_html 的文件夹保存所有生成的 html 文件。
+</p>
+
+<h3 id="toc_0.3.1">基本的 Wiki 语法</h3>
+
+<pre>
+= 一级标题 =  
+== 二级标题 ==
+=== 三级标题 ===
+此次类推。
+
+当标题前面有空白时，标题文本居中对齐。
+       = 我是居中的标题 =
+
+*&lt;b&gt;粗体&lt;/b&gt;*  _&lt;i&gt;斜体&lt;/i&gt;_  ~~&lt;del&gt;删除线&lt;/del&gt;~~   `&lt;code&gt;Some Code 代码&lt;/code&gt;` 
+
+&lt;b&gt;注意&lt;/b&gt; 这几个针对文本格式的标签，都要求左右留有空白。
+请注意你的代码高亮，一般来说，有了相应的高亮，你用的wiki标签才生效。
+
+^&lt;sup&gt;上&lt;/sup&gt;^标  ,,&lt;sub&gt;下&lt;/sub&gt;,,标
+
+    四个空格缩进的内容会被转成blockquote
+    
+`{{{` class="brush:php"
+这中间的内容会被放到一个 pre 里，适合贴代码。
+上面的 class 是可选的，一般用来安排代码高亮。
+事实上，这一块代码展示就是放在了一个 pre 里。
+请无视下面一行的反斜杠
+`}}}`
+
+WikiItem  大写开头的驼峰英文会被自动当作一个维基词条，并添加链接
+[[Wiki Item]]  这是手动建立维基词条的方式
+[[wiki item|description]]  输出HTML时显示description，链到 wiki item
+http://ktmud.com/  外部URL会被自动转换成链接
+[http://ktmud.com Ktmud]  带文字的外链
+[images/hello.jpg] 输出 &lt;img src="images/hello.jpg" /&gt;
+[[images/hello.jpg]] 输出图片，并链向图片地址
+
+* 无序列表 条目一
+* 无序列表 条目二 
+  - 子列表 条目一
+  - 自列表 条目二
+
+# 有序列表 条目一
+# 有序列表 条目二
+
+* 和 - 是等价的，后面必须跟一个空格
+
+</pre>
+
+<p>
+您可以查看[<a href="http://wiki.ktmud.com/tips/vim/vimwiki-guide.wiki">http://wiki.ktmud.com/tips/vim/vimwiki-guide.wiki</a> 本文的wiki源文件]加深理解。
+</p>
+
+<p>
+<strong>参考</strong> <code>:h vimwiki-syntax</code> 
+</p>
+
+<h3 id="toc_0.3.2">特殊占位符</h3>
+<p>
+在wiki条目中使用以下占位符，能对生成的HTML文件做一些特殊的处理。
+</p>
+
+<ul>
+<li>
+<code>%toc</code> 自动生成的目录
+
+<li>
+<code>%title</code> 指定HTML文档的title，建议放到文档最末尾。如果不指定，title 就是文件名
+
+<li>
+<code>%nohtml</code> 告诉 vimwiki 不为某条目生成HTML文件。即使你在该条目打开时为它单独执行 <code>:Vimwiki2HTML</code> ，也不会生成。
+
+</ul>
+
+<h3 id="toc_0.3.3">生成HTML</h3>
+<p>
+使用 <code>:Vimwiki2HTML</code> 可以为当前维基条目生成HTML文件，使用 <code>:VimwikiAll2HTML </code> 可以为所有条目生成HTML。您可以为每个维基项目指定 <code>auto_export</code> 选项，这样在wiki文件保存时就会自动生成HTML。个人不建议这样做，因为当条目很大，保存就相当费时。
+</p>
+
+<p>
+定义下面的快捷键映射即可：
+</p>
+<blockquote>
+map &lt;S-F4&gt; :!VimwikiAll2HTML&lt;cr&gt;<br />
+map &lt;F4&gt; :!Vimwiki2HTML&lt;cr&gt;
+</blockquote>
+
+
+<h3 id="toc_0.3.4">键操作</h3>
+
+<h4 id="toc_0.3.4.1">快捷键总览</h4>
+<ol>
+<li>
+<code>&lt;leader&gt;ww</code> 在当前窗口打开维基首页
+
+<li>
+<code>&lt;leader&gt;wt</code> 在新tab打开维基首页
+
+<li>
+<code>&lt;leader&gt;w&lt;leader&gt;w</code> 打开/新建当天日记
+
+<li>
+<code>&lt;leader&gt;w&lt;keader&gt;t</code> 在新tab打开/新建当天日记
+
+<li>
+<code>&lt;leader&gt;ws</code> 选择维基项目（详见下面的“多个维基项目”一节）
+
+</ol>
+
+<h4 id="toc_0.3.4.2">编辑时的按键</h4>
+<ol>
+<li>
+尚未建立的词条会被显示为红色（或其他你的 Vim 语法高亮定义的错误颜色），在词条上敲<kbd>回车</kbd>键，可以编辑这个词条。点击 <kbd>Shift-回车</kbd>，在新的分割窗口编辑该词条。编辑好以后点击退格（<kbd>Backspace</kbd>）键，可以返回链入页
+
+<li>
+使用 <kbd>Tab</kbd> 键，可以跳到下一个维基词条或链接，使用 <kbd>Shift-Tab</kbd> 跳到上一个
+
+<li>
+插入模式下使用Shift-Enter，插入 <code>\&lt;br\&gt;</code> 并换行
+
+</ol>
+
+<p>
+另有条目管理相关的快捷键 <code>&lt;leader&gt;wd</code> 和 <code>&lt;leader&gt;wr</code> ，分表代表删除和重命名当前条目。其中重命名条目很强大，还能更改所有其他条目内引用了该条目的链接。
+重命名之后别忘了重新生成所有条目的HTML。
+</p>
+ 
+<p>
+<hr />
+</p>
+
+<h2 id="toc_0.4">进阶操作</h2>
+
+<h3 id="toc_0.4.1">日记功能</h3>
+<p>
+使用快捷键 <code>&lt;leader&gt;w&lt;leader&gt;w</code> 可以快速编辑当天的日记。还可以配合 [<a href="http://www.vim.org/scripts/script.php?script_id=52">http://www.vim.org/scripts/script.php?script_id=52</a> Calendar 插件] 轻松管理你的日记。
+</p>
+
+<p>
+请马上下载并安装 [<a href="http://www.vim.org/scripts/download_script.php?src_id=12959">http://www.vim.org/scripts/download_script.php?src_id=12959</a> calendar.vim]。 安装后，定义一下快捷键吧：
+</p>
+<blockquote>
+" calendar<br>
+map &lt;F8&gt; :Calendar&lt;cr&gt;
+</blockquote>
+
+<p>
+按 <code>F8</code> 调出日历窗口，按 <code>q</code> 退出。
+</p>
+
+<p>
+在日期上点回车，就可以编辑当天的日记了！
+</p>
+
+<p>
+<strong>PS:</strong> 按左右键在前后一个月里跳转，按上下键在前后一年跳转。按 <code>t</code> 回到当天。当然，Vim 默认的上下左右 <kbd>hjkl</kbd> 也是能用的。
+</p>
+
+<h3 id="toc_0.4.2">多个维基项目</h3>
+<p>
+您可以配置 <code>g:vimwiki_list</code>，指定多个维基项目，它们各自拥有单独的文件夹。这就允许你把工作维基和生活的琐事记录完全分开。
+</p>
+
+<p>
+请打开 vimrc ，加入以下内容：
+</p>
+<pre>
+let g:vimwiki_list = [{'path': 'E:/path/to/vimwiki-1/vimwiki/',  
+  \ 'path_html': 'E:/My Dropbox/vimwiki_html/'
+  \ 'html_header': 'E:/My Dropbox/Public/vimwiki_template/header.htm',
+  \ 'html_footer': 'E:/My Dropbox/Public/vimwiki_template/footer.htm',
+  \ 'diary_link_count': 5},
+  \{'path': 'Z:/path/to/vimwiki-2/vimwiki/'}]
+</pre>
+
+<p>
+这里其实定义了两个维基项目。 <code>path</code> 是必须的，说明你想要把 wiki 条目存在哪个目录。其他选项各有默认值。生成的HTML存放在 <code>path_html</code> 下默认是与 <code>path</code> 同目录下的 <code>WIKIFOLDER_html</code> ，其中 <strong>WIKIFOLER</strong> 是你存放维基条目的文件夹名。你可以分别为每个 wiki 项目指定 html 头部和尾部模板，建议把模板文件后缀采用 htm ，既和生成的 html 有所区分，又能保证语法高亮和各种 ftplugin 可用。 <code>diary_link_count</code> 是指 diary.wiki 里每行放多少个日志链接。
+</p>
+
+<p>
+定义好之后，你可以使用 <code>&lt;leader&gt;ws</code> 选择当前活动的维基项目。使用 <code>&lt;leader&gt;ws</code> 会弹出一个维基项目的列表，并带有编号，使用这个编号加上“快捷键总览”部分的快捷键，就可以打开相应项目的首页、日记等。如 <code>2&lt;leader&gt;w&lt;leader&gt;w</code> 就是在当前窗口打开列表中第二个项目的日记。
+</p>
+
+<p>
+<strong>更多选项请参考</strong>  <code>:h viwmiki-local-options</code>
+</p>
+
+
+<h4 id="toc_0.4.2.1">任务管理 TODO-list</h4>
+<p>
+Loading...
+</p>
+
+<h4 id="toc_0.4.2.2">编辑表格</h4>
+<p>
+Loading...
+</p>
+
+<p>
+<hr />
+</p>
+
+<h2 id="toc_0.5">调教你的 vimwiki</h2>
+<pre>
+&lt;b&gt;警告!&lt;/b&gt; 以下为高级内容，虽然我手把手在教，但毕竟折腾耗时。
+而且您的操作可能因为 vimwiki 将来的版本升级而失效。
+请评估自己的时间成本！
+</pre>
+
+<h3 id="toc_0.5.1">做一个你自己的模板</h3>
+<p>
+vimwiki 生成的HTML会都会链接相应vimwiki_html目录下的style.css。如果你不自己指定，它会自动生成一个默认的。CSS禅意花园的境界是什么来着，仅仅修改 style.css 就能拥有风格完全不同的页面。通过简单修改 style.css ，你完全可以创造自己风格的维基站。加上自定义文档头部和尾部的功能，折腾出一个个人网站来绰绰有余。当然，如果你还在想新闻列表，feed订阅什么的，请赶快走开。毕竟， vimwiki 不是 CMS 。
+</p>
+
+<p>
+可惜的是，并不能指定一个 style.css 的模板，如果你还折腾了一些 !JavaScript 增强，就更麻烦了。需要的话请自行把相关文件复制过去吧。当然，你也可以直接把本页面另存为，使用我的模板！具体实现请自己折腾。
+</p>
+
+<h3 id="toc_0.5.2">HTML 模板增强</h3>
+
+<h4 id="toc_0.5.2.1">使footer也可以引用 %root_path%</h4>
+
+<p>
+修改 <strong>$VIMFILES/autoload/vimwiki_html.vim</strong> ，第 1169 行
+</p>
+<blockquote>
+call extend(ldest, s:get_html_footer())
+</blockquote>
+
+<p>
+换为
+</p>
+<blockquote>
+call extend(ldest, s:get_html_footer(subdir))
+</blockquote>
+
+<p>
+相应的， s:get_html_footer 这个函数也要改一下。第 136 行，函数定义的部分：
+</p>
+<blockquote>
+function! s:get_html_footer()
+</blockquote>
+
+<p>
+改为
+</p>
+<blockquote>
+function! s:get_html_footer(subdir)
+</blockquote>
+
+<p>
+再从 s:get_html_header 里把处理 %root_path% 的部分拷过去。第 104 行：
+</p>
+<blockquote>
+call map(lines, 'substitute(v:val, "%root_path%", "'.
+\ s:root_path(a:subdir) .'", "g")')
+</blockquote>
+    
+<p>
+复制到第 141 行 <code>let lines = readfile(expand(VimwikiGet('html_footer')))</code> 之后
+</p>
+
+<h4 id="toc_0.5.2.2">在wiki里使用更多的HTML标签</h4>
+<p>
+vimwiki 有一个 g:vimwiki_valid_html_tags 值，可以指定允许写在 wiki 中的HTML标签。 g:vimwiki_valid_html_tags 的默认值是 <code>'b,i,s,u,sub,sup,kbd,br,hr'</code> ，也就是说，当你在 wiki 中输入：
+</p>
+<blockquote>
+\&lt;b\&gt;Hello\&lt;/b\&gt; &lt;strong&gt;Hello&lt;/stong&gt;
+</blockquote>
+
+<p>
+输出的HTML会显示为：
+</p>
+<blockquote>
+<b>Hello</b> &lt;strong&gt;Hello&lt;/stong&gt;
+</blockquote>
+
+<p>
+标签 <code>b</code> 被当作可用的HTML标签，而 <code>strong</code> 则输出为文本。
+</p>
+
+<p>
+但有时候我们需要建立更强大的维基页面，不只用到这几个标签。比如[<a href="http://wiki.ktmud.com">http://wiki.ktmud.com</a> 本站首页]的“[<a href="http://wiki.ktmud.com/index.html#whats-special">http://wiki.ktmud.com/index.html#whats-special</a> 有什么特别的]”部分，就是一个有特定 <code>class</code> 和 <code>id</code> 的 <code>div</code>。于是在 vimrc 中定义：
+</p>
+<blockquote>
+let g:vimwiki_valid_html_tags='b,i,s,u,sub,sup,kbd,br,hr,div,del,code'
+</blockquote>
+
+<p>
+在这里我添加了 <code>div</code>, <code>del</code>, <code>code</code> 三个标签。
+</p>
+
+<p>
+但是，非常不幸，当我们需要在维基里贴HTML代码，即使我们把代码放到了 <code>\{\{\{ \}\}\}</code> 包裹的 pre 里，这几个标签还是会被输出为实际的HTML标签，而不是文本。
+</p>
+
+<p>
+解决办法还是修改 <strong>vimwiki_html.vim</strong> 这个文件。
+</p>
+
+<p>
+找到 <code>" WIKI2HTML "\{\{\{</code> 所在行，也就是开始转换HTML的地方。
+</p>
+
+<p>
+在前面添加一个函数：
+</p>
+<pre>
+function s:parse_tag_keeper(line)
+  let line = substitute(a:line,'\\&amp;lt;',
+        \'\&amp;lt;', 'g')
+  let line = substitute(line,'\\&amp;gt;',
+        \'\&amp;gt;', 'g')
+  return line
+endfunction
+
+</pre>
+
+<p>
+然后在之后的 <code>s:parse_line(line, state)</code> 函数内，插入这个函数的调用： 
+</p>
+<pre>
+    ...
+
+    let line = s:safe_html(a:line)
+    &lt;b&gt;let line = s:parse_tag_keeper(line)&lt;/b&gt;
+
+</pre>
+
+
+<p>
+这样如果我们用 \&lt;tag\&gt; 的形式输入 valid_html_tags 包括的标签，输出的HTML就会把它们当成文本处理了。
+</p>
+
+<p>
+在写本文时，我需要输出 <code>\{\{\{ \}\}\}</code> ，而这对标记被作为了 wiki 里 <code>pre</code> 区块的 pattern 。于是就还要再写一个函数：
+</p>
+<pre>
+function s:parse_pre_keeper(line)
+  let line = substitute(a:line,'\\{\\{\\{',
+        \'\{\{\{', 'g')
+  let line = substitute(line,'\\}\\}\\}',
+        \'\}\}\}', 'g')
+  return line
+endfunction
+</pre>
+
+<p>
+就把它定义在 <code>s:parse_tag_keeper</code> 之后吧。但调用的时候怎么办呢？肯定要放在 <strong>vimwiki_html.vim</strong> 处理了 pre 区块之后。思来想去，只能放在刚好要输出HTML文件的时候。但是 vim 的 <code>writefile</code> 函数，接受的参数是一个 list （相当于数组），而不是字串。既然如此，我们就把输出结果给合并了再替换，然后再包装成 list 。
+</p>
+
+<p>
+找到这句：
+</p>
+<blockquote>
+call writefile(ldest, path.wwFileNameOnly.'.html')
+</blockquote>
+
+<p>
+稍微修改一下：
+</p>
+<pre>
+let output = join(ldest, "\n\r")
+let output = s:parse_pre_keeper(output)
+let outputlist = split(output, "\n\r")
+call writefile(outputlist, path.wwFileNameOnly.'.html')
+</pre>
+<p>
+之所以还要再split，是因为writefile写入的 NL 是无法用字符模拟的。这样当然会造成性能问题，如果有知道更好解决方案的，请留言告诉我。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

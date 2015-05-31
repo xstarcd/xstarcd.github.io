@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>MySQL复制忽略所有错误信</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">MySQL复制忽略所有错误信</a>
+<ul>
+<li><a href="#toc_1.1">尋找有何參數可設定忽略錯誤</a>
+<li><a href="#toc_1.2">修改 slave_skip_erros 值</a>
+<li><a href="#toc_1.3">確認是否忽略所有錯誤</a>
+<li><a href="#toc_1.4">忽略某個錯誤編號</a>
+<li><a href="#toc_1.5">相關網頁</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">MySQL复制忽略所有错误信</h1>
+
+<p>
+原文：<a href="http://blog.longwin.com.tw/2008/12/mysql-replication-slave-ignore-error-msg-2008/">http://blog.longwin.com.tw/2008/12/mysql-replication-slave-ignore-error-msg-2008/</a>
+</p>
+
+
+<p>
+ MySQL 在 Replication 的 Slave 在正常情況下都是運作良好的, 但是在 Master 有錯誤/硬碟爆滿 或其它意外狀況下, 就會造成 Slave 會有些錯誤發生, 例如: MySQL Replication 出現 Duplicate Key.
+</p>
+
+<p>
+問題發生的種類還不少, 若想要先忽略這些錯誤, 之後再統一重新做 sync, 要怎麼忽略掉所有錯誤訊息, 先讓 Replication 跟上進度呢?
+</p>
+
+<h2 id="toc_1.1">尋找有何參數可設定忽略錯誤</h2>
+
+<p>
+目前常用 "SET GLOBAL SQL_SLAVE_SKIP_COUNTER =1" 來忽略掉一筆 SQL 語法, 那 SLAVE 相關的變數有什麼可以設定:
+</p>
+<pre>
+mysql&gt; show variables like "%slave%";
+
++---------------------------+-----------+
+| Variable_name             | Value     |
++---------------------------+-----------+
+| init_slave                |           |
+| log_slave_updates         | OFF       |
+| slave_compressed_protocol | OFF       |
+| slave_exec_mode           | STRICT    |
+| slave_load_tmpdir         | /var/tmp/ |
+| slave_net_timeout         | 3600      |
+| slave_skip_errors         | OFF       |
+| slave_transaction_retries | 10        |
+| sql_slave_skip_counter    |           |
++---------------------------+-----------+
+</pre>
+
+<h2 id="toc_1.2">修改 slave_skip_erros 值</h2>
+
+<p>
+於上面的表找到 "slave_skip_errors =&gt; OFF", 有這個選項, 但是想要 "SET GLOBAL SLAVE_SKIP_ERRORS = "ALL"" 似乎行不通.
+</p>
+
+<p>
+由此表可知 MySQL Server System Variables, slave_skip_errors 是無法被動態改變的.
+</p>
+
+<p>
+要改變 slave_skip_errors 的方法就只有在 MySQL 啟動時加:
+</p>
+<pre>
+--slave_skip_errors=all
+</pre>
+
+<p>
+或者於 /etc/my.cnf 加入:
+</p>
+<pre>
+slave-skip-errors=all # 於 [mysqld] 下面加入此行再restart mysql即可
+</pre>
+
+<h2 id="toc_1.3">確認是否忽略所有錯誤</h2>
+<pre>
+mysql&gt; show variables like "%slave%";
+slave_skip_errors =&gt; ALL # 看到 ALL 就代表會忽略掉所有錯誤訊息
+</pre>
+
+<h2 id="toc_1.4">忽略某個錯誤編號</h2>
+
+<p>
+若只要排除 Duplicate entry (Last_Errno: 1062), 可以單獨指定 Error No, 多個寫法如下:
+</p>
+<pre>
+--slave-skip-errors=1062,1053
+--slave-skip-errors=all
+</pre>
+
+<p>
+詳細可見: Replication Slave Options and Variables <a href="http://dev.mysql.com/doc/refman/5.0/en/replication-options-slave.html#option_mysqld_slave-skip-errors">http://dev.mysql.com/doc/refman/5.0/en/replication-options-slave.html#option_mysqld_slave-skip-errors</a>
+</p>
+
+<p>
+於 my.cnf 設定忽略
+</p>
+<pre>
+vim /etc/my.cnf
+slave-skip-errors=1062 # 於 [mysqld] 下面加入此行
+</pre>
+
+<h2 id="toc_1.5">相關網頁</h2>
+
+<p>
+請教如何設定 slave_skip_errors 參數: <a href="http://www.lslnet.com/linux/dosc1/64/linux-417487.htm">http://www.lslnet.com/linux/dosc1/64/linux-417487.htm</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

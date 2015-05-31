@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>ftp主动被动模式</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">FTP 的主动模式( active )和被动模式( passive )</a>
+<ul>
+<li><a href="#toc_1.1">active模式(一般预设的模式)</a>
+<li><a href="#toc_1.2">passive模式</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">FTP 的主动模式( active )和被动模式( passive )</h1>
+
+<p>
+FTP 是一种档传输协议 (File Transfer Protocol)，它的联机模式有两种:主动模式( active )和被动模式( passive )。以下说明 FTP 的联机是怎样建立的。
+</p>
+
+<h2 id="toc_1.1">active模式(一般预设的模式)</h2>
+
+<ol>
+<li>
+FTP client 开启一个随机选择的TCP port 呼叫 FTP server 的 port 21请求联机。当顺利完成 Three-Way Handshake 之后，联机就成功建立，但这仅是命令通道的建立。
+
+<li>
+当两端需要传送数据的时候，client 透过命令通道用一个 port command 告诉 server，client可以用另一个TCP port 做数据信道。
+
+<li>
+然后 server 用 port 20 和刚才 client 所告知的 TCP port 建立数据联机。请注意：连线方向这是从 server 到 client 的，TCP 封包会有一个 SYN flag。
+
+<li>
+然后 client 会返回一个带 ACK flag的确认封包﹐并完成另一次的 Three-Way Handshake 手续。这时候，数据信道才能成功建立。
+
+<li>
+开始数据传送。
+
+</ol>
+
+<h2 id="toc_1.2">passive模式</h2>
+
+<ol>
+<li>
+FTP client 开启一个随机选择的TCP port 呼叫 FTP server 的 port 21请求联机，并完成命令通道的建立。
+
+<li>
+当两端需要传送数据的时候，client 透过命令通道送一个 PASV command 给 server，要求进入 passive 传输模式。
+
+<li>
+然后 server 像上述的正常模式之第 2 步骤那样，挑一个TCP port ，并用命令通道告诉 client。
+
+<li>
+然后 client 用另一个TCP port 呼叫刚才 server 告知的 TCP port 来建立数据信道。此 时封包带 SYN flag。
+
+<li>
+server 确认后回应一个 ACK 封包。并完成所有交握手续?成功建立数据信道。
+
+<li>
+开始数据传送。
+
+</ol>
+
+<p>
+在实际使用上, active mode 用来登入一些开设在主机上及没有安装防火墙的 FTP server，或是开设于 client side 的 FTP server！
+</p>
+
+<p>
+Passive mode （简称 PASV）用来登入一些架设于防火墙保护下而又是开设于主机上的 FTP server！
+</p>
+
+<p>
+如果您觉得太深奥而弄不清楚, 那就先用预设的 active mode 登入, 失败改用 passive mode 登入就是了。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

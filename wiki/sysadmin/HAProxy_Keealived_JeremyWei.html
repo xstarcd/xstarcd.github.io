@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>用HAProxy和KeepAlived构建高可用的反向代理系统</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">用HAProxy和KeepAlived构建高可用的反向代理系统</a>
+<ul>
+<li><a href="#toc_1.1">前言</a>
+<li><a href="#toc_1.2">介绍</a>
+<ul>
+<li><a href="#toc_1.2.1">环境</a>
+<li><a href="#toc_1.2.2">架构</a>
+</ul>
+<li><a href="#toc_1.3">安装HAProxy</a>
+<ul>
+<li><a href="#toc_1.3.1">安装pcre</a>
+<li><a href="#toc_1.3.2">配置文件</a>
+<li><a href="#toc_1.3.3">日志</a>
+</ul>
+<li><a href="#toc_1.4">安装KeepAlived</a>
+<ul>
+<li><a href="#toc_1.4.1">安装依赖库</a>
+<li><a href="#toc_1.4.2">安装KeepAlived</a>
+<li><a href="#toc_1.4.3">使用方式</a>
+<li><a href="#toc_1.4.4">高可用测试</a>
+<li><a href="#toc_1.4.5">并发测试</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">用HAProxy和KeepAlived构建高可用的反向代理系统</h1>
+
+<p>
+作者: JeremyWei | 可以转载, 但必须以超链接形式标明文章原始出处和作者信息及版权声明
+</p>
+
+<p>
+网址: <a href="http://weizhifeng.net/HA-with-HAProxy-and-KeepAlived.html">http://weizhifeng.net/HA-with-HAProxy-and-KeepAlived.html</a>
+</p>
+
+<h2 id="toc_1.1">前言</h2>
+
+<p>
+对于访问量较大的网站来说，随着流量的增加单台服务器已经无法处理所有的请求，这时候需要多台服务器对大量的请求进行分流处理，即负载均衡。而如果实现负载均衡，必须在网站的入口部署服务器（不只是一台）对这些请求进行分发，这台服务器即反向代理。由于反向代理服务器是网站的入口，其负载压力大且易遭到攻击，存在单点故障的风险，所以我们需要一个高可用的方案来实现当一台反向代理服务器宕机的时候，另一台服务器会自动接管服务。基于以上要求，我们使用HAProxy，KeepAlived来构建高可用的反向代理系统。
+</p>
+
+<h2 id="toc_1.2">介绍</h2>
+
+<p>
+HAProxy是高性能的代理服务器，其可以提供7层和4层代理，具有healthcheck，负载均衡等多种特性，性能卓越，包括Twitter，Reddit，StackOverflow，GitHub在内的多家知名互联网公司在使用。
+</p>
+
+<p>
+KeepAlived是一个高可用方案，通过VIP(即虚拟IP)和心跳检测来实现高可用。其原理是存在一组（两台）服务器，分别赋予Master,Backup两个角色，默认情况下Master会绑定VIP到自己的网卡上，对外提供服务。Master,Backup会在一定的时间间隔向对方发送心跳数据包来检测对方的状态，这个时间间隔一般为2秒钟，如果Backup发现Master宕机，那么Backup会发送ARP包到网关，把VIP绑定到自己的网卡，此时Backup对外提供服务，实现自动化的故障转移，当Master恢复的时候会重新接管服务。
+</p>
+
+<ul>
+<li>
+调度算法
+
+<ul>
+<li>
+roundrobin，表示简单的轮询，这个不多说，这个是负载均衡基本都具备的；
+
+<li>
+static-rr，表示根据权重，建议关注；
+
+<li>
+leastconn，表示最少连接者先处理，建议关注；
+
+<li>
+source，表示根据请求源IP，这个跟Nginx的IP_hash机制类似，我们用其作为解决session问题的一种方法，建议关注；
+
+<li>
+ri，表示根据请求的URI；
+
+<li>
+rl_param，表示根据请求的URl参数'balance url_param' requires an URL parameter name；
+
+<li>
+hdr(name)，表示根据HTTP请求头来锁定每一次HTTP请求；
+
+<li>
+rdp-cookie(name)，表示根据cookie(name)来锁定并哈希每一次TCP请求。
+
+</ul>
+</ul>
+
+<h3 id="toc_1.2.1">环境</h3>
+<pre class="brush:bash">
+OS: CentOS Linux release 6.0 (Final) 2.6.32-71.29.1.el6.x86_64
+HAProxy: 1.4.18
+KeepAlived: 1.2.2
+VIP: 192.168.1.99
+M: 192.168.1.222
+S: 192.168.1.189
+</pre>
+
+<h3 id="toc_1.2.2">架构</h3>
+
+<pre class="brush:bash">
+                    192.168.1.99
+             +-----------VIP----------+
+             |                        |
+             |                        |
+           Master                   Backup
+        192.168.1.189            192.168.1.222
+        +----------+             +----------+
+        | HAProxy  |             | HAProxy  |
+        |keepalived|             |keepalived|
+        +----------+             +----------+
+             |
+             v
+    +--------+---------+
+    |        |         |
+    |        |         |
+    v        v         v
++------+  +------+  +------+
+| WEB1 |  | WEB2 |  | WEB3 |
++------+  +------+  +------+
+</pre>
+
+<h2 id="toc_1.3">安装HAProxy</h2>
+
+<h3 id="toc_1.3.1">安装pcre</h3>
+
+<pre class="brush:bash">
+yum install pcre
+wget http://haproxy.1wt.eu/download/1.4/src/haproxy-1.4.18.tar.gz
+tar -zxvf haproxy-1.4.18.tar.gz
+cd haproxy-1.4.18
+</pre>
+
+<ul>
+<li>
+注意编译参数：
+
+<ul>
+<li>
+TARGET是指自己系统的内核版本，ARCH指定系统是32位还是64位
+
+<li>
+CPU=native: use the build machine's specific processor optimizations
+
+<li>
+更多编译参数内容见源码中的README
+
+</ul>
+</ul>
+
+<pre class="brush:bash">
+make TARGET=linux26 ARCH=x86_64 USE_PCRE=1 CPU=native
+make install
+</pre>
+
+<h3 id="toc_1.3.2">配置文件</h3>
+
+<p>
+/etc/haproxy.cfg
+</p>
+
+<pre class="brush:bash">
+global
+    log 127.0.0.1 local3 # 日志
+    maxconn 20000
+    #uid 500             # uid和gid按照实际情况进行配置
+    #gid 500
+    chroot /var/chroot/haproxy
+    user haproxy
+    group haproxy
+    daemon               # 以后台方式运行
+    nbproc 1             # haproxy的进程数
+
+defaults
+   log     127.0.0.1       local3
+   mode    http
+   option  httplog
+   option  httpclose
+   option  dontlognull
+   option  forwardfor
+   option  redispatch
+   retries 2
+   maxcon  65535
+   balance roundrobin   # 简单轮循
+   stats   uri     /haproxy-stats
+   contimeout      5000
+   clitimeout      50000
+   srvtimeout      50000
+
+frontend http-in
+        bind *:80
+        default_backend pool1
+
+backend pool1
+        option httpchk HEAD / HTTP/1.0
+        stats refresh 2
+        server WEB1 192.168.1.189:81 weight 3 maxconn 10000 check
+        server WEB2 192.168.1.222:81 weight 3 maxconn 10000 check
+
+# 这是另一种配置方式?
+# 这里也要注意千万不要绑定VIP地址，只有主keepalived才会拥有VIP
+listen web_vip 0.0.0.0:80
+    mode http
+    option httplog
+    log global
+    # 在三台web服务器建立index.html以便健康检查，为区分内容分别设为:129:80,130:8080,131:8080
+    option httpchk HEAD /index.html HTTP/1.0
+    server web1  192.168.207.129:80   weight 5  check inter 2000 rise 2 fall 3
+    server web2  192.168.207.130:8080 weight 5  check inter 2000 rise 2 fall 3
+    server web3  192.168.207.131:8080 weight 5  check inter 2000 rise 2 fall 3
+</pre>
+
+<ul>
+<li>
+查看HAProxy的状态：<a href="http://192.168.1.99/haproxy-stats">http://192.168.1.99/haproxy-stats</a> ，这个页面会显示HAProxy本身以及后端服务器的状态。
+
+</ul>
+
+<h3 id="toc_1.3.3">日志</h3>
+
+<p>
+haproxy会把日志记录发送到syslog server(CentOS6下是rsyslogd，UDP514端口)， 编辑/etc/rsyslog.conf文件，添加如下内容：
+</p>
+
+<pre class="brush:bash">
+$ModLoad imudp
+$UDPServerRun 514
+$UDPServerAddress 127.0.0.1
+local3.*                /var/log/haproxy.log
+</pre>
+
+<ul>
+<li>
+重启rsyslog
+
+</ul>
+
+<pre class="brush:bash">
+/etc/init.d/rsyslog restart
+</pre>
+
+<ul>
+<li>
+自动轮转日志
+
+</ul>
+
+<p>
+编辑/etc/logrotate.d/haproxy.cfg，添加如下内容：
+</p>
+
+<pre class="brush:bash">
+/var/log/haproxy.log
+{
+    rotate 4
+    daily
+    missingok
+    notifempty
+    compress
+    delaycompress
+    sharedscripts
+    postrotate
+    reload rsyslog &gt; /dev/null 2&gt;&amp;1 || true
+    endscript
+}
+</pre>
+
+<ul>
+<li>
+启动脚本
+<pre class="brush:bash">
+wget -O haproxy https://raw.github.com/gist/3665034/4125bd5b81977a72e5eec30650fb21f3034782a0/haproxy-init.d
+cp haproxy /etc/init.d/haproxy
+chmod +x /etc/init.d/haproxy
+</pre>
+
+</ul>
+
+<ul>
+<li>
+使用方式
+<pre class="brush:bash">
+/etc/init.d/haproxy start|stop|restart
+</pre>
+
+</ul>
+
+<h2 id="toc_1.4">安装KeepAlived</h2>
+
+<h3 id="toc_1.4.1">安装依赖库</h3>
+
+<pre class="brush:bash">
+yum install popt popt-devel
+</pre>
+
+<h3 id="toc_1.4.2">安装KeepAlived</h3>
+
+<pre class="brush:bash">
+wget http://www.keepalived.org/software/keepalived-1.2.2.tar.gz
+tar -zxvf keepalived-1.2.2.tar.gz
+cd keepalived-1.2.2
+./configure --prefix=/usr/local/keepalived
+make &amp;&amp; make install
+
+cp /usr/local/keepalived/etc/rc.d/init.d/keepalived /etc/init.d/keepalived
+cp /usr/local/keepalived/sbin/keepalived /usr/sbin/
+cp /usr/local/keepalived/etc/sysconfig/keepalived /etc/sysconfig/
+mkdir -p /etc/keepalived/
+cp /usr/local/keepalived/etc/keepalived/keepalived.conf /etc/keepalived/keepalived.conf
+chmod +x /etc/init.d/keepalived
+</pre>
+
+<h3 id="toc_1.4.3">使用方式</h3>
+
+<pre class="brush:bash">
+/etc/init.d/keepalived start|stop|restart
+</pre>
+
+<ul>
+<li>
+Master服务器上的配置 /etc/keepalived/keepalived.conf
+
+</ul>
+
+<pre class="brush:bash">
+global_defs {
+
+   notification_email {
+       user@example.com
+   }
+
+   notification_email_from mail@example.org
+   smtp_server 192.168.x.x
+   smtp_connect_timeout 30
+   router_id LVS_DEVEL
+}
+
+#监测haproxy进程状态，每2秒执行一次
+vrrp_script chk_haproxy {
+    script "/usr/local/keepalived/chk_haproxy.sh"
+    interval 2
+    weight 2
+}
+
+vrrp_instance VI_1 {
+    state MASTER #标示状态为MASTER
+    interface eth0
+    virtual_router_id 51
+    priority 101   #MASTER权重要高于BACKUP
+    advert_int 1
+    mcast_src_ip 192.168.1.189 #Master服务器IP
+
+    authentication {
+        auth_type PASS #主从服务器验证方式
+        auth_pass 1111
+    }
+
+    track_script {
+        chk_haproxy #监测haproxy进程状态
+    }
+
+    #VIP
+    virtual_ipaddress {
+        192.168.1.99 #虚拟IP
+    }
+}
+</pre>
+
+<ul>
+<li>
+Bakcup服务器上的配置，在Master基础上修改以下项
+
+</ul>
+
+<pre class="brush:bash">
+    state BACKUP  #状态为BACKUP
+    priority 100  #权重要低于MASTER
+</pre>
+
+<ul>
+<li>
+chk_haproxy.sh
+
+</ul>
+
+<pre class="brush:bash">
+#!/bin/bash
+#
+# author: weizhifeng
+# description:
+# 定时查看haproxy是否存在，如果不存在则启动haproxy，
+# 如果启动失败，则停止keepalived
+#
+status=$(ps aux|grep haproxy | grep -v grep | grep -v bash | wc -l)
+if [ "${status}" = "0" ]; then
+    /etc/init.d/haproxy start
+
+    status2=$(ps aux|grep haproxy | grep -v grep | grep -v bash |wc -l)
+
+    if [ "${status2}" = "0"  ]; then
+            /etc/init.d/keepalived stop
+    fi
+fi
+</pre>
+
+<h3 id="toc_1.4.4">高可用测试</h3>
+
+<p>
+在Master上停止keepalived，查看系统日志，发现MASTER释放了VIP
+</p>
+
+<pre class="brush:bash">
+/etc/init.d/keepalived stop
+tail -f /var/log/message
+
+Keepalived: Terminating on signal Keepalived: Stopping Keepalived v1.2.2 (11/03,2011)
+Keepalived_vrrp: Terminating VRRP child process on signal
+Keepalived_vrrp: VRRP_Instance(VI_1) removing protocol VIPs.
+</pre>
+
+<p>
+在Backup上查看系统日志，发现Backup已经进入MASTER角色，并且绑定了VIP 192.168.1.99
+</p>
+
+<pre class="brush:bash">
+tail -f /var/log/message
+
+Keepalived_vrrp: VRRP_Instance(VI_1) Entering MASTER STATE
+Keepalived_vrrp: VRRP_Instance(VI_1) setting protocol VIPs
+Keepalived_vrrp: VRRP_Instance(VI_1) Sending gratuitous ARPs on eth0 for 192.168.1.99 #在Backup上查看VIP是否已经绑定
+</pre>
+
+<p>
+在Master上重新启动keepalived，查看系统日志，发现重新获得MASTER角色，并且绑定VIP 192.168.1.99
+</p>
+
+<pre class="brush:bash">
+tail -f /var/log/message
+/etc/init.d/keepalived start
+tail -f /var/log/message
+
+Keepalived_vrrp: VRRP_Instance(VI_1) Transition to MASTER STATE
+Keepalived_vrrp: VRRP_Instance(VI_1) Entering MASTER STATE
+Keepalived_vrrp: VRRP_Instance(VI_1) setting protocol VIPs.
+Keepalived_vrrp: VRRP_Instance(VI_1) Sending gratuitous ARPs on eth0 for 192.168.1.99
+</pre>
+
+<p>
+在Backup上查看系统日志，发现其重新回到BACKUP角色，并且释放VIP
+</p>
+
+<pre class="brush:bash">
+tail -f /var/log/message
+Keepalived_vrrp: VRRP_Instance(VI_1) Received higher prio advert
+Keepalived_vrrp: VRRP_Instance(VI_1) Entering BACKUP STATE
+Keepalived_vrrp: VRRP_Instance(VI_1) removing protocol VIPs.
+</pre>
+
+<h3 id="toc_1.4.5">并发测试</h3>
+
+<p>
+我们使用webbench来对HAProxy进行并发测试
+</p>
+
+<pre class="brush:bash">
+yum install ctags
+wget http://home.tiscali.cz/~cz210552/distfiles/webbench-1.5.tar.gz
+tar -zxvf webbench-1.5.tar.gz
+cd webbench-1.5
+make
+mkdir -p /usr/local/man &amp;&amp; make install
+</pre>
+
+<ul>
+<li>
+测试环境
+
+</ul>
+
+<pre>
+CPU：Intel 双核 x86_64 主频3191MHZ
+Mem：2G
+</pre>
+
+<ul>
+<li>
+修改php-fpm.conf，设置PHP-FPM spawn的进程数量为100：
+
+</ul>
+
+<pre>
+pm.start_servers = 100
+pm.max_spare_servers = 100
+</pre>
+
+<ul>
+<li>
+测试方法
+<pre class="brush:bash">
+webbench -c 100 -t 3000 http://192.168.1.99/check.txt
+webbench -c 100 -t 3000 http://192.168.1.99/test.php
+</pre>
+
+</ul>
+
+<ul>
+<li>
+测试结果
+
+</ul>
+
+<p>
+并发访问txt文件，HAProxy的session数量为10000左右，这说明HAProxy能够hold住10000个并发连接；
+</p>
+
+<p>
+并发访问php文件，HAProxy的session峰值为200左右，接近于后端PHP的并发处理能力(100x2)。
+</p>
+
+<p>
+参考：
+</p>
+
+<p>
+<a href="http://haproxy.1wt.eu/download/1.4/doc/configuration.txt">http://haproxy.1wt.eu/download/1.4/doc/configuration.txt</a>
+</p>
+
+<p>
+<a href="http://kevin.vanzonneveld.net/techblog/article/haproxy_logging/">http://kevin.vanzonneveld.net/techblog/article/haproxy_logging/</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

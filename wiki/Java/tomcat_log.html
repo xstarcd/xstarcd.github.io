@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Tomcat日志设定</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Tomcat日志设定</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Tomcat日志概述</a>
+<li><a href="#toc_0.2">访问日志</a>
+<li><a href="#toc_0.3">运行日志</a>
+<ul>
+<li><a href="#toc_0.3.1">日志类型与级别</a>
+</ul>
+<li><a href="#toc_0.4">设定日志级别</a>
+<li><a href="#toc_0.5">应用程序日志或系统日志</a>
+<ul>
+<li><a href="#toc_0.5.1">输出详细系统日志</a>
+<li><a href="#toc_0.5.2">应用程序中使用log4j</a>
+<li><a href="#toc_0.5.3">更改日志输出内容</a>
+</ul>
+<li><a href="#toc_0.6">Log4j相关资料</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">Tomcat日志概述</h2>
+
+<p>
+Tomcat 日志信息分为两类：
+</p>
+
+<ul>
+<li>
+运行中的日志，它主要记录运行的一些信息，尤其是一些异常错误日志信息。
+
+<li>
+访问日志信息，它记录的访问的时间,IP,访问的资料等相关信息。
+
+</ul>
+
+<h2 id="toc_0.2">访问日志</h2>
+
+<ul>
+<li>
+启用访问日志
+
+</ul>
+
+<p>
+默认 tomcat 不记录访问日志，如下方法可以使 tomcat 记录访问日志
+</p>
+
+<p>
+编辑${catalina}/conf/server.xml 文件(注:{catalina}是tomcat的安装目录)，把以下的注释 (&lt;!-- --&gt;) 去掉即可。
+</p>
+<pre class="brush:xml">
+ &lt;!--
+        &lt;Valve className="org.apache.catalina.valves.AccessLogValve"
+         directory="logs"  prefix="localhost_access_log." suffix=".txt"
+         pattern="common" resolveHosts="false"/&gt;
+  --&gt;
+</pre>
+
+<ul>
+<li>
+配置tomcat写出更详细的日志
+
+</ul>
+
+<p>
+通过对 2.1 示例中 pattern 项的修改，可以改变日志输出的内容。
+</p>
+
+<p>
+该项值可以为： common 与 combined ，这两个预先设置好的格式对应的日志输出内容如下：
+</p>
+
+<ul>
+<li>
+common 的值： <code>%h %l %u %t %r %s %b</code>
+
+<li>
+combined 的值： <code>%h %l %u %t %r %s %b %{Referer}i %{User-Agent}i</code>
+
+</ul>
+
+<p>
+pattern 也可以根据需要自由组合 , 例如 <code>pattern="%h %l"</code>
+</p>
+
+<p>
+对 于各 fields 字段的含义请参照:
+</p>
+
+<p>
+<a href="http://tomcat.apache.org/tomcat-6.0-doc/config/valve.html">http://tomcat.apache.org/tomcat-6.0-doc/config/valve.html</a> 中的 Access Log Valve 项。
+</p>
+
+<ul>
+<li>
+ %a - Remote IP address
+
+<li>
+ %A - Local IP address
+
+<li>
+ %b - Bytes sent, excluding HTTP headers, or '-' if zero
+
+<li>
+ %B - Bytes sent, excluding HTTP headers
+
+<li>
+ %h - Remote host name (or IP address if resolveHosts is false)
+
+<li>
+ %H - Request protocol
+
+<li>
+ %l - Remote logical username from identd (always returns '-')
+
+<li>
+ %m - Request method (GET, POST, etc.)
+
+<li>
+ %p - Local port on which this request was received
+
+<li>
+ %q - Query string (prepended with a '?' if it exists)
+
+<li>
+ %r - First line of the request (method and request URI)
+
+<li>
+ %s - HTTP status code of the response
+
+<li>
+ %S - User session ID
+
+<li>
+ %t - Date and time, in Common Log Format
+
+<li>
+ %u - Remote user that was authenticated (if any), else '-'
+
+<li>
+ %U - Requested URL path
+
+<li>
+ %v - Local server name
+
+<li>
+ %D - Time taken to process the request, in millis
+
+<li>
+ %T - Time taken to process the request, in seconds
+
+<li>
+ %I - current request thread name (can compare later with stacktraces)
+
+<li>
+ %{xxx}i for incoming headers
+
+<li>
+ %{xxx}o for outgoing response headers
+
+<li>
+ %{xxx}c for a specific cookie
+
+<li>
+ %{xxx}r xxx is an attribute in the ServletRequest
+
+<li>
+ %{xxx}s xxx is an attribute in the HttpSession
+
+</ul>
+
+
+<h2 id="toc_0.3">运行日志</h2>
+
+<h3 id="toc_0.3.1">日志类型与级别</h3>
+
+<ul>
+<li>
+Tomcat日志分为5类：<code>catalina 、localhost 、manager 、admin 、host-manager</code>
+
+<li>
+日志的级别分为7种：<code>SEVERE (highest value) &gt; WARNING &gt; INFO &gt; CONFIG &gt; FINE &gt; FINER &gt; FINEST (lowest value)</code>
+
+</ul>
+
+<h2 id="toc_0.4">设定日志级别</h2>
+
+<p>
+修改 conf/logging.properties 中的内容，设定某类日志的级别
+</p>
+
+<p>
+示例：
+</p>
+
+<ul>
+<li>
+设置 catalina 日志的级别为： FINE
+<pre>
+1catalina.org.apache.juli.FileHandler.level = FINE
+</pre>
+
+<li>
+禁用 catalina 日志的输出：
+<pre>
+1catalina.org.apache.juli.FileHandler.level = OFF
+</pre>
+
+<li>
+输出 catalina 所有的日志消息均输出：
+<pre>
+1catalina.org.apache.juli.FileHandler.level = ALL
+</pre>
+
+</ul>
+
+<h2 id="toc_0.5">应用程序日志或系统日志</h2>
+
+<h3 id="toc_0.5.1">输出详细系统日志</h3>
+
+<p>
+使用Log4j输出详细系统日志信息，快速诊断启动故障
+</p>
+
+<p>
+此例可弥补tomcat启动异常时输出的错误信息不足的问题，使用commons-logging和log4j搭配输出详尽的日志信息。
+</p>
+
+<p>
+以window环境下tomcat5.5.27为例：
+</p>
+<ul>
+<li>
+tomcat解压目录为：E: /tomcat5.5
+
+<li>
+设置环境变量：CATALINA_HOME=E: /tomcat5.5
+
+<li>
+下载 log4j 与 commons-logging
+
+<ul>
+<li>
+Log4j 下载地址：<a href="http://logging.apache.org/log4j/1.2/download.html">http://logging.apache.org/log4j/1.2/download.html</a>
+
+<li>
+Commons-logging 下载地址：<a href="http://apache.freelamp.com/commons/logging/binaries/commons-logging-1.1.1-bin.zip">http://apache.freelamp.com/commons/logging/binaries/commons-logging-1.1.1-bin.zip</a>
+
+</ul>
+<li>
+本例将 commons-logging-1.1.1.jar 与 log4j-1.2.15.jar 放在 %TOMCAT_HOME%/bin 目录下（可根据需要放置在其位置）
+
+<li>
+在 %TOMCAT_HOME%/bin 目录下新建两个文件 commons-logging.properties 、log4j.properties
+
+<li>
+commons-logging.properties 文件内容如下：
+<pre class="brush:bash">
+org.apache.commons.logging.Log=org.apache.commons.logging.impl.Log4JLogger
+</pre>
+
+<li>
+log4j.properties 文件内容如下：
+<pre class="brush:bash">
+log4j.rootLogger=WARN,stdout,file
+
+## 日志直接输出到控制台 ###
+
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.Target=System.out
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d{ABSOLUTE} %l - %m%n
+
+## 日志输出到文件 SystemOut.log ###
+log4j.appender.file=org.apache.log4j.FileAppender
+log4j.appender.file.File=E: /tomcat5.5/ logs/SystemOut.log
+log4j.appender.file.Append=false
+log4j.appender.file.layout=org.apache.log4j.PatternLayout
+log4j.appender.file.layout.ConversionPattern=%d{ABSOLUTE} %l - %m%n
+</pre>
+
+<li>
+该配置文件可详细参照：<a href="http://www.minaret.biz/tips/tomcatLogging.html#log4j_properties">http://www.minaret.biz/tips/tomcatLogging.html#log4j_properties</a>
+
+<li>
+修改 catalina.bat 文件
+<pre>
+将
+set CLASSPATH=%CLASSPATH%;%CATALINA_HOME%/bin/bootstrap.jar
+替换为
+set CLASSPATH=%CLASSPATH%;%CATALINA_HOME%/bin/bootstrap.jar;%CATALINA_HOME%/bin/commons-logging-1.1.jar;%CATALINA_HOME%/bin/log4j-1.2.13.jar;%CATALINA_HOME%/bin
+</pre>
+
+<li>
+通过startup.bat启动就会用log4j来输出启动日志了。
+
+<li>
+在E:/tomcat5.5/logs/SystemOut.log文件中查看输出的日志
+
+</ul>
+
+<h3 id="toc_0.5.2">应用程序中使用log4j</h3>
+
+<ul>
+<li>
+从如下网址下载log4j：<a href="http://logging.apache.org/log4j/1.2/download.html">http://logging.apache.org/log4j/1.2/download.html</a>
+
+<li>
+创建Java工程。
+
+<li>
+添加log4j.jar到工程的编译路径下。
+
+<li>
+创建名称为log4j.properties的文件，写入如下内容：
+<pre class="brush:bash">
+### direct log messages to stdout ###
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.Target=System.out
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d{ABSOLUTE} %5p %c{1}:%L - %m%n
+log4j.rootLogger=debug, stdout
+</pre>
+
+<li>
+创建类并添加如下内容：
+<pre class="brush:bash">
+import org.apache.log4j.Logger;
+public class LogClass {
+        private static org.apache.log4j.Logger log = Logger
+                        .getLogger (LogClass. class );
+        public static void main(String[] args) {
+                log .trace( "Trace" );
+                log .debug( "Debug" );
+                log .info( "Info" );
+                log .warn( "Warn" );
+                log .error( "Error" );
+                log .fatal( "Fatal" );
+        }
+}
+</pre>
+
+<li>
+编译运行，可在控制台中看到如下内容：
+<pre>
+10:38:24,797 DEBUG LogClass:11 - Debug
+10:38:24,812  INFO LogClass:12 - Info
+10:38:24,812  WARN LogClass:13 - Warn
+10:38:24,812 ERROR LogClass:14 - Error
+10:38:24,812 FATAL LogClass:15 - Fatal
+</pre>
+
+<li>
+根据级别控制日志输出内容：
+<pre>
+将 log4j.rootLogger= debug , stdout 变更为 log4j.rootLogger=Warn, stdout
+
+输出内容如下：
+
+10:41:15,488  WARN LogClass:13 - Warn
+10:41:15,504 ERROR LogClass:14 - Error
+10:41:15,504 FATAL LogClass:15 – Fatal
+</pre>
+
+</ul>
+
+<h3 id="toc_0.5.3">更改日志输出内容</h3>
+
+<ul>
+<li>
+log4j.rootCategory=INFO, stdout , R
+
+</ul>
+
+<p>
+此句为将等级为INFO的日志信息输出到stdout和R这两个目的地。
+</p>
+
+<p>
+等级可分为OFF、FATAL、ERROR、WARN、INFO、DEBUG、ALL，如果配置OFF则不打出任何信息，如果配置为INFO这样只显示INFO,WARN,ERROR的log信息，而DEBUG信息不会被显示。
+</p>
+
+<ul>
+<li>
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+
+</ul>
+
+<p>
+此句为定义名为stdout的输出端是哪种类型，可以是：
+</p>
+
+<table>
+<tr>
+<td>
+org.apache.log4j.FileAppender
+</td>
+<td>
+文件
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.DailyRollingFileAppender
+</td>
+<td>
+每天产生一个日志文件
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.RollingFileAppender
+</td>
+<td>
+文件大小到达指定尺寸的时候产生一个新的文件
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.WriterAppender
+</td>
+<td>
+将日志信息以流格式发送到任意指定的地方
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+
+</ul>
+
+<p>
+此句为定义名为stdout的输出端的layout是哪种类型
+</p>
+
+<table>
+<tr>
+<td>
+org.apache.log4j.HTMLLayout
+</td>
+<td>
+以HTML表格形式布局
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.PatternLayout
+</td>
+<td>
+可以灵活地指定布局模式
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.SimpleLayout
+</td>
+<td>
+包含日志信息的级别和信息字符串
+</td>
+</tr>
+<tr>
+<td>
+org.apache.log4j.TTCCLayout
+</td>
+<td>
+包含日志产生的时间、线程、类别等等信息
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+log4j.appender.stdout.layout.ConversionPattern= [QC] %p [%t] %C.%M(%L) | %m%n
+
+</ul>
+
+<p>
+如果使用 pattern 布局就要指定的打印信息的具体格式 ConversionPattern ，打印参数如下：
+</p>
+
+<p>
+具体的设定参照：<a href="http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html">http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html</a>
+</p>
+
+<table>
+<tr>
+<td>
+%m
+</td>
+<td>
+输出代码中指定的消息
+</td>
+</tr>
+<tr>
+<td>
+%p
+</td>
+<td>
+输出优先级，即DEBUG，INFO，WARN，ERROR，FATAL
+</td>
+</tr>
+<tr>
+<td>
+%r
+</td>
+<td>
+输出自应用启动到输出该log信息耗费的毫秒数
+</td>
+</tr>
+<tr>
+<td>
+%c
+</td>
+<td>
+输出所属的类目，通常就是所在类的全名
+</td>
+</tr>
+<tr>
+<td>
+%t
+</td>
+<td>
+输出产生该日志事件的线程名
+</td>
+</tr>
+<tr>
+<td>
+%n
+</td>
+<td>
+输出一个回车换行符，Windows平台为“rn”，Unix平台为“n”
+</td>
+</tr>
+<tr>
+<td>
+%d
+</td>
+<td>
+输出日志时间点的日期或时间，默认格式为ISO8601，也可以指定格式，如:<code>%d{yyyymmddHH:mm:ss,SSS}</code>,输出:2002101822:10:28,921
+</td>
+</tr>
+<tr>
+<td>
+%l
+</td>
+<td>
+输出日志事件的发生位置，包括类目名、发生的线程，以及在代码中的行数。
+</td>
+</tr>
+<tr>
+<td>
+[QC]
+</td>
+<td>
+是log信息的开头，可以为任意字符，一般为项目简称。
+</td>
+</tr>
+</table>
+
+<h2 id="toc_0.6">Log4j相关资料</h2>
+
+<ul>
+<li>
+log4j的介绍：<a href="http://logging.apache.org/log4j/1.2/manual.html">http://logging.apache.org/log4j/1.2/manual.html</a>
+
+<li>
+log4j使用示例：<a href="http://www.laliluna.de/log4j-tutorial.html">http://www.laliluna.de/log4j-tutorial.html</a>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

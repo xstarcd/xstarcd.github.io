@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>expect说明</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>expect说明</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">样式匹配</a>
+<ul>
+<li><a href="#toc_0.1.1"><code>*</code>号</a>
+<li><a href="#toc_0.1.2">更多Glob样式</a>
+</ul>
+<li><a href="#toc_0.2">处理超时</a>
+<li><a href="#toc_0.3">文件结尾处理</a>
+<li><a href="#toc_0.4">close命令</a>
+<li><a href="#toc_0.5">忽略eof的程序</a>
+<li><a href="#toc_0.6">wait命令</a>
+<li><a href="#toc_0.7">expect重要的命令</a>
+<ul>
+<li><a href="#toc_0.7.1">send命令</a>
+<li><a href="#toc_0.7.2">expect命令</a>
+<li><a href="#toc_0.7.3">定位</a>
+<li><a href="#toc_0.7.4">spawn命令</a>
+</ul>
+<li><a href="#toc_0.8">interact命令</a>
+<li><a href="#toc_0.9">其它</a>
+<li><a href="#toc_0.10">expect的几种格式</a>
+</ul>
+</ul>
+</div>
+
+<p>
+原文：<a href="http://hi.baidu.com/liuhangbin/item/a9c3c3d882ca5e3c48e1dd10">http://hi.baidu.com/liuhangbin/item/a9c3c3d882ca5e3c48e1dd10</a>
+</p>
+
+<h2 id="toc_0.1">样式匹配</h2>
+
+<h3 id="toc_0.1.1"><code>*</code>号</h3>
+
+<pre class="brush:bash">
+expect "hi*"
+send "$expect_out(0,string) $expect_out(buffer)"
+</pre>
+
+<p>
+输入philosophic,输出为hilosophic philosophic,<code>hi*</code>匹配的是hilosophic
+</p>
+
+<p>
+如果是<code>hi*hi</code>,则匹配的是hilosophi
+</p>
+
+<p>
+如果是<code>*hi*</code>，则匹配的是philosop hi c\n ,而不是p hi losophic\n,因为匹配是从左到右进行，且*尽可能匹配更多的字符，但是要符合样式，所以第一个*匹配的字符多一些
+</p>
+
+<p>
+以<code>*</code>开头的样式并不经常用到，像<code>*hi*</code>,它能把前面不匹配的数据保存在expect_out(0,string),但是expect_out(buffer)中也会保存，所以这点也没什么意义
+</p>
+
+<p>
+以<code>*</code>结尾的样式经常需要认真考虑，因为程序的输出不像人的标准输入一样是一行一行而是一堆一堆进行，这样可能匹配的最多数据还没发送完，程序已经返回了。因为<code>*</code>可以匹配任何东西，包括空字符串，可以用它做结尾匹配人的一些输入，并清理输入缓存。
+</p>
+
+<ul>
+<li>
+例子：
+<pre class="brush:bash">
+expect "220*"      ;#在ftp的例子中会出错，可能程序没准备好，即已经返回了
+expect "220*ready" ;#可以在整个的输入完成后才返回
+expect "220*re"    ;#可以作为一个简写，但是"220*r"就太简单了，它的r就可能匹配的server
+</pre>
+
+</ul>
+
+<h3 id="toc_0.1.2">更多Glob样式</h3>
+
+<ul>
+<li>
+<code>?</code>:匹配一个字符，<code>a?d</code>匹配abd但不匹配abcd
+
+<li>
+<code>[]</code>:匹配它范围内的任意字符
+
+<ul>
+<li>
+<code>[abcdef0123456789]</code>能匹配任意十六进制数，也可以写成<code>[a-f0-9]</code>。
+
+<li>
+如果要匹配短横杠<code>-</code>，要将其写在最前或者最后，例如[-a-c]匹配<code>-,a,b,c</code>
+
+<li>
+因为中括号<code>[]</code>也是特殊的expect的字符，它里面的式子要立刻求值，所以<code>[]</code>样式必须写成下面两种方式：
+
+<ul>
+<li>
+<code>expect "\[a-f0-9]"</code>,推荐使用
+
+<li>
+<code>expect {[a-f0-9]}</code>,会出现预想不到的情况，因为里面所有的值都不会进行运算
+
+<li>
+也可以括号的第二部分加<code>\</code>,但这不是必须的
+
+</ul>
+</ul>
+<li>
+斜杠:太复杂，举例：
+<pre class="brush:bash">
+expect "\n"     ;#matches \n
+expect "\r"     ;#matches \r
+expect "\z"     ;#matches z
+expect "\{"     ;#matches {
+expect "*"      ;#matches * and ? and X and abc
+expect "\\*"    ;#matches * but not ? or X or abc
+expect "?"      :#matches * and ? and X but not abc
+expect "\\?"    ;#matches ?but not * or X or abc
+expect "n"      ;#matches n
+expect "\n"     ;#matches \n
+expect "\\n"    ;#matches n
+expect "\\\n"   ;#matches \n
+expect "\\\\n"  ;#matches sequence of \ and n
+expect "\\\\\n"      ;#matches sequence of \ and \n
+expect "\\\\\\n"     ;#matches sequence of \ and n
+expect \\\\\\\n      ;#matches sequence of \ and \n
+expect \\\\\\\n      ;#matches sequence of \,and \, and n
+expect "*"           ;#matches anything
+expect "\*"          ;#matches anything
+expect "\\*"         ;#matches *
+expect "\\\*"        ;#matches *
+expect "\\\\*"       ;#matches \ followed by anything
+expect "\\\\\*"      ;#matches \ followed by anything
+expect "\\\\\\*"     ;#matches \ followed by *
+expect "\\\["        ;#matches literal [
+
+# a procedure named xy returns the string "n*w"
+expect "[xy]"         ;#matches n followed by anything
+expect "\[xy]"        ;#matches x or y
+expect "\\[xy]"       ;#matches n followed by anything followed by w
+expect "\\\[xy]"      ;#matches [xy]
+expect "\\\\[xy]"     ;#matches \ followed by n followed...
+expect "\\\\\[xy]"    ;#matches sequence of \ and x or y
+
+# 注意匹配的过程，tcl按照顺序匹配，字符的转义等，都发生在这个阶段，而pattern matcher在第二阶段不会有转义了，只是按照字符的实际匹配
+expect "\\\ n"  #在经tcl处理后字符为\,'\n'，所以第二阶段匹配的是'\n',就是第一阶段的结果来
+expect "\\ n"   #在经tcl处理后字符为\ ,'n'，所以第二阶段匹配的是'n'
+expect "\\\*"   #在经过tcl处理后字符为'\*', 因为还有一个\存在，所以第二阶段匹配是严格的*，而不是anything
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">处理超时</h2>
+<pre class="brush:bash">
+expect "hi"
+expect "hi" {}
+expect {
+       "hi"     {send "You said hi\n"}
+       "hello"  {send "Hello yourself\n"}
+       "bye"
+}
+</pre>
+<p>
+只有expect命令中最后一个动作可以省略
+</p>
+
+<ul>
+<li>
+增加错误检查
+<pre class="brush:bash">
+spawn ftp $argv
+set timeout 10
+expect {
+       "connection refused" exit
+       "unknown host" exit
+       "Name"
+}
+send "anonymous\r"
+</pre>
+
+</ul>
+
+<ul>
+<li>
+区分超时和连接成功
+<pre class="brush:bash">
+expect {
+       timeout {puts "timed out",exit }
+       "connection refused" exit
+       "unknown host" exit
+       "Name"
+}
+</pre>
+
+</ul>
+
+<ul>
+<li>
+使用超时取代一切错误处理
+<pre class="brush:bash">
+expect {
+       timeout exit
+       "Name"
+}
+</pre>
+
+</ul>
+
+<p>
+事实上，用来超时代替一切，会增加程序的反应时间，但要处理每种错误，就要在脚本上花费很多时间。通常用超时处理一些模糊的条件，而用一个样式处理大多数的错误，例如ftp的错误都是以4或者5开头，例子：
+</p>
+<pre class="brush:bash">
+expect {
+       timeout {unexpected...}
+       "^\[45]" {error...}
+       "ftp&gt;"
+}
+</pre>
+
+<ul>
+<li>
+在一些超时比较长的程序，可以先用ping判断主机是否存在
+<pre class="brush:bash">
+spawn ping $host
+set timeout 2
+expect "alive" {exit 0} timeout {exit 1}
+</pre>
+
+</ul>
+
+<p>
+可以用<code>echo $?</code>察看脚本的返回值，可以为timeout增加一些内容输出，因为ping有返回的话自会打印结果，如果超时，脚本会在ping返回结果以前将其终止并结束，所以脚本要增加输出内容：
+</p>
+<pre class="brush:bash">
+spawn ping $host
+set timeout 2
+expect "alive" {exit 0} timeout{
+       puts "no answer from $host"
+       exit 1
+}
+</pre>
+
+<ul>
+<li>
+从命令行设置超时时间,用法<code>maxtime 20 prog</code>
+<pre class="brush:bash">
+#!/usr/bin/expect -
+set timeout [lindex $argv 0]
+spawn [lindex $argv 1]
+expect
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">文件结尾处理</h2>
+
+<p>
+在以上maxtime脚本中，如果程序先结束，则脚本随之结束，因为没有要匹配的样式，所以程序如果在超时以前没有结束，脚本也会返回。
+</p>
+<pre class="brush:bash">
+#!/usr/bin/expect -
+set timeout [lindex $argv 0]
+eval spawn [lindex $argv 1 end]
+expect {
+       timeout {puts "took toomuch time"}
+       eof {puts "finished in time"}
+}
+</pre>
+<p>
+<code>maxtime 2 sleep 5</code>和<code>%maxtime 5 sleep 2</code>返回的结果是不一样的，eof和timeout一样，也是一个特殊的匹配样式，表示程序结束。
+</p>
+
+<ul>
+<li>
+spawn的注意
+
+</ul>
+<p>
+用<code>eval spawn [lrange $argv 1 end]</code>来执行spawn命令，因为spawn会将它后面lrange取得的所有参数当作一个命令。
+</p>
+<ul>
+<li>
+eof的注意
+<pre class="brush:bash">
+spawn ping $host
+set timeout 2
+expect "alive" {exit 0} timeout {exit 1}
+</pre>
+
+</ul>
+
+<p>
+如果ping发现主机不存在，返回eof,则expect正常结束，它返回0，正常情况下脚本执行成功才返回0，但是这种情况下主机不存在也会返回0，所以要对eof处理，修订脚本如下：
+</p>
+<pre class="brush:bash">
+spawn ping $host
+set timeout 2
+expect "alive" {exit 0} timeout {exit 1} eof {exit 1}
+</pre>
+
+<p>
+如果对超时和异常结束作相同的处理，可以default样式，它可以匹配所有可能的情况：
+<code>expect "alive" {exit 0} default {exit 1}</code>
+</p>
+
+<h2 id="toc_0.4">close命令</h2>
+
+<p>
+eof不仅可以从process送往expect，也可以从expect送往process,使process退出，在expect脚本中用close显式结束一个进程，通常情况下，process和expect一个结束了，另一个也会随之结束。
+</p>
+
+<h2 id="toc_0.5">忽略eof的程序</h2>
+
+<p>
+一类是运行在Raw模式下的程序，像telnet,这种模式下，不对输入的字符作特殊的翻译，<code>^c</code>,<code>^d</code>都不起特殊的作用，只是普通字符，eof也是，所以没有正常退出的话要手动杀死进程，用kill命令。
+</p>
+
+<p>
+第二类是看到eof就忽略已经接收到的字符马上退出的进程，像ftp,vi，下面的脚本：
+</p>
+
+<pre class="brush:bash">
+spawn ftp...
+#assume username and password are accepted here
+expect "ftp&gt;" {send "get file1\r"}
+expect "ftp&gt;" {send "get file2\r"}
+expect "ftp&gt;" {send "get file3\r"}
+</pre>
+
+<p>
+上面的脚本只能接收到两个文件，因为在收到第三个文件的请求时也收到eof，因为脚本执行完毕，0所以退出，解决办法是在行末加一句epect命令，使脚本不能提前结束。
+</p>
+
+<pre class="brush:bash">
+spawn vi file
+send "ifoo\033:wq\r"
+</pre>
+
+<p>
+错误，文件没有内容，正确的如下：
+</p>
+
+<pre class="brush:bash">
+spawn vi file
+send "ifoo\033:wq\r"
+expect
+</pre>
+
+<h2 id="toc_0.6">wait命令</h2>
+
+<p>
+wait 等待一个进程死亡，-noflag用来避免时延。
+</p>
+ 
+<h2 id="toc_0.7">expect重要的命令</h2>
+<h3 id="toc_0.7.1">send命令</h3>
+<pre class="brush:bash">
+send "hello world"
+send "hello world\n"
+expect speak        #speak为一脚本
+</pre>
+
+<h3 id="toc_0.7.2">expect命令</h3>
+<pre class="brush:bash">
+expect "hi\n"
+send "hello there!\n"
+expect_out(0,string)  # 用来保存匹配的字符，匹配字符和它以前的字符保存在expect_out(buffer)
+expect "hi\n"
+send "you typed &lt;$expect_out(buffer)&gt;"
+send "but I only expected &lt;$expect_out(0,string)&gt;"
+</pre>
+
+<h3 id="toc_0.7.3">定位</h3>
+
+<ul>
+<li>
+<code>^string</code>:只匹配输入的开始部分，像^hi匹配hiccup但是不匹配sushi
+
+<li>
+<code>string\(</code>:只匹配输入的结束部分，像<code>hi\)</code>匹配sushi但是不匹配hiccup，而<code>^hi$</code>只匹配hi
+
+<li>
+expect的输入以自己接受到的字符为准，并不考虑行界，如果没有定位符，它会匹配最早遇到的合适字符
+
+<li>
+不匹配的情况，例子说明：
+<pre class="brush:bash">
+expect "hi"
+send "$expect(0,string) $expect_out(buffer)"
+</pre>
+
+</ul>
+<p>
+此时输入philosophic,输出为hi phi
+</p>
+
+<p>
+如果再次执行这两句命令，输出为hi losophi
+</p>
+
+<p>
+input buffer用来保存expect取得的输入字符串，第一匹配结束后，<code>expect_out(0,string)</code>为<code>hi</code>,<code>expect_out(buffer)</code>为<code>phi</code>,下一次的匹配从<code>losophi</code>开始，所以上面的两个值分别为<code>hi</code>,<code>losophi</code>,此时input buffer里为<code>c\n</code>，因为不能够匹配<code>hi</code>,所以如果进行第三次匹配，会超时，而上面的<code>expect_out(0,string) expect_out(buffer)</code>与第二次相同，所以第三次超时后会输出<code>hi losophi</code>。
+</p>
+
+<ul>
+<li>
+超时值可以设置:<code>set timeout INTERGER</code>
+
+</ul>
+<p>
+INTERGER为一整数值，如果为-1表示永久等待，如果为0表示立即返回
+</p>
+<ul>
+<li>
+多种样式匹配
+<pre class="brush:bash">
+expect "hi"    { send "You said hi\n" } \
+       "hello" { send "Hello yourself\n" } \
+       "bye"   { send "That was unexpected\n" }
+</pre>
+
+</ul>
+<p>
+命令会对hi,hello,bye同时进行匹配
+注意书写格式，<code>expect "hi" send "You said hi\n"</code>#错误，<code>You said hi</code>会被解释成一个命令
+</p>
+
+<ul>
+<li>
+可用的其它格式
+<pre class="brush:bash">
+expect {
+       "hi"    { send "You said hi\n"}
+       "hello" { send "Hello yourself\n"}
+       "bye"   { send "That was unexpected\n"}
+}
+
+expect "hi" {
+       send "You said hi\n"
+} "hello" {
+       send "Hello yourself\n"
+} "bye" {
+       send "That was unexpected\n"
+}
+
+expect {
+       "hi" {
+              send "You said hi\n"
+       }
+       "hello" {
+              send "Hello yourself\n"
+       }
+       "bye" {
+              send "That was unexpected\n"
+       }
+}
+</pre>
+
+</ul>
+
+<p>
+<code>expect "exit" {exit 1} "quit" abort</code>为写在一行的格式，匹配命令带参数的话一定要用大括号括起来。
+</p>
+
+<ul>
+<li>
+例子:Timed Reads
+
+</ul>
+<p>
+<code>timed-read 60</code>作用是等待60，接收此段时间内用户的输入。
+</p>
+<pre class="brush:bash">
+expect {
+#!/usr/bin/expect -
+set timeout $argv
+expect "\n" {
+     send [string trimright "$expect_out(buffer)" "\n"]
+}
+</pre>
+
+<h3 id="toc_0.7.4">spawn命令</h3>
+
+<p>
+spawn命令用于启动一个进程
+</p>
+
+<p>
+例子ftp-rfc
+</p>
+<pre class="brush:bash">
+#!/usr/local/bin/expect -
+#retrieve an RFC (or the index) from uunet via anon ftp
+if { [llength $argv]== 0} {
+       puts "usage: ftp-rfc {-index|#}"
+       exit 1
+}
+set timeout -1
+spawn ftp ftp.uu.net
+expect "Name"
+send "anonymous\r"
+expect "Password:"
+send don@libes.com\r
+expect "ftp&gt; "
+send "cd inet/rfc\r"
+expect "ftp&gt; "
+send "binary\r"
+expect "ftp&gt; "
+send "get rfc$argv.z\r"
+expect "ftp&gt; "
+exec uncompress rfc$argv.z
+</pre>
+
+<p>
+例子中binary的命令在于让ftp传文件时不要作任何转换，注意结尾是\r，不是\n,视为手动输入和机器输入的差别?? 最后一句的作用是解压缩。
+</p>
+
+<h2 id="toc_0.8">interact命令</h2>
+
+<p>
+interact命令用于脚本执行完简单的命令后人手动介入,只在所属的spawn进程空间有效
+</p>
+
+<p>
+例子aftp
+</p>
+<pre class="brush:bash">
+#!/usr/bin/expect -
+spawn ftp $argv
+expect "Name"
+send "anonymous\r"
+expect "Password:"
+send don@libes.com\r
+interact
+可以用send "$env(USER)@libes.com\r"
+proc domainname {} {
+       set file [open /etc/resolv.conf r]
+       while { [gets $file buf] !=-1} {
+              if {[scan $buf "domain %s" name]==1} {
+                     close $file
+                     return $name
+              }
+       }
+       close $file
+       error "no domain declaration in /etc/resolv.conf"
+}
+send "$env(USER)@[domainname]\r"
+</pre>
+
+<h2 id="toc_0.9">其它</h2>
+<ul>
+<li>
+与shell结合例: <a href="http://ihipop.info/2010/12/1949.html">http://ihipop.info/2010/12/1949.html</a>
+
+<li>
+另例: <a href="http://forum.ubuntu.org.cn/viewtopic.php?f=21&amp;t=311400">http://forum.ubuntu.org.cn/viewtopic.php?f=21&amp;t=311400</a>
+
+</ul>
+
+<h2 id="toc_0.10">expect的几种格式</h2>
+
+<ul>
+<li>
+原文：<a href="http://tsecer.blog.163.com/blog/static/150181720121010110260/">http://tsecer.blog.163.com/blog/static/150181720121010110260/</a>
+
+</ul>
+
+<ul>
+<li>
+格式1：
+<pre>
+expect {
+pattern1 {
+    command2 }
+pattern2 {
+    command2 }
+}
+</pre>
+
+</ul>
+
+<ul>
+<li>
+格式2：
+<pre>
+expect pattern command
+expect pattern2 command2
+</pre>
+
+</ul>
+
+<ul>
+<li>
+格式3：
+<pre>
+expect pattern
+</pre>
+
+</ul>
+
+<p>
+其中的第一种情况和情况二是两种完全不同的语义。
+</p>
+
+<p>
+对于第一种情况来说，它是一个多选一的过程，对于特定任务的输出，只要其中的任何一个pattern能够匹配，那么这个expect就算是完成了一次匹配。
+</p>
+
+<p>
+第二种情况则表示说进行若干次各自的匹配，所有的匹配被依次满足了之后才算整个语句完成。这一点就和前面说的tcl的命令解析方式有关了，因为第一种格式虽然占用的行数多，但是它是一个单独的expect命令，所以expect可以一次性将所有情况解析出来，然后组成一个大的并行分支；对于第二种，expect看到的只是多条单独的expect匹配，根据每个expect必须又一次匹配的原则，需要有多次匹配。总之简单的说，一个是并行关系，一个串行关系。
+</p>
+
+<p>
+第三种是expect的一种特殊用法，虽然很少有人这么做，但是如果真的有人这么你也不能说错。它的意义同样是完成一次匹配，并且匹配之后不执行任何动作，同样是只要不匹配就继续执行。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

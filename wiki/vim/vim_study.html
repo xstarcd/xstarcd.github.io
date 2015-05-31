@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>vim使用技巧收集</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>vim使用技巧收集</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">vim匹配删除</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="vim_indent.html">vim缩进设置</a>
+
+<li>
+<a href="vimsuper.html">vim不易发现的强大功能</a> 
+
+<li>
+<a href="vimcopy.html">vim复制粘贴</a>
+
+<li>
+<a href="vim_tab.html">vim标签页</a>
+
+<li>
+<a href="vim_marks.html">vim标记</a>
+
+<li>
+<a href="vim_replace_encodeing.html">vim字符串替换及编码小技巧</a>
+
+<li>
+折叠：zf,zc,zr,zM
+
+<li>
+窗口：
+
+<ul>
+<li>
+split,vsplit
+
+<li>
+res 50, vertical res 50
+
+</ul>
+<li>
+curl下载到vim编辑
+<pre class="brush: bash">
+curl -k https://raw.github.com/lilydjwg/dotvim/master/vimrc | vim -R -c 'setf vim' -
+</pre>
+
+<li>
+设置光标行
+<pre>
+:set cursorline
+:highlight CursorLine guibg=lightblue ctermbg=lightgray
+:set cursorcolumn #设置光标列，仅gvim/gui下可用
+</pre>
+
+<li>
+NERD tree: Vim 的树状文件浏览插件:<a href="http://www.vim.org/scripts/script.php?script_id=1658">http://www.vim.org/scripts/script.php?script_id=1658</a>
+<pre>
+Unzip the archive into your ~/.vim directory.
+That should put NERD_tree.vim in ~/.vim/plugin and NERD_tree.txt in ~/.vim/doc.
+
+Run :helptags.
+Go :help NERD_tree.txt for the help page. 
+:NERDtree #打开目录
+</pre>
+
+<li>
+vim使用XXD编辑二进制文件
+
+<ul>
+<li>
+一个真正的二进制编辑器用两种方式来显示文本: 二进制和十六进制格式。你可以在 Vim 里通过转换程序 “xxd” 来达到这效果。该程序是随 Vim 一起发布的。
+
+<li>
+首先以二进制方式编辑这个文件:<code>vim -b datafile</code>
+
+<li>
+现在用 xxd 把这个文件转换成十六进制:<code>:%!xxd</code>
+
+<li>
+文本看起来像这样:
+<pre>
+0000000: 1f8b 0808 39d7 173b 0203 7474 002b 4e49  ....9..;..tt.+NI 
+0000010: 4b2c 8660 eb9c ecac c462 eb94 345e 2e30  K,.`.....b..4^.0 
+0000020: 373b 2731 0b22 0ca6 c1a2 d669 1035 39d9  7;'1.".....i.59. 
+</pre>
+
+<li>
+现在你可以随心所欲地阅读和编辑这些文本了。 Vim 把这些信息当作普通文本来对待。修改了十六进制部分并不导致可显示字符部分的改变，反之亦然。
+
+<li>
+最后，用下面的命令把它转换回来:<code>:%!xxd -r</code>
+
+<li>
+只有十六进制部分的修改才会被采用。右边可显示文本部分的修改忽略不计。
+
+</ul>
+</ul>
+
+
+<h2 id="toc_0.1">vim匹配删除</h2>
+<p>
+VIM的匹配删除主要是在一些配置文件中，删除空行，注释行(#号开头等)，删除含有特定字符的行等等。
+</p>
+<pre class="brush:bash">
+# 删除含有“#”开头的行
+    :% g/^#/d 
+# 删除空行
+    :% g/^$/d 
+# 只保留匹配内容行而删除其他行
+    :v/pattern/d 
+# 对每行只保留匹配内容而删除这一行中的其它内容
+    :%s/^.*\(pattern\).*$/\1/g 
+# 删除包含特定字符串的行
+    :g/pattern/d 
+# 删除包含特定字符串的行,每次删除前都提示
+    :%s/^.*pattern.*\n//c 
+# 处理字符串: /123/456/789/109/example.txt, 怎么删除到最后一个/,然后得到example.txt?
+    0dte 
+    # 说明：
+    # 0      到行首
+    # dte    删到第一个e
+# 处理字符串: /123/456/789/ef/109/example.txt, 怎么删除到最后一个/,然后得到example.txt?
+    $T/d0
+    # 说明：
+    # $     到行尾
+    # T/    从后往前搜到第一个/
+    #  d0    删到行首
+    d/ex 然后回车
+    # 说明：
+    # d     删除
+    # /ex   搜到第一个ex 
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

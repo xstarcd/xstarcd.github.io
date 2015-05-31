@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Hadoop Backup Node</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Hadoop Backup Node</a>
+<ul>
+<li><a href="#toc_1.1">元数据</a>
+<li><a href="#toc_1.2">Backup Node的配置与启动</a>
+<li><a href="#toc_1.3">其他元数据备份方案</a>
+<li><a href="#toc_1.4">一次Namenode恢复实践</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">Hadoop Backup Node</h1>
+
+<p>
+原文：<a href="http://share.blog.51cto.com/278008/1033994">http://share.blog.51cto.com/278008/1033994</a>
+</p>
+
+<p>
+li_qinshan 2012-10-22 20:19:01
+</p>
+
+<h2 id="toc_1.1">元数据</h2>
+
+<p>
+要了解Hadoop Backup Node，要从Namenode的元数据说起。
+</p>
+
+<p>
+我们都知道Namenode的元数据非常重要，如果元数据损坏，所有存储在datanode中的数据都读不出来了。另外，如果Namenode的元数据比较大，那么集群的启动速度非常慢。为了解决这两个问题，Hadoop弄了一个Secondary Namenode。
+</p>
+
+<ul>
+<li>
+Namenode的元数据
+
+</ul>
+
+<p>
+Hadoop Namenode元数据主要是两个文件：edits和fsimage。
+</p>
+
+<p>
+fsimage是HDFS的最新状态（截止到fsimage文件创建时间的最新状态）文件；
+</p>
+
+<p>
+edits是自fsimage创建后的namespace操作日志。
+</p>
+
+<p>
+Namenode每次启动的时候，都要合并两个文件，按照edits的记录，把fsimage文件更新到最新。
+</p>
+
+<p>
+如果是一个大的、比较繁忙的集群，它的edits文件增长会非常快，这样下次Namenode重启的过程会非常慢，因为它要进行大量的操作。
+</p>
+
+<p>
+为了加速启动过程，同时为了元数据的安全考虑，Hadoop搞了一个Secondary Namenode，它一般是一台独立的机器，内存大小与Namenode服务器相同。
+</p>
+
+<ul>
+<li>
+Scondary Namenode
+
+</ul>
+
+<ol>
+<li>
+Secondary Namenode定期地从Namenode上获取元数据。当它准备获取元数据的时候，就通知Namenode暂停写入edits文件。
+
+<li>
+Namenode收到请求后停止写入edits文件，之后的log记录写入一个名为edits.new的文件。
+
+<li>
+Scondary Namenode获取到元数据以后，把edits文件和fsimage文件在本机进行合并，创建出一个新的fsimage文件，然后把新的fsimage文件发送回Namenode。
+
+<li>
+Namenode收到Secondary Namenode发回的fsimage后，就拿它覆盖掉原来的fsimage文件，并删除edits文件，把edits.new重命名为edits。
+
+</ol>
+
+<p>
+通过这样一番操作，就避免了Namenode的edits日志的无限增长，加速Namenode的启动过程。
+</p>
+
+<p>
+但是Scondary Namenode有其自身的弱点，如checkpoint数据较旧，数据不一致等，新版本的hadoop已经把它放弃了，转而使用更加高效的Backup Node。
+</p>
+
+<ul>
+<li>
+Backup Node
+
+</ul>
+
+<ol>
+<li>
+Backup Node在内存中维护了一份从Namenode同步过来的fsimage，同时它还从namenode接收edits文件的日志流，并把它们持久化硬盘。
+
+<li>
+Backup Node把收到的这些edits文件和内存中的fsimage文件进行合并，创建一份元数据备份。
+
+<li>
+Backup Node高效的秘密就在这儿，它不需要从Namenode下载fsimage和edit，把内存中的元数据持久化到磁盘然后进行合并即可。
+
+</ol>
+
+<p>
+目前，hadoop集群只支持一个Backup Node，如果Backup Node出了问题，Hadoop元数据的备份机制也就失效了，所以hadoop计划在未来能支持多个Backup Node。
+</p>
+
+<h2 id="toc_1.2">Backup Node的配置与启动</h2>
+
+<ul>
+<li>
+有关的配置项
+
+</ul>
+
+<p>
+需要注意的是，Namenode和Backup Node都要配置这些选项：
+</p>
+
+<ol>
+<li>
+hdfs-site.xml：dfs.backup.address、dfs.backup.http.address
+
+<li>
+core-site.xml：fs.checkpoint.period、fs.checkpoint.size、fs.checkpoint.dir、fs.checkpoint.edits.dir
+
+</ol>
+
+<ul>
+<li>
+启动
+
+</ul>
+
+<p>
+在dfs.backup.address配置的节点上，运行
+</p>
+<pre>
+bin/hdfs namenode -checkpoint #XStar:执行文件应是bin/hadoop？
+</pre>
+
+<p>
+但是非常扯淡的是，虽然hadoop-1.0.3的官方hdfs用户文档中说放弃了Secondary Namenode，建议使用Backup Node，但在default配置文件中找不到关于backupnode的相关配置，反而secondary namenode的配置还保留着。
+</p>
+
+<p>
+到网上搜了一下，好像hadoop 1.0.3中并没有启用Backup Node，实际的原因是，hadoop 1.0.x完全是Apache的恶搞，Apache把hadoop 0.20.205直接命名成了hadoop 1.0！这么坑爹的事情都有！而Backup Node是Hadoop 0.21、0.22（0.23，它是0.22的超集）版本里的东西，这么多hadoop版本，功能都还不一样！
+</p>
+<pre>
+Download
+
+    1.0.X - current stable version, 1.0 release
+    1.1.X - current beta version, 1.1 release
+    2.X.X - current alpha version
+    0.23.X - simmilar to 2.X.X but missing NN HA.
+    0.22.X - does not include security
+    0.20.203.X - old legacy stable version
+    0.20.X - old legacy version
+</pre>
+
+<p>
+混乱的Apache Hadoop版本。
+</p>
+
+<ul>
+<li>
+Namenode元数据恢复流程
+
+</ul>
+
+<ol>
+<li>
+启动Backup Node
+
+<li>
+在Namenode上清空dfs.name.dir下的文件(清除之前所有的元数据！！！)
+
+<li>
+在Namenode上执行命令：bin/hadoop namenode -importCheckpoint
+
+</ol>
+
+<h2 id="toc_1.3">其他元数据备份方案</h2>
+
+<p>
+hadoop还有哪些手段来保证namenode元数据的安全？
+</p>
+
+<ul>
+<li>
+对dfs.name.dir配置多个路径，保存一份元数据到远程主机。这样，加上Backup Node上的元数据，我们就有了三份元数据。我们的配置：
+<pre>
+    &lt;property&gt; 
+    &lt;name&gt;dfs.name.dir&lt;/name&gt; 
+    &lt;value&gt;/usr/local/hadoop/name,/home/hd_nn_remote_backup&lt;/value&gt;
+    &lt;/property&gt; 
+</pre>
+
+</ul>
+
+<p>
+需要注意的是，如果配置了多个路径，在恢复Namenode元数据时，要同时清空这些目录下的文件。
+</p>
+
+<p>
+/home/hd_nn_remote_backup是一个远程主机目录，通过NFS挂载到本地；
+</p>
+
+<ul>
+<li>
+Namenode热备。目前的热备方案有Facebook的Avatar、DRBD等。 
+
+</ul>
+ 
+<h2 id="toc_1.4">一次Namenode恢复实践</h2>
+
+<p>
+我们的环境是RHEL 5.6，Apache Hadoop 1.0.3。
+</p>
+
+<p>
+由于未采用Backup Node，我们仍然使用的是Secondary Namenode的配置，所以跟Backup Node的数据恢复有点不太一样。
+</p>
+
+<p>
+上周五，由于服务器在重启时忘记停掉Hadoop集群，导致了Namenode元数据损坏，所以进行了一次恢复操作。遗憾的是，由于Secondary Namenode获取Namenode元数据时出了问题，而我们没有及时注意到这个情况，导致恢复出来的数据丢失了几天的量。
+</p>
+
+<p>
+这里提醒大家一下，到Namenode机器的dfs.name.dir目录下看一看，如果Hadoop把大量的日志记录在edits.new，而不是edits文件，那你就要小心了，可能Secondary Namenode那边出了状况，要及时查看日志，解决问题。一般地，如果未配置dfs.secondary.address和dfs.secondary.http.address，会导致这个问题。
+</p>
+
+<pre>
+XStar: 在hadoop-1.0.4的所有文件中都没搜到dfs.secondary.address和dfs.secondary.http.address选项。
+</pre>
+
+<p>
+恢复过程比较简，大略如下：
+</p>
+
+<ol>
+<li>
+删除Namenode上的dfs.name.dir目录下所有的文件，如果配置了多个目录，要全部清空
+
+<li>
+复制Secondary Namenode上的fs.checkpoint.dir目录下的所有文件到Namenode的fs.checkpoint.dir目录下
+
+<li>
+在Namenode上执行bin/hadoop namenode -importCheckpoint
+
+<li>
+ctrl + c终止会话，删除NN上的scondary目录下的文件
+
+<li>
+正式启动Namenode：bin/hadoop-daemon.sh start namenode
+
+<li>
+bin/hadoop dfsadmin -safemode leave
+
+</ol>
+ 
+<p>
+上面的方法分几个步骤，很啰嗦，最简单的方法是：
+</p>
+
+<p>
+把Secondary Namenode上的fs.checkpoint.dir目录下的current下的文件复制到Namenode的dfs.name.dir目录下的current目录中，然后启动namenode！
+</p>
+
+<p>
+上面两个恢复的方法，我都是亲自试过，都是可以的。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

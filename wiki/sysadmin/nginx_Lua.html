@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Nginx HttpLuaModule</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Nginx HttpLuaModule</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">强制搜索引擎只索引mixlr.com</a>
+<li><a href="#toc_0.2">根据程序逻辑设置响应头</a>
+<li><a href="#toc_0.3">删除jQuery JSONP请求的时间戳参数</a>
+<li><a href="#toc_0.4">把后端的慢请求日志记录到Nginx的错误日志</a>
+<li><a href="#toc_0.5">基于Redis的实时IP封禁</a>
+<li><a href="#toc_0.6">使用Nginx输出CSRF(form_authenticity_token)</a>
+<li><a href="#toc_0.7">版权说明</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="http://wiki.nginx.org/HttpLuaModule">http://wiki.nginx.org/HttpLuaModule</a>
+
+<li>
+<a href="http://openresty.org/cn/index.html">http://openresty.org/cn/index.html</a>
+
+<li>
+Nginx_Lua脚本实例:<a href="http://www.ttlsa.com/nginx/nginx-and-lua/">http://www.ttlsa.com/nginx/nginx-and-lua/</a>
+
+</ul>
+
+<p>
+这几个月里，我们逐步把Lua集成到Mixlr的前端Nginx配置中。
+Lua是一个可以嵌入到Nginx配置文件中的动态脚本语言，从而可以在Nginx请求处理的任何阶段执行各种Lua代码。刚开始我们只是用Lua 把请求路由到后端服务器，但是它对我们架构的作用超出了我们的预期。下面就讲讲我们所做的工作。
+</p>
+
+<h2 id="toc_0.1">强制搜索引擎只索引mixlr.com</h2>
+
+<p>
+Google把子域名当作完全独立的网站，我们不希望爬虫抓取子域名的页面，降低我们的Page rank。
+</p>
+<pre class="brush:bash">
+location /robots.txt {
+ rewrite_by_lua '
+ if ngx.var.http_host ~= "mixlr.com" then
+ return ngx.exec("/robots_disallow.txt");
+ end
+ ';
+}
+</pre>
+<p>
+如果对robots.txt的请求不是mixlr.com域名的话，则内部重写到robots_diallow.txt，虽然标准的重写指令也可以实现这个需求，但是 Lua的实现更容易理解和维护。
+</p>
+
+<h2 id="toc_0.2">根据程序逻辑设置响应头</h2>
+
+<p>
+Lua提供了比Nginx默认配置规则更加灵活的设置方式。 在下面的例子中，我们要保证正确设置响应头，这样浏览器如果发送了指定请求头后，就可以无限期缓存静态文件，是的用户只需下载一次即可。
+</p>
+
+<p>
+这个重写规则使得任何静态文件，如果请求参数中包含时间戳值，那么就设置相应的Expires和Cache-Control响应头。
+</p>
+<pre class="brush:bash">
+location / {
+  header_filter_by_lua '
+    if ngx.var.query_string and ngx.re.match( ngx.var.query_string, "^([0-9]{10})$" ) then
+      ngx.header["Expires"] = ngx.http_time( ngx.time() + 31536000 );
+      ngx.header["Cache-Control"] = "max-age=31536000";
+    end
+  ';
+ 
+  try_files $uri @dynamic;}
+</pre>
+
+<h2 id="toc_0.3">删除jQuery JSONP请求的时间戳参数</h2>
+
+<p>
+很多外部客户端请求JSONP接口时，都会包含一个时间戳类似的参数，从而导致Nginx proxy缓存无法命中（因为无法忽略指定的HTTP参数）。下面的规则删除了时间戳参数，使得Nginx可以缓存upstream server的响应内容，减轻后端服务器的负载。
+</p>
+
+<pre class="brush:bash">
+location / {
+  rewrite_by_lua '
+    if ngx.var.args ~= nil then
+      -- /some_request?_=1346491660 becomes /some_request
+      local fixed_args, count = ngx.re.sub( ngx.var.args, "&amp;?_=[0-9]+", "" );
+      if count &gt; 0 then
+        return ngx.exec(ngx.var.uri, fixed_args);
+      end
+    end
+  ';}
+</pre>
+
+<h2 id="toc_0.4">把后端的慢请求日志记录到Nginx的错误日志</h2>
+
+<p>
+如果后端请求响应很慢，可以把它记录到Nginx的错误日志，以备后续追查。
+</p>
+
+<pre class="brush:bash">
+location / {
+  log_by_lua '
+    if tonumber(ngx.var.upstream_response_time) &gt;= 1 then
+      ngx.log(ngx.WARN, "[SLOW] Ngx upstream response time: " .. ngx.var.upstream_response_time .. "s from " .. ngx.var.upstream_addr);
+    end
+  ';}
+</pre>
+
+<h2 id="toc_0.5">基于Redis的实时IP封禁</h2>
+
+<p>
+某些情况下，需要阻止流氓爬虫的抓取，这可以通过专门的封禁设备去做，但是通过Lua，也可以实现简单版本的封禁。
+</p>
+
+<pre class="brush:bash">
+lua_shared_dict banned_ips 1m;
+ 
+location / {
+  access_by_lua '
+    local banned_ips = ngx.shared.banned_ips;
+    local updated_at = banned_ips:get("updated_at");
+ 
+    -- only update banned_ips from Redis once every ten seconds:
+    if updated_at == nil or updated_at &lt; ( ngx.now() - 10 ) then
+      local redis = require "resty.redis";
+      local red = redis:new();
+      red:set_timeout(200);
+ 
+      local ok, err = red:connect("your-redis-hostname", 6379);
+      if not ok then
+        ngx.log(ngx.WARN, "Redis connection error retrieving banned_ips: " .. err);
+      else
+        local updated_banned_ips, err = red:smembers("banned_ips");
+        if err then
+          ngx.log(ngx.WARN, "Redis read error retrieving banned_ips: " .. err);
+        else
+          -- replace the locally stored banned_ips with the updated values:
+          banned_ips:flush_all();
+          for index, banned_ip in ipairs(updated_banned_ips) do
+            banned_ips:set(banned_ip, true);
+          end
+          banned_ips:set("updated_at", ngx.now());
+        end
+      end
+    end
+ 
+    if banned_ips:get(ngx.var.remote_addr) then
+      ngx.log(ngx.WARN, "Banned IP detected and refused access: " .. ngx.var.remote_addr);
+      return ngx.exit(ngx.HTTP_FORBIDDEN);
+    end
+  ';}
+</pre>
+<p>
+现在就可以阻止特定IP的访问：
+</p>
+<pre>
+ruby&gt; $redis.sadd("banned_ips", "200.1.35.4")
+</pre>
+<p>
+Nginx进程每隔10秒从Redis获取一次最新的禁止IP名单。需要注意的是，如果架构中使用了Haproxy这样类似的负载均衡服务器时， 需要把$remote_addr设置为正确的远端IP地址。
+</p>
+
+<p>
+这个方法还可以用于HTTP User-Agent字段的检查，要求满足指定条件。
+</p>
+
+<h2 id="toc_0.6">使用Nginx输出CSRF(form_authenticity_token)</h2>
+
+<p>
+Mixlr大量使用页面缓存，由此引入的一个问题是如何给每个页面输出会话级别的CSRF token。我们通过Nginx的子请求，从upstream web server 获取token，然后利用Nginx的SSI(server-side include)功能输出到页面中。这样既解决了CSRF攻击问题，也保证了cache能被正常利用。
+</p>
+
+<pre class="brush:bash">
+location /csrf_token_endpoint {
+  internal;
+    
+  include /opt/nginx/conf/proxy.conf;
+  proxy_pass "http://upstream";}
+ 
+location @dynamic {
+  ssi on;
+  set $csrf_token '';
+ 
+  rewrite_by_lua '
+    -- Using a subrequest, we our upstream servers for the CSRF token for this session:
+    local csrf_capture = ngx.location.capture("/csrf_token_endpoint");
+    if csrf_capture.status == 200 then
+      ngx.var.csrf_token = csrf_capture.body;
+ 
+      -- if this is a new session, ensure it sticks by passing through the new session_id
+      -- to both the subsequent upstream request, and the response:
+      if not ngx.var.cookie_session then
+        local match = ngx.re.match(csrf_capture.header["Set-Cookie"], "session=([a-zA-Z0-9_+=/+]+);");
+        if match then
+          ngx.req.set_header("Cookie", "session=" .. match[1]);
+          ngx.header["Set-Cookie"] = csrf_capture.header["Set-Cookie"];
+        end
+      end
+    else
+      ngx.log(ngx.WARN, "No CSRF token returned from upstream, ignoring.");
+    end
+  ';
+ 
+  try_files /maintenance.html /rails_cache$uri @thin;}
+</pre>
+
+<ul>
+<li>
+CSRF token生成 app/metal/csrf_token_endpoint.rb:
+<pre class="brush:rb">
+class CsrfTokenEndpoint
+  def self.call(env)
+    if env["PATH_INFO"] =~ /^\/csrf_token_endpoint/
+      session = env["rack.session"] || {}
+ 
+      token = session[:_csrf_token]
+      if token.nil?
+        token = SecureRandom.base64(32)
+        session[:_csrf_token] = token
+      end
+ 
+      [ 200, { "Content-Type" =&gt; "text/plain" }, [ token ] ]
+    else     
+      [404, {"Content-Type" =&gt; "text/html"}, ["Not Found"]]
+    end
+  endend
+</pre>
+
+</ul>
+<p>
+我们的模版文件示例:
+</p>
+<pre class="brush:html">
+&lt;meta name="csrf-param" value="authenticity_token"/&gt;
+&lt;meta name="csrf-token" value="&lt;!–# echo var="csrf_token" default="" encoding="none" –&gt;"/&gt;
+Again you could make use of lua_shared_dict to store in memory the CSRF token for a particular session.
+This minimises the number of trips made to /csrf_token_endpoint.
+</pre>
+
+<h2 id="toc_0.7">版权说明</h2>
+<pre>
+原文链接：http://devblog.mixlr.com/2012/09/01/nginx-lua/
+文章标题: Nginx 与 Lua
+本文地址: http://www.ttlsa.com/nginx/nginx-and-lua/
+除非注明，博客文章均为"运维生存时间"原创，转载请标明本文地址
+交流群：①群39514058（满）、②群6690706（满）、③群168085569（新）
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

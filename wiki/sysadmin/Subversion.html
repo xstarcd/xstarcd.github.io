@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Subversion</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Subversion</a>
+<ul>
+<li><a href="#toc_1.1">用 Apache 和 Subversion 搭建安全的版本控制环境</a>
+<li><a href="#toc_1.2">SVN dump/load迁移</a>
+<li><a href="#toc_1.3">SVN强制写日志</a>
+</ul>
+<li><a href="#toc_2">SVN Apache AD Review</a>
+<ul>
+<li><a href="#toc_2.1">软件安装</a>
+<li><a href="#toc_2.2">httpd配置</a>
+<li><a href="#toc_2.3">Review hook</a>
+<li><a href="#toc_2.4">SVNrsync</a>
+</ul>
+<li><a href="#toc_3">tips</a>
+</ul>
+</div>
+
+<h1 id="toc_1">Subversion</h1>
+
+<ul>
+<li>
+参考文档：
+
+<ul>
+<li>
+svnbook: <a href="http://svnbook.red-bean.com/">http://svnbook.red-bean.com/</a>
+
+<li>
+CentOS howto SVN: <a href="http://wiki.centos.org/zh/HowTos/Subversion">http://wiki.centos.org/zh/HowTos/Subversion</a>
+
+</ul>
+</ul>
+
+
+<h2 id="toc_1.1"><a href="svn_apache.html">用 Apache 和 Subversion 搭建安全的版本控制环境</a></h2>
+
+<h2 id="toc_1.2"><a href="svn_dump_move.html">SVN dump/load迁移</a></h2>
+
+<h2 id="toc_1.3"><a href="SVN_hook_log.html">SVN强制写日志</a></h2>
+
+<p>
+== <a href="svn_branch_tag_command.html">svn命令行创建和删除分支和tags</a>
+</p>
+
+<h1 id="toc_2">SVN Apache AD Review</h1>
+
+<h2 id="toc_2.1">软件安装</h2>
+
+<pre class="brush:bash">
+yum install httpd httpd-devel subversion subversion-devel mod_dav_svn mod_ssl
+#mod_auth_mysql 
+
+groupadd svn
+useradd svn -g svn
+passwd -l svn
+</pre>
+
+<h2 id="toc_2.2">httpd配置</h2>
+
+<ul>
+<li>
+subversion.conf
+<pre class="brush:bash">
+LoadModule dav_svn_module     modules/mod_dav_svn.so
+LoadModule authz_svn_module   modules/mod_authz_svn.so
+
+&lt;Location /repos&gt;
+   DAV svn
+   SVNPath /data/svn/repos
+   #SVNParentPath/opt/repository/
+   AuthzSVNAccessFile /data/svn/repos/conf/authz
+
+   # Limit write permission to list of valid users.
+   # &lt;LimitExcept GET PROPFIND OPTIONS REPORT&gt;
+      # Require SSL connection for password protection.
+      SSLRequireSSL
+
+      #Authentication
+      AuthType Basic
+      AuthBasicProvider ldap
+      SVNListParentPath On
+      AuthzLDAPAuthoritative off
+      AuthLDAPURL "ldap://192.168.101.51:389/dc=tima,dc=local?sAMAccountName?sub?(objectClass=*)"
+      AuthLDAPBindDN "CN=ldap,OU=Timauser,DC=tima,DC=local"
+      AuthLDAPBindPassword xxxxxx
+
+      AuthName "TimaNetworks Subversion Authorization Realm"
+      # AuthUserFile /data/svn/repos/conf/passwd
+      Require valid-user
+   #&lt;/LimitExcept&gt;
+&lt;/Location&gt;
+
+</pre>
+
+</ul>
+
+<ul>
+<li>
+ssl.conf
+<pre class="brush:bash">
+LoadModule ssl_module modules/mod_ssl.so
+
+Listen 8443
+AddType application/x-x509-ca-cert .crt
+AddType application/x-pkcs7-crl    .crl
+
+SSLPassPhraseDialog     builtin
+SSLSessionCache         shmcb:/var/cache/mod_ssl/scache(512000)
+SSLSessionCacheTimeout  300
+SSLMutex default
+SSLRandomSeed startup file:/dev/urandom  256
+SSLRandomSeed connect builtin
+SSLCryptoDevice builtin
+
+&lt;VirtualHost _default_:8443&gt;
+    ServerName dev.timanetworks.com:8443
+    ErrorLog logs/ssl_error_log
+    TransferLog logs/ssl_access_log
+    LogLevel warn
+    SSLEngine on
+    SSLProtocol all -SSLv2
+    SSLCipherSuite ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW
+    SSLCertificateFile /etc/pki/tls/certs/localhost.crt
+    SSLCertificateKeyFile /etc/pki/tls/private/localhost.key
+    &lt;Files ~ "\.(cgi|shtml|phtml|php3?)$"&gt;
+        SSLOptions +StdEnvVars
+    &lt;/Files&gt;
+    &lt;Directory "/var/www/cgi-bin"&gt;
+        SSLOptions +StdEnvVars
+    &lt;/Directory&gt;
+    SetEnvIf User-Agent ".*MSIE.*" \
+         nokeepalive ssl-unclean-shutdown \
+         downgrade-1.0 force-response-1.0
+    CustomLog logs/ssl_request_log \
+         "%t %h %{SSL_PROTOCOL}x %{SSL_CIPHER}x \"%r\" %b"
+&lt;/VirtualHost&gt; 
+</pre>
+
+</ul>
+
+<h2 id="toc_2.3">Review hook</h2>
+
+<p>
+...
+</p>
+
+<h2 id="toc_2.4">SVNrsync</h2>
+
+<pre class="brush:bash">
+#!/bin/sh
+# /etc/crontab
+# 30 1,12 * * * root /data/svnbak/SVNnewbak.sh
+# Logs
+# https://192.168.0.233:8443/svn/
+
+SRC=rsync://svnrsync@192.168.0.133/svn
+PASSWD=xxxxxxxxxxxx
+DST=/data/svn
+LogPath=/var/www/html/svn
+DAY=`date +%Y%m%d`
+LogFile=$LogPath/SVNrsync.$DAY.txt
+#rsyncLogFile=$LogPath/rsync.$DAY.txt
+rsyncLogFile=$LogFile
+
+# -------------------------------------------------- 
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
+[ ! -d "$LogPath" ] &amp;&amp; mkdir -p "$LogPath"
+z_recordlog(){
+    curtime=`date +"%Y-%m-%d %H:%M:%S"`
+    if [ ! -f "${LogFile}" ];then
+        touch "${LogFile}"
+    fi
+    echo "${curtime} $1" &gt;&gt; "${LogFile}"
+}
+z_clearcycle(){
+    find "${1}" -maxdepth 1 -type f -atime +${2} -exec rm -rf {} \;
+    if [ "$?" = "0" ];then
+        z_recordlog "${2} days ago a successful clean-up of spare parts for ${1}'s paper!"
+    fi
+}
+
+z_recordlog "SVN rsync start..."
+export RSYNC_PASSWORD=$PASSWD
+rsync -az --delete --log-file="$rsyncLogFile" $SRC/ $DST &gt;&gt; "$rsyncLogFile" 2&gt;&amp;1
+if [ "$?" != "0" ];then
+    z_recordlog "SVN rsync Error!"
+fi
+unset RSYNC_PASSWORD
+z_recordlog "SVN rsync done."
+
+z_clearcycle "$LogPath" "60"
+
+</pre>
+
+
+<h1 id="toc_3">tips</h1>
+
+<pre class="brush:bash">
+# 版本库地址变更
+svn switch --relocate \
+https://olddomain.com:8443/repos/trunk/test \
+https://newdomain.com:8443/repos/trunk/test
+
+# 内部结构变更:主干版本和分支版本的拷贝 将/test/dev/lib切换为/test/branch/lib
+svn switch https://domain.com/test/branch/lib
+
+# 建议：版本库 IP 地址变更，和版本库内部目录结构调整要分步来实施。不要同时实施。否则很麻烦。
+
+# 修改UUID
+svnadmin setuuid /var/svn/repos 6aed1349-fe9f-9245-a4a0-02dba53eb2d0
+
+# 查看一下更新后的UUID
+svnlook uuid /var/svn/repos
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

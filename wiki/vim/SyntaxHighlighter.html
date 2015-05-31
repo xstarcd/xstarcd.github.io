@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>SyntaxHighlighter</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+
+<h1 id="toc_1">SyntaxHighlighter</h1>
+
+<ul>
+<li>
+通用代码高亮插件（SyntaxHighlighter）: <a href="http://www.cnblogs.com/heyuquan/archive/2012/09/28/2707632.html">http://www.cnblogs.com/heyuquan/archive/2012/09/28/2707632.html</a>
+
+<li>
+Use Syntax Highlighter shAutoloader.js : <a href="http://dakehe.com/Home/Blogs/2012/5/19/Using-Csharp-Extension-for-enum">http://dakehe.com/Home/Blogs/2012/5/19/Using-Csharp-Extension-for-enum</a>
+
+</ul>
+
+<ul>
+<li>
+动态加载方法
+
+</ul>
+
+<pre class="brush: html">
+&lt;link href="/shCore.css" rel="stylesheet" type="text/css"&gt;
+&lt;link href="/shThemeDefault.css" rel="stylesheet" type="text/css"&gt;
+&lt;script src="/Scripts/SyntaxHighLighter/shCore.js" type="text/javascript"&gt;&lt;/script&gt;
+&lt;script src="/Scripts/SyntaxHighLighter/shAutoloader.js" type="text/javascript"&gt;&lt;/script&gt;
+
+</pre>
+
+<pre class="brush: js">
+// loading all the syntax highter's javascript.
+// it's required following files
+$(document).ready(function() {
+   
+  function path() {
+    var args = arguments,
+    result = [];
+  
+    for(var i = 0; i &lt; args.length; i++)
+      result.push(args[i].replace('@', '/LookupYour/SyntaxHighLighter/Files/'));
+    return result
+  }
+  
+  SyntaxHighlighter.autoloader.apply(null, path(
+    'applescript            @shBrushAppleScript.js',
+    'actionscript3 as3      @shBrushAS3.js',
+    'bash shell             @shBrushBash.js',
+    'coldfusion cf          @shBrushColdFusion.js',
+    'cpp c                  @shBrushCpp.js',
+    'c# c-sharp csharp      @shBrushCSharp.js',
+    'css                    @shBrushCss.js',
+    'delphi pascal          @shBrushDelphi.js',
+    'diff patch pas         @shBrushDiff.js',
+    'erl erlang             @shBrushErlang.js',
+    'groovy                 @shBrushGroovy.js',
+    'java                   @shBrushJava.js',
+    'jfx javafx             @shBrushJavaFX.js',
+    'js jscript javascript  @shBrushJScript.js',
+    'perl pl                @shBrushPerl.js',
+    'php                    @shBrushPhp.js',
+    'text plain             @shBrushPlain.js',
+    'py python              @shBrushPython.js',
+    'ruby rails ror rb      @shBrushRuby.js',
+    'sass scss              @shBrushSass.js',
+    'scala                  @shBrushScala.js',
+    'sql                    @shBrushSql.js',
+    'vb vbnet               @shBrushVb.js',
+    'xml xhtml xslt html    @shBrushXml.js'
+  ));
+  SyntaxHighlighter.all();
+  
+});
+
+</pre>
+
+<pre class="brush: html">
+&lt;pre class="brush: csharp;"&gt;@using (Html.BeginForm())
+{
+    @Html.TextArea("sampleCode", (string)ViewBag.sampleCode, new { rows = "20", cols = "120" })
+    &lt;input type="submit"&gt;
+}
+&lt;/pre&gt;
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

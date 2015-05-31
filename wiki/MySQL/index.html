@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>MySQL</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">MySQL</a>
+<ul>
+<li><a href="#toc_1.1">MySQL常用操作</a>
+<li><a href="#toc_1.2">MySQL复制</a>
+<li><a href="#toc_1.3">MySQL设置参数</a>
+<li><a href="#toc_1.4">MySQL性能分析</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">MySQL</h1>
+
+<ul>
+<li>
+Mariadb Galera Cluster
+
+<ul>
+<li>
+官方网站: <a href="https://mariadb.org/">https://mariadb.org/</a>
+
+<li>
+Galera/Mariadb数据库集群配置笔记:<a href="http://www.server110.com/mysql/201312/4085.html">http://www.server110.com/mysql/201312/4085.html</a>
+
+<li>
+MySQL Galera Cluster数据库集群配置教程:<a href="http://www.server110.com/mysql/201312/4087.html">http://www.server110.com/mysql/201312/4087.html</a>
+
+</ul>
+<li>
+<a href="SchemaSpy.html">用SchemaSpy生成数据库结构文档</a>
+
+<li>
+<a href="mysqlslap.html">MySQL自带的性能压力测试工具mysqlslap</a>
+
+<li>
+日志分析工具mysqlsla
+
+<li>
+MySQL衍生版 Percona Server:Percona 为 MySQL 数据库服务器进行了改进，在功能和性能上较 MySQL 有着很显著的提升。该版本提升了在高负载情况下的 InnoDB 的性能、为 DBA 提供一些非常有用的性能诊断工具；另外有更多的参数和命令来控制服务器行为。
+
+<ul>
+<li>
+<a href="http://www.oschina.net/p/percona+server">http://www.oschina.net/p/percona+server</a> 
+
+</ul>
+<li>
+MySQL Utilities:
+
+<ul>
+<li>
+<a href="http://dev.mysql.com/downloads/utilities/">http://dev.mysql.com/downloads/utilities/</a>
+
+<li>
+MySQL管理利器MySQL Utilities教程:<a href="http://www.ttlsa.com/mysql/mysql-manager-tools-mysql-utilities-tutorial/">http://www.ttlsa.com/mysql/mysql-manager-tools-mysql-utilities-tutorial/</a>
+
+</ul>
+</ul>
+
+<h2 id="toc_1.1">MySQL常用操作</h2>
+
+<ol>
+<li>
+修改mysql密码、建库、备份
+<pre class="brush: bash">
+UPDATE mysql.user SET Password = PASSWORD('mysqlrootpasswd') WHERE User = 'root';
+FLUSH PRIVILEGES;
+
+CREATE DATABASE `Jwikitestdb` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+GRANT ALL ON `Jwikitestdb`.* TO 'Jwikitest'@'127.0.0.1' IDENTIFIED BY 'dbpassword';
+
+dbname="Jwikitestdb" &amp;&amp; mysqldump -uroot -p --default-character-set=utf8 --opt \
+--extended-insert=false --triggers -R --hex-blob --single-transaction \
+"$dbname" | gzip &gt; /bak/backups/$dbname.bak.`date +'%Y%m%d'`_1.dump.gz
+
+dbnames="ccgw_jboss count_jboss dc dc_big_data dc_jboss dc_log fgw_jboss mgw_jboss portal_jboss vtgw_jboss test";
+date;mysqldump -uroot -p --default-character-set=utf8 --opt --extended-insert=false --triggers -R --hex-blob \
+ --single-transaction --flush-logs --master-data=2 --databases $dbnames| gzip &gt; DBs.bak.`date +'%Y%m%d'`.dump.gz;date
+
+# 转换IP地址为数值形式
+SELECT INET_ATON('192.168.0.1');
+</pre>
+
+</ol>
+
+<h2 id="toc_1.2"><a href="MySQL_replicate.html">MySQL复制</a></h2>
+
+<h2 id="toc_1.3">MySQL设置参数</h2>
+
+<h2 id="toc_1.4">MySQL性能分析</h2>
+
+<ul>
+<li>
+日志分析工具
+
+<li>
+监测工具
+
+<li>
+运行状态分析
+
+<li>
+分布式数据库代理Amoeba:<a href="http://amoeba.meidusa.com">http://amoeba.meidusa.com</a>  <a href="http://dbanotes.net/arch/amoeba_interview.html">http://dbanotes.net/arch/amoeba_interview.html</a>
+
+<li>
+explain
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

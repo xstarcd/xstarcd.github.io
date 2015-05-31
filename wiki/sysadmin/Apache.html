@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Apache</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Apache</a>
+<li><a href="#toc_2">Apache SSL配置</a>
+<ul>
+<li><a href="#toc_2.1">生成服务器证书</a>
+<li><a href="#toc_2.2">配置httpd.conf</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">Apache</h1>
+
+
+<h1 id="toc_2">Apache SSL配置</h1>
+
+<ul>
+<li>
+apahce2.0.61
+
+</ul>
+
+<h2 id="toc_2.1">生成服务器证书</h2>
+
+<p>
+安装好在bin目录下有一个openssl.exe文件，用来生成证书和密钥。
+</p>
+
+<ul>
+<li>
+生成服务器用的私钥文件server.key
+
+</ul>
+<p>
+进入conf目录，执行命令行
+</p>
+<pre>
+openssl genrsa -out server.key 1024
+</pre>
+
+<p>
+有文档指出使用 openssl genrsa -des3 -out server.key 1024 生成私钥文件，这样生成的私钥文件是需要口令的。
+</p>
+
+<p>
+Apache启动失败，错误提示是：Init: SSLPassPhraseDialog builtin is not supported on Win32 (key file .....)
+</p>
+
+<p>
+原因是window下的apache不支持加密的私钥文件。
+</p>
+ 
+<ul>
+<li>
+生成未签署的server.csr
+
+</ul>
+
+<p>
+进入conf目录，执行命令行
+</p>
+<pre>
+  openssl req -new -key server.key -out server.csr -config openssl.cnf
+  提示输入一系列的参数，
+  ......
+  Country Name (2 letter code) [AU]:
+  State or Province Name (full name) [Some-State]:
+  Locality Name (eg, city) []:
+  Organization Name (eg, company) [Internet Widgits Pty Ltd]:
+  Organizational Unit Name (eg, section) []:
+  Common Name (eg, YOUR name) []:
+  Email Address []:
+  .....
+</pre>
+
+<p>
+注：Common Name必须和httpd.conf中server name必须一致，否则apache不能启动
+</p>
+
+<p>
+启动apache时错误提示为：RSA server certificate CommonName (CN) `Koda' does NOT match server name!?
+</p>
+ 
+<ul>
+<li>
+签署服务器证书文件server.crt
+
+</ul>
+
+<p>
+进入conf目录，执行命令行
+</p>
+<pre>
+openssl x509 -req -days 365 -in server.csr -signkey server.key -out  server.crt
+</pre>
+
+<p>
+以上签署证书仅仅做测试用，真正运行的时候，应该将CSR发送到一个CA返回真正的用书.网上有些文档描述生成证书文件的过程比较繁琐，就是因为他们自己建立了一个CA中心证书，然后再签署server.csr.
+</p>
+ 
+<p>
+用openssl x509 -noout -text -in server.crt可以查看证书的内容。证书实际上包含了Public Key.
+</p>
+
+ 
+<h2 id="toc_2.2">配置httpd.conf</h2>
+
+<ul>
+<li>
+在conf目录下的ssl.conf文件是关于ssl的配置，是httpd.conf的一部分。
+
+</ul>
+
+<p>
+找到一个443的虚拟主机配置项，如下:
+</p>
+<pre>
+&lt;VirtualHost _default_:443&gt;
+   SSLEngine On
+   SSLCertificateFile conf/ssl.crt/server.crt
+   SSLCertificateKeyFile conf/ssl.key/server.key
+   #SSLCertificateChainFile conf/ssl.crt/ca.crt // 暂未启用
+   #......
+   DocumentRoot "C:/programs/Apache2/htdocs"
+   ServerName www.my.com:443
+&lt;/VirtualHost&gt;
+</pre>
+
+<ul>
+<li>
+看SSLCertificateFile，SSLCertificateKeyFile两个配置项，所以应该在conf下建立两个子目录ssl.crt, ssl.key,然后把签署过的证书文件(.crt)和私钥文件(.key)放在相应的目录
+
+</ul>
+
+<ul>
+<li>
+看DocumentRoot，ServerName配置项，ServerName修改为任意你想要得域名，注意：前面生成.csr时输入的Common Name必须于这里的ServerName项一致。
+
+</ul>
+
+<p>
+这样启动apache后，访问<code>https://www.my.com</code>将访问C:/programs/Apache2/htdocs目录下的内容。
+</p>
+
+<p>
+但是如果你想保留其他目录的访问仍然是http，那么你应该把
+</p>
+
+<p>
+<code>&lt;VirtualHost _default_:443&gt;</code> 也改为 <code>&lt;VirtualHost www.my.com:443&gt;</code>
+</p>
+
+<p>
+此时，即便ServerName是任意的，系统仍然正常运行，仅仅Apache log提示"does NOT match server name"
+</p>
+
+<ul>
+<li>
+加载mod_ssl
+
+</ul>
+
+<pre>
+LoadModule ssl_module modules/mod_ssl.so
+</pre>
+
+<p>
+注意到ssl.conf的配置都在标签&lt;IfDefine SSL&gt;中，所以为了使IfDefine 指令有效，运行apache 的时候要加上 -D SSL 参数。
+</p>
+<pre>
+apache -D SSL -k start 
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

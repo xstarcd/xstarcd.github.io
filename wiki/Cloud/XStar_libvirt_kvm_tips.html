@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>libvirt_kvm技巧收集</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>libvirt_kvm技巧收集</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">生成MAC地址</a>
+<li><a href="#toc_0.2">设置udev权限</a>
+<li><a href="#toc_0.3">配置VDE网络接口</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">生成MAC地址</h2>
+
+<ul>
+<li>
+随机生成MAC:python
+<pre class="brush:python">
+#!/usr/bin/python 
+# generates a MAC address for Xen domU
+# http://www.vpsee.com
+
+import random
+import uuid
+
+mac = [ 0x00, 0x16, 0x3e, random.randint(0x00, 0x7f),
+random.randint(0x00, 0xff), random.randint(0x00, 0xff) ]
+s = []
+for item in mac:
+        s.append(str("%02x" % item))
+print ':'.join(s)
+</pre>
+
+<li>
+随机生成MAC2:python
+<pre class="brush:python">
+#!/usr/bin/python 
+# gen by LocalMAC
+def get_local_mac():
+   return uuid.uuid1().hex[-12:]
+
+def make_mac(local_mac):
+    import random
+    #random.randint(0x00, 0x7f)  
+    mac = [random.randint(0x00, 0xff), random.randint(0x00, 0xff) ]
+    s = [local_mac[0:2], local_mac[2:4],local_mac[4:6],local_mac[6:8]]
+    for item in mac:
+      s.append(str("%02x" % item))
+    return ( ':'.join(s) )
+
+mac=get_local_mac()
+print("LocalMAC:%s" % mac)
+print(make_mac(mac))
+</pre>
+
+<li>
+随机生成MAC地址-shell
+<pre class="brush:bash">
+printf -v macaddr "52:54:%02x:%02x:%02x:%02x" $(( $RANDOM &amp; 0xff)) $(( $RANDOM &amp; 0xff )) $(( $RANDOM &amp; 0xff)) $(( $RANDOM &amp; 0xff ))
+echo $macaddr
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">设置udev权限</h2>
+
+<ul>
+<li>
+用户组
+<pre class="brush:bash">
+sudo adduser $(id -un) kvm
+sudo adduser $(id -un) vde2-net
+sudo adduser $(id -un) tun
+sudo adduser $(id -un) libvirtd
+</pre>
+
+</ul>
+
+<ul>
+<li>
+设置usb设备权限
+<pre class="brush:bash">
+# 给 plugdev 组（不推荐 kvm 组）赋予 USB 设备操作权
+vi /etc/udev/rules.d/10-usb-plugdev.rules #{
+SUBSYSTEM=="usb_device", GROUP="plugdev", MODE="0664"
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", GROUP="plugdev", MODE="0664"
+#}
+
+vi /etc/udev/rules.d/10-vboxdrv.rules #{
+KERNEL=="vboxdrv", NAME="vboxdrv", OWNER="root", GROUP="root", MODE="0600"
+KERNEL=="vboxnetctl", NAME="vboxnetctl", OWNER="root", GROUP="root", MODE="0600"
+SUBSYSTEM=="usb_device", ACTION=="add", RUN+="/usr/share/virtualbox/VBoxCreateUSBNode.sh $major $minor $attr{bDeviceClass}"
+SUBSYSTEM=="usb", ACTION=="add", ENV{DEVTYPE}=="usb_device", RUN+="/usr/share/virtualbox/VBoxCreateUSBNode.sh $major $minor $attr{bDeviceClass}"
+SUBSYSTEM=="usb_device", ACTION=="remove", RUN+="/usr/share/virtualbox/VBoxCreateUSBNode.sh --remove $major $minor"
+SUBSYSTEM=="usb", ACTION=="remove", ENV{DEVTYPE}=="usb_device", RUN+="/usr/share/virtualbox/VBoxCreateUSBNode.sh --remove $major $minor"
+#}
+ 
+# 加入组
+gpasswd -a $(id -un) kvm
+gpasswd -a $(id -un) vboxusers
+# 若尚未入 plugdev 组，则再
+gpasswd -a $(id -un) plugdev
+</pre>
+
+</ul>
+
+<ul>
+<li>
+设置tun访问权限
+
+</ul>
+
+<p>
+Give New Devices tun Group Ownership:
+</p>
+
+<p>
+This is a udev rule that is fired when a new tun/tap device is created:
+</p>
+ 
+<pre class="brush:bash">
+cat &lt;&lt;EOF | sudo tee /etc/udev/rules.d/41-permissions-tun.rules
+# provide non-root user access to tun/tap devices for Virtual Machines using VDE etc
+KERNEL=="tun", GROUP="tun"
+EOF
+</pre>
+
+<p>
+Because the user is a member of the 'tun' group they can read and write to tun/tap devices. This makes it possible for VM guests to run with regular user permissions and still use VDE networking.
+</p>
+
+<p>
+To reread the udev rules do:
+</p>
+
+<pre class="brush:bash">
+sudo udevadm control --reload_rules
+</pre>
+
+<h2 id="toc_0.3">配置VDE网络接口</h2>
+
+<p>
+Define the VDE Network Interface:
+</p>
+
+<p>
+原文: <a href="http://tjworld.net/wiki/Linux/Ubuntu/VirtualMachinesWithVDENetworking">http://tjworld.net/wiki/Linux/Ubuntu/VirtualMachinesWithVDENetworking</a>
+</p>
+
+<ul>
+<li>
+/etc/network/interfaces
+<pre class="brush:bash">
+#need install vde2 dnsmasq
+
+cat &lt;&lt;EOF | sudo tee -a /etc/network/interfaces
+# KVM/QEMU Virtual Machine Network
+auto kvm0
+iface kvm0 inet static
+    address 10.254.1.254
+    netmask 255.255.255.0
+    pre-up /usr/bin/vde_switch --tap ${IFACE} --daemon --group vde2-net --sock /var/run/${IFACE}.ctl \
+     --mod 775 --mgmtmode 770 --mgmt /var/run/${IFACE}-manage --pidfile /var/run/${IFACE}_vde.pid
+    up /usr/sbin/dnsmasq --interface=${IFACE}  --except-interface=lo --bind-interfaces --user=nobody \
+     --dhcp-range=kvm,10.254.1.1,10.254.1.253,255.255.255.0,10.254.1.255,8h \
+     --domain=lan.tjworld.net --pid-file=/var/run/${IFACE}_dnsmasq.pid --conf-file
+    up echo "`route -n | sed -n 's/^0\.0\.0\.0 .* \(.*\)$/\1/p'`" &gt; /var/run/${IFACE}_route
+    up iptables -t nat -A POSTROUTING -o `cat /var/run/${IFACE}_route` -j MASQUERADE
+    down iptables -t nat -D POSTROUTING -o `cat /var/run/${IFACE}_route` -j MASQUERADE
+    down kill -s TERM `cat /var/run/${IFACE}_dnsmasq.pid` &amp;&amp; rm -f /var/run/${IFACE}_dnsmasq.pid
+    post-down kill -s HUP `cat /var/run/${IFACE}_vde.pid`
+    post-down rm -f /var/run/${IFACE}_route 
+EOF
+
+# start the interface
+sudo ifup kvm0
+
+# stop the interface
+sudo ifdown kvm0
+</pre>
+
+</ul>
+
+<ul>
+<li>
+And the netfilters rule: 
+<pre>
+sudo iptables -t nat -nvL POSTROUTING
+Chain POSTROUTING (policy ACCEPT 2233 packets, 205K bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+    3   193 MASQUERADE  all  --  *      eth0    0.0.0.0/0            0.0.0.0/0        
+</pre>
+
+</ul>
+
+<ul>
+<li>
+KVM Start-up Scripts
+
+</ul>
+
+<p>
+Every VM configuration is going to be slightly different so I'm not going to dwell on the individual options. I'll focus on the options that are important to networking with VDE.
+</p>
+
+<p>
+I'll start with an example start-up script for Ubuntu Gutsy Server using my enhanced kvm-72:
+</p>
+<pre class="brush:bash">
+#!/bin/bash
+qemuctl -qemu kvm -name Gutsy-Server -boot d -m 450 -hda /home/all/VirtualMachines/Ubuntu-Gutsy-Server-x86.qcow2 -k en-gb \
+ -net nic,model=rtl8139,macaddr=56:44:45:30:30:32,vlan=0 -net vde,sock=/var/run/kvm0.ctl,vlan=0 $@
+</pre>
+
+<p>
+You'll notice it is using qemuctl to provide basic GUI control. That can be removed easily (just delete "qemuctl -qemu").
+</p>
+
+<p>
+The same script for the pre-kvm-72 hypervisor simply wraps the kvm start-up in a call to vdeq. Here it is:
+</p>
+
+<pre class="brush:bash">
+#!/bin/bash
+qemuctl -qemu vdeq kvm -name Gutsy-Server -boot d -m 450 -hda /home/all/VirtualMachines/Ubuntu-Gutsy-Server-x86.qcow2 -k en-gb \
+ -net nic,model=rtl8139,macaddr=56:44:45:30:30:32,vlan=0 -net vde,sock=/var/run/kvm0.ctl,vlan=0 $@
+</pre>
+
+<p>
+You can see the only difference is that qemuctl is told that the qemu binary is called "vdeq" not "kvm". Without qemuctl the start-up would be:
+</p>
+
+<pre class="brush:bash">
+#!/bin/bash
+vdeq kvm -name Gutsy-Server -boot d -m 450 -hda /home/all/VirtualMachines/Ubuntu-Gutsy-Server-x86.qcow2 -k en-gb \
+ -net nic,model=rtl8139,macaddr=56:44:45:30:30:32,vlan=0 -net vde,sock=/var/run/kvm0.ctl,vlan=0 $@
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

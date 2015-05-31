@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>自动化部署</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">自动化部署</a>
+<ul>
+<li><a href="#toc_1.1">Ansible</a>
+<li><a href="#toc_1.2">SaltStack</a>
+<li><a href="#toc_1.3">DevOps</a>
+<li><a href="#toc_1.4">chef</a>
+<li><a href="#toc_1.5">puppet</a>
+<li><a href="#toc_1.6">CFengine</a>
+<li><a href="#toc_1.7">Juju</a>
+<li><a href="#toc_1.8">Cobbler</a>
+<li><a href="#toc_1.9">Razor</a>
+<li><a href="#toc_1.10">Docker</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">自动化部署</h1>
+
+
+<ul>
+<li>
+openstack部署工具: <a href="http://www.chenshake.com/openstack-deployment-tool-summary/">http://www.chenshake.com/openstack-deployment-tool-summary/</a>
+
+<li>
+自动部署Hadoop集群: <a href="http://www.cnlinuxgeek.com/2012/06/auto_deploy_hadoop_cluster/">http://www.cnlinuxgeek.com/2012/06/auto_deploy_hadoop_cluster/</a>
+
+</ul>
+
+<h2 id="toc_1.1"><a href="Ansible.html">Ansible</a></h2>
+
+<ul>
+<li>
+自动化运维工具之ansible:<a href="http://os.51cto.com/art/201409/451927_all.htm">http://os.51cto.com/art/201409/451927_all.htm</a>
+
+<li>
+ansible来了: <a href="http://ju.outofmemory.cn/entry/67581">http://ju.outofmemory.cn/entry/67581</a>
+
+</ul>
+
+<h2 id="toc_1.2">SaltStack</h2>
+
+<p>
+Puppet注重于最终状态，SaltStack注重于实时命令的运行，SaltStack=Puppet+Func，且SaltStack还是使用Python开发的，入手以及后续的功能自定义开发都是非常方便的。
+</p>
+
+<ul>
+<li>
+官网: <a href="http://www.saltstack.com/">http://www.saltstack.com/</a>
+
+<li>
+SaltStack自动化运维初涉--安装简用篇:<a href="http://clovemfong.blog.51cto.com/3297559/1347951">http://clovemfong.blog.51cto.com/3297559/1347951</a>
+
+<li>
+<a href="http://outofmemory.cn/saltstack/">http://outofmemory.cn/saltstack/</a>
+
+</ul>
+
+<h2 id="toc_1.3">DevOps</h2>
+
+<ul>
+<li>
+百科：<a href="http://zh.wikipedia.org/wiki/DevOps">http://zh.wikipedia.org/wiki/DevOps</a>
+
+</ul>
+
+<p>
+DevOps（英文Development和Operations的组合）是一组过程、方法与系统的统称，用于促进开发（应用程序/软件工程）、技术运营和质量保障（QA）部门之间的沟通、协作与整合。
+</p>
+
+<h2 id="toc_1.4">chef</h2>
+
+<ul>
+<li>
+Chef基础: <a href="http://my.oschina.net/williamherrychina/blog/63576">http://my.oschina.net/williamherrychina/blog/63576</a>
+
+</ul>
+
+<p>
+<img src="http://static.oschina.net/uploads/space/2012/0624/140209_JKPd_98096.png" alt="Chef结构图" />
+</p>
+
+<ul>
+<li>
+Chef的结构图
+
+<li>
+有一个中心服务器(运行chef-server)
+
+<ul>
+<li>
+Chef将数据存储在CouchDB数据库里面
+
+<li>
+RabbitMQ和chef-solo等提供搜索的功能
+
+<li>
+Chef还提供了个图形的用户界面(cher-server-webui)
+
+</ul>
+<li>
+可以有多个Workstation(运行knife工具对Chef进行配置)
+
+<ul>
+<li>
+Workstation上有一个pem文件,knift利用它作为认证来和chef-server通过REST API进行通信
+
+<li>
+Workstation将配置(利用Recipe等描述各Client应该如何配置自己)上传到服务器
+
+<li>
+Workstation和中心服务器可以在同一台机器
+
+</ul>
+<li>
+可以有多个Client(运行chef-server的被配置机器)
+
+<ul>
+<li>
+Client上有一个pem文件,chef-client利用它作为认证来和chef-server通过REST API进行通信
+
+<li>
+当新加一个Client的时候,需要从中心服务器上拷贝validator.pem到新加的Client
+
+<li>
+它利用这个pem进行注册得到自己的client.pem进行以后的认证
+
+<li>
+Client连到Chef服务器查看如何配置自己,然后进行自我配置
+
+</ul>
+</ul>
+
+<table>
+<tr>
+<th>
+比较
+</th>
+<th>
+Puppet
+</th>
+<th>
+Chef
+</th>
+</tr>
+<tr>
+<td>
+历史
+</td>
+<td>
+有一些
+</td>
+<td>
+还年轻
+</td>
+</tr>
+<tr>
+<td>
+用户
+</td>
+<td>
+多,有名的公司也在用
+</td>
+<td>
+还比较少，但我认为有37signals在使用
+</td>
+</tr>
+<tr>
+<td>
+开发的活跃度
+</td>
+<td>
+中等
+</td>
+<td>
+活跃（感觉正在旺季）
+</td>
+</tr>
+<tr>
+<td>
+文档
+</td>
+<td>
+多
+</td>
+<td>
+也足够了
+</td>
+</tr>
+<tr>
+<td>
+设定文件
+</td>
+<td>
+用专用的文法书写（外部DSL）
+</td>
+<td>
+用Ruby书写（内部DSL）
+</td>
+</tr>
+<tr>
+<td>
+设定的构成
+</td>
+<td>
+有点难懂
+</td>
+<td>
+相对容易理解,命名等很合适
+</td>
+</tr>
+<tr>
+<td>
+依存关系的处理
+</td>
+<td>
+运行次序是根据状况由系统端决定的。
+</td>
+<td>
+好像Makefile 基本上是书写顺序。相比Puppet更具脚本风格
+</td>
+</tr>
+<tr>
+<td>
+必要的中间软件
+</td>
+<td>
+没有
+</td>
+<td>
+服务端需要有CouchDB、RabbitMQ
+</td>
+</tr>
+<tr>
+<td>
+安装
+</td>
+<td>
+简单，用gem的安装就可以
+</td>
+<td>
+服务端容易死。没有加入包中的话比较困难。客户端的话简单，只要gem就可以
+</td>
+</tr>
+<tr>
+<td>
+和其他系统的协作
+</td>
+<td>
+感觉基本上没有
+</td>
+<td>
+因为使用RESTful的服务API，用JSON可以取值，所以好像能做许多事
+</td>
+</tr>
+</table>
+
+
+<h2 id="toc_1.5">puppet</h2>
+
+<p>
+Puppet是Puppet Labs 开发的自动化系统配置工具,是一个类似于Cfengine一样的工具,但是比Cfengine更简单,更容易使用…
+</p>
+
+<ul>
+<li>
+<a href="https://puppetlabs.com/">https://puppetlabs.com/</a>
+
+<li>
+puppet中文wiki: <a href="http://puppet.wikidot.com/">http://puppet.wikidot.com/</a>
+
+<li>
+Puppet使用方法总结: <a href="http://dongxicheng.org/cluster-managemant/puppet/">http://dongxicheng.org/cluster-managemant/puppet/</a>
+
+</ul>
+
+<p>
+<img src="http://puppet.wdfiles.com/local--files/puppetnginx/puppet2.png" alt="PuppetNginx" />
+</p>
+
+
+<h2 id="toc_1.6">CFengine</h2>
+
+<ul>
+<li>
+<a href="http://www.cfengine.org/">http://www.cfengine.org/</a>
+
+<li>
+使用CFengine来实现服务器的自动化配置: <a href="http://os.51cto.com/art/200711/60043.htm">http://os.51cto.com/art/200711/60043.htm</a>
+
+</ul>
+
+<ul>
+<li>
+CFengine大概的功能有：
+
+<ul>
+<li>
+检查和配置网络接口
+
+<li>
+编辑系统和用户的文本文件
+
+<li>
+维护符号链接
+
+<li>
+检查和设置文件的权限
+
+<li>
+删除垃圾文件
+
+<li>
+检查重要文件和文件系统的存在
+
+<li>
+控制用户脚本和shell命令的执行
+
+<li>
+基于类的判定结构
+
+<li>
+进程管理
+
+</ul>
+</ul>
+
+<ul>
+<li>
+Cfengine是一个用于设置和维护计算机系统的工具，包含了以下几个组件：
+
+<ul>
+<li>
+cfagent 自动配置代理（必须）,其配置文件为cfupdate.conf和cfagent.conf
+
+<li>
+cfservd 文件服务和远程激活服务（推荐）,其配置文件为cfservd.conf
+
+<li>
+cfexecd 计划和报告服务（建议）
+
+<li>
+cfenvd 异常检测服务（强烈建议）
+
+<li>
+cfrun 远程激活cfagent的方法（需要的时候用这个）,其配置文件为cfrun.hosts
+
+<li>
+cfshow 检查有帮助的数据库的内容的方法(辅助)
+
+<li>
+cfenvgraph  异常检测服务cfenvd的附属工具(辅助)
+
+<li>
+cfkey 密匙生成工具(每台主机运行一次)。
+
+</ul>
+</ul>
+
+
+<h2 id="toc_1.7">Juju</h2>
+
+<p>
+<a href="http://www.chenshake.com/design-of-the-razor/">http://www.chenshake.com/design-of-the-razor/</a>
+</p>
+
+<p>
+Ubuntu的Maas，其实问题就更多。投入很大的力量去定制cobbler，加一个logo，就号称是Maas，在国人看来，也是有点山寨。并且还自己搞了一个JUJU类似的东西。到底puppet和juju有啥区别还是类似的东西，估计Canonical自己的员工，也说不清，好像也没几个人感兴趣，从邮件列表里也可以知道。
+</p>
+
+<p>
+昨天刚看到juju邮件列表，提到Orchestra，未来很快就要去掉juju的支持，因为没几个人玩，我本来一直都比较欣赏Orchestra的理念，不重复造轮。不过现在看来，ubuntu是希望自己搞一套。
+</p>
+
+<h2 id="toc_1.8">Cobbler</h2>
+
+<p>
+运维自动化安装方面，早期一般使用人工配置pxe+dhcp+tftp配合kickstart，现在开源工具就多了，如cobbler，OpenQRM和Spacewalk。
+</p>
+
+<p>
+Cobbler是一个快速网络安装linux的服务，而且在经过调整也可以支持网络安装windows。该工具使用python开发，小巧轻便（才15k行代码），使用简单的命令即可完成PXE网络安装环境的配置，同时还可以管理DHCP，DNS，以及yum包镜像。
+</p>
+
+<p>
+Cobbler支持命令行管理，web界面管理，还提供了API接口，可以方便二次开发使用。
+</p>
+
+<p>
+和Kickstart不同的是，使用cobbler不会因为在局域网中启动了dhcp而导致有些机器因为默认从pxe启动在重启服务器后加载tftp内容导致启动终止。
+</p>
+
+<h2 id="toc_1.9">Razor</h2>
+
+<p>
+Razor 是一个很高级的部署程序，注意，是高级哦。它可以在裸机上和虚拟机上自动安装操作系统。它的目标是解决如何把新的机器添加到已有的管理系统中。然后让集中化管理来接管它。
+</p>
+
+<p>
+Razor的工作流程是，新加的机器通过Razor提供的网络启动，加载一个微内核的小系统，小系统会检测新硬件的配置。并且反馈给Razor控制端，然后根据Razor的预定策略，来指导安装配置。目前支持 RH系， Debian系， ESXi 等
+</p>
+
+
+<h2 id="toc_1.10">Docker</h2>
+
+<ul>
+<li>
+<a href="http://www.docker.io/">http://www.docker.io/</a>
+
+<li>
+使用 Docker/LXC 迅速启动一个桌面系统: <a href="http://www.vpsee.com/2013/07/use-docker-and-lxc-to-build-a-desktop/">http://www.vpsee.com/2013/07/use-docker-and-lxc-to-build-a-desktop/</a>
+
+</ul>
+
+<p>
+Docker 是 dotCloud 最近2013年宣布的开源引擎，旨在提供一种应用程序的自动化部署解决方案，简单的说就是，在 Linux 系统上迅速创建一个容器（类似虚拟机）并在容器上部署和运行应用程序，并通过配置文件可以轻松实现应用程序的自动化安装、部署和升级，非常方便。因为使用了容器，所以可以很方便的把生产环境和开发环境分开，互不影响，这是 docker 最普遍的一个玩法。更多的玩法还有大规模 web 应用、数据库部署、持续部署、集群、测试环境、面向服务的云计算、虚拟桌面 VDI 等等。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

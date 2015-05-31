@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>BestofVimTips</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+
+<h1 id="toc_1">BestofVimTips</h1>
+ 
+<p>
+有点乱，没时间消化，只有先收藏，也可能永远都不会用到。
+</p>
+
+<p>
+原文: <a href="http://os.chinaunix.net/a2008/0123/965/000000965994.shtml">http://os.chinaunix.net/a2008/0123/965/000000965994.shtml</a>
+</p>
+
+<p>
+2008年01月23日 14:14 来源：ChinaUnix博客 作者：52vi 编辑：周荣茂 
+</p>
+
+<p>
+每个想深入学习 Vim 用户都会认真阅读的文章，官网链接：
+</p>
+<blockquote>
+<a href="http://www.rayninfo.co.uk/vimtips.html">http://www.rayninfo.co.uk/vimtips.html</a>
+</blockquote>
+
+<p>
+这篇文章被很多人翻译过，但那是都很早了，所在原来的一系列翻译的基础上修正原来翻译欠妥的，错误的，以及近两年更新的内容。
+</p>
+
+<pre>
+    # searching 查找
+
+    /joe/e : cursor set to End of match
+
+     把光标定位在匹配单词最后一个字母处
+
+    /joe/e+1 : cursor set to End of match plus 1
+
+     把光标定位在匹配单词最后一个字母的下一个字母处
+
+    /joe/s-2 : cursor set to Start of match minus 2
+
+     把光标定位在匹配单词第一个字母往前数两个字母的位置
+
+    /^joe.*fred.*bill/ : normal
+
+     标准的正则表达式
+
+    /^[A-J]\+/ : search for lines beginning with one or more A-J
+
+     查找以一个或多个 A-J 中的字母开头的行
+
+    /begin\_.*end : search over possible multiple lines
+
+     查找在 begin 和 end 两个单词之间尽可能多的行
+
+    /fred\_s*joe/i : any whitespace including newline
+
+     查找在 fred 和 joe 两个单词之间任意多的空格，包括新行
+
+    /fred\|joe : Search for FRED OR JOE
+
+     查找 fred 或 joe
+
+    /\([^0-9]\|^\)%.*% : Search for absence of a digit or beginning of line
+
+     查找
+
+    /.*fred\&amp;.*joe : Search for FRED AND JOE in any ORDER!
+
+     查找同时包含 FRED 和 JOE 的行，不分前后顺序
+
+    /\/i : search for fred but not alfred or frederick
+
+     查找 fred, 而不是 alfred 或者 frederick，也就是全字匹配
+
+    /\ : Search for exactly 4 digit numbers
+
+     查找4个数字的全字匹配
+
+    /\D\d\d\d\d\D : Search for exactly 4 digit numbers
+
+     查找4个数字的全字匹配
+
+    /\ : same thing
+
+     同上
+
+    # finding empty lines 查找空行
+
+    /^\n\{3} : find 3 empty lines
+
+     查找 3 行空行
+
+    # Specify what you are NOT searching for (vowels)
+
+    # 指定不要查找什么
+
+    /\c\v([^aeiou]&amp;\a){4} : search for 4 consecutive consanants
+
+    # using rexexp memory in a search
+
+    # 在查找中使用正则表达式存储
+
+    /\(fred\).*\(joe\).*\2.*\1
+
+    # Repeating the Regexp (rather than what the Regexp finds)
+
+    # 重复正则表达式
+
+    /^\([^,]*,\)\{8}
+
+    # visual searching
+
+    # 可视模式下的查找
+
+    :vmap // y/" : search for visually highlighted text
+
+     查找被高亮显示的文本
+
+    :vmap // y/=escape(@", '\\/.*$^~[]') : with spec chars
+
+    # searching over multiple lines \_ means including newline
+
+    # 查找多行。\_ 表示包括新行
+
+    / : search for multiple line comments
+
+     查找多行注释
+
+    /fred\_s*joe/i : any whitespace including newline
+
+     查找在 fred 和 joe 两个单词之间任意多的空
+
+    格，包括新行
+
+    /bugs\(\_.\)*bunny : bugs followed by bunny anywhere in file
+
+     bugs 后任意位置含有 bunny 单词的多个行
+
+    :h \_ : help
+
+     帮助
+
+    # search for declaration of subroutine/function under cursor
+
+    # 查找光标下子程序/函数的声明
+
+    :nmap gx yiw/^\(sub\function\)\s\+"
+
+    # multiple file search
+
+    # 在多个文件中查找
+
+    :bufdo /searchstr
+
+    :argdo /searchstr
+
+    # How to search for a URL without backslashing
+
+    # 如何不使用反斜线查找 URL
+
+    ?http://www.vim.org/ : search BACKWARDS!!! clever huh!
+
+    ----------------------------------------
+
+    # substitution
+
+    # 替换
+
+    :%s/fred/joe/igc : general substitute command
+
+     普通替换命令
+
+    :%s/\r//g : Delete DOS returns ^M
+
+     删除 DOS 回车符 ^M
+
+    # Is your Text File jumbled onto one line? use following
+
+    # 你的文本文件是否乱七八糟的排成一行？使用如下命令
+
+    :%s/\r/\r/g : Turn DOS returns ^M into real returns
+
+     转换 DOS 回车符 ^M 为真正的回车符
+
+    :%s= *$== : delete end of line blanks
+
+     删除行尾空格
+
+    :%s= \+$== : Same thing
+
+     同上
+
+    :%s#\s*\r\?$## : Clean both trailing spaces AND DOS returns
+
+     删除行尾空格和 DOS 回车符
+
+    :%s#\s*\r*$## : same thing
+
+     删除行尾空格和 DOS 回车符
+
+    # deleting empty lines
+
+    # 删除空行
+
+    :%s/^\n\{3}// : delete blocks of 3 empty lines
+
+     删除三行空行
+
+    :%s/^\n\+/\r/ : compressing empty lines
+
+     压缩多行空行为一行
+
+    # IF YOU ONLY WANT TO KNOW ONE THING
+
+    # 如果你只想明白一件事情
+
+    :'a,'bg/fred/s/dick/joe/igc : VERY USEFUL
+
+     非常有用
+
+    # duplicating columns
+
+    # 复制列
+
+    :%s= [^ ]\+$=&amp;&amp;= : duplicate end column
+
+     复制最后一列
+
+    :%s= \f\+$=&amp;&amp;= : same thing
+
+     同上
+
+    :%s= \S\+$=&amp;&amp; : usually the same
+
+     同上
+
+    # memory
+
+    # 记忆，或叫引用
+
+    :s/\(.*\):\(.*\)/\2 : \1/ : reverse fields separated by :
+
+     反转以 : 分隔的字段
+
+    :%s/^\(.*\)\n\1/\1$/ : delete duplicate lines
+
+     删除重复的行
+
+    # non-greedy matching \{-}
+
+    # 非贪婪匹配 \{-}
+
+    :%s/^.\{-}pdf/new.pdf/ : delete to 1st pdf only
+
+     只删除到第一个 pdf
+
+    # use of optional atom \?
+
+    :%s#\#\L&amp;#gc : lowercase with optional leading characters
+
+     不懂
+
+    # over possibly many lines
+
+    # 匹配尽可能多的行
+
+    :%s/// : delete possibly multi-line comments
+
+     删除尽可能多的注释
+
+    :help /\{-} : help non-greedy
+
+     非贪婪匹配的帮助
+
+    # substitute using a register
+
+    # 使用寄存器替换
+
+    :s/fred/a/g : sub "fred" with contents of register "a"
+
+     用"a"寄存器里的内容替换"fred"
+
+    :s/fred/\=@a/g : better alternative as register not displayed
+
+     更好的方法，不用显示寄存器内容
+
+    # multiple commands on one line
+
+    # 写在一行里的复杂命令
+
+    :%s/\f\+\.gif\&gt;/\r&amp;\r/g | v/\.gif$/d | %s/gif/jpg/
+
+    # ORing
+
+    :%s/suck\|buck/loopy/gc : ORing (must break pipe)
+
+     不懂
+
+    # Calling a VIM function
+
+    # 调用 Vim 函数
+
+    :s/__date__/\=strftime("%c")/ : insert datestring
+
+     插入日期
+
+    # Working with Columns sub any str1 in col3
+
+    # 处理列，替换所有在第三列中的 str1
+
+    :%s:\(\(\w\+\s\+\)\{2}\)str1:\1str2:
+
+    # Swapping first &amp; last column (4 columns)
+
+    # 交换第一列和最后一列 (共4列)
+
+    :%s:\(\w\+\)\(.*\s\+\)\(\w\+\)$:\3\2\1:
+
+    # filter all form elements into paste register
+
+    # 把所有的form元素（就是html里面的form啦）放到register里
+
+    :redir @*|sil exec 'g##p'|redir END
+
+    :nmap ,z :redir @*sil exec
+
+    [email='g@select\textarea\/\=form\)\&gt;@p'redir]'g@select\textarea\/\=form\)\&gt;@p'redir[/email]
+
+     END
+
+    # increment numbers by 6 on certain lines only
+
+    # 不懂
+
+    :g/loc\|function/s/\d/\=submatch(0)+6/
+
+    # better
+
+    # 更好的方法
+
+    :%s#txtdev\zs\d#\=submatch(0)+1#g
+
+    :h /\zs
+
+    # increment only numbers gg\d\d by 6 (another way)
+
+    # 不懂
+
+    :%s/\(gg\)\@z :%s#\=expand("")\&gt;#
+
+    # Pull Visually Highlighted text into LHS of a substitute
+
+    # 不懂
+
+    :vmap z :%s/\*\&gt;/
+
+    ----------------------------------------
+
+    # all following performing similar task, substitute within substitution
+
+    # Multiple single character substitution in a portion of line only
+
+    :%s,\(all/.*\)\@/ : display all lines fred but not freddy
+
+     显示所有全字匹配 fred 的行
+
+    :g//z#.5 : display with context
+
+     显示上下文
+
+    :g//z#.5|echo "==========" : display beautifully
+
+     显示得很漂亮
+
+    :g/^\s*$/d : delete all blank lines
+
+     删除所有的空行
+
+    :g!/^dd/d : delete lines not containing string
+
+     删除所有行首不是 dd 的行
+
+    :v/^dd/d : delete lines not containing string
+
+     同上
+
+    :g/fred/,/joe/d : not line based (very powerfull)
+
+     并不基于行(非常强大)
+
+    :g/{/ ,/}/- s/\n\+/\r/g : Delete empty lines but only between {...}
+
+     删除在 {...} 只见的空行
+
+    :v/./.,/./-1join : compress empty lines
+
+     压缩空行
+
+    :g/^$/,/./-j : compress empty lines
+
+     压缩空行
+
+    :g/ as 5 characters)
+
+    :.,$g/^\d/exe "norm! \": increment numbers
+
+     增加每行行首的数字
+
+    :'a,'bg/\d\+/norm! ^A : increment numbers
+
+     增加标记 a 到标记 b 只见每行行首的数字
+
+    # storing glob results (note must use APPEND)
+
+    # 保存全局命令的结果 (注意必须使用添加模式)
+
+    :g/fred/y A : append all lines fred to register a
+
+     添加所有为fred所匹配的行到register a
+
+    :'a,'b g/^Error/ . w &gt;&gt; errors.txt
+
+    # duplicate every line in a file wrap a print '' around each duplicate
+
+    # 复制每一行，然后在复制出来的每一行两侧加上一个 print '复制出来的内容'
+
+    :g/./yank|put|-1s/'/"/g|s/.*/Print '&amp;'/
+
+    # replace string with contents of a file, -d deletes the "mark"
+
+    # 用文件中的内容替换字符串，-d 表示删除“标记”
+
+    :g/^MARK$/r tmp.ex | -d
+
+    ----------------------------------------
+
+    # Global combined with substitute (power editing)
+
+    # 全局命令和替换命令联姻 (强大的编辑能力)
+
+    :'a,'bg/fred/s/joe/susan/gic : can use memory to extend matching
+
+     可以使用反向引用来匹配
+
+    :g/fred/,/joe/s/fred/joe/gic : non-line based (ultra)
+
+    ----------------------------------------
+
+    # Find fred before beginning search for joe
+
+    # 先找fred，然后找joe
+
+    :/fred/;/joe/-2,/sid/+3s/sally/alley/gIC
+
+    ----------------------------------------
+
+    # Absolutely essential
+
+    # 基础
+
+    ----------------------------------------
+
+    * # g* g# : find word under cursor () (forwards/backwards)
+
+     寻找光标处的狭义单词() (前向/后向)
+
+    % : match brackets {}[]()
+
+     括号配对寻找 {}[]()
+
+    . : repeat last modification
+
+    matchit.vim : % now matches tags : word completion in insert mode
+
+     插入模式下的单词自动完成
+
+     : Line complete SUPER USEFUL
+
+     行自动完成(超级有用)
+
+    / : Pull onto search/command line
+
+     把狭义单词 写到 搜索命令行
+
+    / : Pull onto search/command line
+
+     把广义单词 写到 搜索命令行
+
+    :set ignorecase : you nearly always want this
+
+     搜索时忽略大小写
+
+    :syntax on : colour syntax in Perl,HTML,PHP etc
+
+     在 Perl,HTML,PHP 等中进行语法着色
+
+    :h regexp : type control-D and get a list all help topics containing
+
+     按下 control-D 键即可得到包含有 regexp 的帮助主题的列表
+
+     regexp (plus use TAB to Step thru list)
+
+     (使用TAB可以实现帮助的自动补齐)
+
+    ----------------------------------------
+
+    # MAKE IT EASY TO UPDATE/RELOAD _vimrc
+
+    # 使更新 _vimrc 更容易
+
+    :nmap ,s :source $VIM/_vimrc
+
+     # 译释：nmap 是绑定一个在normal模式下的快捷键
+
+    :nmap ,v :e $VIM/_vimrc
+
+     # 译释：在normal模式下，先后按下 ,s 两个键执行_vimrc，而 ,v 则是编辑_vimrc
+
+    ----------------------------------------
+
+    #VISUAL MODE (easy to add other HTML Tags)
+
+    # visual 模式 (例子是：轻松添加其他的 HTML Tags)
+
+    :vmap sb "zdiz : wrap around VISUALLY selected Text
+
+     在visual模式下选中的文字前后分别
+
+    加上和
+
+    :vmap st "zdiz ?&gt; : wrap around VISUALLY selected Text
+
+     在visual模式下选中的文字前后分别加
+
+    上
+
+    ----------------------------------------
+
+    # Exploring
+
+    # 文件浏览
+
+    :Exp(lore) : file explorer note capital Ex
+
+     开启目录浏览器，注意首字母E是大写的
+
+    :Sex(plore) : file explorer in split window
+
+     在一个分割的窗口中开启目录浏览器
+
+    :ls : list of buffers
+
+     显示当前buffer的情况
+
+    :cd .. : move to parent directory
+
+     进入父目录
+
+    :args : list of files
+
+     显示目前打开的文件
+
+    :lcd %:p:h : change to directory of current file
+
+     更改到当前文件所在的目录
+
+    :autocmd BufEnter * lcd %:p:h : change to directory of current file
+
+    automatically (put in _vimrc)
+
+     自动更改到当前文件所在的目录 (放到 _vimrc)
+
+    ----------------------------------------
+
+    # Buffer Explorer (Top Ten Vim Script)
+
+    # 缓冲区(buffer)浏览器 (第三方的一个最流行的脚本)
+
+    # needs bufexplorer.vim
+
+    http://www.vim.org/script.php?script_id=42
+
+    
+
+    # 需要下载 bufexplorer.vim
+
+    \be : buffer explorer list of buffers
+
+     在缓冲区浏览器中打开缓冲区列表
+
+    \bs : buffer explorer (split window)
+
+     以分割窗口的形式打开缓冲区浏览器
+
+    ----------------------------------------
+
+    # Changing Case
+
+    guu : lowercase line
+
+     行小写
+
+    gUU : uppercase line
+
+     行大写
+
+    Vu : lowercase line
+
+     行小写
+
+    VU : uppercase line
+
+     行大写
+
+    g~~ : flip case line
+
+     行翻转
+
+    vEU : Upper Case Word
+
+     字大写(狭义字)
+
+    vE~ : Flip Case Word
+
+     字翻转(狭义字)
+
+    ggguG : lowercase entire file
+
+     把整个文章全部小写
+
+    # Titlise Visually Selected Text (map for .vimrc)
+
+    vmap ,c :s/\/\u\1\L\2/g
+
+    # Uppercase first letter of sentences
+
+    # 大写所有句子的第一个字母
+
+    :%s/[.!?]\_s\+\a/\U&amp;\E/g
+
+    ----------------------------------------
+
+    gf : open file name under cursor (SUPER)
+
+     取当前光标处的广义字作为文件名，然后试图打开它！
+
+    ga : display hex,ascii value of char under cursor
+
+     显示光标处字符的ascii,hex,oct,...
+
+    ggVGg? : rot13 whole file
+
+     用rot13编码整个文件
+
+    ggg?G : rot13 whole file (quicker for large file)
+
+     用rot13编码整个文件(对大文件更快一些)
+
+    :8 | normal VGg? : rot13 from line 8
+
+     从第8行开始，用rot13编码后面的文本
+
+    :normal 10GVGg? : rot13 from line 8
+
+     从第8行开始，用rot13编码后面的文本
+
+    # 【关于rot13——谁让英文是偶数个字母啊】
+
+    # ROT13 是一种简单的编码，它把字母分成前后两组，每组13个，编码和解码
+
+    # 的算法相同，仅仅交换字母的这两个部分，即：[a..m] --&gt; [n..z] 和 [n..z]
+
+    # --&gt; [a..m] 。 ROT13 用简易的手段使得信件不能直接被识别和阅
+
+    # 读，也不会被搜索匹配程序用通常的方法直接找到。经常用于 USENET 中发表一
+
+    # 些攻击性或令人不快的言论或有简单保密需要的文章。
+
+    # 由于 ROT13 是自逆算法，所以，解码和编码是同一个过程。
+
+    , : increment,decrement number under cursor
+
+     增加,减少 光标处的狭义字所表示的数字
+
+     win32 users must remap CNTRL-A
+
+     Win32的用户可能需要重新定义一下Ctrl-A
+
+    =5*5 : insert 25 into text (mini-calculator)
+
+     插入25 (一个迷你计算器)
+
+    ----------------------------------------
+
+    # Makes all other tips superfluous
+
+    :h 42 : also
+
+    http://www.google.com/search?q=42
+
+    
+
+    :h holy-grail
+
+    :h!
+
+    ----------------------------------------
+
+    # Markers &amp; moving about
+
+    # 标记和移动
+
+    '. : jump to last modification line (SUPER)
+
+     跳到最后修改的那一行 (超级有用)
+
+    `. : jump to exact spot in last modification line
+
+     不仅跳到最后修改的那一行，还要定位到修改点
+
+    g; : cycle thru recent changes (oldest first) (new in vim6.3)
+
+     循环跳转修改点(从最老的修改点开始) (vim6.3中新增)
+
+    g, : reverse direction (new in vim6.3)
+
+     反向循环跳转修改点 (vim6.3中新增)
+
+    :changes
+
+    :h changelist : help for above
+
+     : retrace your movements in file (starting from most recent)
+
+     依次沿着你的跳转记录向回跳 (从最近的一次开始)
+
+     : retrace your movements in file (reverse direction)
+
+     依次沿着你的跳转记录向前跳
+
+    :ju(mps) : list of your movements
+
+     列出你跳转的足迹
+
+    :help jump-motions
+
+    :history : list of all your commands
+
+     列出历史命令记录
+
+    :his c : commandline history
+
+     命令行命令历史
+
+    :his s : search history
+
+     搜索命令历史
+
+    q/ : Search history Window
+
+     搜索命令历史的窗口
+
+    q: : commandline history Window
+
+     命令行命令历史的窗口
+
+    : : history Window
+
+     历史命令记录的窗口
+
+    ----------------------------------------
+
+    # Abbreviations &amp; maps
+
+    # # 缩写和键盘映射
+
+    :map :'a,'bw! c:/aaa/x
+
+     # 译释：map是映射一个normal模式下的键
+
+     # 这里是把F7键映射成把标记a到标记b中间的内容另存为一个文件/aaa/x
+
+     # 标记(mark)的方法：把光标移动到需要标记的地方，输入m，然后输
+
+    入标记名，例如a
+
+     # 引用标记的方法：'a ，即：单引号加标记名
+
+    :map :r c:/aaa/x
+
+     # 译释：把F8键映射成在当前位置插入文件/aaa/x的内容
+
+    :map :.w! c:/aaa/xr
+
+     # 译释：.（点号）表示当前行
+
+     # 所以F11就是把当前行存为/aaa/xr
+
+     # 最后的表示一个回车
+
+    :map :r c:/aaa/xr
+
+    :ab php : list of abbreviations beginning php
+
+     列出php表示的缩写
+
+     # 译释：定义一个缩写使用：:iab hm hmisty
+
+     # 一个有趣的现象是，它列出的会是php和它的前子串开头的缩写
+
+     # 例如，有这么几个缩写：
+
+     # h =&gt; hmisty1 , hm =&gt; hmisty2 , hmi =&gt; hmisty3, m =&gt; hmisty4
+
+     # 那么使用 :ab hm会显示这么几个缩写：hm 和 h
+
+     # 而不是你想象中的 hm 和 hmi
+
+    :map , : list of maps beginning ,
+
+     列出以逗号开始的键盘映射
+
+    # allow use of F10 for mapping (win32)
+
+    # 允许 F10 的映射用法 (win32)
+
+    set wak=no : :h winaltkeys
+
+     参见 :h winaltkeys
+
+    # For use in Maps
+
+    # 在键盘映射中常用的表示
+
+     : carriage Return for maps
+
+     回车
+
+     : Escape
+
+     ESC
+
+     : normally \
+
+     转义符号 \
+
+     : | pipe
+
+     管道符号
+
+     : backspace
+
+     退格符号
+
+    # display RGB colour under the cursor eg #445588
+
+    # 显示光标下数值的 RGB 颜色
+
+    :nmap c :hi Normal guibg=#=expand("")
+
+    ----------------------------------------
+
+    # Using a register as a map (preload registers in .vimrc)
+
+    :let @m=":'a,'bs/"
+
+    :let @s=":%!sort -u"
+
+    ----------------------------------------
+
+    # List your Registers
+
+    # 列出寄存器(Registers)
+
+    :reg : display contents of all registers
+
+     显示所有寄存器的内容
+
+    :reg a : display content of individual registers
+
+     显示 a 寄存器的内容
+
+    "1p.... : retrieve numeric registers one by one
+
+    :let @y='yy@"' : pre-loading registers (put in .vimrc)
+
+    ----------------------------------------
+
+    # Useful tricks
+
+    # 有用的窍门
+
+    "
+
+    [email=ayy@a]ayy@a[/email]
+
+     : execute "Vim command" in a text file
+
+     把当前行作为一个Vim命令来执行
+
+    yy@" : same thing using unnamed register
+
+     同上，不过是用匿名寄存器
+
+    u@. : execute command JUST typed in
+
+     只执行键入的命令
+
+    ----------------------------------------
+
+    # Get output from other commands (requires external programs)
+
+    # 从其他程序获取输出 (需要外部程序)
+
+    :r!ls.exe : reads in output of ls
+
+     读取ls的输出到当前位置
+
+ &amp;nbs
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

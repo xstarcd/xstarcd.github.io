@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>SVN强制写日志</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">SVN强制写日志</a>
+<ul>
+<li><a href="#toc_1.1">Windows环境</a>
+<li><a href="#toc_1.2">Linux</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">SVN强制写日志</h1>
+
+<p>
+<a href="http://www.cnblogs.com/jamin/archive/2008/11/15/1334091.html">http://www.cnblogs.com/jamin/archive/2008/11/15/1334091.html</a>
+</p>
+
+<h2 id="toc_1.1">Windows环境</h2>
+
+<p>
+windows下svn限制强制写日志及只能修改日志脚本，下面是我在svn1.5 下经过测试的绝对可用的脚本，特把正确的脚本分享给大家，希望能给也需要设置此功能，被一些不正确的脚本搞的头大的朋友一些帮助。
+</p>
+
+<ul>
+<li>
+svn客户端修改日志功能（且只能修改自己日志）
+
+</ul>
+
+<p>
+找到版本库中hooks目录下，将pre-revprop-change.tmpl文件复制为pre-revprop-change.bat文件，然后将pre-revprop-change.ba文件内容改为：
+</p>
+
+<pre class="brush:bash">
+set repos=%1
+set rev=%2
+set user=%3
+set propname=%4
+set action=%5
+
+for /f  "usebackq"   %%k in   (`svnlook author %repos% -r %rev%`)   do   @set  var=%%k
+
+set rightUser=0
+if "%3" == "%superUser%"  set rightUser=1
+if "%3" == "%var%" set rightUser=1
+
+if %rightUser% == 0 goto ERROR_USER
+
+goto :SUCCESS_EXIT
+
+:ERROR_USER
+echo 只允许用户修改自己的日志 &gt;&amp;2
+goto ERROR_EXIT
+
+:ERROR_EXIT
+exit 1
+
+:SUCCESS_EXIT
+exit 0
+</pre>
+
+<ul>
+<li>
+到版本库中hooks目录下，将pre-commit.tmpl文件复制为pre-commit.bat文件，然后将pre-commit.bat 文件内容改为：
+
+</ul>
+
+<pre class="brush:bash">
+setlocal
+set REPOS=%1
+set TXN=%2
+rem check that logmessage contains at least 5 characters
+svnlook log "%REPOS%" -t "%TXN%" | findstr ".........." &gt; nul
+if %errorlevel% gtr 0 goto err
+exit 0
+:err
+echo 提交必须写日志!&gt;&amp;2
+exit 1
+</pre>
+ 
+<h2 id="toc_1.2">Linux</h2>
+
+<p>
+pre-commit.tmpl，然后更名pre-commit并加上执行权限:
+</p>
+<pre class="brush:bash">
+#!/bin/sh
+
+REPOS="$1"
+TXN="$2"
+
+RES="OK"
+# Make sure that the log message contains some text.
+SVNLOOK=/app/subversion/bin/svnlook
+$SVNLOOK log -t "$TXN" "$REPOS" | egrep "[^[:space:]]+" &gt;/dev/null || unset RES
+if [ "$RES" != "OK" ]
+then
+    echo "You must input some comments for you commit" &gt;&amp;2
+    exit 1
+fi
+
+# All checks passed, so allow the commit.
+exit 0
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

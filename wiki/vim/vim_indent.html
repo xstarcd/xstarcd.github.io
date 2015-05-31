@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Vim代码缩进设置</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+
+<h1 id="toc_1">Vim代码缩进设置</h1>
+
+<p>
+来源：[<a href="http://linux-wiki.cn/wiki/zh-hans/Vim%E4%BB%A3%E7%A0%81%E7%BC%A9%E8%BF%9B%E8%AE%BE%E7%BD%AE">http://linux-wiki.cn/wiki/zh-hans/Vim%E4%BB%A3%E7%A0%81%E7%BC%A9%E8%BF%9B%E8%AE%BE%E7%BD%AE</a> | Vim代码缩进设置]
+</p>
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Vim代码缩进设置</a>
+<ul>
+<li><a href="#toc_1.1">常用设置</a>
+<li><a href="#toc_1.2">与自动缩进相关的变量表</a>
+<li><a href="#toc_1.3">与TAB相关的变量表</a>
+<li><a href="#toc_1.4">设置样例</a>
+</ul>
+</ul>
+</div>
+
+<p>
+编程时代码缩进是相当必要的，使用Vim处理代码缩进并不困难，只要了解一些参数就可灵活运用。
+</p>
+
+<h2 id="toc_1.1">常用设置</h2>
+<p>
+缩进设置最常用的是：
+</p>
+<pre>
+ :filetype indent on 
+</pre>
+
+<p>
+它将开启针对文件具体类型的缩进。
+</p>
+
+<p>
+下面的选项需要在命令模式下用''set''设置的选项的含义。使用方法如：
+</p>
+<pre>
+set ci       # 开启cindent
+set noet     # 关闭expandtab
+set sw=4     # shiftwidth=4
+</pre>
+
+
+<h2 id="toc_1.2">与自动缩进相关的变量表</h2>
+<table>
+<tr>
+<td>
+变量名
+</td>
+<td>
+缩写
+</td>
+<td>
+含义
+</td>
+</tr>
+<tr>
+<td>
+(no)autoindent
+</td>
+<td>
+ai
+</td>
+<td>
+自动缩进，即为新行自动添加与当前行同等的缩进。
+</td>
+</tr>
+<tr>
+<td>
+(no)cindent
+</td>
+<td>
+ci
+</td>
+<td>
+类似C语言程序的缩进
+</td>
+</tr>
+<tr>
+<td>
+(no)smartindent
+</td>
+<td>
+si
+</td>
+<td>
+基于autoindent的一些改进
+</td>
+</tr>
+</table>
+
+
+<h2 id="toc_1.3">与TAB相关的变量表</h2>
+<ul>
+<li>
+[<a href="http://www.vex.net/~x/python_and_vim.html|与TAB相关的变量表]">http://www.vex.net/~x/python_and_vim.html|与TAB相关的变量表]</a>
+
+</ul>
+<table>
+<tr>
+<td>
+变量名
+</td>
+<td>
+缩写
+</td>
+<td>
+含义
+</td>
+</tr>
+<tr>
+<td>
+tabstop=X
+</td>
+<td>
+ts
+</td>
+<td>
+编辑时一个TAB字符占多少个空格的位置。
+</td>
+</tr>
+<tr>
+<td>
+shiftwidth=X
+</td>
+<td>
+sw
+</td>
+<td>
+使用每层缩进的空格数。
+</td>
+</tr>
+<tr>
+<td>
+(no)expandtab
+</td>
+<td>
+(no)et
+</td>
+<td>
+是否将输入的TAB自动展开成空格。开启后要输入TAB，需要Ctrl-V&lt;TAB&gt;
+</td>
+</tr>
+<tr>
+<td>
+softtabstop=X
+</td>
+<td>
+sts
+</td>
+<td>
+方便在开启了et后使用退格（backspace）键，每次退格将删除X个空格
+</td>
+</tr>
+<tr>
+<td>
+(no)smarttab
+</td>
+<td>
+(no)st
+</td>
+<td>
+开启时，在行首按TAB将加入sw个空格，否则加入ts个空格。
+</td>
+</tr>
+</table>
+
+
+<h2 id="toc_1.4">设置样例</h2>
+<p>
+灵活使用上面的选项，就可以很好地调整缩进设置。
+</p>
+
+<p>
+可以将下述设置加入到''~/.vimrc''中：
+</p>
+<pre class="brush: bash">
+set sw=4
+set ts=4
+filetype indent on
+autocmd FileType python setlocal et sta sw=4 sts=4
+</pre>
+
+<p>
+前面两行将shiftwidth和tabstop都设为4。第三行开启自动的缩进检测。最后一行则根据Python语言的建议（将tab展成四个空格）进行了专门设置。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

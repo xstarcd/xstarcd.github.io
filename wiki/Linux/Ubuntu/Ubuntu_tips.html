@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>Ubuntu_tips</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Ubuntu_tips</h1>
+
+<ul>
+<li>
+Ubuntu安装时,software select中"Basic Ubuntu server"、"Virtual machine host"包括哪些包
+<pre class="brush:bash">
+#tasksel - Debian 系统安装任务选择工具
+#tasksel-data - 用于安装 Debian 系统的官方系统安装任务
+sudo apt-get install tasksel
+
+# 列出安装任务名称
+tasksel --list-tasks|grep 'Basic Ubuntu server'
+i server    Basic Ubuntu server
+
+# 查看安装任务包内容
+tasksel --task-packages server
+
+# 不带参数执行tasksel，进入选择安装界面
+</pre>
+
+<ul>
+<li>
+用法
+<pre>
+tasksel install &lt;软件集&gt;
+tasksel remove &lt;软件集&gt;
+tasksel [选项]
+    -t, --test          测试模式，不会真正执行任何操作
+        --new-install   自动安装某些软件集
+        --list-tasks    列出将要显示的软件集并退出
+        --task-packages 列出某软件集中的软件包
+        --task-desc     显示某软件集的说明信息
+</pre>
+
+</ul>
+<li>
+Ubuntu重新生成OpenSSH Host Keys
+<pre class="brush:bash">
+rm /etc/ssh/ssh_host_*
+dpkg-reconfigure -fnoninteractive -pcritical openssh-server
+</pre>
+
+<li>
+lightdm开启XDMCP
+<pre class="brush:bash">
+# /etc/lightdm/lightdm.conf
+[XDMCPServer]
+enabled=true
+
+# 增加登录选项，允许输入用户名
+greeter-show-manual-login=true
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

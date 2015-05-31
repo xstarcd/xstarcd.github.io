@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Linux tips</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Linux tips</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">模拟说明du与df结果不一致的问题</a>
+<li><a href="#toc_0.2">last与lastb(wtmp,btmp)</a>
+</ul>
+</ul>
+</div>
+
+
+<h2 id="toc_0.1"><a href="du_df_disaccord_test.html">模拟说明du与df结果不一致的问题</a></h2>
+
+
+<h2 id="toc_0.2">last与lastb(wtmp,btmp)</h2>
+
+<pre class="brush:bash">
+# 清空命令：
+cat /dev/null &gt; /var/log/wtmp
+cat /dev/null &gt; /var/log/btmp
+cat /dev/null &gt; /var/log/lastlog
+
+# 查看命令：
+lastlog  #/var/log/lastlog - reports the most recent login of all users or of a given user
+last     #/var/log/wtmp - last, lastb - show listing of last logged in users
+lastb    #/var/log/btmp
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

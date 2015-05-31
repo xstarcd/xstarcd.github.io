@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>虚拟化方案之－－kvm简单教程</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>虚拟化方案之－－kvm简单教程</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">安装</a>
+<li><a href="#toc_0.2">网络配置</a>
+<li><a href="#toc_0.3">KVM的使用方法</a>
+<ul>
+<li><a href="#toc_0.3.1">创建虚拟磁盘</a>
+<li><a href="#toc_0.3.2">创建虚拟机</a>
+<li><a href="#toc_0.3.3">启动虚拟机</a>
+<li><a href="#toc_0.3.4">磁盘性能改进</a>
+</ul>
+<li><a href="#toc_0.4">半虚拟化驱动</a>
+<li><a href="#toc_0.5">virt-manager</a>
+</ul>
+</ul>
+</div>
+
+<p>
+包括qemu-kvm的编译安装、网桥及tap配置、半虚拟化驱动（virtio)的使用方式等。
+</p>
+
+<p>
+原文：<a href="http://forum.ubuntu.com.cn/viewtopic.php?f=65&amp;t=154792">http://forum.ubuntu.com.cn/viewtopic.php?f=65&amp;t=154792</a>
+</p>
+
+<h2 id="toc_0.1">安装</h2>
+
+<ul>
+<li>
+KVM的网站
+
+<ul>
+<li>
+<a href="http://sourceforge.net/projects/kvm/files/">http://sourceforge.net/projects/kvm/files/</a>
+
+<li>
+<a href="http://www.linux-kvm.org/">http://www.linux-kvm.org/</a>
+
+</ul>
+<li>
+编译安装
+<pre class="brush:bash">
+# Ubuntu中解依编译信赖关系
+sudo apt-get build-dep qemu-kvm
+
+tar -xzvf qemu-kvm-1.0.tar.gz
+cd qemu-kvm-1.0
+/configure --prefix=/usr/local/kvm
+make
+sudo make install
+
+# 安装好以后加载KVM模块
+# 要注意，系统重启后要重新加载kvm内核模块，从源安装时会有qemu-kvm服务来自动加载该模块。
+sudo modprobe kvm
+sudo modprobe kvm-intel  #INTEL处理器就用这个
+sudo modprobe kvm-amd    #AMD处理器就用这个
+</pre>
+
+<li>
+从源安装
+<pre class="brush:bash">
+sudo apt-get install qemu-kvm
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">网络配置</h2>
+
+<p>
+特别注意，大部分不能桥接无线网卡。。。只能桥接PCI网卡。。。。
+</p>
+
+<ul>
+<li>
+安装工具
+<pre class="brush:bash">
+# 桥接工具：
+sudo apt-get install bridge-utils
+# 创建TAP界面的工具：
+sudo apt-get install uml-utilities
+</pre>
+
+<li>
+编辑网络配置:/etc/network/interfaces
+<pre class="brush:bash">
+auto eth0
+iface eth0 inet manual
+
+auto tap0
+iface tap0 inet manual
+up ifconfig $IFACE 0.0.0.0 up
+down ifconfig $IFACE down
+tunctl_user lm              # lm是用户名，在这里换为你的用户名
+
+auto br0
+iface br0 inet static       # 当然这里也可以使用DHCP分配
+bridge_ports eth0 tap0
+address 192.168.1.3
+netmask 255.255.255.0
+gateway 192.168.1.1
+</pre>
+
+<li>
+激活tap0和br0(有时不生效，但重启后就可以了)
+<pre class="brush:bash">
+sudo /sbin/ifup tap0
+sudo /sbin/ifup br0
+sudo service networking restart 
+# 好了以后ifconfig看一下，多了一个tap0和br0, br0上的IP地址就是你本机的IP地址。
+</pre>
+
+</ul>
+
+<p>
+如果同时运行多个GUEST OS ，则网络设置要改一下，在/etc/network/interfaces 里加几个tap界面就行了，每个GUEST OS单独使用一个TAP。
+</p>
+
+<p>
+比如说现在要同时运行3个GUEST OS ，则配置文件如下：
+</p>
+<pre class="brush:bash">
+auto tap0
+iface tap0 inet manual
+up ifconfig $IFACE 0.0.0.0 up
+down ifconfig $IFACE down
+tunctl_user lm             # lm是用户名，在这里换为你的用户名
+
+auto tap1
+iface tap1 inet manual
+up ifconfig $IFACE 0.0.0.0 up
+down ifconfig $IFACE down
+tunctl_user lm
+
+auto tap2
+iface tap2 inet manual
+up ifconfig $IFACE 0.0.0.0 up
+down ifconfig $IFACE down
+tunctl_user lm
+
+auto br0
+iface br0 inet static       # 当然这里也可以使用DHCP分配
+bridge_ports eth0 tap0 tap1 tap2
+address 192.168.1.3
+netmask 255.255.255.0
+gateway 192.168.1.1
+</pre>
+
+<h2 id="toc_0.3">KVM的使用方法</h2>
+
+<ul>
+<li>
+KVM的使用方法具体可以参考: <code>/usr/local/kvm/bin/qemu-system-x86_64 --help</code>
+
+</ul>
+
+<h3 id="toc_0.3.1">创建虚拟磁盘</h3>
+<pre class="brush:bash">
+mkdir kvm;cd kvm
+/usr/local/kvm/bin/qemu-img create -f qcow2 winxp.img 10G
+</pre>
+
+<h3 id="toc_0.3.2">创建虚拟机</h3>
+<pre class="brush:bash">
+sudo /usr/local/kvm/bin/qemu-system-x86_64 -m 512 -drive file=/home/lm/kvm/winxp.img,cache=writeback \
+-localtime -net nic,vlan=0,macaddr=52-54-00-12-34-01 -net tap,vlan=0,ifname=tap0,script=no \
+-boot d -cdrom /home/lm/iso/winxp.iso -smp 2 -soundhw es1370
+</pre>
+<ul>
+<li>
+<code>-m 512</code>:分配512MB的内存给GUEST OS
+
+<li>
+<code>-drive file=/home/lm/kvm/winxp.img,cache=writeback</code>: 使用虚拟磁盘的文件和路径，并启用writeback缓存。
+
+<li>
+<code>-localtime</code>: 使用本地时间（一定要加这个参数，不然虚拟机时间会有问题）
+
+<li>
+<code>-net nic,vlan=0,macaddr=52-54-00-12-34-01 -net tap,vlan=0,ifname=tapo,script=no</code>: 使用网络，并连接到一个存在的网络设备tap0,注意mac地址一定要自己编一个，特别是如果你虚拟了多个系统并且要同时运行的话，不然就MAC冲突了。
+
+<li>
+<code>-boot d</code>: 从光盘启动 （从硬盘启动则为 <code>-boot c</code> )
+
+<li>
+<code>-cdrom /home/lm/iso/winxp.iso</code>: 使用的光盘镜像，如果要使用物理光驱的话就是 <code>-cdrom /dev/cdrom</code>
+
+<li>
+<code>-smp 2</code>: smp处理器个数为2个，如果你是4核处理器，后面的数字就为4（如果不开启此选项，则只能以单核模式运行）。
+
+<li>
+启动后开始安装系统。
+
+</ul>
+
+<h3 id="toc_0.3.3">启动虚拟机</h3>
+<ul>
+<li>
+在上面命令基础上，改启动为<code>-boot c</code>，取消<code>-cdrom</code>。
+<pre class="brush:bash">
+sudo /usr/local/kvm/bin/qemu-system-x86_64 -m 512 -drive file=/home/lm/kvm/winxp.img,cache=writeback \
+-localtime -net nic,vlan=0,macaddr=52-54-00-12-34-01 -net tap,vlan=0,ifname=tap0,script=no \
+-boot c -smp 2 -soundhw es1370
+</pre>
+
+<li>
+然后在客户端里设置好IP地址就可以使用了，但是KVM的显卡能力不行，可以通过rdesktop远程连接解决
+<pre class="brush:bash">
+rdesktop 192.168.1.4:3389 -u administrator -p ****** -g 1280x750 -D -r sound:local
+</pre>
+
+</ul>
+
+<h3 id="toc_0.3.4">磁盘性能改进</h3>
+<p>
+现在已经找到了原来磁盘性能糟糕的原因，按照以往的方法是用 -hda disk.img 的方法来使用虚拟磁盘，现在版本更新以后时候 -drive file=/home/lm/kvm/winxp.img,cache=writeback 来使用虚拟磁盘，请广大使用KVM的用户注意这里的变化。
+</p>
+<ul>
+<li>
+<code>-hda disk.img</code>: 以往的虚拟磁盘挂接方式，性能要差一些。
+
+<li>
+<code>-drive file=/home/lm/kvm/winxp.img,cache=writeback</code>: 新版本的挂载方式，性要更好。
+
+<li>
+如果你使用的是raw文件系统或LVM分区，则应该将<code>cache=writeback</code>改为<code>cache=none</code>。
+
+<li>
+建议大家使用LVM分区方式，这样虚拟机的磁盘性能可以接近物理机的磁盘性能，kvm使用lvm卷的示例：
+<pre class="brush:bash">
+sudo /usr/local/kvm/bin/qemu-system-x86_64 -m 512 -drive file=/dev/vg0/lv1,if=virtio,boot=on,cache=none \
+-localtime -net nic,vlan=0,model=virtio,macaddr=52-54-00-12-34-01 -net tap,vlan=0,ifname=tap0,script=no \
+-boot c -smp 2
+</pre>
+
+</ul>
+
+<h2 id="toc_0.4">半虚拟化驱动</h2>
+
+<ul>
+<li>
+下载virtio驱动
+
+</ul>
+
+<p>
+WIN系统需要下载的驱动程序：<a href="http://www.linux-kvm.com">http://www.linux-kvm.com</a>
+</p>
+
+<p>
+在左手边有一个Windows Guest Drivers,下载cdrom image和floppy image
+</p>
+
+<ul>
+<li>
+安装时添加第三方驱动
+
+</ul>
+<p>
+使用半虚拟化驱动（virtio)可以得到更好的磁盘性能和网络性能，使用半虚拟化驱动的时候，KVM的启动参数如下(安装WIN时）：
+</p>
+<pre class="brush:bash">
+sudo /usr/local/kvm/bin/qemu-system-x86_64 -m 512 -drive file=/home/lm/kvm/winxp.img,if=virtio,boot=on,cache=writeback \
+-localtime -net nic,vlan=0,model=virtio,macaddr=52-54-00-12-34-01 -net tap,vlan=0,ifname=tap0,script=no \
+-boot d -cdrom /home/lm/iso/winxp.iso -fda=/disk/virtio-win-1.1.11-0.vfd -smp 2
+
+# 在file=/home/lm/kvm/winxp.img,if=virtio,boot=on,cache=writeback中:if=virtio,通过virio来使用磁盘
+# 在-net nic,vlan=0,model=virtio,macaddr=52-54-00-12-34-01中:model=virtio,通过virtio来使用网络
+# -fda=/disk/virtio-win-1.1.11-0.vfd: 驱动程序的软盘镜像，-fda为添加一个软盘驱动器
+</pre>
+
+<p>
+在安装WINDOWS的时候需要注意：在虚拟机启动从光盘引导启动WINDOWS安装的时候（最开始的时候）会提示你，按F6选择第三方驱动程序，按F6以后过几秒钟，它会出现选择第三方驱动的画面，按下S，会让你选择你要加载的第三方驱动。参考：<a href="http://www.linux-kvm.org/page/WindowsGuestDrivers/viostor/installation">http://www.linux-kvm.org/page/WindowsGuestDrivers/viostor/installation</a>
+</p>
+
+<p>
+在WINDOWS安装完成以后，还要安装virtio网络驱动程序，修改KVM启动参数：
+</p>
+<pre class="brush:bash">
+sudo /usr/local/kvm/bin/qemu-system-x86_64 -m 512 -drive file=/home/lm/kvm/winxp.img,if=virtio,boot=on,cache=writeback \
+-localtime -net nic,vlan=0,model=virtio,macaddr=52-54-00-12-34-01 -net tap,vlan=0,ifname=tap0,script=no \
+-boot c -cdrom /home/lm/iso/virtio-win-1.1.11-0.iso -smp 2
+</pre>
+
+<p>
+启动虚拟机，启动好WIN系统以后，在WIN中安装网卡驱动程序（在设备管理器中安装），驱动程序就在虚拟机的光驱中。有时在安装过程中会出现问题，那么去掉cache=writeback重新安装试试。
+</p>
+
+<p>
+现在主流的LINUX系统的内核都集成了virtio驱动，所以在使用半虚拟化驱动安装LINUX的时候可以直接安装，无需加载virtio驱动来安装。
+</p>
+
+<h2 id="toc_0.5">virt-manager</h2>
+
+<ul>
+<li>
+安装
+<pre class="brush:bash">
+sudo apt-get install qemu-kvm bridge-utils virt-manager
+</pre>
+
+<li>
+网桥配置(不用配TAP部份)
+<pre class="brush:bash">
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet manual
+
+auto br0
+iface br0 inet static
+bridge_ports eth0
+address 192.168.1.8
+netmask 255.255.255.0
+gateway 192.168.1.1
+</pre>
+
+<li>
+重启networking服务(如果原来你使用network-manager来管理网络，那么需要停止network-manager)：
+<pre class="brush:bash">
+sudo /etc/init.d/network-manager stop  #停止network-manager服务
+sudo /etc/init.d/networking start      #启动networking服务，需要耐心等待一下
+</pre>
+
+</ul>
+<p>
+这时可以ifconfig看以下br0有没有出现你设定的IP地址，也可以用brctl show来看一下eth0有没有桥接到br0。
+</p>
+
+<ul>
+<li>
+启动vrit-manager: <code>sudo virt-manager</code>
+
+</ul>
+
+<p>
+这里要使用超级用户身份启动，所以要在终端里使用sudo命令启动，如果直接点GNOME菜单中的虚拟系统管理器，那么只能链接到用户模式（除非你新建一个链接，使用SSH方式从本机链接到本机）。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>vim粘贴模式快捷方式</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>vim粘贴模式快捷方式</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">paste 模式</a>
+<li><a href="#toc_0.2">快捷键一</a>
+<li><a href="#toc_0.3">快捷键二</a>
+<li><a href="#toc_0.4">Vim 寄存器一</a>
+<li><a href="#toc_0.5">Vim 寄存器二</a>
+<li><a href="#toc_0.6">快捷键三</a>
+</ul>
+</ul>
+</div>
+
+<p>
+原文：<a href="http://www.cnblogs.com/jianyungsun/archive/2012/07/31/2616671.html">http://www.cnblogs.com/jianyungsun/archive/2012/07/31/2616671.html</a>
+</p>
+
+
+<p>
+有时候，复制文本（尤其是代码）到 Vim，会出现格式错乱的问题。看样子，应该是自动缩进惹得祸。本文不去深究原因，直接给出解决方法。
+</p>
+
+<h2 id="toc_0.1">paste 模式</h2>
+
+<p>
+运行如下命令，进入 paste 模式：
+</p>
+<pre>
+:set paste
+</pre>
+<p>
+进入 paste 模式后，按 i 键进入插入模式，然后再粘帖，文本格式不会错乱了。但粘帖后还需要按 &lt;ESC&gt; 进入普通模式并执行如下命令结束 paste 模式：
+</p>
+<pre>
+:set nopaste
+</pre>
+<p>
+显然，这样非常麻烦。下面我们进行改进。
+</p>
+
+<h2 id="toc_0.2">快捷键一</h2>
+
+<p>
+我们可以利用设置快捷键来简化上面的两个命令。在 ~/.vimrc 中加入如下两行：
+</p>
+<pre>
+map &lt;F10&gt;:set paste&lt;CR&gt;
+map &lt;F11&gt;:set nopaste&lt;CR&gt;
+</pre>
+<p>
+这样，在普通模式下按 F10 （你也可以用自己喜欢的按键）就会进入 paste 模式，按 i 进入插入模式后粘帖，然后按 &lt;ESC&gt; 回到普通模式，再按 F11 结束 paste 模式。
+</p>
+
+<p>
+这样虽然方便了，但占用了两个按键。下面我们继续改进。
+</p>
+
+<h2 id="toc_0.3">快捷键二</h2>
+
+<p>
+在 ~/.vimrc 中加入如下内容：
+</p>
+<pre>
+set pastetoggle=&lt;F11&gt;
+</pre>
+<p>
+这样就可以把上面的 F10 和 F11 合并为一个快捷键来切换 paste 模式了。
+</p>
+
+<p>
+还有更好的办法么？当然！
+</p>
+
+<h2 id="toc_0.4">Vim 寄存器一</h2>
+
+<p>
+关于 Vim 寄存器的详细信息请执行命令 <code>:help registers</code> 查看。
+</p>
+
+<p>
+对于“剪切板”这个概念，Linux 下有两个东西：一个叫做 <strong>选择缓冲区(X11 selection buffer</strong> )，另一个才是 <strong>剪切板(clipboard)</strong> 。
+</p>
+
+<p>
+鼠标或键盘选择内容时，内容实时进入缓冲区，然后按中键将内容插入光标所在位置；
+</p>
+
+<p>
+鼠标或键盘选择内容后，按Ctrl-C（或Shift-Ctrl-C）或菜单中的“复制”，内容进入剪切板，然后按Ctrl-V（或Shift-Ctrl-V）或菜单中的“粘帖”将内容插入光标所在位置。关于这两者的详细信息，请自行搜索，此处不深究。
+</p>
+
+<p>
+Vim 的寄存器 <code>"*</code> 对应系统缓冲区， 寄存器 <code>"+</code> 对应系统剪切板。
+</p>
+
+<p>
+如果你是把选择的内容（在系统缓冲区中）粘帖到 Vim ，只需在普通模式下执行如下命令：
+</p>
+<pre>
+"*p
+</pre>
+<p>
+对应的，如果你是把复制的内容（在系统剪切板中）粘帖到 Vim，只需在普通模式下执行如下命令：
+</p>
+<pre>
+"+p
+</pre>
+<p>
+怎么样？格式没有错乱了吧？
+</p>
+
+<p>
+这样虽然简便很多了，但还是需要输入三个字母，并且这三个字母都得使用右手小拇指输入，甚至其中的两个字母还需要 shift 键配合！
+</p>
+
+<p>
+还有更简单的办法。
+</p>
+
+<h2 id="toc_0.5">Vim 寄存器二</h2>
+
+<p>
+在 ~/.vimrc 里加入如下内容：
+</p>
+<pre>
+set clipboard=unnamed
+</pre>
+<p>
+然后只需在普通模式下按 p 即可把系统缓冲区中的内容粘帖到 Vim 中，就像粘帖用 yy 命令得到的内容一样，并且格式不错乱。
+</p>
+
+<p>
+如果把上面的一行换成如下内容：
+</p>
+<pre>
+set clipboard=unnamedplus
+</pre>
+<p>
+普通模式下按 p 粘帖的内容就是系统剪切板里的内容了。
+</p>
+
+<p>
+这已经足够简便了。在搜索此问题的过程中，我还看到了另外一些办法。
+</p>
+
+<h2 id="toc_0.6">快捷键三</h2>
+
+<p>
+在 ~/.vimrc 里加入如下内容：
+</p>
+<pre>
+inoremap &lt;S-Insert&gt;&lt;ESC&gt;:setl paste&lt;CR&gt;gi&lt;C-R&gt;+&lt;ESC&gt;:setl nopaste&lt;CR&gt;gi
+</pre>
+
+<p>
+这样，你就可以在插入模式下使用 Shift-Insert 快捷键在粘帖系统剪贴板中的内容了。
+</p>
+
+<p>
+把上面一行替换成如下内容同样可以达到相同的效果：
+</p>
+<pre>
+inoremap &lt;S-Insert&gt;&lt;ESC&gt;"+p`]a
+</pre>
+<p>
+注意，这可是在插入模式下哦！比起第 5 节提到的方法，这种方法省去了一次 &lt;ESC&gt; 按键进入普通模式和一次 i 按键重新回到插入模式。
+</p>
+
+<p>
+至此，你需要做的只是：
+</p>
+
+<ol>
+<li>
+复制你想要的内容；
+
+<li>
+回到 Vim 并按 Shift-Insert 快捷键；
+
+<li>
+继续编辑其他内容。
+
+</ol>
+
+<p>
+（原文地址：<a href="http://www.cbug.org/2012/07/23/vim-copy-paste.html）">http://www.cbug.org/2012/07/23/vim-copy-paste.html）</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

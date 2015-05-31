@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>HDFS_HA方案优缺点比较</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">HDFS_HA方案优缺点比较</a>
+<ul>
+<li><a href="#toc_1.1">HDFS HA方案比较</a>
+<li><a href="#toc_1.2">总结</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">HDFS_HA方案优缺点比较</h1>
+
+<p>
+原文：<a href="http://book.51cto.com/art/201205/339043.htm">http://book.51cto.com/art/201205/339043.htm</a>
+</p>
+
+<p>
+《高可用性的HDFS-Hadoop分布式文件系统深度实践》
+</p>
+
+<p>
+2012-05-29 11:31 文艾/王磊 清华大学出版社
+</p>
+
+<h2 id="toc_1.1">HDFS HA方案比较</h2>
+
+<table>
+<tr>
+<td>
+方案名称
+</td>
+<td>
+切换时间
+</td>
+<td>
+元数据一致性
+</td>
+<td>
+是否做checkpoint
+</td>
+<td>
+使用复杂度
+</td>
+<td>
+成熟度
+</td>
+<td>
+相关资料
+</td>
+</tr>
+<tr>
+<td>
+元数据备份
+</td>
+<td>
+长
+</td>
+<td>
+一致
+</td>
+<td>
+否
+</td>
+<td>
+低
+</td>
+<td>
+高
+</td>
+<td>
+较多
+</td>
+</tr>
+<tr>
+<td>
+"Secondary
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+NameNode"
+</td>
+<td>
+长
+</td>
+<td>
+不一定
+</td>
+<td>
+是
+</td>
+<td>
+中
+</td>
+<td>
+高
+</td>
+<td>
+较多
+</td>
+</tr>
+<tr>
+<td>
+Checkpoint Node
+</td>
+<td>
+长
+</td>
+<td>
+不一定
+</td>
+<td>
+是
+</td>
+<td>
+中
+</td>
+<td>
+高
+</td>
+<td>
+较少
+</td>
+</tr>
+<tr>
+<td>
+Backup Node
+</td>
+<td>
+中
+</td>
+<td>
+一致
+</td>
+<td>
+是
+</td>
+<td>
+中
+</td>
+<td>
+中
+</td>
+<td>
+较少
+</td>
+</tr>
+<tr>
+<td>
+DRDB
+</td>
+<td>
+长
+</td>
+<td>
+一致
+</td>
+<td>
+否
+</td>
+<td>
+高
+</td>
+<td>
+高
+</td>
+<td>
+多
+</td>
+</tr>
+<tr>
+<td>
+AvatarNode
+</td>
+<td>
+短
+</td>
+<td>
+一致
+</td>
+<td>
+是
+</td>
+<td>
+高
+</td>
+<td>
+高
+</td>
+<td>
+少
+</td>
+</tr>
+</table>
+
+
+<p>
+其中"元数据备份方案"不能单独使用，因为在系统运行期间，没有相应的Checkpoint机制，会造成日志的无限制增长，因此需要和Secondary NameNode、Checkpoint Node或Backup Node配合使用。
+</p>
+
+<p>
+"DRDB方案"同样如此。
+</p>
+
+<p>
+而对于Secondary NameNode、Checkpoint Node机制，它们只有Checkpoint的功能，而不能保存实时的元数据，因此需要在Namenode上配置元数据备份路径来保存实时元数据。
+</p>
+
+<p>
+对于Backup Node，虽然它可以实时保存元数据，但为防止Backup Node成为一个单点，也需要在NameNode上配置元数据备份路径，保存在本地进行备份。
+</p>
+
+<h2 id="toc_1.2">总结</h2>
+
+<p>
+元数据备份方案使用简单方便，在功能上可替代DRDB；
+</p>
+
+<p>
+Backup Node是 Checkpoint Node的升级版，效率更高；
+</p>
+
+<p>
+Secondary NameNode在低版本的Hadoop中就已存在。
+</p>
+
+<p>
+因此用户实际上可选择的HA组合方案为：
+</p>
+
+<ul>
+<li>
+元数据备份+ Secondary NameNode
+
+</ul>
+
+<p>
+这种方案适用于目前Hadoop 的所有版本，属于冷备，切换时间长。由于Secondary NameNode自身并不实时保存元数据，一旦NameNode上的元数据损坏，将无法恢复到最新的元数据，因此采用元数据备份机制，在NameNode上需要配置多个目录进行备份，常见的做法是再配置一个NFS节点，共享一个目录进行备份。
+</p>
+
+<ul>
+<li>
+元数据备份+ Backup Node
+
+</ul>
+
+<p>
+这种方案只有在0.21.0以上版本才支持，目前的实现只支持冷备，切换时间长，自身实时保存元数据，不需要NFS节点。
+</p>
+
+<ul>
+<li>
+元数据备份+ AvatarNode
+
+</ul>
+
+<p>
+这种方案需要打Patch（补丁包），而且只支持特定的版本（0.20）或者使用FaceBook自身的Hadoop版本，切换时间短，需要一个NFS节点作为Active节点和Standby节点的数据交互节点。
+</p>
+
+<p>
+总之，如果当前Hadoop的版本较低，同时也不允许升级版本的话，可以选择第1种方案；如果版本较新（在0.21.0以上），第2种方案优于第1种；如果对HA切换时间有严格要求的话，则需要选择第3种方案。第1种方案比较简单，资料较多，本书将不再说明，后面着重讲述第2种和第3种方案。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

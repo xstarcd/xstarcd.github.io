@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>ln - make links between files</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>ln - make links between files</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">查找链接文件</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">查找链接文件</h2>
+
+<p>
+使用find,ls命令查找文件有哪些软链接，或者想知道此文件有多少个硬链接同，查找软、硬链接是为我们提供维护时非常方便的。
+</p>
+
+<ul>
+<li>
+使用ls查找某文件、目录的所有软链接
+
+</ul>
+<p>
+例如：查找 /etc/目录有那些软链接
+</p>
+<pre class="brush:bash">
+ls -lR / 2&gt; /dev/null | grep /etc/ | grep ^l 
+</pre>
+
+<ul>
+<li>
+使用find查找某文件的所有硬链接
+
+</ul>
+<p>
+例如：查找/boot/grup/grup.conf的硬链接
+</p>
+
+<pre class="brush:bash">
+# 首先使用`ls -i`查找出inode节点
+ls -i /boot/group/group.conf
+
+# 然后用find查询inode节点找出所有的硬链接
+find / 2&gt; /dev/null -inum 131092
+
+touch a.txt
+ln -Pf a.txt a.plink
+ls -i a.txt
+find ./ -inum $(ls -i a.txt|awk '{print $1}')
+
+./a.plink
+./a.txt
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

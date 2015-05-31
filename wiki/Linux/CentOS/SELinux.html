@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>SELinux</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">SELinux</a>
+</ul>
+</div>
+
+<h1 id="toc_1">SELinux</h1>
+
+<ul>
+<li>
+CentOS SELinux: <a href="http://wiki.centos.org/zh/HowTos/SELinux">http://wiki.centos.org/zh/HowTos/SELinux</a>
+
+<li>
+<a href="CentOS_SELinux_Howto_study.html">SELinux_Howto学习</a>
+
+<li>
+允许root使用authorized_keys登录
+<pre>
+/sbin/restorecon -Rv /root/.ssh
+</pre>
+
+<li>
+SELinux重新标签整个文件系统
+<pre class="brush: bash">
+touch /.autorelabel
+reboot 
+# 假若一个系统在升级至 CentOS-5.2 时停用了 SELinux，然后 SELinux 被启用，重新标签整个文件系统时或许会失败。
+# 如果以上的步骤不能正确地将整个文件系统重新标签，请尝试先执行 genhomedircon 这个指令：
+genhomedircon
+touch /.autorelabel
+reboot
+</pre>
+
+<li>
+SELinux造成mysqld启动失败
+<pre class="brush: bash">
+#/usr/libexec/mysqld: Can't find file: './mysql/plugin.frm' (errno: 13)
+# http://bugs.mysql.com/bug.php?id=65413
+chcon -R system_u:object_r:mysqld_db_t:s0 /var/lib/mysql/
+</pre>
+
+<li>
+SELinux快速开关
+<pre class="brush: bash">
+/usr/sbin/setenforce 0 #立刻关闭 SELINUX
+/usr/sbin/setenforce 1 #立刻启用 SELINUX
+</pre>
+
+<li>
+Enable or Disable SELinux
+<pre>
+http://www.centos.org/docs/5/html/5.2/Deployment_Guide/sec-sel-enable-disable.html
+
+From the command line, you can edit the /etc/sysconfig/selinux file. This file is a symlink to /etc/selinux/config. 
+The configuration file is self-explanatory. Changing the value of SELINUX or SELINUXTYPE changes the state of SELinux
+and the name of the policy to be used the next time the system boots.
+
+ [root@host2a ~]# cat /etc/sysconfig/selinux
+ # This file controls the state of SELinux on the system.
+ # SELINUX= can take one of these three values:
+ #       enforcing - SELinux security policy is enforced.
+ #       permissive - SELinux prints warnings instead of enforcing.
+ #       disabled - SELinux is fully disabled.
+ SELINUX=permissive
+ # SELINUXTYPE= type of policy in use. Possible values are:
+ #       targeted - Only targeted network daemons are protected.
+ #       strict - Full SELinux protection.
+ SELINUXTYPE=targeted
+
+ # SETLOCALDEFS= Check local definition changes
+ SETLOCALDEFS=0
+
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

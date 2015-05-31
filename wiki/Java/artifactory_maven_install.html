@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>artifactory maven仓库安装</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>artifactory maven仓库安装</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">相关站点</a>
+<li><a href="#toc_0.2">安装</a>
+<li><a href="#toc_0.3">配置修改</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">相关站点</h2>
+
+<ul>
+<li>
+artifactory
+
+<ul>
+<li>
+<a href="https://www.jfrog.com/home/v_artifactory_opensource_download">https://www.jfrog.com/home/v_artifactory_opensource_download</a>
+
+<li>
+<a href="http://sourceforge.net/projects/artifactory/files/artifactory/3.3.0/">http://sourceforge.net/projects/artifactory/files/artifactory/3.3.0/</a>
+
+</ul>
+<li>
+说明文档：<a href="http://wiki.jfrog.org/confluence/display/RTF/Artifactory+User+Guide">http://wiki.jfrog.org/confluence/display/RTF/Artifactory+User+Guide</a>
+
+<li>
+JDK 7:下载 jdk-7u65-linux-x64.tar.gz
+
+<ul>
+<li>
+<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">http://www.oracle.com/technetwork/java/javase/downloads/index.html</a>
+
+<li>
+<a href="http://ghaffarian.net/downloads/Java/JDK/">http://ghaffarian.net/downloads/Java/JDK/</a>
+
+<li>
+You must run Artifactory with JDK 7 and above, preferably JDK 7 update 21 and above.
+<pre>
+[root@FTP-Maven bin]# /maven/jdk/jre/bin/java -version 
+java version "1.7.0_65"
+Java(TM) SE Runtime Environment (build 1.7.0_65-b17)
+Java HotSpot(TM) 64-Bit Server VM (build 24.65-b04, mixed mode)
+</pre>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.2">安装</h2>
+
+<p>
+将下载的artifactory-3.3.0.zip解包放至规划的工作目录中，然后进入artifactory/bin目录，执行installService.sh脚本来安装成一个系统服务，包括设置conf目录、基本配置文件、启动脚本等。
+</p>
+<pre class="brush:bash">
+cd /maven/artifactory/bin
+./installService.sh 
+</pre>
+<pre>
+Installing artifactory as a Unix service that will run as user artifactory
+Installing artifactory with home /maven/artifactory
+Creating user artifactory...creating... DONE
+
+Checking configuration link and files in /etc/opt/jfrog/artifactory...
+Moving configuration dir /maven/artifactory/etc /maven/artifactory/etc.original...creating the link and updating dir... DONE
+Creating environment file /etc/opt/jfrog/artifactory/default...creating... DONE
+** INFO: Please edit the files in /etc/opt/jfrog/artifactory to set the correct environment
+Especially /etc/opt/jfrog/artifactory/default that defines ARTIFACTORY_HOME, JAVA_HOME and JAVA_OPTIONS
+
+Initializing artifactory service with chkconfig...artifactory           0:off   1:off   2:on    3:on    4:on    5:on    6:off
+ DONE
+
+Setting file permissions... DONE
+
+************ SUCCESS ****************
+Installation of Artifactory completed
+
+Please check /etc/opt/jfrog/artifactory, /maven/artifactory/tomcat and /maven/artifactory folders
+Please check /etc/init.d/artifactory startup script
+
+you can now check installation by running:
+&gt; service artifactory check (or /etc/init.d/artifactory check)
+
+Then activate artifactory with:
+&gt; service artifactory start (or /etc/init.d/artifactory start)
+</pre>
+
+<h2 id="toc_0.3">配置修改</h2>
+
+<ul>
+<li>
+设置JAVA_HOME
+<pre class="brush:bash">
+#/etc/opt/jfrog/artifactory/default 
+#!/bin/sh
+
+#Default values
+export ARTIFACTORY_HOME=/maven/artifactory
+export ARTIFACTORY_USER=artifactory
+#export JAVA_HOME=/opt/java/1.7.0
+
+#添加下面这三行指定版本正确的JDK目录
+export JAVA_HOME=/maven/jdk
+echo "$PATH"|grep "${JAVA_HOME}/bin" &gt; /dev/null || export PATH="${JAVA_HOME}/bin:${JAVA_HOME}/jre/bin:$PATH"
+export CLASSPATH=.:$JAVA_HOME/lib/tools.jar:$JAVA_HOME/lib/dt.jar
+
+export TOMCAT_HOME=/maven/artifactory/tomcat
+export ARTIFACTORY_PID=$ARTIFACTORY_HOME/run/artifactory.pid
+
+export JAVA_OPTIONS="-server -Xms512m -Xmx2g -Xss256k -XX:PermSize=128m -XX:MaxPermSize=256m -XX:+UseG1GC"
+</pre>
+
+</ul>
+
+<ul>
+<li>
+数据存储方式设置
+<pre class="brush:bash">
+# /maven/artifactory/misc/db/mysql.properties
+
+# 我注释了MySQL的参数设置，因为选择用filesystem方式，应该用不到mysql
+#type=mysql
+#driver=com.mysql.jdbc.Driver
+#url=jdbc:mysql://localhost:3306/artdb?characterEncoding=UTF-8&amp;elideSetAutoCommits=true
+#username=artifactory
+#password=password
+
+## Determines where the actual artifacts binaries are stored. Available options:
+## filesystem - binaries are stored in the filesystem (recommended, default)
+## fullDb     - binaries are stored as blobs in the db, filesystem is used for caching
+## cachedFS   - binaries are stored in the filesystem, but a front cache (with faster access) is added
+## IMPORTANT NOTE: This property should not be change after the initial setup. To change binaries storage you have to export and import
+#binary.provider.type=filesystem
+binary.provider.type=filesystem   #启用了这一行采集文件系统来存储，这是缺省的
+
+## Determines the maximum filesystem cache size in bytes when using binary provider type fullDb or cachedFS. Default is 5GB
+## Supported units are GB (gigabytes), MB (megabytes) and KB (kilobytes)
+#binary.provider.cache.maxSize=5GB
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

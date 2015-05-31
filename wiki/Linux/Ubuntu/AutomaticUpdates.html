@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>Ubuntu Automatic Updates</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Ubuntu Automatic Updates</a>
+<ul>
+<li><a href="#toc_1.1">unattended-upgrades</a>
+<li><a href="#toc_1.2">reconfigure</a>
+<li><a href="#toc_1.3">Notifications</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">Ubuntu Automatic Updates</h1>
+
+<p>
+<a href="https://help.ubuntu.com/10.04/serverguide/automatic-updates.html">https://help.ubuntu.com/10.04/serverguide/automatic-updates.html</a>
+</p>
+
+<p>
+<a href="https://help.ubuntu.com/community/AutomaticSecurityUpdates">https://help.ubuntu.com/community/AutomaticSecurityUpdates</a>
+</p>
+
+<h2 id="toc_1.1">unattended-upgrades</h2>
+
+<p>
+The unattended-upgrades package can be used to automatically install updated packages, and can be configured to update all packages or just install security updates. First, install the package by entering the following in a terminal:
+</p>
+
+<pre class="brush:bash">
+sudo apt-get install unattended-upgrades
+</pre>
+
+<p>
+To configure unattended-upgrades, edit /etc/apt/apt.conf.d/50unattended-upgrades and adjust the following to fit your needs:
+</p>
+
+<pre class="brush:c">
+Unattended-Upgrade::Allowed-Origins {
+        "Ubuntu lucid-security";
+//      "Ubuntu lucid-updates";
+};
+</pre>
+
+<p>
+Certain packages can also be blacklisted and therefore will not be automatically updated. To blacklist a package, add it to the list:
+</p>
+
+<pre class="brush:c">
+Unattended-Upgrade::Package-Blacklist {
+//      "vim";
+//      "libc6";
+//      "libc6-dev";
+//      "libc6-i686";
+};
+</pre>
+
+<ul>
+<li>
+[Note]
+<pre>
+The double “//” serve as comments, so whatever follows "//" will not be evaluated.
+</pre>
+
+</ul>
+
+<p>
+To enable automatic updates, edit /etc/apt/apt.conf.d/10periodic and set the appropriate apt configuration options:
+</p>
+
+<pre class="brush:bash">
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Download-Upgradeable-Packages "1";
+APT::Periodic::AutocleanInterval "7";
+APT::Periodic::Unattended-Upgrade "1";
+</pre>
+
+<p>
+The above configuration updates the package list, downloads, and installs available upgrades every day. The local download archive is cleaned every week.
+</p>
+
+<ul>
+<li>
+[Note]
+
+</ul>
+
+<p>
+You can read more about apt Periodic configuration options in the /etc/cron.daily/apt script header.
+</p>
+
+<p>
+The results of unattended-upgrades will be logged to /var/log/unattended-upgrades.
+</p>
+
+
+<h2 id="toc_1.2">reconfigure</h2>
+
+<pre class="brush:bash">
+sudo dpkg-reconfigure -plow unattended-upgrades
+</pre>
+
+<p>
+(it's an interactive dialog) which will create /etc/apt/apt.conf.d/20auto-upgrades with the following contents: 
+</p>
+
+<pre class="brush:bash">
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+</pre>
+
+<ul>
+<li>
+Details about what these values mean may be found in the header of the /etc/cron.daily/apt file. Note:
+
+</ul>
+
+<p>
+When the apt job starts, it will sleep for a random period between 0 and APT::Periodic::RandomSleep seconds. The default value is "1800" so that the script will stall for up to 30 minutes (1800 seconds) so that the mirror servers are not crushed by everyone running their updates all at the same time. Only set this to 0 if you use a local mirror and don't mind the load spikes. Note that while the apt job is sleeping it will cause the execution of the rest of your cron.daily jobs to be delayed.
+</p>
+
+<p>
+If you want the script to generate more verbose output set APT::Periodic::Verbose "1";
+</p>
+
+<ul>
+<li>
+And /etc/apt/apt.conf.d/50unattended-upgrades:
+
+</ul>
+
+<pre class="brush:c">
+// Automatically upgrade packages from these (origin, archive) pairs
+Unattended-Upgrade::Allowed-Origins {    
+    // ${distro_id} and ${distro_codename} will be automatically expanded
+    "${distro_id} stable";
+    "${distro_id} ${distro_codename}-security";
+    "${distro_id} ${distro_codename}-updates";
+//  "${distro_id} ${distro_codename}-proposed-updates";
+};
+
+// List of packages to not update
+Unattended-Upgrade::Package-Blacklist {
+//  "vim";
+//  "libc6";
+//  "libc6-dev";
+//  "libc6-i686";
+};
+
+// Send email to this address for problems or packages upgrades
+// If empty or unset then no email is sent, make sure that you 
+// have a working mail setup on your system. The package 'mailx'
+// must be installed or anything that provides /usr/bin/mail.
+//Unattended-Upgrade::Mail "root@localhost";
+
+// Do automatic removal of new unused dependencies after the upgrade
+// (equivalent to apt-get autoremove)
+//Unattended-Upgrade::Remove-Unused-Dependencies "false";
+
+// Automatically reboot *WITHOUT CONFIRMATION* if a 
+// the file /var/run/reboot-required is found after the upgrade 
+//Unattended-Upgrade::Automatic-Reboot "false";
+</pre>
+
+
+<h2 id="toc_1.3">Notifications</h2>
+
+<p>
+Configuring Unattended-Upgrade::Mail in /etc/apt/apt.conf.d/50unattended-upgrades will enable unattended-upgrades to email an administrator detailing any packages that need upgrading or have problems.
+</p>
+
+<p>
+Another useful package is apticron. apticron will configure a cron job to email an administrator information about any packages on the system that have updates available, as well as a summary of changes in each package.
+</p>
+
+<p>
+To install the apticron package, in a terminal enter:
+</p>
+
+<pre class="brush:bash">
+sudo apt-get install apticron
+</pre>
+
+<p>
+Once the package is installed edit /etc/apticron/apticron.conf, to set the email address and other options:
+</p>
+
+<pre class="brush:bash">
+EMAIL="root@example.com"
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>java启动时的classpass及扩展类目录</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>java启动时的classpass及扩展类目录</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">CLASSPATH方式</a>
+<li><a href="#toc_0.2">Djava.ext.dirs方式</a>
+</ul>
+</ul>
+</div>
+
+
+<h2 id="toc_0.1">CLASSPATH方式</h2>
+
+<p>
+通过CLASSPATH将需引用的外部jar文件传给java进行装载。
+</p>
+
+<ul>
+<li>
+通过命令行参数添加classpath
+
+</ul>
+<p>
+此方式当lib下有很多jar文件时，命令行参数会很长，甚至超过命令行字数限制而启动失败。
+</p>
+<pre class="brush:bash">
+    ...
+    # Set CLASSPATH
+    [ -z "$CLASSPATH" ] &amp;&amp; CLASSPATH=$MY_HOME
+    for f in $MY_HOME/lib/*.jar; do
+        echo "$CLASSPATH"|grep "$f" &gt; /dev/null 2&gt;&amp;1 || CLASSPATH=${CLASSPATH}:$f;
+    done
+
+    nohup $JAVA $JAVA_OPTS -classpath $CLASSPATH com.serverbootstrap.Main &gt;&gt; "$LOGFILE" 2&gt;&amp;1 &amp;
+    echo $! &gt; "$PIDFILE"
+    ...
+</pre>
+<ul>
+<li>
+通过环境添加classpath
+
+</ul>
+
+<pre class="brush:bash">
+    ...
+    # Set CLASSPATH
+    [ -z "$CLASSPATH" ] &amp;&amp; CLASSPATH=$MY_HOME
+
+    for f in $MY_HOME/lib/*.jar; do
+        echo "$CLASSPATH"|grep "$f" &gt; /dev/null 2&gt;&amp;1 || CLASSPATH=${CLASSPATH}:$f;
+    done
+    export CLASSPATH  # 将CLASSPATH放到env中
+    # 也可以用下面的语句代替
+    #export CLASSPATH=$CLASSPATH:$MY_HOME/lib/*.jar
+
+    nohup $JAVA $JAVA_OPTS com.serverbootstrap.Main &gt;&gt; "$LOGFILE" 2&gt;&amp;1 &amp;
+    echo $! &gt; "$PIDFILE"
+    ...
+</pre>
+
+<h2 id="toc_0.2">Djava.ext.dirs方式</h2>
+
+<p>
+将需引用的jar文件都放到指的几个目录中，并在启动命令行参数中添加对应目录参数，使启动参数更为简捷。
+</p>
+
+<pre class="brush:bash">
+    ...
+    # Djava.ext.dirs中加上lib目录
+    JAVA_OPTS="$JAVA_OPTS -Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$MY_HOME/lib"
+    ...
+    # Set CLASSPATH时不用再加入所有lib的jar文件
+    [ -z "$CLASSPATH" ] &amp;&amp; CLASSPATH=$MY_HOME
+    export CLASSPATH 
+
+    nohup $JAVA $JAVA_OPTS com.serverbootstrap.Main &gt;&gt; "$LOGFILE" 2&gt;&amp;1 &amp;
+    echo $! &gt; "$PIDFILE"
+    ...
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

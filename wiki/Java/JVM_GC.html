@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>JVM gc参数设置与分析</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">JVM gc参数设置与分析</a>
+<ul>
+<li><a href="#toc_1.1">概述</a>
+<li><a href="#toc_1.2">回收方式的选择</a>
+<li><a href="#toc_1.3">CMS gc</a>
+<li><a href="#toc_1.4">full gc</a>
+<li><a href="#toc_1.5">Gc日志参数</a>
+<li><a href="#toc_1.6">常用JVM参数</a>
+<li><a href="#toc_1.7">示例</a>
+<li><a href="#toc_1.8">一些常见问题</a>
+<li><a href="#toc_1.9">Gc日志分析工具</a>
+<ul>
+<li><a href="#toc_1.9.1">GC日志格式</a>
+<li><a href="#toc_1.9.2">GCHisto</a>
+<li><a href="#toc_1.9.3">GCLogViewer</a>
+<li><a href="#toc_1.9.4">HPjmeter</a>
+<li><a href="#toc_1.9.5">GCViewer</a>
+<li><a href="#toc_1.9.6">garbagecat</a>
+<li><a href="#toc_1.9.7">其它监控方法</a>
+</ul>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">JVM gc参数设置与分析</h1>
+
+
+<p>
+原文：
+</p>
+<ul>
+<li>
+<a href="http://hi.baidu.com/i1see1you/item/295c1dc81f91ab55bdef69e5">http://hi.baidu.com/i1see1you/item/295c1dc81f91ab55bdef69e5</a>
+
+<li>
+gc日志分析工具: <a href="http://qa.blog.163.com/blog/static/19014700220128199421589/">http://qa.blog.163.com/blog/static/19014700220128199421589/</a>
+
+<li>
+Java GC 日志图解: <a href="http://www.chinasb.org/archives/2012/09/4921.shtml">http://www.chinasb.org/archives/2012/09/4921.shtml</a>
+
+</ul>
+
+<h2 id="toc_1.1">概述</h2>
+
+<p>
+java的最大好处是自动垃圾回收，这样就无需我们手动的释放对象空间了，但是也产生了相应的负效果，gc是需要时间和资源的，不好的gc会严重影响系统的系能，因此良好的gc是JVM的高性能的保证。JVM堆分为新生代，旧生代和年老代，新生代可用的gc方式有：串行gc（Serial Copying），并行回收gc(Parellel Scavenge)，并行gc(ParNew)，旧生代和年老代可用的gc方式有串行gc(Serial MSC),并行gc(Parallel MSC)，并发gc（CMS）。
+</p>
+
+<h2 id="toc_1.2">回收方式的选择</h2>
+
+<p>
+jvm有client和server两种模式，这两种模式的gc默认方式是不同的：
+</p>
+
+<p>
+client模式下，新生代选择的是串行gc，旧生代选择的是串行gc
+</p>
+
+<p>
+server模式下，新生代选择的是并行回收gc，旧生代选择的是并行gc
+</p>
+
+<p>
+一般来说我们系统应用选择有两种方式：吞吐量优先和暂停时间优先，对于吞吐量优先的采用server默认的并行gc方式，对于暂停时间优先的选用并发gc（CMS）方式。
+</p>
+
+<h2 id="toc_1.3">CMS gc</h2>
+
+<p>
+CMS，全称Concurrent Low Pause Collector，是jdk1.4后期版本开始引入的新gc算法，在jdk5和jdk6中得到了进一步改进，它的主要适合场景是对响应时间的重要性需求大于对吞吐量的要求，能够承受垃圾回收线程和应用线程共享处理器资源，并且应用中存在比较多的长生命周期的对象的应用。CMS是用于对tenured generation的回收，也就是年老代的回收，目标是尽量减少应用的暂停时间，减少full gc发生的几率，利用和应用程序线程并发的垃圾回收线程来标记清除年老代。在我们的应用中，因为有缓存的存在，并且对于响应时间也有比较高的要求，因此希望能尝试使用CMS来替代默认的server型JVM使用的并行收集器，以便获得更短的垃圾回收的暂停时间，提高程序的响应性。
+</p>
+
+<p>
+CMS并非没有暂停，而是用两次短暂停来替代串行标记整理算法的长暂停，它的收集周期是这样：
+</p>
+
+<p>
+初始标记(CMS-initial-mark) -&gt; 并发标记(CMS-concurrent-mark) -&gt; 重新标记(CMS-remark) -&gt; 并发清除(CMS-concurrent-sweep) -&gt;并发重设状态等待下次CMS的触发(CMS-concurrent-reset)。
+</p>
+
+<p>
+其中的1，3两个步骤需要暂停所有的应用程序线程的。第一次暂停从root对象开始标记存活的对象，这个阶段称为初始标记；第二次暂停是在并发标记之后，暂停所有应用程序线程，重新标记并发标记阶段遗漏的对象（在并发标记阶段结束后对象状态的更新导致）。第一次暂停会比较短，第二次暂停通常会比较长，并且 remark这个阶段可以并行标记。
+</p>
+
+<p>
+而并发标记、并发清除、并发重设阶段的所谓并发，是指一个或者多个垃圾回收线程和应用程序线程并发地运行，垃圾回收线程不会暂停应用程序的执行，如果你有多于一个处理器，那么并发收集线程将与应用线程在不同的处理器上运行，显然，这样的开销就是会降低应用的吞吐量。Remark阶段的并行，是指暂停了所有应用程序后，启动一定数目的垃圾回收进程进行并行标记，此时的应用线程是暂停的。
+</p>
+
+<h2 id="toc_1.4">full gc</h2>
+
+<p>
+full gc是对新生代，旧生代，以及持久代的统一回收，由于是对整个空间的回收，因此比较慢，系统中应当尽量减少full gc的次数。
+</p>
+
+<p>
+如下几种情况下会发生full gc：
+</p>
+
+<ol>
+<li>
+旧生代空间不足
+
+<li>
+持久代空间不足
+
+<li>
+CMS GC时出现了promotion failed和concurrent mode failure
+
+<li>
+统计得到新生代minor gc时晋升到旧生代的平均大小小于旧生代剩余空间
+
+<li>
+直接调用System.gc，可以DisableExplicitGC来禁止
+
+<li>
+存在rmi调用时，默认会每分钟执行一次System.gc，可以通过-Dsun.rmi.dgc.server.gcInterval=3600000来设置大点的间隔。
+
+</ol>
+
+<h2 id="toc_1.5">Gc日志参数</h2>
+
+<p>
+通过在tomcat启动脚本中添加相关参数生成gc日志
+</p>
+
+<ul>
+<li>
+<code>-verbose.gc</code>开关可显示GC的操作内容。打开它，可以显示最忙和最空闲收集行为发生的时间、收集前后的内存大小、收集需要的时间等。
+
+<li>
+打开<code>-xx:+printGCdetails</code>开关，可以详细了解GC中的变化。
+
+<li>
+打开<code>-XX:+PrintGCTimeStamps</code>开关，可以了解这些垃圾收集发生的时间，自JVM启动以后以秒计量。
+
+<li>
+最后，通过<code>-xx:+PrintHeapAtGC</code>开关了解堆的更详细的信息。
+
+<li>
+为了了解新域的情况，可以通过<code>-XX:+PrintTenuringDistribution</code>开关了解获得使用期的对象权。
+
+<li>
+<code>-Xloggc:$CATALINA_BASE/logs/gc.log</code> gc日志产生的路径
+
+<li>
+<code>-XX:+PrintGCApplicationStoppedTime</code> 输出GC造成应用暂停的时间
+
+<li>
+<code>-XX:+PrintGCDateStamps</code> GC发生的时间信息
+
+</ul>
+
+<p>
+Opentsdb打开Gc参数
+</p>
+
+<pre class="brush:bash">
+# tsdb.local
+# http://opentsdb.net/docs/build/html/user_guide/cli/index.html
+GCARGS="-XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps\
+ -XX:+PrintTenuringDistribution -Xloggc:/tmp/tsd-gc-`date +%s`.log"
+if test -t 0; then # if stdin is a tty, don't turn on GC logging.
+  GCARGS=
+fi
+# The Sun JDK caches all name resolution results forever, which is stupid.
+# This forces you to restart your application if any of the backends change
+# IP. Instead tell it to cache names for only 10 minutes at most.
+FIX_DNS='-Dsun.net.inetaddr.ttl=600'
+JVMARGS="$JVMARGS $GCARGS $FIX_DNS"
+</pre>
+
+<h2 id="toc_1.6">常用JVM参数</h2>
+
+<p>
+分析gc日志后，经常需要调整jvm内存相关参数，常用参数如下
+</p>
+
+<ul>
+<li>
+-Xms：初始堆大小，默认为物理内存的1/64(&lt;1GB)；默认(MinHeapFreeRatio参数可以调整)空余堆内存小于40%时，JVM就会增大堆直到-Xmx的最大限制
+
+<li>
+-Xmx：最大堆大小，默认(MaxHeapFreeRatio参数可以调整)空余堆内存大于70%时，JVM会减少堆直到 -Xms的最小限制
+
+<li>
+-Xmn：新生代的内存空间大小，注意：此处的大小是（eden+ 2 survivor space)。与jmap -heap中显示的New gen是不同的。整个堆大小=新生代大小 + 老生代大小 + 永久代大小。在保证堆大小不变的情况下，增大新生代后,将会减小老生代大小。此值对系统性能影响较大,Sun官方推荐配置为整个堆的3/8。
+
+<li>
+-XX:SurvivorRatio：新生代中Eden区域与Survivor区域的容量比值，默认值为8。两个Survivor区与一个Eden区的比值为2:8,一个Survivor区占整个年轻代的1/10。
+
+<li>
+-Xss：每个线程的堆栈大小。JDK5.0以后每个线程堆栈大小为1M,以前每个线程堆栈大小为256K。应根据应用的线程所需内存大小进行适当调整。在相同物理内存下,减小这个值能生成更多的线程。但是操作系统对一个进程内的线程数还是有限制的，不能无限生成，经验值在3000~5000左右。一般小的应用， 如果栈不是很深， 应该是128k够用的，大的应用建议使用256k。这个选项对性能影响比较大，需要严格的测试。和threadstacksize选项解释很类似,官方文档似乎没有解释,在论坛中有这样一句话:"-Xss is translated in a VM flag named ThreadStackSize”一般设置这个值就可以了。
+
+<li>
+-XX:PermSize：设置永久代(perm gen)初始值。默认值为物理内存的1/64。
+
+<li>
+-XX:MaxPermSize：设置持久代最大值。物理内存的1/4。
+
+</ul>
+
+<h2 id="toc_1.7">示例</h2>
+
+<p>
+下面对如下的参数进行分析：
+</p>
+<pre>
+JAVA_OPTS="-server -Xms2000m -Xmx2000m -Xmn800m -XX:PermSize=64m -XX:MaxPermSize=256m -XX:SurvivorRatio=4
+-verbose:gc -Xloggc:$CATALINA_HOME/logs/gc.log 
+-Djava.awt.headless=true 
+-XX:+PrintGCTimeStamps -XX:+PrintGCDetails 
+-Dsun.rmi.dgc.server.gcInterval=600000 -Dsun.rmi.dgc.client.gcInterval=600000
+-XX:+UseConcMarkSweepGC -XX:MaxTenuringThreshold=15"
+</pre>
+
+<ul>
+<li>
+-Xms2000m -Xmx2000m -Xmn800m -XX:PermSize=64m -XX:MaxPermSize=256m
+
+</ul>
+
+<p>
+Xms，即为jvm启动时得JVM初始堆大小,Xmx为jvm的最大堆大小，xmn为新生代的大小，permsize为永久代的初始大小，MaxPermSize为永久代的最大空间。
+</p>
+
+<ul>
+<li>
+-XX:SurvivorRatio=4
+
+</ul>
+
+<p>
+SurvivorRatio为新生代空间中的Eden区和救助空间Survivor区的大小比值，默认是32，也就是说Eden区是 Survivor区的32倍大小，要注意Survivo是有两个区的，因此Surivivor其实占整个young genertation的1/34。调小这个参数将增大survivor区，让对象尽量在survitor区呆长一点，减少进入年老代的对象。去掉救助空间的想法是让大部分不能马上回收的数据尽快进入年老代，加快年老代的回收频率，减少年老代暴涨的可能性，这个是通过将-XX:SurvivorRatio 设置成比较大的值（比如65536)来做到。
+</p>
+
+<ul>
+<li>
+-verbose:gc -Xloggc:$CATALINA_HOME/logs/gc.log
+
+</ul>
+
+<p>
+将虚拟机每次垃圾回收的信息写到日志文件中，文件名由file指定，文件格式是平文件，内容和-verbose:gc输出内容相同。
+</p>
+
+<ul>
+<li>
+-Djava.awt.headless=true
+
+</ul>
+
+<p>
+Headless模式是系统的一种配置模式。在该模式下，系统缺少了显示设备、键盘或鼠标。
+</p>
+
+<ul>
+<li>
+-XX:+PrintGCTimeStamps -XX:+PrintGCDetails
+
+</ul>
+
+<p>
+设置gc日志的格式
+</p>
+
+<ul>
+<li>
+-Dsun.rmi.dgc.server.gcInterval=600000 -Dsun.rmi.dgc.client.gcInterval=600000
+
+</ul>
+
+<p>
+指定rmi调用时gc的时间间隔
+</p>
+
+<ul>
+<li>
+-XX:+UseConcMarkSweepGC -XX:MaxTenuringThreshold=15
+
+</ul>
+
+<p>
+采用并发gc方式，经过15次minor gc 后进入年老代
+</p>
+
+<pre>
+Xms 是指设定程序启动时占用内存大小。一般来讲，大点，程序会启动的快一点，但是也可能会导致机器暂时间变慢。
+
+Xmx 是指设定程序运行期间最大可占用的内存大小。如果程序运行需要占用更多的内存，超出了这个设置值，就会抛出OutOfMemory异常。
+
+Xss 是指设定每个线程的堆栈大小。这个就要依据你的程序，看一个线程大约需要占用多少内存，可能会有多少线程同时运行等。
+
+以上三个参数的设置都是默认以Byte为单位的，也可以在数字后面添加[k/K]或者[m/M]来表示KB或者MB。而且，超过机器本身的内存大小也是不可以的，否则就等着机器变慢而不是程序变慢了。
+
+-Xmsn
+Specify the initial size, in bytes, of the memory allocation pool. This value must be a multiple of 1024 greater than 1MB. Append the letter k or K to indicate kilobytes, or m or M to indicate megabytes. The default value is chosen at runtime based on system configuration. For more information, see HotSpot Ergonomics
+Examples:
+       -Xms6291456
+       -Xms6144k
+       -Xms6m
+      
+-Xmxn
+Specify the maximum size, in bytes, of the memory allocation pool. This value must a multiple of 1024 greater than 2MB. Append the letter k or K to indicate kilobytes, or m or M to indicate megabytes. The default value is chosen at runtime based on system configuration. For more information, see HotSpot Ergonomics
+Examples:
+       -Xmx83886080
+       -Xmx81920k
+       -Xmx80m
+
+-Xssn
+Set thread stack size. 
+</pre>
+
+<h2 id="toc_1.8">一些常见问题</h2>
+
+<ul>
+<li>
+为了避免Perm区满引起的full gc，建议开启CMS回收Perm区选项：
+<pre>
++CMSPermGenSweepingEnabled -XX:+CMSClassUnloadingEnabled
+</pre>
+
+<li>
+默认CMS是在tenured generation沾满68%的时候开始进行CMS收集，如果你的年老代增长不是那么快，并且希望降低CMS次数的话，可以适当调高此值：
+<pre>
+-XX:CMSInitiatingOccupancyFraction=80
+</pre>
+
+<li>
+遇到两种fail引起full gc：Prommotion failed和Concurrent mode failed时：
+
+</ul>
+
+<p>
+Prommotion failed的日志输出大概是这样：
+</p>
+<pre>
+[ParNew (promotion failed): 320138K-&gt;320138K(353920K), 0.2365970 secs]42576.951: [CMS: 1139969K-&gt;1120688K(  166784K), 9.2214860 secs] 1458785K-&gt;1120688K(2520704K), 9.4584090 secs] 
+</pre>
+<p>
+这个问题的产生是由于救助空间不够，从而向年老代转移对象，年老代没有足够的空间来容纳这些对象，导致一次full gc的产生。解决这个问题的办法有两种完全相反的倾向：增大救助空间、增大年老代或者去掉救助空间。
+</p>
+
+<p>
+Concurrent mode failed的日志大概是这样的：
+</p>
+<pre>
+(concurrent mode failure): 1228795K-&gt;1228598K(1228800K), 7.6748280 secs] 1911483K-&gt;1681165K(1911488K), [CMS Perm : 225407K-&gt;225394K(262144K)], 7.6751800 secs]
+</pre>
+<p>
+问题的产生原因是由于CMS回收年老代的速度太慢，导致年老代在CMS完成前就被沾满，引起full gc，避免这个现象的产生就是调小-XX:CMSInitiatingOccupancyFraction参数的值，让CMS更早更频繁的触发，降低年老代被占满的可能。
+</p>
+
+<h2 id="toc_1.9">Gc日志分析工具</h2>
+
+<h3 id="toc_1.9.1">GC日志格式</h3>
+
+<pre>
+2012-11-15T16:57:12.524+0800: 8.490 : [GC 8.490: [ParNew: 118016K-&gt;11244K(118016K), 0.0525525 secs] 183413K-&gt;83007K(511232K), 0.0527229 secs] [Times: user=0.08 sys=0.00, real=0.05 secs]
+</pre>
+<ol>
+<li>
+8.490：表示虚拟机启动运行到8.490秒是进行了一次monor Gc(not Full GC)
+
+<li>
+ParNew: 表示对年轻代进行的GC，使用ParNew收集器
+
+<li>
+118016K-&gt;11244K(118016K)：118016K 年轻代收集前大小，11244K 收集完以后的大小，118016K 当前年轻代分配的总大小
+
+<li>
+0.0525525 secs：表示对年轻代进行垃圾收集时，用户线程暂停的时间，即此次年轻代收集花费的时间
+
+<li>
+183413K-&gt;83007K(511232K):JVM heap堆收集前后heap堆内存的变化
+
+<li>
+0.0527229 secs：整个JVM此次垃圾造成用户线程的暂停时间。
+
+</ol>
+
+<ul>
+<li>
+更全一点的参数说明：
+
+</ul>
+
+<pre>
+[GC [&lt;collector&gt;: &lt;starting occupancy1&gt; -&gt; &lt;ending occupancy1&gt;, &lt;pause time1&gt; secs] &lt;starting occupancy3&gt; -&gt; &lt;ending occupancy3&gt;, &lt;pause time3&gt; secs]
+ 
+&lt;collector&gt;              GC收集器的名称
+&lt;starting occupancy1&gt;    新生代在GC前占用的内存
+&lt;ending occupancy1&gt;      新生代在GC后占用的内存
+&lt;pause time1&gt;            新生代局部收集时jvm暂停处理的时间
+&lt;starting occupancy3&gt;    JVM Heap 在GC前占用的内存
+&lt;ending occupancy3&gt;      JVM Heap 在GC后占用的内存
+&lt;pause time3&gt;            GC过程中jvm暂停处理的总时间
+</pre>
+
+<h3 id="toc_1.9.2">GCHisto</h3>
+
+<p>
+<a href="http://java.net/projects/gchisto">http://java.net/projects/gchisto</a>
+</p>
+
+<p>
+直接点击gchisto.jar就可以运行，点add载入gc.log
+</p>
+
+<p>
+统计了总共gc次数，youngGC次数，FullGC次数，次数的百分比，GC消耗的时间，百分比，平均消耗时间，消耗时间最小最大值等
+</p>
+
+<ul>
+<li>
+统计的图形化表示
+
+</ul>
+
+<p>
+<img src="http://img4.ph.126.net/fQkvWn9FsgrMT0QOxk6XFA==/6597587636632812984.jpg" />
+</p>
+
+<ul>
+<li>
+YoungGC,FullGC不同消耗时间上次数的分布图，勾选可以显示youngGC或fullGC单独的分布情况
+
+</ul>
+
+<p>
+<img src="http://img8.ph.126.net/UeDN5YmgYqAYPK0P2dmPXg==/6597815235539761528.jpg" />
+</p>
+
+<ul>
+<li>
+整个时间过程详细的gc情况，可以对整个过程进行剖析
+
+</ul>
+
+<p>
+<img src="http://img4.ph.126.net/JDL_SJQIKBDUwSPzXPjH2g==/6597777852144416414.jpg" />
+</p>
+
+<h3 id="toc_1.9.3">GCLogViewer</h3>
+
+<p>
+<a href="http://code.google.com/p/gclogviewer/">http://code.google.com/p/gclogviewer/</a>
+</p>
+
+<p>
+gclogviewer是一个支持jdk 6的gc log可视化工具。
+</p>
+
+<p>
+GCLogViewer支持：
+</p>
+<ol>
+<li>
+支持根据gc log生成GC的趋势图；
+
+<li>
+生成调优建议所需的数据趋势图。
+
+<li>
+整个过程gc情况的趋势图，还显示了gc类型，吞吐量，平均gc频率，内存变化趋势等。
+
+</ol>
+
+<p>
+Tools里还能比较不同gc日志: 
+</p>
+
+<p>
+<img src="http://img1.ph.126.net/o2heS1VCwqQ_LyZ4mdiPlg==/44473046337943491.jpg" />
+</p>
+
+<h3 id="toc_1.9.4">HPjmeter</h3>
+
+<ul>
+<li>
+获取地址 <a href="http://www.hp.com/go/java">http://www.hp.com/go/java</a>
+
+<li>
+参考文档 <a href="http://www.javaperformancetuning.com/tools/hpjtune/index.shtml">http://www.javaperformancetuning.com/tools/hpjtune/index.shtml</a>
+
+</ul>
+
+<p>
+工具很强大，但只能打开由以下参数生成的GC log， -verbose:gc -Xloggc:gc.log,添加其他参数生成的gc.log无法打开。
+</p>
+
+<h3 id="toc_1.9.5">GCViewer</h3>
+
+<p>
+<a href="http://www.tagtraum.com/gcviewer.html">http://www.tagtraum.com/gcviewer.html</a>
+</p>
+
+<p>
+这个工具用的挺多的，但只能在JDK1.5以下的版本中运行，1.6以后没有对应。
+</p>
+
+<h3 id="toc_1.9.6">garbagecat</h3>
+
+<p>
+<a href="http://code.google.com/a/eclipselabs.org/p/garbagecat/wiki/Documentation">http://code.google.com/a/eclipselabs.org/p/garbagecat/wiki/Documentation</a>
+</p>
+
+<h3 id="toc_1.9.7">其它监控方法</h3>
+
+<ul>
+<li>
+Jvisualvm
+
+</ul>
+
+<p>
+Jvisualvm动态分析jvm内存情况和gc情况，插件：visualGC
+</p>
+
+<p>
+<img src="http://img5.ph.126.net/BTvk41lukdQkr_4zLyv6rQ==/6597927385725794845.jpg" />
+</p>
+
+<p>
+<img src="http://img9.ph.126.net/Z9NHkYSt0n3Jhi38SIYxjg==/6597592034679324059.jpg" />
+</p>
+
+<p>
+jvisualvm还可以heapdump出对应hprof文件（默认存放路径：监控的服务器 /tmp下），利用相关工具，比如HPjmeter可以对其进行分析
+</p>
+
+<p>
+grep Full gc.log粗略观察FullGC发生频率
+</p>
+<pre>
+jstat –gcutil [pid] [intervel] [count]
+</pre>
+
+<ul>
+<li>
+jmap
+
+</ul>
+<p>
+jmap -histo pid可以观测对象的个数和占用空间
+</p>
+
+<p>
+jmap -heap pid可以观测jvm配置参数，堆内存各区使用情况
+</p>
+
+<ul>
+<li>
+jprofiler,jmap dump出来用MAT分析
+
+</ul>
+
+<p>
+如果要分析的dump文件很大的话，就需要很多内存，很容易crash。
+</p>
+
+<p>
+所以在启动时，我们应该加上一些参数： Java –Xms512M –Xmx1024M –Xss8M 
+</p>
+
+<p>
+参考资料：
+</p>
+
+<p>
+探秘Java虚拟机——内存管理与垃圾回收<a href="http://sunbean.blog.51cto.com/972509/768034">http://sunbean.blog.51cto.com/972509/768034</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>hadoop/hbase信息收集</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+
+<h1 id="toc_1">提升hbase性能的几个地方</h1>
+
+<p>
+<a href="http://blog.csdn.net/dajuezhao/article/details/6548931">http://blog.csdn.net/dajuezhao/article/details/6548931</a>
+</p>
+
+<p>
+分类： HBase 2011-06-16 16:39 674人阅读 评论(1) 收藏 举报
+</p>
+
+<ul>
+<li>
+hbase对于内存有特别的嗜好，在硬件允许的情况下配足够多的内存给它。
+
+</ul>
+
+<p>
+通过修改hbase-env.sh中的：
+</p>
+<blockquote>
+export HBASE_HEAPSIZE=3000 #这里默认为1000m
+</blockquote>
+
+<ul>
+<li>
+修改java虚拟机属性
+
+<ol>
+<li>
+在环境允许的情况下换64位的虚拟机
+
+<li>
+替换掉默认的垃圾回收器，因为默认的垃圾回收器在多线程环境下会有更多的wait等待
+
+</ol>
+</ul>
+<blockquote>
+export HBASE_OPTS="-server -XX:NewSize=6m -XX:MaxNewSize=6m -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode"
+</blockquote>
+
+<ul>
+<li>
+增大RPC数量
+
+</ul>
+
+<p>
+通过修改hbase-site.xml中的：
+</p>
+<blockquote>
+hbase.regionserver.handler.count属性，可以适当的放大。默认值为10有点小
+</blockquote>
+
+<ul>
+<li>
+做程序开发是注意的地方
+
+</ul>
+
+<ol>
+<li>
+需要判断所求的数据行是否存在时，尽量不要用HTable.exists(final byte [] row) 而用HTable.exists(final byte [] row, final byte[] column)等带列族的方法替代。
+
+<li>
+不要使用HTable.get(final byte [] row, final byte [] column) == null来判断所求的数据存在，而是用HTable.exists(final byte [] row, final byte[] column)替代
+
+<li>
+HTable.close()方法少用.因为我遇到过一些很令人费解的错误
+
+</ol>
+
+<ul>
+<li>
+记住HBase是基于列模式的存储，如果一个列族能搞定就不要把它分开成两个，关系数据库的那套在这里很不实用.分成多个列来存储会浪费更多的空间，除非你认为现在的硬盘和白菜一个价。
+
+<li>
+如果数据量没有达到TB级别或者没有上亿条记录，很难发挥HBase的优势，建议换关系数据库或别的存储技术。
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

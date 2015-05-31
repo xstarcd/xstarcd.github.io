@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>FreeBSD 8.0 release安装部署说明</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>FreeBSD 8.0 release安装部署说明</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">系统安装</a>
+<li><a href="#toc_0.2">配置系统</a>
+<li><a href="#toc_0.3">编译内核和重构系统(略)</a>
+<li><a href="#toc_0.4">应用环境安装</a>
+<ul>
+<li><a href="#toc_0.4.1">基础环境安装</a>
+<li><a href="#toc_0.4.2">nginx环境安装</a>
+<li><a href="#toc_0.4.3">python安装</a>
+<ul>
+<li><a href="#toc_0.4.3.1">安装python26</a>
+<li><a href="#toc_0.4.3.2">安装eggs模块</a>
+</ul>
+</ul>
+<li><a href="#toc_0.5">应用环境配置</a>
+<li><a href="#toc_0.6">错误排查</a>
+<li><a href="#toc_0.7">其它</a>
+</ul>
+</ul>
+</div>
+
+<p>
+最后修订：2010-01-14
+</p>
+
+<h2 id="toc_0.1">系统安装</h2>
+
+<ul>
+<li>
+国家区域及键盘设置：China,USA ISO
+
+<li>
+安装选项(媒体、分析、包选择)
+
+<ul>
+<li>
+进入主菜单，选Custom进行安装。
+
+<li>
+Options:设置Media Type，若通过U盘安装，需先Re-scan Devides刷新后再设置。
+
+<li>
+Partition: 使用整个磁盘，并设置为可引导(A=Use Entire DISK, S=Set Bootable)，
+
+<ul>
+<li>
+Boot Manager选Standard MBR。
+
+</ul>
+<li>
+Label:按如下原则及顺序进行分区(以下为按146GB空间规划，需根据实际硬盘空间调整)：
+<pre class="brush:bash">
+/         2GB   # 至少512MB以上
+swap      8GB   # 内存的2倍，8G以上内存用8G swap即可
+/tmp      4GB   # 如有大量cache数据在此目录可考虑加大
+/var      20GB  # 4GB以上, 如日志文件递增量较大，可考虑加大
+/usr      20GB  # 10GB以上
+/opt      50GB  # 根据实际情况调整，也可考虑将应用数据、数据库划为不同的卷
+/opt/app  20GB  # 根据实际情况调整，应用数据
+/opt/db   30GB  # 根据实际情况调整，数据库
+/bak      30GB  # 备份数据
+</pre>
+
+<li>
+Distributions:
+
+<ul>
+<li>
+选择Minimal，如需要进入Custom选择info、man。
+
+</ul>
+<li>
+Media:在Options中已设置。
+
+<li>
+Commit：开始安装。
+
+</ul>
+<li>
+安装后的初步设置
+
+<ul>
+<li>
+安装完成后进入基本配置菜单。
+
+<li>
+Root Password:设置root密码。
+
+<li>
+User Management:
+
+<ul>
+<li>
+建立用户组(users)
+
+<li>
+建立初始管理用户(用户名dfjsb,Group为users,Member groups为wheel,sh为/bin/csh)。
+<pre class="brush:bash">
+pw user add dfjsb -d /home/dfjsb -s /bin/csh -g users -G wheel -m
+</pre>
+
+</ul>
+<li>
+Time Zone：China-&gt;east China - Beijing；
+
+<li>
+Networking：
+
+<ul>
+<li>
+Interfaces:不尝试IPv6、DHCP，手工指定IP地址。
+
+<li>
+启用sshd服务。
+
+</ul>
+<li>
+完成后逐层选Exit退出到主菜单，选Exit Install退出重新启动，并取出光盘。
+
+</ul>
+</ul>
+
+
+<h2 id="toc_0.2">配置系统</h2>
+
+<ul>
+<li>
+shell环境
+<pre class="brush:bash">
+# ls带彩色:
+alias h     history 25
+alias j     jobs -l
+alias ls    ls -G
+alias la    ls -a
+alias lf    ls -FA
+alias ll    ls -lhAo
+
+# 更改用户登陆shell:
+pw usermod -n username -s csh
+
+# 更换提示符:
+# mfsop@master[local]%
+# 也可以将这句话加到.cshrc或者.profile配置文件中
+set prompt = "%B%n@%m%b\[%B%c%b\]% "
+</pre>
+
+</ul>
+
+<ul>
+<li>
+更改用户认证加密模式(md5-&gt;Blowfish散列)
+<pre class="brush:bash">
+sed -i.bak 's/\(passwd_format=\)md5/\1blf/' /etc/login.conf
+cap_mkdb /etc/login.conf
+
+cat &gt;&gt; /etc/auth.conf &lt;&lt; EOF
+crypt_default = blf
+EOF
+# 修改为blf后，需重设root密码。
+</pre>
+
+</ul>
+
+<ul>
+<li>
+管理用户、修改密码、发放ssh证书
+<pre class="brush:bash">
+pw group add users
+pw useradd dfjsb -d /home/dfjsb -s /bin/csh -g users -G wheel -m
+
+# 为用户设置ssh-key设置，并发放ssh证书：
+su - &lt;uesrname&gt;
+ssh-keygen -b 1024 -t dsa
+cd .ssh &amp;&amp; cat id_dsa.pub &gt; authorized_keys &amp;&amp; chmod 400 *
+mv {id,192.168.1.100_`id -u -n`}_dsa
+mv {id,192.168.1.100_`id -u -n`}_dsa.pub
+</pre>
+
+</ul>
+
+<p>
+生成后，将id_dsa、id_dsa.pub下载、发放给指定用户，发放完成后，这两个文件须从服务器上删除。
+</p>
+
+<ul>
+<li>
+删除无用的用户：
+<pre class="brush:bash">
+pw userdel [username] -r
+</pre>
+
+</ul>
+
+<ul>
+<li>
+若安装时已建立，在修改blf加密后，需重设密码：
+<pre class="brush:bash">
+passwd dfjsb
+</pre>
+
+</ul>
+
+<ul>
+<li>
+修改主机名：
+<pre class="brush:bash">
+# vi /etc/rc.conf
+hostname="ZJ_T1n_DB"
+
+# hostname ZJ_T1n_DB
+# vi /etc/hosts
+127.0.0.1 ZJ_T1n_DB ZJ_T1n_DB.
+</pre>
+
+</ul>
+
+<ul>
+<li>
+修改/etc/mail/sendmail.cf，取消IPv6:
+<pre class="brush:bash">
+#O DaemonPortOptions=Name=IPv6, Family=inet6, Modifiers=O
+</pre>
+
+</ul>
+
+<ul>
+<li>
+配置.cshrc
+<pre class="brush:bash">
+cat &gt; /root/.cshrc &lt;&lt; EOF
+alias h     history 25
+alias j     jobs -l
+alias ls    ls -aF
+alias la    ls -a
+alias lf    ls -FA
+alias ll    ls -loAh
+alias axel  'axel -a'
+alias pa    'ps aux | grep sshd | grep -v grep'
+
+# A righteous umask
+umask 22
+
+set path = (/sbin /bin /usr/sbin /usr/bin /usr/local/sbin /usr/local/bin $HOME/bin)
+
+set complete=enchance
+set autolist
+setenv  LSCOLOR ExGxFxdxCxegedabagExEx
+setenv  CLICOLOR yes
+setenv  EDITOR  vim
+setenv  PAGER   less
+setenv  BLOCKSIZE   K
+
+if ($?prompt) then
+        # An interactive shell -- set some stuff up
+        #set prompt = "`/bin/hostname -s`# "
+    set prompt = "%B%n@%m%b\[%B%c%b\]# "
+        set filec
+        set history = 100
+        set savehist = 100
+        set mail = (/var/mail/$USER)
+        if ( $?tcsh ) then
+                bindkey "^W" backward-delete-word
+                bindkey -k up history-search-backward
+                bindkey -k down history-search-forward
+        endif
+endif
+EOF
+</pre>
+
+</ul>
+
+<ul>
+<li>
+登录环境
+
+<ul>
+<li>
+编辑/etc/motd文件，阻止计算机泄露系统信息
+
+<li>
+删除版权信息:
+<pre class="brush:bash">
+touch /etc/COPYRIGHT
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+配置rc.conf
+<pre class="brush:bash">
+cat &gt;&gt; /etc/rc.conf &lt;&lt; EOF
+keyrate="fast"
+update_motd="NO"
+sshd_enable="YES"
+
+nisdomainname="NO"
+ip6addrctl_enable="NO"
+mixer_enable="NO"
+inetd_enable="NO"
+synchronous_dhclient="NO"
+ppp_nat="NO"
+#ntpdate_enable="YES"
+#ntpdate_flags="asia.pool.ntp.org"
+
+fsck_y_enable="YES"
+background_fsck="YES"
+background_fsck_delay="60"
+
+syslogd_enable="YES"
+syslogd_flags="-ss"
+EOF
+
+# 防止系统自动加入信息、sendmail仅对本地侦听，修改/etc/rc.conf：
+update_motd="NO"
+sendmail_enable="NO"    #default NO
+</pre>
+
+</ul>
+
+<ul>
+<li>
+loader.conf的配置(参数需根据实际情况调整)
+<pre class="brush:bash">
+kern.ipc.maxsockets="16384" ## 增大线程间套接数量
+#kern.ipc.nmbclusters="16384"
+##如果您有一个同时发生1000个以上连接的web服务器，并且每个连接用掉16K接收和发送缓存，
+##就需要大概32M网络缓存来确保web服务器的工作。
+##简单计算方法是乘以2，所以2x32Mb/2Kb=64MB/2kb=32768。
+##我们建议在有大量内存的机器上把这个值设置在4096到32768之间。
+##没有必要把它设置成任意太高的值，它会在启动时引起崩溃。
+
+cat &gt; /boot/loader.conf &lt;&lt; EOF
+autoboot_delay="5"
+beastie_disable="YES" #disable boot menu
+
+kern.ipc.maxsockets="16384"
+#kern.ipc.nmbclusters="16384"
+#kern.ipc.nmbufs="65536"                # Set the maximum number of mbufs
+kern.ipc.nsfbufs="16384"                # Set the number of sendfile(2) bufs
+
+net.inet.tcp.tcbhashsize="2048"
+EOF
+</pre>
+
+</ul>
+
+<ul>
+<li>
+sysctl.conf的基本配置
+<pre class="brush:bash">
+cat &gt;&gt; /etc/sysctl.conf &lt;&lt; EOF
+####to protect dos attack#####
+net.inet.tcp.msl=7500
+#net.inet.tcp.msl=2000  ###freebsd default:30000
+net.inet.tcp.blackhole=2
+###接收到一个已经关闭的端口发来的所有包，直接drop，如果设置为1则是只针对TCP包
+net.inet.udp.blackhole=1
+EOF
+</pre>
+
+</ul>
+
+<ul>
+<li>
+sshd的配置:/etc/ssh/sshd_config
+<pre class="brush:bash">
+Port 2222
+UseDNS no
+PrintMotd no
+RSAAuthentication no
+ServerKeyBits 1024
+PasswordAuthentication no   #注意要先发ssh证书
+PermitRootLogin no
+X11Forwarding no
+X11UseLocalhost no
+</pre>
+
+</ul>
+
+<p>
+编辑完成后，执行/etc/rc.d/sshd restart重启sshd。
+</p>
+
+<ul>
+<li>
+配置/etc/make.conf
+<pre class="brush:bash">
+#Dell R610(CPU:E5504)
+CPUTYPE?=nocona
+CFLAGS+= -mmmx -msse -msse2 -msse3 -mfpmath=sse
+CXXFLAGS+=${CFLAGS}
+
+KERNCONF=KERNCONF_FileName
+
+#NO_ACPI=true               # do not build acpiconf(8) and related programs
+NO_ATM=true                # do not build ATM related programs and libraries
+NO_BLUETOOTH=true          # do not build Bluetooth related stuff
+NO_FORTRAN=true            # do not build g77 and related libraries
+NO_GAMES=true              # do not build games (games/ subdir)
+NO_GPIB=true               # do not build GPIB support
+NO_I4B=true                # do not build isdn4bsd package
+NO_INET6=true              # do not build IPv6 related programs and libraries
+#NO_LPR=true                # do not build lpr and related programs
+NO_NIS=true                # do not build NIS support and related programs.
+#NO_UUCP=true
+NO_USB=true
+#NO_MAN=true
+#NO_INFO=true
+
+# To avoid building various parts of the base system:
+NO_MODULES=true         # do not build modules with the kernel
+#
+# Variables that control how ppp(8) is built.
+PPP_NO_NAT=true                 # do not build with NAT support (see make.conf(5))
+PPP_NO_NETGRAPH=true    # do not build with Netgraph support
+PPP_NO_RADIUS=true      # do not build with RADIUS support
+PPP_NO_SUID=true                # build with normal permissions
+
+SUP_UPDATE=YES
+SUP=            /usr/bin/csup
+SUPFLAGS=       -g -L 2
+SUPHOST=        cvsup4.freebsdchina.org
+SUPFILE=        /etc/standard-supfile
+PORTSSUPFILE=   /etc/ports-supfile
+#DOCSUPFILE=    /usr/share/examples/cvsup/doc-supfile
+
+SUP_UPDATE=YESSTER_SITE_FREEBSD=ftp.cn2.freebsd.org
+MASTER_SITE_BACKUP= \
+http://ports.cn.freebsd.org/${DIST_SUBDIR}/ http://ports.hshh.org/${DIST_SUBDIR}/ ftp://freebsd.csie.nctu.edu.tw/pub/distfiles/${DIST_SUBDIR}/ ftp://ftp.tw.freebsd.org/pub/ports/distfiles/${DIST_SUBDIR}/ ftp://ftp.iij.ad.jp/pub/FreeBSD/distfiles/${DIST_SUBDIR}/ ftp://ftp.rucus.ru.ac.za/pub/FreeBSD/distfiles/${DIST_SUBDIR}/ ftp://ftp.freebsdchina.org/pub/FreeBSD/ports/distfiles/${DIST_SUBDIR}/ ftp://ftp2.tsinghua.edu.cn/mirror/FreeBSD/ports/distfiles/${DIST_SUBDIR}/ ftp://ftp.freebsd.org/pub/FreeBSD/ports/distfiles/${DIST_SUBDIR}/
+
+MASTER_SITE_OVERRIDE?=${MASTER_SITE_BACKUP}
+</pre>
+
+</ul>
+
+<ul>
+<li>
+ports&amp;src更新配置
+
+<ul>
+<li>
+可选镜像源可参考：
+
+<ul>
+<li>
+<a href="http://www.freebsdchina.org/mirrors.php">http://www.freebsdchina.org/mirrors.php</a>
+
+<li>
+<a href="http://www.freebsd.org/doc/zh_CN/books/handbook/cvsup.html#HANDBOOK-MIRRORS-CHAPTER-SGML-MIRRORS-CN-CVSUP">http://www.freebsd.org/doc/zh_CN/books/handbook/cvsup.html#HANDBOOK-MIRRORS-CHAPTER-SGML-MIRRORS-CN-CVSUP</a>
+<pre class="brush:bash">
+cat &gt; /etc/ports-supfile &lt;&lt; EOF
+*default host=ftp.cn.freebsd.org
+*default base=/var/db
+*default prefix=/usr
+*default release=cvs tag=.
+*default delete use-rel-suffix
+*default compress
+ports-all
+EOF
+
+cat &gt; /etc/standard-supfile &lt;&lt; EOF
+# IMPORTANT: Change the next line to use one of the CVSup mirror sites
+# listed at http://www.freebsd.org/doc/handbook/mirrors.html.
+*default host=ftp.cn.freebsd.org
+*default base=/var/db
+*default prefix=/usr
+# The following line is for 7-stable.  If you want 6-stable, 5-stable,
+# 4-stable, 3-stable, or 2.2-stable, change to "RELENG_6", "RELENG_5",
+# "RELENG_4", "RELENG_3", or "RELENG_2_2" respectively.
+*default release=cvs tag=RELENG_8_0
+*default delete use-rel-suffix
+
+# If you seem to be limited by CPU rather than network or disk bandwidth, try
+# commenting out the following line.  (Normally, today's CPUs are fast enough
+# that you want to run compression.)
+*default compress
+
+## Main Source Tree.
+#
+# The easiest way to get the main source tree is to use the "src-all"
+# mega-collection.  It includes all of the individual "src-*" collections.
+# Please note:  If you want to track -STABLE, leave this uncommented.
+src-all
+EOF
+</pre>
+
+</ul>
+</ul>
+</ul>
+
+<ul>
+<li>
+更新ports和src源
+<pre class="brush:bash">
+csup -gL2 /etc/standard-supfile
+csup -gL2 /etc/ports-supfile
+</pre>
+
+</ul>
+
+<ul>
+<li>
+其他设置
+<pre class="brush:bash">
+# 建议 www、nobody、bind等用户不能使用crontab，建立/var/cron/allow文件把需要使用的用户放进去，如：
+echo root&gt;/var/cron/allow
+chmod 600 /var/cron/allow
+
+# 如果不使用at命令，就关闭这个服务，在/etc/crontab文件中注释掉：
+*/5 * * * * root /usr/libexec/atrun
+
+# 修改/etc/nsswitch.conf
+sed -i.bak \
+-e 's/^\(group_compat: nis\)$/#\1/' \
+-e 's/^\(passwd_compat: nis\)$/#\1/' \
+-e 's/^\(services_compat: nis\)$/#\1/' \
+-e 's/^\(rpc: files\)$/#\1/' \
+/etc/nsswitch.conf
+
+# 配置/etc/ttys
+sed -i.bak 's/^\(ttyv[4-8]\)/#\1/' /etc/ttys
+
+# 配置/etc/syslog.conf
+sed -i.bak \
+-e 's/^\(mail\.info\)/#\1/' \
+-e 's/^\(lpr\.info\)/#\1/' \
+-e 's/^\(\!ppp\)/#\1/' \
+-e 's/^\(\*\.\*\)/#\1/' \
+-e 's/^\(\!\*\)/#\1/' \
+/etc/syslog.conf
+
+/etc/rc.d/syslogd restart
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">编译内核和重构系统(略)</h2>
+
+<ul>
+<li>
+定制系统内核内容：
+
+<ul>
+<li>
+支持特定硬件，如SMP、RAID、大容量内存；
+
+<li>
+删除多余硬件驱动支持；
+
+<li>
+增强系统安全性，增加pf。
+
+</ul>
+<li>
+内核编译及系统重构:略
+
+<ul>
+<li>
+FreeBSD Kernel Tips:<a href="http://5sky.gdu.me/?action=show&amp;id=7">http://5sky.gdu.me/?action=show&amp;id=7</a> 
+
+</ul>
+<li>
+备份generic内核
+
+<ul>
+<li>
+第一次安装新内核后，备份初始内核(保存一份 GENERIC内核的副本到 /boot/kernel.generic，以防内核编错时可用原来的内核引导，也便于freebsd-update更新标准内核。)：
+<pre class="brush:bash">
+cd /boot
+mv kernel.{old,generic}
+</pre>
+
+</ul>
+<li>
+异常引导
+<pre class="brush:bash">
+nextboot -k kernel.GENERIC  #指定下次使用GENERIC内核启动
+
+# 若新内核引导失败，需在启动菜单处选择 “Escape to a loader prompt” 选项，输入：
+unload kernel
+boot /boot/kernel.generic/kernel
+</pre>
+
+<li>
+pf相关命令：
+<pre class="brush:bash">
+# 若要启用pf，按需求修改pf.conf设置，并在/etc/rc.conf中添加：
+pf_enable="YES"
+pf_rules="/etc/pf.conf"
+pflog_enable="YES"
+pflog_logfile="/var/log/pflog"
+
+# pfctl常用命令：
+pfctl -Fa -f /etc/pf.conf   # 重新加载pf.conf策略，用/etc/rc.d/pf restart可以
+pfctl -s rules              # 查看当前策略
+pfctl -vnf /etc/pf.conf     # 对pf.conf策略进行语法检查，但不加载
+pfctl -t mng_pool -T show   # 显示table内容
+
+# 阅读pf日志文件(tcpdump)：
+tcpdump -n -e -ttt -r /var/log/pflog
+tcpdump -n -e -ttt -i pflog0
+tcpdump -n -e -ttt -r /var/log/pflog port 80 #仅80端口
+tcpdump -n -e -ttt -r /var/log/pflog port 80 and host 192.168.1.3 # 仅80端口，且主机为192.168.1.3
+</pre>
+
+</ul>
+
+<h2 id="toc_0.4">应用环境安装</h2>
+
+<p>
+安装模式是以FreeBSD标准的目录结构进行安装，配置文档位于/usr/local/etc/下。
+</p>
+
+<ul>
+<li>
+风险检查工具
+<pre>
+Port:   portaudit-0.5.14
+Path:   /usr/ports/ports-mgmt/portaudit
+Info:   Checks installed ports against a list of security vulnerabilities
+
+# cd /usr/ports/ports-mgmt/portaudit &amp;&amp; make install clean &amp;&amp; rehash
+
+===&gt;  To check your installed ports for known vulnerabilities now, do:
+
+      /usr/local/sbin/portaudit -Fda
+</pre>
+
+</ul>
+
+<h3 id="toc_0.4.1">基础环境安装</h3>
+<ul>
+<li>
+libtool22安装
+<pre class="brush:bash">
+Port:   libtool-2.2.6b
+Path:   /usr/ports/devel/libtool22
+Info:   Generic shared library support script
+B-deps:
+R-deps:
+
+cd /usr/ports/devel/libtool22/ &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+libiconv安装
+<pre class="brush:bash">
+Port:   libiconv-1.13.1
+Path:   /usr/ports/converters/libiconv
+Info:   A character set conversion library
+Maint:  gnome@FreeBSD.org
+B-deps: libtool-2.2.6b
+R-deps:
+
+cd /usr/ports/converters/libiconv
+make config           # 安装包选择以下
++--------------------------------------------------------------------+
+|                   Options For libiconv 1.13.1                      |  
+| +----------------------------------------------------------------+ |  
+| |  [X] EXTRA_ENCODINGS  Include extra character sets             | |  
+| |  [ ] EXTRA_PATCHES    Apply patches to fix CP932 add EUCJP-MS  | |  
+| |                                                                | |  
++-+----------------------------------------------------------------+-+  
+|                       [  OK  ]       Cancel                        |  
++--------------------------------------------------------------------+  
+
+make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+gettext安装
+<pre class="brush:bash">
+Port:   gettext-0.17_1
+Path:   /usr/ports/devel/gettext
+Info:   GNU gettext package
+B-deps: libiconv-1.13.1 libtool-2.2.6b
+R-deps: libiconv-1.13.1
+
+cd /usr/ports/devel/gettext &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+jpeg安装
+<pre class="brush:bash">
+Port:   jpeg-7
+Path:   /usr/ports/graphics/jpeg
+Info:   IJG\'s jpeg compression utilities
+B-deps: libtool-2.2.6b
+R-deps:
+
+cd /usr/ports/graphics/jpeg &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+gmake安装
+<pre class="brush:bash">
+Port:   gmake-3.81_3
+Path:   /usr/ports/devel/gmake
+Info:   GNU version of 'make' utility
+B-deps: gettext-0.17_1 libiconv-1.13.1
+R-deps: gettext-0.17_1 libiconv-1.13.1
+
+cd /usr/ports/devel/gmake &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+pkg-config安装
+<pre class="brush:bash">
+Port:   pkg-config-0.23_1
+Path:   /usr/ports/devel/pkg-config
+Info:   A utility to retrieve information about installed libraries
+B-deps: gettext-0.17_1 gmake-3.81_3 libiconv-1.13.1
+
+cd /usr/ports/devel/pkg-config &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+freetype2安装
+<pre class="brush:bash">
+Port:   freetype2-2.3.11
+Path:   /usr/ports/print/freetype2
+Info:   A free and portable TrueType font rendering engine
+B-deps: gettext-0.17_1 gmake-3.81_3 libiconv-1.13.1 libtool-2.2.6b pkg-config-0.23_1
+R-deps: pkg-config-0.23_1
+
+cd /usr/ports/print/freetype2 &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+mysql51-client安装
+<pre class="brush:bash">
+Port:   mysql-client-5.1.42
+Path:   /usr/ports/databases/mysql51-client
+Info:   Multithreaded SQL database (client)
+
+cd /usr/ports/databases/mysql51-client/ \
+&amp;&amp; make WITH_CHARSET=utf8 WITH_XCHARSET=complex install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+mysql51-server安装(可选)
+<pre class="brush:bash">
+Port:   mysql-server-5.1.42
+Path:   /usr/ports/databases/mysql51-server
+Info:   Multithreaded SQL database (server)
+B-deps: mysql-client-5.1.42
+R-deps: mysql-client-5.1.42
+
+cd /usr/ports/databases/mysql51-server/
+sed -i.bak -e 's;/var/db/mysql;/opt/db/mysql;' Makefile # 修改需要安装到的数据目录(/opt/db/mysql)
+make WITH_CHARSET=utf8 WITH_XCHARSET=complex BUILD_STATIC=yes BUILD_OPTIMIZED=yes install clean &amp;&amp; rehash
+sed -i.bak -e 's;=\"/var/db/mysql;=\"/opt/db/mysql;' /usr/local/etc/rc.d/mysql-server
+</pre>
+
+</ul>
+
+<ul>
+<li>
+mysql51-server初始化
+<pre class="brush:bash">
+# 以下步骤第一次安装时需要，升级或更新则不能使用
+echo 'mysql_enable="YES"' &gt;&gt; /etc/rc.conf
+install -o mysql -g mysql -m 700 -d /opt/db/mysql
+# DB初使化
+/usr/local/bin/mysql_install_db --user=mysql
+install -o mysql -g mysql -m 444 /usr/local/share/mysql/my-innodb-heavy-4G.cnf /opt/db/mysql/my.cnf
+# 初始化mysql管理员密码：
+/usr/local/bin/mysqladmin -u root password 'new-password'
+/usr/local/bin/mysqladmin -u root -h ZJ_T1n_Web password 'new-password'
+</pre>
+
+</ul>
+
+<ul>
+<li>
+libevent安装
+<pre class="brush:bash">
+Port:   libevent-1.4.13
+Path:   /usr/ports/devel/libevent
+Info:   Provides an API to execute callback functions on certain events
+B-deps:
+R-deps:
+
+cd /usr/ports/devel/libevent &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+memcached安装
+<pre class="brush:bash">
+Port:   memcached-1.4.4
+Path:   /usr/ports/databases/memcached
+Info:   High-performance distributed memory object cache system
+B-deps: libevent-1.4.13
+R-deps: libevent-1.4.13
+
+cd /usr/ports/databases/memcached
+make config
++--------------------------------------------------------------------+
+|                   Options For memcached 1.4.4                      |  
+| +----------------------------------------------------------------+ |  
+| |         [ ] REPCACHED  Enable data replication feature         | |  
+| |         [ ] SASL       Enable SASL support                     | |  
+| |                                                                | |  
++-+----------------------------------------------------------------+-+  
+|                       [  OK  ]       Cancel                        |  
++--------------------------------------------------------------------+  
+make install clean &amp;&amp; rehash
+# 设置memcached缓冲值大小(-m 1024)，根据实际情况修改
+sed -i.bak -e 's;\(-d -u ${memcached_user}\);\1 -m 500;' /usr/local/etc/rc.d/memcached
+echo 'memcached_enable="YES"' &gt;&gt; /etc/rc.conf
+</pre>
+
+</ul>
+
+<ul>
+<li>
+screen安装(可选)
+<pre class="brush:bash">
+Port:   screen-4.0.3_6
+Path:   /usr/ports/sysutils/screen
+Info:   A multi-screen window manager
+B-deps:
+R-deps:
+
+cd /usr/ports/sysutils/screen &amp;&amp; make install clean
+sed -i.bak -e 's;#\(startup_message off\);\1;' /usr/local/etc/screenrc \
+&amp;&amp; rm -v /usr/local/etc/screenrc.bak
+</pre>
+
+</ul>
+
+<h3 id="toc_0.4.2">nginx环境安装</h3>
+
+<ul>
+<li>
+pcre安装
+<pre class="brush:bash">
+Port:   pcre-8.00
+Path:   /usr/ports/devel/pcre
+Info:   Perl Compatible Regular Expressions library
+B-deps:
+R-deps:
+
+cd /usr/ports/devel/pcre &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+nginx安装
+<pre class="brush:bash">
+Port:   nginx-0.7.64
+Path:   /usr/ports/www/nginx
+Info:   Robust and small WWW server
+B-deps: pcre-8.00
+R-deps: pcre-8.00
+
+cd /usr/ports/www/nginx
+make config           # 可根据实际情况调整，清除命令为: make rmconfig
++--------------------------------------------------------------------+
+|                   Options for nginx 0.7.64                         |  
+| +----------------------------------------------------------------+ |  
+| |[ ] DEBUG                     Enable nginx debugging            | |  
+| |[ ] IPV6                      Enable IPv6                       | |  
+| |[ ] GOOGLE_PERFTOOLS          Enable google perftools module    | |  
+| |[X] HTTP_MODULE               Enable HTTP module                | |  
+| |[ ] HTTP_ADDITION_MODULE      Enable http_addition module       | |  
+| |[X] HTTP_CACHE_MODULE         Enable http_cache module          | |  
+| |[ ] HTTP_DAV_MODULE           Enable http_webdav module         | |  
+| |[ ] HTTP_FLV_MODULE           Enable http_flv module            | |  
+| |[X] HTTP_GZIP_STATIC_MODULE   Enable http_gzip_static module    | |  
+| |[ ] HTTP_IMAGE_FILTER_MODULE  Enable http_image_filter module   | |  
+| |[ ] HTTP_PERL_MODULE          Enable http_perl module           | |  
+| |[ ] HTTP_RANDOM_INDEX_MODULE  Enable http_random_index module   | |  
+| |[ ] HTTP_REALIP_MODULE        Enable http_realip module         | |  
+| |[X] HTTP_REWRITE_MODULE       Enable http_rewrite module        | |
+| |[ ] HTTP_SECURE_LINK_MODULE   Enable http_secure_link module    | |
+| |[ ] HTTP_SSL_MODULE           Enable http_ssl module            | |
+| |[X] HTTP_STATUS_MODULE        Enable http_stub_status module    | |
+| |[ ] HTTP_SUB_MODULE           Enable http_sub module            | |  
+| |[ ] HTTP_XSLT_MODULE          Enable http_xslt module           | |  
+| |[ ] MAIL_MODULE               Enable IMAP4/POP3/SMTP proxy modul| |  
+| |[ ] MAIL_IMAP_MODULE          Enable IMAP4 proxy module         | |  
+| |[ ] MAIL_POP3_MODULE          Enable POP3 proxy module          | |  
+| |[ ] MAIL_SMTP_MODULE          Enable SMTP proxy module          | |  
+| |[ ] MAIL_SSL_MODULE           Enable mail_ssl module            | |  
+| |[X] WWW                       Enable html sample files          | |  
+| |[ ] HTTP_ACCESSKEY_MODULE     3rd party http_accesskey module   | |  
+| |[ ] HTTP_EVAL_MODULE          3rd party eval module             | |  
+| |[ ] HTTP_FANCYINDEX_MODULE    3rd party http_fancyindex module  | |  
+| |[ ] HTTP_MOGILEFS_MODULE      3rd party mogilefs module         | |  
+| |[ ] HTTP_MP4_H264_MODULE      3rd party mp4/h264 module         | |  
+| |[ ] HTTP_NOTICE_MODULE        3rd party notice module           | |  
+| |[ ] HTTP_REDIS_MODULE         3rd party http_redis module       | |  
+| |[ ] HTTP_RESPONSE_MODULE      3rd party http_response module    | |  
+| |[ ] HTTP_UPLOAD_MODULE        3rd party upload module           | |  
+| |[ ] HTTP_UPLOAD_PROGRESS      3rd party uploadprogress module   | |  
+| |[ ] HTTP_UPSTREAM_FAIR        3rd party upstream fair module    | |  
+| |[ ] HTTP_UPSTREAM_KEEPALIVE   3rd party upstream keepalive modul| |  
+| |[X] HTTP_ZIP_MODULE           3rd party http_zip module         | |  
+| |[ ] PASSENGER_MODULE          3rd party passenger module        | |  
+| |                                                                | |  
++-+----------------------------------------------------------------+-+  
+|                       [  OK  ]       Cancel                        |  
++--------------------------------------------------------------------+  
+make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<h3 id="toc_0.4.3">python安装</h3>
+
+<p>
+安装python核心与需用egg模块。
+</p>
+
+<p>
+下面的python egg主要是以ports的方式进行安装，操作较为麻烦，使用setuptools(easy_install)或pip来管理egg包将更为方便，如：
+</p>
+<pre class="brush;bash">
+easy_install -U distribute
+mkdir -p /data/packages &amp;&amp; cd /data/packages \
+&amp;&amp; pip install MySQL_python sqlalchemy simplejson pyamf blinker Twisted pycrypto tornado pyzmq txzmq
+</pre>
+
+<h4 id="toc_0.4.3.1">安装python26</h4>
+<pre class="brush:bash">
+Port:   python26-2.6.4
+Path:   /usr/ports/lang/python26
+Info:   An interpreted object-oriented programming language
+B-deps:
+R-deps:
+
+cd /usr/ports/lang/python26
+make config       # 取消ipv6支持
++--------------------------------------------------------------------+
+|                   Options for python 26.2.6.4                      |  
+| +----------------------------------------------------------------+ |  
+| | [X] THREADS          Enable thread support                     | |  
+| | [ ] HUGE_STACK_SIZE  Use a larger thread stack                 | |  
+| | [ ] SEM              Use POSIX semaphores (experimental)       | |  
+| | [ ] PTH              Use GNU Pth for threading/multiprocessing | |  
+| | [X] UCS4             Use UCS4 for unicode support              | |  
+| | [X] PYMALLOC         Use pythons internal malloc              | |  
+| | [ ] IPV6             Enable IPv6 support                       | |  
+| | [ ] FPECTL           Enable floating point exception handling  | |  
+| |                                                                | |  
++-+----------------------------------------------------------------+-+  
+|                       [  OK  ]       Cancel                        |  
++--------------------------------------------------------------------+  
+make install clean &amp;&amp; rehash
+</pre>
+
+<h4 id="toc_0.4.3.2">安装eggs模块</h4>
+
+<ul>
+<li>
+py-setuptools
+<pre class="brush:bash">
+Port:   py26-setuptools-0.6c11
+Path:   /usr/ports/devel/py-setuptools
+Info:   Download, build, install, upgrade, and uninstall Python packages
+B-deps: python26-2.6.4
+R-deps: python26-2.6.4
+
+cd /usr/ports/devel/py-setuptools &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+py-MySQLdb
+<pre class="brush:bash">
+Port:   py26-MySQLdb-devel-1.2.3.c1
+Path:   /usr/ports/databases/py-MySQLdb-devel
+Info:   Access a MySQL database through Python
+Maint:  mnag@FreeBSD.org
+B-deps: mysql-client-5.0.89 py26-setuptools-0.6c11 python26-2.6.4
+R-deps: mysql-client-5.0.89 py26-setuptools-0.6c11 python26-2.6.4
+WWW:    http://sourceforge.net/projects/mysql-python/
+
+# 若已安装了1.2.2版本，必须先强制删除该包（运行时会有告警信息）：
+pkg_delete -f py26-MySQLdb-1.2.2
+# 或：
+cd /usr/ports/databases/py-MySQLdb &amp;&amp; make deinstall
+
+# 安装py26-MySQLdb-devel-1.2.3.c1：
+cd /usr/ports/databases/py-MySQLdb-devel &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+py-flup
+<pre class="brush:bash">
+Port:   py26-flup-1.0.2
+Path:   /usr/ports/www/py-flup
+Info:   Random assortment of WSGI servers, middleware
+B-deps: py26-setuptools-0.6c11 python26-2.6.4
+R-deps: py26-setuptools-0.6c11 python26-2.6.4
+
+cd /usr/ports/www/py-flup &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+py-django
+<pre class="brush:bash">
+Port:   py26-django-1.1.1
+Path:   /usr/ports/www/py-django
+Info:   High-level Python Web framework
+B-deps: gettext-0.17_1 libiconv-1.13.1 python26-2.6.4
+R-deps: gettext-0.17_1 libiconv-1.13.1 python26-2.6.4
+
+cd /usr/ports/www/py-django
+make config
++--------------------------------------------------------------------+
+|                   Options for py-django 1.1.1                      |  
+| +----------------------------------------------------------------+ |  
+| | [ ] MOD_PYTHON3  Install Apache2 with mod_python3              | |  
+| | [ ] POSTGRESQL   PostgreSQL support                            | |  
+| | [X] MYSQL        MySQL support                                 | |  
+| | [ ] SQLITE       SQLite support                                | |  
+| | [X] FASTCGI      FastCGI support                               | |  
+| | [ ] DOCS         Install HTML documentation (requires Sphinx)  | |  
+| |                                                                | |  
++-+----------------------------------------------------------------+-+  
+|                       [  OK  ]       Cancel                        |  
++--------------------------------------------------------------------+  
+make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+py-memcached
+<pre class="brush:bash">
+Port:   py26-memcached-1.44
+Path:   /usr/ports/databases/py-memcached
+Info:   Python API for memcached, a distributed memory cache daemon
+B-deps: py26-setuptools-0.6c11 python26-2.6.4
+R-deps: py26-setuptools-0.6c11 python26-2.6.4
+
+cd /usr/ports/databases/py-memcached &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+py-simplejson
+<pre class="brush:bash">
+Port:   py26-simplejson-2.0.9
+Path:   /usr/ports/devel/py-simplejson
+Info:   Simplejson is a simple, fast, extensible JSON encoder/decoder
+B-deps: py26-setuptools-0.6c11 python26-2.6.4
+R-deps: py26-setuptools-0.6c11 python26-2.6.4
+
+cd /usr/ports/devel/py-simplejson &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+py-imaging
+<pre class="brush:bash">
+Port:   py26-imaging-1.1.6_3
+Path:   /usr/ports/graphics/py-imaging
+Info:   The Python Imaging Library
+B-deps: expat-2.0.1_1 fontconfig-2.8.0,1 freetype2-2.3.11 jpeg-7 kbproto-1.0.3 libX11-1.2.1_1,1 libXau-1.0.4 libXdmcp-1.0.2_1 libXft-2.1.14 libXrender-0.9.4_1 libpthread-stubs-0.3_3 libxcb-1.5 pkg-config-0.23_1 py26-tkinter-2.6.4_3 python26-2.6.4 renderproto-0.9.3 tcl-8.5.8 tcl-modules-8.5.8 tk-8.5.8 xproto-7.0.15
+R-deps: expat-2.0.1_1 fontconfig-2.8.0,1 freetype2-2.3.11 jpeg-7 kbproto-1.0.3 libX11-1.2.1_1,1 libXau-1.0.4 libXdmcp-1.0.2_1 libXft-2.1.14 libXrender-0.9.4_1 libpthread-stubs-0.3_3 libxcb-1.5 pkg-config-0.23_1 py26-tkinter-2.6.4_3 python26-2.6.4 renderproto-0.9.3 tcl-8.5.8 tcl-modules-8.5.8 tk-8.5.8 xproto-7.0.15
+
+cd /usr/ports/graphics/py-imaging
+make config        # 服务器系统，不选X支持。所以以上关联库应为 freetype2-2.3.11 jpeg-7 python26-2.6.4
++--------------------------------------------------------------------+
+|                 Options for py26-imaging 1.1.6_3                   |  
+| +----------------------------------------------------------------+ |  
+| |         [ ] TKINTER  Build with tkinter for X support          | |  
+| |                                                                | |  
++-+----------------------------------------------------------------+-+  
+|                       [  OK  ]       Cancel                        |  
++--------------------------------------------------------------------+  
+make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+py-4suite-xml
+<pre class="brush:bash">
+Port:   py26-4Suite-XML-1.0.2
+Path:   /usr/ports/textproc/py-4suite-xml
+Info:   A collection of Python tools for XML processing
+B-deps: python26-2.6.4
+R-deps: python26-2.6.4
+
+cd /usr/ports/textproc/py-4suite-xml &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+py-amf
+<pre class="brush:bash">
+Port:   py26-amf-0.5.1
+Path:   /usr/ports/www/py-amf
+Info:   AMF support for Python
+B-deps: py26-setuptools-0.6c11 python26-2.6.4
+R-deps: py26-setuptools-0.6c11 python26-2.6.4
+
+cd /usr/ports/www/py-amf &amp;&amp; make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+py-sqlalchemy
+<pre class="brush:bash">
+Port:   py26-sqlalchemy-0.5.7
+Path:   /usr/ports/databases/py-sqlalchemy
+Info:   A Python SQL toolkit and Object Relational Mapper
+B-deps: py26-setuptools-0.6c11 python26-2.6.4
+R-deps: gettext-0.17_1 libiconv-1.13.1 mysql-client-5.0.89 postgresql-client-8.2.15_1 py26-MySQLdb-1.2.2 py26-psycopg2-2.0.13 py26-pysqlite-2.3.5 py26-setuptools-0.6c11 python26-2.6.4 sqlite3-3.6.19
+
+cd /usr/ports/databases/py-sqlalchemy 
+# 本次安装只选对mysql的支持，故以上关联包应为gettext-0.17_1 libiconv-1.13.1 mysql-client-5.0.89 py26-MySQLdb-1.2.2 py26-setuptools-0.6c11 python26-2.6.4
+make config
++--------------------------------------------------------------------+
+|                Options for py26-sqlalchemy 0.5.7                   |                            
+| +----------------------------------------------------------------+ |                            
+| |              [ ] FIREBIRD  support FireBird                    | |                            
+| |              [ ] MSSQL     support MS SQL Server               | |                            
+| |              [X] MYSQL     support MySql                       | |                            
+| |              [ ] POSTGRE   support PostGreSQL                  | |                            
+| |              [ ] SQLITE    support Sqlite                      | |                            
+| |                                                                | |                            
++-+----------------------------------------------------------------+-+  
+|                       [  OK  ]       Cancel                        |  
++--------------------------------------------------------------------+  
+make install clean &amp;&amp; rehash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+py-twisted
+<pre class="brush:bash">
+Port:   py26-twisted-8.2.0
+Path:   /usr/ports/devel/py-twisted
+Info:   Metaport of Twisted, an event-driven networking engine
+B-deps: python26-2.6.4
+R-deps: py26-setuptools-0.6c11 py26-twistedConch-8.2.0 py26-twistedCore-8.2.0 py26-twistedFlow-8.0.0 py26-twistedLore-8.2.0 py26-twistedMail-8.2.0 py26-twistedNames-8.2.0 py26-twistedNews-8.2.0 py26-twistedPair-8.0.0 py26-twistedRunner-8.2.0 py26-twistedWeb-8.2.0 py26-twistedWeb2-8.1.0 py26-twistedWords-8.2.0 py26-zopeInterface-3.5.2 python26-2.6.4
+
+cd /usr/ports/devel/py-twisted
+# 按应用需求，只需安装WEB模块，所以以上关编包应为py26-setuptools-0.6c11  py26-twistedCore-8.2.0 py26-twistedWeb2-8.1.0 python26-2.6.4
+make config
++--------------------------------------------------------------------+
+|                  Options for py26-twisted 8.2.0                    | 
+| +----------------------------------------------------------------+ | 
+| |            [ ] CONCH   SSH and SFTP protocol                   | | 
+| |            [ ] LORE    Documentation generator                 | | 
+| |            [ ] MAIL    SMTP, IMAP and POP protocol             | | 
+| |            [ ] NAMES   DNS protocol                            | | 
+| |            [ ] NEWS    NNTP protocol                           | | 
+| |            [X] RUNNER  Process management                      | | 
+| |            [X] WEB     HTTP protocol                           | | 
+| |            [X] WEB2    HTTP/1.1 Server Framework               | | 
+| |            [ ] WORDS   Chat and Instant Messaging              | |
+| |                                                                | |  
++-+----------------------------------------------------------------+-+
+|                       [  OK  ]       Cancel                        |
++--------------------------------------------------------------------+
+make WITHOUT_WEB2=yes WITHOUT_CONCH=yes WITHOUT_FLOW=yes WITHOUT_MAIL=yes WITHOUT_NAMES=yes WITHOUT_NEWS=yes WITHOUT_PAIR=yes WITHOUT_RUNNER=yes WITHOUT_LORE=yes WITHOUT_WORDS=yes install clean &amp;&amp; rehash
+make install clean &amp;&amp; rehash
+
+# 注: py-twisted的安装会安装以下关联包
+===&gt;  Cleaning for py26-twistedCore-8.2.0
+===&gt;  Cleaning for py26-twistedWeb-8.2.0
+===&gt;  Cleaning for py26-zopeInterface-3.5.2
+===&gt;  Cleaning for py26-twisted-8.2.0
+</pre>
+
+</ul>
+
+<ul>
+<li>
+pyfo
+<pre class="brush:bash">
+# 由于pyfo包没集成在ports中，所以只能是手工来加载
+easy_install pyfo
+
+## 删除pyfo的egg包方法
+easy_install -m pyfo
+cd /usr/local/lib/python2.6/site-packages/
+rm -v pyfo-0.6-py2.6.egg          # 此为样例，删除前先确认该包存在，并核对真实文件名
+</pre>
+
+</ul>
+
+<ul>
+<li>
+pyDes(仅PASSPORT需安装)
+<pre class="brush:bash">
+# 由于pyfo包没集成在ports中，所以只能是手工来加载
+easy_install pyDes
+
+# 删除pyDes的egg包方法
+easy_install -m pyfo
+cd /usr/local/lib/python2.6/site-packages/
+rm -v pyDes-2.0.0-py2.6.egg       # 此为样例，删除前先确认该包存在，并核对真实文件名
+</pre>
+
+</ul>
+
+<ul>
+<li>
+安装snmpd:
+
+<ul>
+<li>
+安装perl5.8：
+<pre class="brush:bash">
+Port:   perl-5.8.9_3
+Path:   /usr/ports/lang/perl5.8
+Info:   Practical Extraction and Report Language
+Maint:  skv@FreeBSD.org
+B-deps: 
+R-deps: 
+WWW:    http://www.perl.org/
+
+cd /usr/ports/lang/perl5.8
+make config
+make install clean &amp;&amp; rehash
+</pre>
+
+<li>
+安装net-snmp：
+<pre class="brush:bash">
+Port:   net-snmp-5.4.2.1_6
+Path:   /usr/ports/net-mgmt/net-snmp
+Info:   An extendable SNMP implementation
+Maint:  pgollucci@FreeBSD.org
+B-deps: perl-5.8.9_3
+R-deps: perl-5.8.9_3
+WWW:    http://net-snmp.sourceforge.net/
+
+cd /usr/ports/net-mgmt/net-snmp
+make all-depends-list
+make config
+make install clean &amp;&amp; rehash
+
+cp /usr/local/share/snmp/snmpd.conf.example /usr/local/etc/snmpd.conf
+vi /usr/local/etc/snmpd.conf
+#com2sec mynetwork NETWORK/24      COMMUNITY
+com2sec mynetwork 125.69.149.152    PbDae43sGB
+
+cat &gt;&gt; /etc/rc.conf &lt;&lt;EOF
+snmpd_enable="YES"
+snmpd_flags="-a"
+snmpd_conffile="/usr/local/etc/snmpd.conf"
+
+EOF
+
+/usr/local/etc/rc.d/snmpd start
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+安装完成后检查所安装的应用程序
+<pre class="brush:bash">
+pkg_info 
+
+freetype2-2.3.11    A free and portable TrueType font rendering engine
+gettext-0.17_1      GNU gettext package
+gmake-3.81_3        GNU version of 'make' utility
+jpeg-7              IJG's jpeg compression utilities
+libevent-1.4.13     Provides an API to execute callback functions on certain ev
+libiconv-1.13.1     A character set conversion library
+libtool-2.2.6b      Generic shared library support script
+memcached-1.4.4     High-performance distributed memory object cache system
+mysql-client-5.1.42 Multithreaded SQL database (client)
+mysql-server-5.1.42 Multithreaded SQL database (server)
+nginx-0.7.64        Robust and small WWW server
+pcre-8.00           Perl Compatible Regular Expressions library
+pkg-config-0.23_1   A utility to retrieve information about installed libraries
+py26-4Suite-XML-1.0.2 A collection of Python tools for XML processing
+py26-MySQLdb-1.2.2  Access a MySQL database through Python
+py26-amf-0.5.1      AMF support for Python
+py26-flup-1.0.2     Random assortment of WSGI servers, middleware
+py26-imaging-1.1.6_3 The Python Imaging Library
+py26-memcached-1.44 Python API for memcached, a distributed memory cache daemon
+py26-setuptools-0.6c11 Download, build, install, upgrade, and uninstall Python pac
+py26-simplejson-2.0.9 Simplejson is a simple, fast, extensible JSON encoder/decod
+py26-sqlalchemy-0.5.7 A Python SQL toolkit and Object Relational Mapper
+py26-twisted-8.2.0  Metaport of Twisted, an event-driven networking engine
+py26-twistedCore-8.2.0 An asynchronous networking framework for Python - Core modu
+py26-twistedWeb-8.2.0 An HTTP protocol implementation together with clients and s
+py26-zopeInterface-3.5.2 Zope.interface package from Zope 3
+python-2.6,2        The "meta-port" for the default version of Python interpret
+python26-2.6.4      An interpreted object-oriented programming language
+screen-4.0.3_6      A multi-screen window manager
+</pre>
+
+</ul>
+
+<ul>
+<li>
+一些可用的命令:
+<pre class="brush:bash">
+make all-depends-list                #显示所有相关的套件 
+make pretty-print-build-depends-list #显示编译期间所需要的套件 
+make pretty-print-run-depends-list   #显示此套件要执行时所需要的套件
+
+# 查找ports:
+cd /usr/ports
+make search name=screen #查找screen在ports中的路径
+make search key=screen  #搜索名称、说明信息中包含screen的ports
+</pre>
+
+</ul>
+
+<h2 id="toc_0.5">应用环境配置</h2>
+<ul>
+<li>
+flup(fasgcgi)启动脚本配置
+<pre class="brush:bash">
+# cd /usr/local/etc/rc.d
+cat &gt; flup_threaded &lt;&lt; EOF
+#!/bin/sh
+. /etc/rc.subr
+
+name="flup_threaded"
+rcvar=${name}_enable
+
+load_rc_config ${name}
+
+: ${flup_threaded_enable="NO"}
+
+command=/usr/local/bin/python
+managepy=/usr/local/lib/python2.6/site-packages/django/conf/project_template/manage.py
+command_args=" ${managepy} runfcgi method=threaded host=127.0.0.1 port=3033"
+
+run_rc_command "$1"
+EOF
+
+chmod 555 flup_threaded
+echo 'flup_threaded_enable="YES"' &gt;&gt; /etc/rc.conf
+</pre>
+
+</ul>
+
+<ul>
+<li>
+twisted(gameserver,chatserver)启动脚本配置
+
+</ul>
+
+<ul>
+<li>
+使用定制Django版本
+<pre class="brush:bash">
+mkdir -p /opt/app/packages
+cd /opt/app/packages
+fetch http://xx.xx.xx.xx/pkgs/packages/django-1.1-official_svn091028.tar.gz
+tar zxvf django-1.1-official_svn091028.tar.gz
+chown -R root:wheel django-1.1-official_svn091028
+chmod -R 755 django-1.1-official_svn091028
+find ./django-1.1-official_svn091028/ -type f ! -name "*.py" -exec chmod 644 {} \;
+
+# 进入系统python软件包路径、创建软链接：
+cd `python -c 'from distutils.sysconfig import get_python_lib;print get_python_lib()'`
+
+# 如果已安装标准django，则将其移动到其它目录django.default：
+mv django django.default
+
+ln -sf /opt/app/packages/django-1.1-official_svn091028/django ./django
+ln -sf /opt/app/packages/django-1.1-official_svn091028/django/bin/django-admin.py /usr/local/bin/
+</pre>
+
+</ul>
+
+<ul>
+<li>
+数据库
+<pre class="brush:bash">
+mysql -uroot -p
+
+CREATE DATABASE `dbname` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+
+# 创建数据库及帐号
+GRANT ALL ON `dbname`.* TO 'dbuser'@'%' IDENTIFIED BY 'passwd';
+GRANT ALL ON `dbname`.* TO 'dbuser'@'gameip' IDENTIFIED BY 'passwd';
+
+# 用户按授权
+GRANT ALL ON `dbname`.* TO 'passport'@'passportip' IDENTIFIED BY 'passwd';
+GRANT ALL ON *.* TO 'defan'@'192.168.1.1_' IDENTIFIED BY 'passwd';
+
+CREATE DATABASE `zj_t1n` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+GRANT ALL ON `zj_t1n`.* TO 'zj_t1n'@'%' IDENTIFIED BY 'Ohx6av5ejei';
+</pre>
+
+</ul>
+
+<h2 id="toc_0.6">错误排查</h2>
+<ul>
+<li>
+python-eggs cache目录错误: 若运行时报Permission denied: '/root/.python-eggs'错误，则需环境变量PYTHON_EGG_CACHE：
+<pre class="brush:bash">
+mkdir -p /var/tmp/.python-eggs
+chown -R www:www /var/tmp/.python-eggs
+
+# 方式一：在启动脚本中添加（测试通过）
+# /usr/local/etc/rc.d/flup_fcgi脚本中，添加：
+export PYTHON_EGG_CACHE=/var/tmp/.python-eggs
+
+# 方式二：修改login.conf增加环境变量（无效）
+# vi /etc/login.conf
+:setenv=MAIL=/var/mail/$,BLOCKSIZE=K,FTP_PASSIVE_MODE=YES,PYTHON_EGG_CACHE=/var/tmp/.python-eggs:\
+cap_mkdb /etc/login.conf
+</pre>
+
+</ul>
+
+<ul>
+<li>
+py-MySQLdb报错
+<pre>
+/usr/local/lib/python2.6/site-packages/MySQLdb/__init__.py:34: DeprecationWarning: the sets module is deprecated
+  from sets import ImmutableSet
+</pre>
+
+<ul>
+<li>
+方式一：安装y26-MySQLdb-devel-1.2.3.c1版本
+
+<li>
+方式二：修改文件
+<pre>
+About warnings:
+1) file "__init__", replace:
+
+from sets import ImmutableSet
+class DBAPISet(ImmutableSet):
+
+with
+
+class DBAPISet(frozenset)
+
+2) file "converters.py", remove:
+from sets import BaseSet, Set
+
+3) file "converters.py", change "Set" by "set" (IMPORTANT: only two places):
+line 48: return set([ i for i in s.split(',') if i ])
+line 128: set: Set2Str,
+</pre>
+
+<li>
+参见：<a href="http://sourceforge.net/forum/message.php?msg_id=5808948">http://sourceforge.net/forum/message.php?msg_id=5808948</a>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.7">其它</h2>
+
+<ul>
+<li>
+/etc/newsyslog.conf里，增加snmpd.log截断：
+<pre>
+/var/log/snmpd.log                      600  7     100  *     JC
+</pre>
+
+<li>
+时间同步:/etc/crontab
+<pre class="brush:bash">
+1,31    0-5     *       *       *       root    adjkerntz -a
+30 4,16 * * * root /usr/sbin/ntpdate cn.pool.ntp.org;echo "ntp time successful at $(date)." &gt;&gt; /var/log/ntpdate_$(date +\%Y\%m) 2&gt;&amp;1
+</pre>
+
+<li>
+网络参数
+<pre class="brush:bash">
+netstat -rn   # 查看路由表
+sockstat -4l  # 查看侦听端口
+# 设置IP：
+ifconfig em0 192.168.1.100 netmask 255.255.255.0
+ifconfig em0 inet 192.168.1.101 netmask 255.255.255.0 up alias
+ifconfig em0 inet 192.168.1.100 netmask 255.255.255.0 up
+ifconfig em0 down
+
+# 设置路由表：
+route add default 192.168.1.1
+route add -net 192.168.1.0/24 192.168.1.1
+
+# 名字解析：/etc/hosts,/etc/resolv.conf
+# 名字解析顺序：  /etc/host.conf
+
+# 保存设置/etc/rc.conf:
+hostname="wb.example.com.cn"
+network_interfaces="xl0 ppp0 lo0" 
+ifconfig_xl0="inet 192.168.1.64 netmask 255.255.255.0"
+ifconfig_ppp0="inet 10.10.1.42  10.10.1.29"
+ifconfig_lo0="inet 127.0.0.1"
+defaultrouter="192.168.1.254"
+static_routes="static_route1 static_route2"
+static_route1="-net 192.168.10.0/24 192.168.1.253"
+static_route2="-net 192.168.20.0/24 192.168.1.253"
+
+# 更清晰的方式：
+ifconfig em0 inet 192.168.1.100 netmask 255.255.255.0 up
+route add default 192.168.1.1
+
+# ee /etc/rc.conf
+hostname="BSDTest"
+defaultrouter="192.168.1.1"
+gateway_enable="YES"
+ifconfig_em0="inet 192.168.1.100 netmask 255.255.255.0"
+
+# DHCP:
+ifconfig_em0="DHCP"
+hostname="VboxBSD.test.com"
+</pre>
+
+<li>
+FreeBSD 更新(freebsd-update)
+<pre class="brush:bash">
+# 配置文件: /etc/freebsd-update.conf
+# 安全补丁:
+freebsd-update fetch      #下载
+freebsd-update install    #安装
+
+# 如果给内核打了补丁，需要重启动。
+# freebsd-update 工具只能自动更新 GENERIC 内核。
+# 如果您使用自行联编的内核，则在 freebsd-update 安装完更新的其余部分之后需要手工重新联编和安装内核。
+# crontab每天执行，检查是否存在更新、下载，发送更新报告邮件:
+@daily                                  root    freebsd-update cron
+
+freebsd-update rollback   #回退上次修改
+
+portupgrade -af                       #这将确保所有的东西都会被正确的重新安装。
+freebsd-update -r 6.4-RELEASE upgrade #指定一个发布版本来执行
+freebsd-update install                #内核和内核模块会首先被打上补丁，并需要重启动
+nextboot -k GENERIC                   #指定下次启使用的内核
+shutdown -r now                       #用更新后的内核引导系统
+freebsd-update install                #再次运行，删除所有旧的共享库和目标文件
+portupgrade -af                       #重新编译和安装第三方软件
+freebsd-update install                #再次运行，处理升级中的所有细节，结束升级过程
+# 按照通常的方法重新联编并安装新的定制内核
+
+#系统状态对照
+freebsd-update IDS &gt;&gt; outfile.ids
+cat outfile.ids | awk '{ print $1 }' | more
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

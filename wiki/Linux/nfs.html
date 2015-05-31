@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>NFS</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">NFS</a>
+<ul>
+<li><a href="#toc_1.1">CentOS 6安装NFS</a>
+<li><a href="#toc_1.2">Ubuntu 10.04配置NFS</a>
+<ul>
+<li><a href="#toc_1.2.1">安装NFS</a>
+<li><a href="#toc_1.2.2">配置NFS</a>
+<li><a href="#toc_1.2.3">重启NFS</a>
+<li><a href="#toc_1.2.4">挂载NFS</a>
+<ul>
+<li><a href="#toc_1.2.4.1">自动挂载</a>
+</ul>
+<li><a href="#toc_1.2.5">iptables策略</a>
+</ul>
+<li><a href="#toc_1.3">挂载NFS错误排解</a>
+<li><a href="#toc_1.4">NFS版本差异</a>
+<li><a href="#toc_1.5">NFS操作和设置</a>
+<ul>
+<li><a href="#toc_1.5.1">RPC</a>
+<li><a href="#toc_1.5.2">NFS Server</a>
+<li><a href="#toc_1.5.3">NFS Client</a>
+<li><a href="#toc_1.5.4">mount可选参数</a>
+<li><a href="#toc_1.5.5">/etc/fstab</a>
+<li><a href="#toc_1.5.6">NFS相关命令</a>
+<li><a href="#toc_1.5.7">NFS调优</a>
+<li><a href="#toc_1.5.8">NFS安全</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">NFS</h1>
+
+<h2 id="toc_1.1">CentOS 6安装NFS</h2>
+
+<ul>
+<li>
+安装
+<pre class="brush:bash">
+yum install nfs-utils rpcbind nfs-utils-lib rpcidmapd
+
+# rpcidmapd用于uid-&gt;uname转换，解决显示文件owner为4294967294问题。
+
+chkconfig nfs on
+/etc/init.d/rpcbind status
+/etc/init.d/nfs start
+</pre>
+
+</ul>
+
+
+<h2 id="toc_1.2">Ubuntu 10.04配置NFS</h2>
+
+<ul>
+<li>
+作者：lesca　　最后更新：May 23, 2012
+
+<li>
+本博客所有内容均在《“署名-非商业用途-保持一致”的创作共用协议》下发布
+
+<li>
+全文转载，必须包含本版权信息；部分转载或引用，请注明作者署名与文章出处
+
+<li>
+本文链接：<a href="http://lesca.me/archives/install-and-config-nfs-on-ubuntu-10-04.html">http://lesca.me/archives/install-and-config-nfs-on-ubuntu-10-04.html</a>
+
+</ul>
+
+<p>
+本文主要介绍Ubuntu 10.04上NFS服务的安装、配置。
+</p>
+
+<h3 id="toc_1.2.1">安装NFS</h3>
+<pre class="brush:bash">
+sudo apt-get install nfs-kernel-server
+</pre>
+
+<h3 id="toc_1.2.2">配置NFS</h3>
+
+<ul>
+<li>
+/etc/default/nfs-kernel-server
+
+</ul>
+
+<pre class="brush:bash">
+NEED_SVCGSSD=no # no is default
+</pre>
+
+<p>
+注释： 因为我们并不打算启用NFSv4 安全配置
+</p>
+
+<p>
+注意： 如果启用，客户端也必须启用
+</p>
+
+<ul>
+<li>
+/etc/default/nfs-common
+
+</ul>
+
+<p>
+这是一个common配置文件，也就是说服务器端和客户端都要有相同的配置。
+</p>
+<pre class="brush:bash">
+NEED_IDMAPD=yes # 此项将打开ID映射
+NEED_GSSD=no # no is default
+</pre>
+
+<p>
+注释：ID映射用于解决服务器端UID与客户机UID不同，而无法访问资源的情况。通过UID映射，只需要相同的用户名即可。
+</p>
+
+<ul>
+<li>
+/etc/idmapd.conf
+
+</ul>
+
+<p>
+既然启用了ID映射，就需要配置：
+</p>
+<pre class="brush:bash">
+[Mapping]
+
+Nobody-User = nobody
+Nobody-Group = nogroup
+</pre>
+
+<ul>
+<li>
+/etc/exports
+
+</ul>
+
+<pre class="brush:bash">
+# 目录 客户端1(选项) 客户端2(选项)
+/home/lesca/ARM 192.168.1.0/24(rw,nohide,insecure,sync,no_root_squash)
+</pre>
+
+<p>
+客户端：
+</p>
+
+<p>
+可以是单台主机(主机名或IP地址)、网段、通配符网段或主机、网组(@netgroupname)。
+</p>
+
+<p>
+文件权限选项解释：
+<table>
+<tr>
+<th>
+选项
+</th>
+<th>
+说明
+</th>
+</tr>
+<tr>
+<td>
+ro
+</td>
+<td>
+只读
+</td>
+</tr>
+<tr>
+<td>
+rw
+</td>
+<td>
+可读写
+</td>
+</tr>
+<tr>
+<td>
+nohide
+</td>
+<td>
+如果被挂载的目录下的其他目录也是挂载的，此选项将使它们可见
+</td>
+</tr>
+<tr>
+<td>
+insecure
+</td>
+<td>
+允许客户端不使用保留端口
+</td>
+</tr>
+<tr>
+<td>
+sync
+</td>
+<td>
+每次写操作要同步到物理存储器上（而不是仅写入内存）
+</td>
+</tr>
+<tr>
+<td>
+no_root_squash
+</td>
+<td>
+不启用root_squash
+</td>
+</tr>
+<tr>
+<td>
+root_squash
+</td>
+<td>
+NFS会将UID或者GID为0的访问用户映射为anonymous
+</td>
+</tr>
+<tr>
+<td>
+all_squash
+</td>
+<td>
+所有访问用户都做为anonymous映射
+</td>
+</tr>
+<tr>
+<td>
+anonuid,anongid
+</td>
+<td>
+指定anonymous用户的uid,gid
+</td>
+</tr>
+</table>
+</p>
+
+<h3 id="toc_1.2.3">重启NFS</h3>
+
+<pre class="brush:bash">
+sudo /etc/init.d/nfs-kernel-server restart
+</pre>
+
+<p>
+说明：如果只是更新/etc/exports，只需要运行下面命令即可生效：
+</p>
+
+<pre class="brush:bash">
+sudo exportfs -rav
+</pre>
+
+<h3 id="toc_1.2.4">挂载NFS</h3>
+
+<p>
+客户端必须安装nfs-common。
+</p>
+<pre class="brush:bash">
+sudo apt-get install nfs-common
+</pre>
+
+<p>
+客户端启用nfs服务后，就可以直接访问了：
+</p>
+<pre class="brush:bash">
+/etc/init.d/nfs restart
+showmount -e nfs_server
+
+sudo mount -t nfs nfs_server:/opt/src1 /mnt
+sudo mount -t nfs 192.168.1.101:/home/lesca/ARM /home/lesca/test
+
+</pre>
+
+<ul>
+<li>
+showmount
+
+</ul>
+
+<pre>
+NAME
+       showmount - show mount information for an NFS server
+
+SYNOPSIS
+       showmount [ -adehv ] [ --all ] [ --directories ] [ --exports ] [ --help ] [ --version ] [ host ]
+
+DESCRIPTION
+       showmount  queries the mount daemon on a remote host for information about the state of the NFS server on that machine.  With no
+       options showmount lists the set of clients who are mounting from that host.  The output from showmount is designed to appear  as
+       though it were processed through ‘‘sort -u’’.
+
+OPTIONS
+       -a or --all
+              List  both the client hostname or IP address and mounted directory in host:dir format. This info should not be considered
+              reliable. See the notes on rmtab in rpc.mountd(8).
+
+       -d or --directories
+              List only the directories mounted by some client.
+
+       -e or --exports
+              Show the NFS server’s export list.
+
+       -h or --help
+              Provide a short help summary.
+
+       -v or --version
+              Report the current version number of the program.
+
+       --no-headers
+              Suppress the descriptive headings from the output.
+
+</pre>
+
+<h4 id="toc_1.2.4.1">自动挂载</h4>
+
+<ul>
+<li>
+/etc/fstab
+<pre class="brush:bash">
+192.168.1.75:/opt/centos6/    /opt/centos6/    nfs nodev,ro,rsize=32768,wsize=32768 0 0
+192.168.1.101:/home/lesca/ARM /home/lesca/test nfs nodev,rw,rsize=32768,wsize=32768 0 0
+
+172.17.19.232:/dfs/nfsname /dfs/nfsname        nfs rw,nodev,tcp,soft,bg,rsize=8192,wsize=8192,intr,vers=4 0 0
+</pre>
+
+</ul>
+
+<h3 id="toc_1.2.5">iptables策略</h3>
+
+<p>
+对于开启了iptables的机器，要想提供对外的NFS服务，还必须开启相应的端口，早期版本的NFS服务有关的端口是在配置文件里固定的，新版本的NFS中，相关端口是动态随机产生的。
+</p>
+
+<p>
+可以在配置文件中/etc/nfsmount.conf指定，然后用下面的命令来打开端口。
+</p>
+
+<pre class="brush:bash">
+#tcp
+rpcinfo -p localhost | awk '$3 ~ /tcp/{print $4}' | uniq | awk 'BEGIN{ORS=","}{print $0}' | sed -e 's/,$//g' \
+| xargs -i iptables -I INPUT -p tcp -m state --state NEW -m multiport --dports {} -j ACCEPT
+#udp
+rpcinfo -p localhost | awk '$3 ~ /udp/{print $4}' | uniq | awk 'BEGIN{ORS=","}{print $0}' | sed -e 's/,$//g' \
+| xargs -i iptables -I INPUT -p udp -m state --state NEW -m multiport --dports {} -j ACCEPT
+</pre>
+
+<p>
+注意，iptables的multiport模块最多只支持的端口数为15个，超过时iptables操作会失败。
+</p>
+
+<p>
+NFS主要用到的端口有：
+</p>
+
+<table>
+<tr>
+<td>
+111
+</td>
+<td>
+portmapper
+</td>
+</tr>
+<tr>
+<td>
+875
+</td>
+<td>
+rquotad
+</td>
+</tr>
+<tr>
+<td>
+2049
+</td>
+<td>
+nfs
+</td>
+</tr>
+<tr>
+<td>
+udp:32769
+</td>
+<td>
+nlockmgr
+</td>
+</tr>
+<tr>
+<td>
+tcp:32803
+</td>
+<td>
+nlockmgr
+</td>
+</tr>
+<tr>
+<td>
+892
+</td>
+<td>
+mountd
+</td>
+</tr>
+</table>
+
+<p>
+分别把以上端口（程序所用端口）加入iptables允许其通过即可。
+</p>
+
+<ul>
+<li>
+指定端口号
+
+</ul>
+
+<p>
+编辑配置文件/etc/sysconfig/nfs设置端口号：
+</p>
+<pre>
+RQUOTAD_PORT=875
+LOCKD_TCPPORT=32803
+LOCKD_UDPPORT=32769
+MOUNTD_PORT=892
+</pre>
+
+<p>
+重启相关服务：
+</p>
+
+<pre class="brush:bash">
+#/etc/init.d/portmap restart
+/etc/init.d/rpcbind restart
+/etc/init.d/nfs restart
+</pre>
+
+<p>
+查看服务运行的相关端口情况：
+</p>
+<pre class="brush:bash">
+rpcinfo -p
+
+   program vers proto   port  service
+    100000    4   tcp    111  portmapper
+    100000    3   tcp    111  portmapper
+    100000    2   tcp    111  portmapper
+    100000    4   udp    111  portmapper
+    100000    3   udp    111  portmapper
+    100000    2   udp    111  portmapper
+    100024    1   udp  16158  status
+    100024    1   tcp  63871  status
+    100011    1   udp    875  rquotad
+    100011    2   udp    875  rquotad
+    100011    1   tcp    875  rquotad
+    100011    2   tcp    875  rquotad
+    100005    1   udp    892  mountd
+    100005    1   tcp    892  mountd
+    100005    2   udp    892  mountd
+    100005    2   tcp    892  mountd
+    100005    3   udp    892  mountd
+    100005    3   tcp    892  mountd
+    100003    2   tcp   2049  nfs
+    100003    3   tcp   2049  nfs
+    100003    4   tcp   2049  nfs
+    100227    2   tcp   2049  nfs_acl
+    100227    3   tcp   2049  nfs_acl
+    100003    2   udp   2049  nfs
+    100003    3   udp   2049  nfs
+    100003    4   udp   2049  nfs
+    100227    2   udp   2049  nfs_acl
+    100227    3   udp   2049  nfs_acl
+    100021    1   udp  32769  nlockmgr
+    100021    3   udp  32769  nlockmgr
+    100021    4   udp  32769  nlockmgr
+    100021    1   tcp  32803  nlockmgr
+    100021    3   tcp  32803  nlockmgr
+    100021    4   tcp  32803  nlockmgr
+</pre>
+<ul>
+<li>
+iptables应开放策略
+<pre class="brush:bash">
+WAN="$WAN
+tcp|all|$WAN_IPs|111,875,892,2049,32803|ACCEPT
+udp|all|$WAN_IPs|111,875,892,2049,32768|ACCEPT
+"
+</pre>
+
+</ul>
+
+<h2 id="toc_1.3">挂载NFS错误排解</h2>
+
+<p>
+客户端挂载NFS时往往会遇到种种问题，有关遇到的错误以及解决办法，请参阅：挂载NFS错误排解
+</p>
+
+<ul>
+<li>
+作者：lesca　　最后更新：June 4, 2011
+
+<li>
+本博客所有内容均在《“署名-非商业用途-保持一致”的创作共用协议》下发布
+
+<li>
+全文转载，必须包含本版权信息；部分转载或引用，请注明作者署名与文章出处
+
+<li>
+本文链接：<a href="http://lesca.me/archives/nfs-mounting-troubleshot.html">http://lesca.me/archives/nfs-mounting-troubleshot.html</a>
+
+</ul>
+
+
+<ul>
+<li>
+启动顺序
+
+</ul>
+
+<pre class="brush:bash">
+#启动 portmap 或者 rpcbind
+service rpcbind start (or service portmap start)
+
+#启动由客户端和服务器端共享的服务
+service nfs-common start
+
+#启动服务器端服务
+server nfs-server start
+</pre>
+
+<ul>
+<li>
+错误类型1：makesock failed
+
+</ul>
+
+<pre>
+rpcbind: server localhost not responding, timed out
+RPC: failed to contact local rpcbind server (errno 5).
+lockd_up: makesock failed, error=-5
+rpcbind: server localhost not responding, timed out
+RPC: failed to contact local rpcbind server (errno 5).
+mount: mounting 10.0.3.244:/long_nfs on /tmp/ failed: Input/output error
+</pre>
+
+<p>
+请加上挂载选项-o nolock：
+</p>
+<pre>
+mount -o nolock -t nfs 10.42.43.1:/home/lesca/ARM/ /lesca/nfs
+</pre>
+
+<ul>
+<li>
+错误类型2：transmit timed out
+
+</ul>
+
+<pre>
+cs89x0: Tx buffer not free!
+NETDEV WATCHDOG: eth0: transmit timed out
+eth0: transmit timed out, IRQ conflict ??
+eth0: transmit underrun
+</pre>
+
+<p>
+这个问题是因为主机和目标板没有用网线连接
+</p>
+
+<ul>
+<li>
+错误类型3：not responding
+
+</ul>
+
+<pre>
+nfs: server &lt;server_name&gt; not responding, still trying
+...
+...
+</pre>
+
+<p>
+这主要是由于服务器端繁忙、网络拥塞或者网卡丢包引起的。
+</p>
+
+<ul>
+<li>
+NFSD没有启动起来
+
+</ul>
+<p>
+首先要确认 NFS 输出列表存在，否则 nfsd 不会启动。可用 exportfs 命令来检查，如果 exportfs 命令没有结果返回或返回不正确，则需要检查 /etc/exports 文件。
+</p>
+
+<ul>
+<li>
+mountd 进程没有启动
+
+</ul>
+<p>
+mountd 进程是一个远程过程调用 (RPC) ，其作用是对客户端要求安装（mount）文件系统的申请作出响应。mountd进程通过查找 /etc/xtab文件来获知哪些文件系统可以被远程客户端使用。另外，通过mountd进程，用户可以知道目前有哪些文件系统已被远程文件系统装配，并得知远程客户端的列表。
+</p>
+
+<p>
+查看mountd是否正常启动起来可以使用命令<code>rpcinfo</code>进行查看，在正常情况下在输出的列表中应该象这样的行：
+</p>
+<pre>
+100005 1 udp 1039 mountd
+100005 1 tcp 1113 mountd
+100005 2 udp 1039 mountd
+100005 2 tcp 1113 mountd
+100005 3 udp 1039 mountd
+100005 3 tcp 1113 mountd
+</pre>
+
+<p>
+如果没有起来的话可以检查是否安装了PORTMAP组件。
+</p>
+
+<p>
+<code>rpm -qa|grep portmap</code>
+</p>
+
+<ul>
+<li>
+fs type nfs no supported by kernel
+
+</ul>
+<p>
+kernel不支持nfs文件系统，重新编译一下KERNEL就可以解决。
+</p>
+
+<ul>
+<li>
+can't contact portmapper: RPC: Remote system error - Connection refused
+
+</ul>
+<p>
+出现这个错误信息是由于SEVER端的PORTMAP没有启动。
+</p>
+
+<ul>
+<li>
+mount clntudp_create: RPC: Program not registered
+
+</ul>
+<p>
+NFS没有启动起来，可以用showmout -e host命令来检查NFS SERVER是否正常启动起来。
+</p>
+
+<ul>
+<li>
+mount: localhost:/home/test failed, reason given by server: Permission denied
+
+</ul>
+<p>
+这个提示是当client要mount nfs server时可能出现的提示，意思是说本机没有权限去mount nfs server上的目录。解决方法当然是去修改NFS SERVER咯。
+</p>
+
+<ul>
+<li>
+被防火墙阻挡
+
+</ul>
+<p>
+这个原因很多人都忽视了，在有严格要求的网络环境中，我们一般会关闭linux上的所有端口，当需要使用哪个端口的时候才会去打开。而NFS默认是使用111端口，所以我们先要检测是否打开了这个端口，另外也要检查TCP_Wrappers的设定。
+</p>
+
+<ul>
+<li>
+NFS目录访问被挂住问题
+
+</ul>
+
+<p>
+在Fast Cache工程中, 当创建 nfs mount 目录 时, 如果 nfs 网络断开情况时, 函数 stat/opendir/df -k 等命令被挂住. 问题产生了, 如何在程序中检查 nfs mount 目录的可访问性而程序又不被挂住?
+</p>
+
+<p>
+解决思路：
+</p>
+
+<p>
+1, mount 采用 soft 方式, 当 一个 major timeout 到达后, stat 能返回给调用者. 但如果是 hard方式, 当一个 major timeout 到达后, 仅在 console 上报告一个错误, 并不返回. 测试展示: soft方式在创建后几分钟后, timeout时间并不准, 后面远远大于实际计算出来的时间值.
+</p>
+
+<p>
+major timeout 计算公式: 如果 retry = 1, 则 timeout = timeo + 2 * timeo. 如果retry = 2, 则 timeout = timeo + 2*timeo + 4*timeo. 下面是 mount 命令:
+</p>
+
+<pre>
+mount -t nfs -o rw,tcp,soft,rsize=8192,wsize=8192,timeo=100,intr,retry=1 135.251.208.34:/vol/vol1 /nfs
+</pre>
+
+<p>
+2, 采用信号方式. 由于 hard 方式在设定 INTR 选项后, 可以被信号中断. 可以在另外一个线程中检查 stat 命令的时间, 一旦时间超过阀值, 则发送 SIGINT 信号.
+</p>
+
+<p>
+但在测试中展示, 在多线程环境下, 采用 pthread_kill (tid, SIGINT) 发送 SIGINT 到指定的线程去试图中断stat, 测试展示失败. 但却可以显著的中断 sleep 这样的操作. 看样子, stat与sleep 可以在内核层面上并不一样. 但在单线程环境下, 采用 kill(pid, SIGINT) 是可行的, 对于这点一直理解不了为什么.
+</p>
+
+<p>
+3, 开辟单调的线程去做 stat 操作, 也就是它将检查结果返回给工作线程使用, 工作线程并不作stat 操作. 这种方式不能完全防止被挂住这种情况发生, 因为后面的目录访问可能被挂住, 也就是在两个检查周期之间NFS发生异常, fast cache切换正好发生在这两个检查周期内.
+</p>
+
+<ul>
+<li>
+marjor timeout
+
+</ul>
+
+<p>
+每当一个客户向NFS服务器发送了一个请求，它就期望操作在一给定的时间间隔内（由timeo选项指定）完成。如果在该时间内没有收到确认，就会发生一个所谓的次超时（minor timeout），操作被重试并且超时间隔时间翻倍。在到达60秒钟的最大超时时间或者达到retrans次数，就发生一个主超时（major timeout）。
+</p>
+
+<p>
+对于hard方式：一个major timeout会导致客户程序在控制台上打印出一条消息并且再次重新开始，它将一直继续下去。
+</p>
+
+<p>
+对于soft方式，一个major timeout就会为调用进程生成一个I/O出错信息，并立即返回。
+</p>
+
+<p>
+下面是一个例子： mount -t nfs -o rw,tcp,soft,rsize=8192,wsize=8192,retry=1,timeo=10,INTR 135.251.208.34:/vol/vol1 /nfs
+</p>
+
+<p>
+（上面超时立即返回的超时值的计算：timeo/10 + 2*timeo/10， 由于retry=1，表示只重试一次，其超时值为3秒，其中timeo单位为0.1秒）
+</p>
+
+<p>
+在测试时，可以使用下面办法去试图禁掉IP地址以达到IPC访问失败的情况. iptables -A INPUT -s 135.251.208.34 -j REJECT。
+</p>
+
+<ul>
+<li>
+hadoop使用nfs时，无法创建lock
+
+</ul>
+
+<p>
+hadoop用nfs方式冗余写入元数据，挂载nfs后启动NameNode时，出现Cannot create lock on /dfs/nfsname/in_use.lock错误，NameNode启动失败。
+</p>
+
+<p>
+是由于 <strong>nfslock</strong> 服务运行异常，重启动即可：service nfslock restart
+</p>
+
+<h2 id="toc_1.4">NFS版本差异</h2>
+
+<p>
+NFS server可以看作是一个FILE SERVER,它可以让你的PC通过网络将远端得NFS SERVER共享出来的档案MOUNT到自己的系统中，在CLIENT看来使用NFS的远端文件就象是在使用本地文件一样。
+NFS协议从诞生到现在为止，已经有多个版本，如NFS V2（rfc1094）,NFS V3（rfc1813）（最新的版本是V4（rfc3010）。
+</p>
+
+<ul>
+<li>
+V3相对V2的主要区别：
+
+</ul>
+
+<ol>
+<li>
+文件尺寸：V2最大只支持32BIT的文件大小(4G),而NFS V3新增加了支持64BIT文件大小的技术。
+
+<li>
+文件传输尺寸：V3没有限定传输尺寸，V2最多只能设定为8k，可以使用-rsize and -wsize 来进行设定。
+
+<li>
+完整的信息返回： V3增加和完善了许多错误和成功信息的返回，对于服务器的设置和管理能带来很大好处。
+
+<li>
+增加了对TCP传输协议的支持：V2只提供了对UDP协议的支持，在一些高要求的网络环境中有很大限制，V3增加了对TCP协议的支持
+
+<li>
+异步写入特性
+
+<li>
+改进了SERVER的mount性能
+
+<li>
+有更好的I/O WRITES 性能
+
+<li>
+更强网络运行效能，使得网络运作更为有效。
+
+<li>
+更强的灾难恢复功能。
+
+</ol>
+
+<ul>
+<li>
+异步写入特性（v3新增加）介绍：
+
+</ul>
+
+<p>
+NFS V3 能否使用异步写入，这是可选择的一种特性。NFS V3客户端发发送一个异步写入请求到服务器，在给客户端答复之前服务器并不是必须要将数据写入到存储器中（稳定的）。服务器能确定何时去写入数据或者将多个写入请求聚合到一起并加以处理，然后写入。客户端能保持一个数据的copy以防万一服务器不能完整的将数据写入。当客户端希望释放这个copy的时候，它会向服务器通过这个操作过程，以确保每个操作步骤的完整。异步写入能够使服务器去确定最好的同步数据的策略。使数据能尽可能的同步的提交何到达。与V2 比较来看，这样的机制能更好的实现数据缓冲和更多的平行（平衡）。而NFS V2的SERVER在将数据写入存储器之前不能再相应任何的写入请求。
+</p>
+
+<ul>
+<li>
+V4相对V3的改进：
+
+</ul>
+
+<ol>
+<li>
+改进了INTERNET上的存取和执行效能
+
+<li>
+在协议中增强了安全方面的特性
+
+<li>
+增强的跨平台特性
+
+</ol>
+
+<h2 id="toc_1.5">NFS操作和设置</h2>
+
+<h3 id="toc_1.5.1">RPC</h3>
+
+<p>
+在讲NFS SERVER的运作之前先来看一些与NFS SERVER有关的东西：
+</p>
+
+<ul>
+<li>
+RPC（Remote Procedure Call）
+
+</ul>
+
+<p>
+NFS 本身是没有提供信息传输的协议和功能的，但NFS却能让我们通过网络进行资料的分享，这是因为NFS使用了一些其它的传输协议。而这些传输协议勇士用到这个RPC功能的。可以说NFS本身就是使用RPC的一个程序。或者说NFS也是一个RPC SERVER.所以只要用到NFS的地方都要启动RPC服务，不论是NFS SERVER或者NFS CLIENT。这样SERVER和CLIENT才能通过RPC来实现PROGRAM PORT的对应。可以这么理解RPC和NFS的关系：NFS是一个文件系统，而RPC是负责负责信息的传输。
+</p>
+
+<ul>
+<li>
+NFS需要启动的DAEMONS
+
+</ul>
+
+<ol>
+<li>
+pc.nfsd:主要复杂登陆权限检测等。
+
+<li>
+rpc.mountd：负责NFS的档案系统，当CLIENT端通过rpc.nfsd登陆SERVER后，对clinet存取server的文件进行一系列的管理
+
+<li>
+NFS SERVER在REDHAT LINUX平台下一共需要两个套件：nfs-utils和PORTMAP
+
+<li>
+nfs-utils：提供rpc.nfsd 及 rpc.mountd这两个NFS DAEMONS的套件
+
+<li>
+portmap:NFS 其实可以被看作是一个RPC SERVER PROGRAM,而要启动一个RPC SERVER PROGRAM，都要做好PORT的对应工作，而且这样的任务就是由PORTMAP来完成的。通俗的说PortMap就是用来做PORT的mapping 的。
+
+</ol>
+
+<h3 id="toc_1.5.2">NFS Server</h3>
+
+<p>
+服务器端的设定都是在/etc/exports这个文件中进行设定的，设定格式如下：
+</p>
+<pre>
+欲分享出去的目录 主机名称1或者IP1(参数1，参数2） 主机名称2或者IP2（参数3，参数4）
+</pre>
+
+<p>
+上面这个格式表示，同一个目录分享给两个不同的主机，但提供给这两台主机的权限和参数是不同的，所以分别设定两个主机得到的权限。
+</p>
+
+<p>
+可以设定的参数主要有以下这些：
+</p>
+
+<ol>
+<li>
+rw：可读写的权限；
+
+<li>
+ro：只读的权限；
+
+<li>
+no_root_squash：登入到NFS主机的用户如果是ROOT用户，他就拥有ROOT的权限，此参数很不安全，建议不要使用。
+
+<li>
+root_squash：在登入 NFS 主机使用分享之目录的使用者如果是 root 时，那么这个使用者的权限将被压缩成为匿名使用者，通常他的 UID 与 GID 都会变成 nobody 那个系统账号的身份；
+
+<li>
+all_squash：不管登陆NFS主机的用户是什么都会被重新设定为nobody。
+
+<li>
+anonuid：将登入NFS主机的用户都设定成指定的user id,此ID必须存在于/etc/passwd中。
+
+<li>
+anongid：同 anonuid ，但是?成 group ID 就是了！
+
+<li>
+sync：资料同步写入存储器中。
+
+<li>
+async：资料会先暂时存放在内存中，不会直接写入硬盘。
+
+<li>
+insecure 允许从这台机器过来的非授权访问。
+
+</ol>
+
+<p>
+例如可以编辑/etc/exports为：
+</p>
+<pre class="brush:bash">
+/tmp　　　　　*(rw,no_root_squash)
+/home/public　192.168.0.*(rw)　　 *(ro)
+/home/test　　192.168.0.100(rw)
+/home/linux　 *.the9.com(rw,all_squash,anonuid=40,anongid=40)
+
+# 给不同网段授权
+# 使用all_squash，读写入文件均使用nobody权限。
+/dfs/TimaEyeTest 172.17.23.11(rw,all_squash) *(ro,all_squash)
+
+# 允许任何挂载的用户写入
+/data/share 10.224.17.20(rw,root_squash,all_squash,anonuid=99,anongid=99)
+/data/share 168.168.15.76(rw,root_squash,all_squash,anonuid=99,anongid=99)
+/data/share *(ro,all_squash)
+</pre>
+
+<p>
+设定好后可以使用以下命令启动NFS:
+</p>
+<pre class="brush:bash">
+/etc/rc.d/init.d/portmap start #在REDHAT中portmap是默认启动的
+/etc/rc.d/init.d/nfs start
+</pre>
+
+<ul>
+<li>
+exportfs命令：
+
+</ul>
+<p>
+如果我们在启动了NFS之后又修改了/etc/exports，是不是还要重新启动nfs呢？这个时候我们就可以用exportfs命令来使改动立刻生效，该命令格式如下：
+</p>
+<pre>
+exportfs [-aruv]
+-a ：全部mount或者unmount /etc/exports中的内容
+-r ：重新mount /etc/exports中分享出来的目录
+-u ：umount 目录
+-v ：在 export 的?r候，将详细的信息输出到屏幕上。
+</pre>
+
+<p>
+具体例子：
+</p>
+<pre>
+[root @test root]# exportfs -rv &lt;==全部重新 export 一次！
+exporting 192.168.0.100:/home/test
+exporting 192.168.0.*:/home/public
+exporting *.the9.com:/home/linux
+exporting *:/home/public
+exporting *:/tmp
+reexporting 192.168.0.100:/home/test to kernel
+
+exportfs -au &lt;==全部都卸载了。
+</pre>
+
+
+<h3 id="toc_1.5.3">NFS Client</h3>
+
+<ul>
+<li>
+showmount
+
+</ul>
+
+<p>
+showmount命令对于NFS的操作和查错有很大的帮助，所以我们先来看一下showmount的用法
+</p>
+
+<pre>
+showmount
+
+-a ：这个参数是一般在NFS SERVER上使用，是用来显示已经mount上本机nfs目录的cline机器。
+-e ：显示指定的NFS SERVER上export出来的目录。
+</pre>
+
+<p>
+例如：
+</p>
+<pre>
+showmount -e 192.168.0.30
+Export list for localhost:
+/tmp *
+/home/linux *.linux.org
+/home/public (everyone)
+/home/test 192.168.0.100
+</pre>
+
+<ul>
+<li>
+mount nfs
+
+</ul>
+
+<pre>
+mount -t nfs hostname(orIP):/directory /mount/point
+mount -t nfs -o rw 10.224.8.2:/data/share/ /mnt/share
+</pre>
+
+<p>
+具体例子：
+</p>
+<pre>
+Linux: mount -t nfs 192.168.0.1:/tmp /mnt/nfs
+Solaris:mount -F nfs 192.168.0.1:/tmp /mnt/nfs
+BSD: mount 192.168.0.1:/tmp /mnt/nfs
+</pre>
+
+<ul>
+<li>
+fstab
+
+</ul>
+
+<pre>
+10.224.8.2:/data/share /mnt/share nfs rw,nodev,tcp,soft,bg,rsize=8192,wsize=8192,intr,user 0 0
+</pre>
+
+<ul>
+<li>
+文件属主名称显示为数字问题
+
+</ul>
+
+<p>
+mount后，目录列表时不能正确显示文件属主及组名称，而显示为4294967294，如：
+</p>
+<pre>
+[root@58-web /srv/share]# ll
+total 20
+drwxrwxrwx. 7 4294967294 4294967294 4096 Apr 11 01:30 asset
+drwxr-xr-x. 2 4294967294 4294967294 4096 Apr 12 20:11 release
+drwxrwxrwx. 2 4294967294 4294967294 4096 Apr 10 22:32 static
+drwxrwxrwx. 4 4294967294 4294967294 4096 Apr 10 22:31 upload
+drwxrwxrwx. 4 4294967294 4294967294 4096 Apr 10 22:31 var
+</pre>
+
+<p>
+原因：客户端和服务端都要启动<code>rpcidmapd</code>服务，启动该服务后即可正常显示，<code>/etc/init.d/rpcidmapd start</code>。
+</p>
+
+<h3 id="toc_1.5.4">mount可选参数</h3>
+
+<ul>
+<li>
+mount HARD和SOFT
+
+</ul>
+
+<p>
+HARD: NFS CLIENT会不断的尝试与SERVER的连接（在后台，不会给出任何提示信息,在LINUX下有的版本仍然会给出一些提示），直到MOUNT上。
+</p>
+
+<p>
+SOFT:会在前台尝试与SERVER的连接，是默认的连接方式。当收到错误信息后终止mount尝试，并给出相关信息。
+</p>
+
+<p>
+例如：<code>mount -F nfs -o hard 192.168.0.10:/nfs /nfs</code>
+</p>
+
+<p>
+对于到底是使用hard还是soft的问题，这主要取决于你访问什么信息有关。
+</p>
+
+<p>
+例如你是想通过NFS来运行X PROGRAM的话，你绝对不会希望由于一些意外的情况（如网络速度一下子变的很慢，插拔了一下网卡插头等）而使系统输出大量的错误信息，如果此时你用的是HARD方式的话，系统就会等待，直到能够重新与NFS SERVER建立连接传输信息。
+</p>
+
+<p>
+另外如果是非关键数据的话也可以使用SOFT方式，如FTP数据等，这样在远程机器暂时连接不上或关闭时就不会挂起你的会话过程。
+</p>
+
+<ul>
+<li>
+rsize和wsize文件传输尺寸设定：V3没有限定传输尺寸，V2最多只能设定为8k，可以使用-rsize and -wsize 来进行设定。这两个参数的设定对于NFS的执行效能有较大的影响
+
+<li>
+bg：在执行mount时如果无法顺利mount上时，系统会将mount的操作转移到后台并继续尝试mount，直到mount成功为止。（通常在设定/etc/fstab文件时都应该使用bg，以避免可能的mount不上而影响启动速度）
+
+<li>
+fg：和bg正好相反，是默认的参数
+
+<li>
+nfsvers＝n:设定要使用的NFS版本，默认是使用2，这个选项的设定还要取决于server端是否支持NFS VER 3
+
+<li>
+mountport：设定mount的端口
+
+<li>
+port：根据server端export出的端口设定，例如如果server使用5555端口输出NFS,那客户端就需要使用这个参数进行同样的设定
+
+<li>
+timeo=n
+
+</ul>
+<p>
+设置超时时间，当数据传输遇到问题时，会根据这个参数尝试进行重新传输。默认值是7/10妙（0.7秒）。如果网络连接不是很稳定的话就要加大这个数值，并且推荐使用HARD MOUNT方式，同时最好也加上INTR参数，这样你就可以终止任何挂起的文件访问。
+</p>
+
+<ul>
+<li>
+intr：允许通知中断一个NFS调用。当服务器没有应答需要放弃的时候有用处。
+
+<li>
+udp：使用udp作为nfs的传输协议（NFS V2只支持UDP)
+
+<li>
+tcp：使用tcp作为nfs的传输协议
+
+<li>
+namlen=n：设定远程服务器所允许的最长文件名。这个值的默认是255
+
+<li>
+acregmin=n：设定最小的在文件更新之前cache时间，默认是3
+
+<li>
+acregmax=n：设定最大的在文件更新之前cache时间，默认是60
+
+<li>
+acdirmin=n：设定最小的在目录更新之前cache时间，默认是30
+
+<li>
+acdirmax=n：设定最大的在目录更新之前cache时间，默认是60
+
+<li>
+actimeo=n：将acregmin、acregmax、acdirmin、acdirmax设定为同一个数值，默认是没有启用。
+
+<li>
+retry=n：设定当网络传输出现故障的时候，尝试重新连接多少时间后不再尝试。默认的数值是10000 minutes
+
+<li>
+noac:关闭cache机制。
+
+</ul>
+
+<p>
+同时使用多个参数的方法：<code>mount -t nfs -o timeo=3,udp,hard 192.168.0.30:/tmp /nfs</code>
+</p>
+
+<p>
+请注意，NFS客户机和服务器的选项并不一定完全相同，而且有的时候会有冲突。比如说服务器以只读的方式导出，客户端却以可写的方式mount,虽然可以成功mount上，但尝试写入的时候就会发生错误。一般服务器和客户端配置冲突的时候，会以服务器的配置为准。
+</p>
+
+<h3 id="toc_1.5.5">/etc/fstab</h3>
+
+<p>
+/etc/fstab的格式如下：
+</p>
+<pre>
+fs_spec　　　fs_file　　fs_type　　　fs_options　　fs_dump　fs_pass
+</pre>
+
+<ol>
+<li>
+fs_spec:该字段定义希望加载的文件系统所在的设备或远程文件系统,对于nfs这个参数一般设置为这样：192.168.0.1:/NFS
+
+<li>
+fs_file:本地的挂载点
+
+<li>
+fs_type：对于NFS来说这个字段只要设置成nfs就可以了
+
+<li>
+fs_options:挂载的参数，可以使用的参数可以参考上面的mount参数。
+
+<li>
+fs_dump　-　该选项被"dump"命令使用来检查一个文件系统应该以多快频率进行转储，若不需要转储就设置该字段为0
+
+<li>
+fs_pass　-　该字段被fsck命令用来决定在启动时需要被扫描的文件系统的顺序，根文件系统"/"对应该字段的值应该为1，其他文件系统应该为2。若该文件系统无需在启动时扫描则设置该字段为0 。
+
+</ol>
+
+
+<h3 id="toc_1.5.6">NFS相关命令</h3>
+
+<ul>
+<li>
+nfsstat：查看NFS的运行状态，对于调整NFS的运行有很大帮助
+
+<li>
+rpcinfo：查看rpc执行信息，可以用于检测rpc运行情况的工具。
+
+</ul>
+
+<h3 id="toc_1.5.7">NFS调优</h3>
+
+<ul>
+<li>
+调优的步骤：
+
+<ol>
+<li>
+测量当前网络、服务器和每个客户端的执行效率。
+
+<li>
+分析收集来的数据并画出图表。查找出特殊情况，例如很高的磁盘和CPU占用、已经高的磁盘使用时间
+
+<li>
+调整服务器
+
+<li>
+重复第一到第三步直到达到你渴望的性能
+
+</ol>
+</ul>
+
+
+<p>
+与NFS性能有关的问题有很多，通常可以要考虑的有以下这些选择：
+</p>
+
+<ul>
+<li>
+WSIZE,RSIZE参数来优化NFS的执行效能
+
+</ul>
+ 
+<p>
+WSIZE、RSIZE对于NFS的效能有很大的影响。
+</p>
+
+<p>
+wsize和rsize设定了SERVER和CLIENT之间往来数据块的大小，这两个参数的合理设定与很多方面有关，不仅是软件方面也有硬件方面的因素会影响这两个参数的设定（例如LINUX KERNEL、网卡，交换机等等）。
+</p>
+
+<p>
+下面这个命令可以测试NFS的执行效能，读和写的效能可以分别测试，分别找到合适的参数。对于要测试分散的大量的数据的读写可以通过编写脚本来进行测试。在每次测试的时候最好能重复的执行一次MOUNT和unmount。
+</p>
+
+<p>
+<code>time dd if=/dev/zero of=/mnt/home/testfile bs=16k count=16384</code>
+</p>
+
+<p>
+用于测试的WSIZE,RSIZE最好是1024的倍数，对于NFS V2来说8192是RSIZE和WSIZE的最大数值，如果使用的是NFS V3则可以尝试的最大数值是32768。
+</p>
+
+<p>
+如果设置的值比较大的时候，应该最好在CLIENT上进入mount上的目录中，进行一些常规操作（LS,VI等等），看看有没有错误信息出现。有可能出现的典型问题有LS的时候文件不能完整的列出或者是出现错误信息，不同的操作系统有不同的最佳数值，所以对于不同的操作系统都要进行测试。
+</p>
+
+<ul>
+<li>
+设定最佳的NFSD的COPY数目
+
+</ul>
+
+<p>
+linux中的NFSD的COPY数目是在/etc/rc.d/init.d/nfs这个启动文件中设置的，默认是8个NFSD,对于这个参数的设置一般是要根据可能的CLIENT数目来进行设定的，和WSIZE、RSIZE一样也是要通过测试来找到最近的数值。
+</p>
+
+<ul>
+<li>
+UDP and TCP
+
+</ul>
+
+<p>
+可以手动进行设置，也可以自动进行选择。
+</p>
+
+<p>
+<code>mount -t nfs -o sync,tcp,noatime,rsize=1024,wsize=1024 EXPORT_MACHINE:/EXPORTED_DIR /DIR</code>
+</p>
+
+<p>
+UDP 有着传输速度快，非连接传输的便捷特性，但是UDP在传输上没有TCP来的稳定，当网络不稳定或者黑客入侵的时候很容易使NFS的 Performance 大幅降低甚至使网络瘫痪。所以对于不同情况的网络要有针对的选择传输协议。
+</p>
+
+<p>
+nfs over tcp比较稳定，nfs over udp速度较快。
+</p>
+
+<p>
+在机器较少网络状况较好的情况下使用UDP协议能带来较好的性能，当机器较多，网络情况复杂时推荐使用TCP协议（V2只支持UDP协议）。
+</p>
+
+<p>
+在局域网中使用UDP协议较好，因为局域网有比较稳定的网络保证，使用UDP可以带来更好的性能。
+</p>
+
+<p>
+在广域网中推荐使用TCP协议，TCP协议能让 NFS在复杂的网络环境中保持最好的传输稳定性。
+</p>
+
+<p>
+可以参考这篇文章：<a href="http://www.hp.com.tw/ssn/unix/0212/unix021204.asp">http://www.hp.com.tw/ssn/unix/0212/unix021204.asp</a>
+</p>
+
+<ul>
+<li>
+版本的选择
+
+</ul>
+
+<p>
+V3作为默认的选择（RED HAT 8默认使用V2,SOLARIS 8以上默认使用V3），可以通过vers= mount option来进行选择。
+</p>
+
+<p>
+LINUX通过mount option的nfsvers=n进行选择。
+</p>
+
+<h3 id="toc_1.5.8">NFS安全</h3>
+
+<p>
+NFS的不安全性主要体现于以下4个方面:
+</p>
+
+<ol>
+<li>
+新手对NFS的访问控制机制难于做到得心应手,控制目标的精确性难以实现
+
+<li>
+NFS没有真正的用户验证机制,而只有对RPC/Mount请求的过程验证机制
+
+<li>
+较早的NFS可以使未授权用户获得有效的文件句柄
+
+<li>
+在RPC远程调用中,一个SUID的程序就具有超级用户权限.
+
+</ol>
+
+<p>
+加强NFS安全的方法：
+</p>
+<ul>
+<li>
+合理的设定/etc/exports中共享出去的目录，最好能使用anonuid，anongid以使MOUNT到NFS SERVER的CLIENT仅仅有最小的权限，最好不要使用root_squash。
+
+<li>
+使用IPTABLE防火墙限制能够连接到NFS SERVER的机器范围
+<pre>
+iptables -A INPUT -i eth0 -p TCP -s 192.168.0.0/24 --dport 111 -j ACCEPT
+iptables -A INPUT -i eth0 -p UDP -s 192.168.0.0/24 --dport 111 -j ACCEPT
+iptables -A INPUT -i eth0 -p TCP -s 140.0.0.0/8 --dport 111 -j ACCEPT
+iptables -A INPUT -i eth0 -p UDP -s 140.0.0.0/8 --dport 111 -j ACCEPT
+</pre>
+
+<li>
+为了防止可能的Dos攻击，需要合理设定NFSD 的COPY数目。
+
+<li>
+修改/etc/hosts.allow和/etc/hosts.deny达到限制CLIENT的目的
+<pre class="brush:bash">
+# /etc/hosts.allow
+portmap: 192.168.0.0/255.255.255.0 : allow
+portmap: 140.116.44.125 : allow
+
+# /etc/hosts.deny
+portmap: ALL : deny
+</pre>
+
+</ul>
+
+<ul>
+<li>
+改变默认的NFS 端口
+
+</ul>
+<p>
+NFS默认使用的是111端口，但同时你也可以使用port参数来改变这个端口，这样就可以在一定程度上增强安全性。
+</p>
+
+<ul>
+<li>
+使用Kerberos V5作为登陆验证系统
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

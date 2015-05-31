@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>htop</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>htop</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">htop：一款比top强悍好用的进程管理监控工具</a>
+</ul>
+</ul>
+</div>
+
+
+<h2 id="toc_0.1">htop：一款比top强悍好用的进程管理监控工具</h2>
+
+<p>
+原文：<a href="http://www.ha97.com/4075.html">http://www.ha97.com/4075.html</a>
+</p>
+
+
+<p>
+PS：近来发现了一个与top类似，但比top好用强大的进程管理监控工具，就是htop，跟大家分享一下！超好用，运维必备！
+</p>
+
+<p>
+top——一个可以让用户与之交互的进程查看器。作为文本模式的应用程序，主要用于控制台或X终端中。当前具有按树状方式来查看进程，支持颜色主题，可以定制等特性。
+</p>
+
+<p>
+与top相比，htop有以下优点：
+</p>
+
+<ol>
+<li>
+可以横向或纵向滚动浏览进程列表，以便看到所有的进程和完整的命令行。
+
+<li>
+在启动上，比 top 更快。
+
+<li>
+杀进程时不需要输入进程号。
+
+<li>
+htop 支持鼠标操作。
+
+<li>
+top 已经很老了。
+
+</ol>
+
+<ul>
+<li>
+在RHEL/CentOS中，可以通过 yum install htop 来安装它，但前提是要添加epel的yum源：
+<pre class="brush:bash">
+# CentOS 5.x
+# 32位系统选择：
+rpm -ivh http://download.fedoraproject.org/pub/epel/5/i386/epel-release-5-4.noarch.rpm
+# 64位系统选择：
+rpm -ivh http://download.fedoraproject.org/pub/epel/5/x86_64/epel-release-5-4.noarch.rpm
+# 导入key
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL
+
+# CentOS 6.x
+# 32位系统选择：
+rpm -ivh http://download.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
+# 64位系统选择：
+rpm -ivh http://download.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+# 导入key：
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
+</pre>
+
+<li>
+在Debian/Ubuntu 中，你可以通过 sudo apt-get install htop 来安装它。
+
+<li>
+htop官网：<a href="http://htop.sourceforge.net/">http://htop.sourceforge.net/</a>
+
+<li>
+其他发行版软件源里没有的可下载源码包编译安装：
+<pre class="brush:bash">
+wget http://nchc.dl.sourceforge.net/project/htop/htop/1.0.1/htop-1.0.1.tar.gz
+tar zxvf htop-1.0.1.tar.gz
+cd htop-1.0.1
+./configure
+make
+make install
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

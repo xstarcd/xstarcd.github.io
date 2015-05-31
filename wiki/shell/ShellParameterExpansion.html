@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Shell Parameter Expansion 参数展开</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Shell Parameter Expansion 参数展开</a>
+<ul>
+<li><a href="#toc_1.1">shell的字符串截取</a>
+<ul>
+<li><a href="#toc_1.1.1">常用9种使用方法</a>
+<li><a href="#toc_1.1.2">应用范例</a>
+</ul>
+<li><a href="#toc_1.2">引子</a>
+<li><a href="#toc_1.3">Shell Parameter Expansion</a>
+<ul>
+<li><a href="#toc_1.3.1">间接展开</a>
+<li><a href="#toc_1.3.2">参数长度</a>
+<li><a href="#toc_1.3.3">“掐头去尾”</a>
+<li><a href="#toc_1.3.4">字符串替换</a>
+<li><a href="#toc_1.3.5">截取子串</a>
+<li><a href="#toc_1.3.6">查找参数名</a>
+<li><a href="#toc_1.3.7">空参数处理</a>
+</ul>
+<li><a href="#toc_1.4">更多信息</a>
+<li><a href="#toc_1.5">如何列出目录树</a>
+</ul>
+<li><a href="#toc_2">Shell扩展</a>
+<ul>
+<li><a href="#toc_2.1">扩展类型</a>
+<li><a href="#toc_2.2">扩展顺序</a>
+<li><a href="#toc_2.3">大括号扩展</a>
+<li><a href="#toc_2.4">波浪线扩展</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">Shell Parameter Expansion 参数展开</h1>
+
+<ul>
+<li>
+参考： <a href="http://my.oschina.net/xiangxw/blog/11410">http://my.oschina.net/xiangxw/blog/11410</a>
+
+<li>
+eval介绍及范例 <a href="http://www.softpanorama.org/Utilities/eval.shtml">http://www.softpanorama.org/Utilities/eval.shtml</a>
+
+</ul>
+
+<h2 id="toc_1.1">shell的字符串截取</h2>
+
+<h3 id="toc_1.1.1">常用9种使用方法</h3>
+<pre class="brush: bash">
+# 缺省值的替换
+${parameter:-word} # 为空替换
+${parameter:=word} # 为空替换，并将值赋给$parameter变量
+${parameter:?word} # 为空报错
+${parameter:+word} # 不为空替换
+
+${#parameter}      # 获得字符串的长度
+
+# 截取字符串，有了着四种用法就不必使用cut命令来截取字符串了。
+# 在shell里面使用外部命令会降低shell的执行效率。特别是在循环的时候。
+
+${parameter%word}  # 最小限度从后面截取word
+${parameter%%word} # 最大限度从后面截取word
+${parameter#word}  # 最小限度从前面截取word
+${parameter##word} # 最大限度从前面截取word
+
+</pre>
+
+<h3 id="toc_1.1.2">应用范例</h3>
+
+<ul>
+<li>
+利用这个方法简单重写的cgi参数解析shell
+<pre class="brush: bash">
+str=$QUERY_STRING
+[ "${str%&amp;}" = "$str" ] &amp;&amp; str="$str&amp;"
+while [ -n "$str" ]; do
+    pair=${str%%&amp;*}
+    var=${pair%=*}
+    val=${pair#*=}
+    str=${str#*&amp;}
+    eval $(echo "PARM_$var"="$val")
+done
+</pre>
+
+<li>
+字符串的处理
+
+<ul>
+<li>
+截取
+
+<ul>
+<li>
+方法一
+
+</ul>
+</ul>
+</ul>
+<p>
+substr是awk中的一个子函数，对第一个参数的进行截取，从第一个字符开始，共截取8个字符，如果不够就从第二个字符中补充
+</p>
+<pre class="brush: bash">
+echo $a|awk '{print substr( ,1,8)}'
+</pre>
+<ul>
+<li>
+方法二
+<pre class="brush: bash">
+`echo $a|cut -b2-8`
+</pre>
+<pre>
+    cut：对标准输入的字符串进行处理
+    cut -bn-m:以byte为单位，从第n个byte开始，取m个
+    cut -bn,m:以byte为单位，截取第n,m个byte
+    cut -b-n,m:以byte为单位，截取1-n,和第m个
+    -c:以charactor为单位
+    -d:指定分隔符，默认为tab
+    -s:使标准输入中没有delimeter
+    cut -f1:截取第1个域
+</pre>
+
+<li>
+方法三???
+<pre>
+a=123456
+echo $
+</pre>
+
+<li>
+方法四
+<pre class="brush: bash">
+使用sed截取字符串的最后两位
+echo 1234567890 |sed 's/\(.*\)\(..\)$/\2/'
+截取字符串的前2位
+echo 1234567890 |sed 's/^\(..\)\(.*\)/\1/'
+</pre>
+
+</ul>
+<li>
+翻转
+
+<ul>
+<li>
+方法一：rev命令
+
+<li>
+方法二：编写脚本实现
+<pre class="brush: bash">
+#!/usr/bin/awk -f
+################################################################
+# Description : duplicate rev in awk
+################################################################
+{
+    revline = ""
+        for (i=1;i&lt;=length;i++)
+        {
+            revline = substr(,i,1) revline
+        }
+}
+END{print revline}
+</pre>
+
+</ul>
+<li>
+得到字符串中某个字符的重复次数
+<pre class="brush: bash">
+echo $a |tr "x" "\n" |wc -l
+# 得到的结果需要减去1
+# 或者
+echo $a |awk -F"x" '{print NF-1}'
+</pre>
+
+<li>
+用vim做批量替换
+<pre class="brush: bash">
+for i in file_list
+do
+vi $i &lt;&lt;-!
+:g/xxxx/s//XXXX/g
+:wq
+!
+done
+</pre>
+
+<li>
+将字符串内每两个字符中间插入一个字符
+<pre class="brush: bash">
+echo $test |sed 's/../&amp;[insert char]/g'
+</pre>
+
+
+
+
+<h2 id="toc_1.2">引子</h2>
+
+<p>
+在写Shell脚本的时候，不可避免地要用到变量，也常常要对变量进行一些基本的处理。比如说前两天在给人演示*nix系统的方便之处时，我举了个文件名批量修改的例子(好吧。。这是个不怎么恰当的例子。。)，比如说我们想把.h结尾的文件改成.hpp，那么可以这么做
+</p>
+<pre class="brush: bash">
+find . -regex ".*\.h$" -exec rename 's/.h$/.hpp' {} \;
+</pre>
+<p>
+原理很简单:先找到以”.h”结尾的文件，然后调用rename将结尾的”.h”改成”.hpp”。但是在演示的时候杯具出现了: Snow Leopard默认是没有rename这个程序的。-.-||| 没办法，只好想其他办法:
+</p>
+<pre class="brush: bash">
+find . -regex ".*\.h$" | while read i; do mv $i ${i%.h}.hpp; done;
+</pre>
+<p>
+这个虽然也可以完成任务，但是看上去就比上一条命令复杂多了，尤其是”\({i%.h}.hpp”这种用法，显然不如’s/\.h\)/\.hpp’看上去直观。虽然之后又想到了其他的替代方案，比如:
+</p>
+<pre class="brush: bash">
+find . -regex ".*\.h$" | while read i; do mv $i $(basename $i h)hpp; done;
+</pre>
+
+<p>
+但像${i%.h}这种用法确实也会经常碰到，于是我就发扬了下打破沙锅问到底的优秀品质，想搞清楚这种类似的用法，到底还有哪些呢?
+</p>
+
+<h2 id="toc_1.3">Shell Parameter Expansion</h2>
+
+<p>
+其实这种用法是有专有名词的，就叫做Shell参数展开(Shell Parameter Expansion)。感兴趣的同学可以直接看GNU Bash Manual中的详细介绍。
+</p>
+
+<p>
+其实最基本的参数展开像这样:
+</p>
+<pre class="brush: bash">
+${parameter}
+</pre>
+
+<p>
+shell会将上述表达式转换为parameter的值，即我们通常用的$parameter. 其中parameter是参数名，之所以用”{}”括起来是为了确保shell不会将紧跟其后的字符也作为变量名的一部分，从而尽可能地避免杯具的发生。比如说:
+</p>
+
+<pre class="brush: bash">
+var="Hello, Bread" 
+echo ${var} 
+Hello, Bread
+</pre>
+
+<p>
+细心的同学可能会问其实这里说的参数(parameter)不就是我们通常说的变量(variable)么? 嗯。。其实大部分时候这俩名词的意思基本等同。只不过在Shell中parameter(参数)是variable(变量)的超集: 变量名不能以数字开头，而参数名可以。比如说$1就表示命令行传入的第一个参数。
+</p>
+
+<p>
+除去最基本的参数展开之外，还有很多种比较灵活的用法如下:
+</p>
+
+<h3 id="toc_1.3.1">间接展开</h3>
+
+<pre class="brush: bash">
+${!parameter}
+# 相当于${var}，而var=${parameter}。比如说：
+param="var" 
+var="Hello, Bread" 
+echo ${!param} 
+Hello, Bread
+</pre>
+
+<h3 id="toc_1.3.2">参数长度</h3>
+<pre class="brush: bash">
+${#parameter}
+</pre>
+<p>
+作用: Shell会将其替换为$parameter的长度。
+例子:
+</p>
+<pre class="brush: bash">
+$ var="Hello" 
+$ echo "len($var) is "${#var} 
+len(hello) is 5
+</pre>
+
+<h3 id="toc_1.3.3">“掐头去尾”</h3>
+
+<p>
+截取又分两种操作，”掐头”和”去尾”。与正则表达式中不同，头和尾在这里对应的符号分别是”#”和”%”。
+</p>
+
+<ul>
+<li>
+掐头:
+<pre class="brush: bash">
+${parameter#word} 或 ${parameter##word}
+</pre>
+
+</ul>
+
+<p>
+作用: 从parameter头部开始匹配word，并删除成功匹配的部分。在构造word时可以使用”*”表示任意长度字符，”?”表示单位长度字符，并可用形如”[a-c]“的方式来指定匹配”abc”中的任意字符。
+</p>
+
+<p>
+另外，”#”和”##”的区别在于前者是最短匹配，而后者是最长匹配；实际上就是正则表达式中的”懒惰”和”贪婪”的概念。下面的例子能够很清楚地看出这两者的区别。比如说:
+</p>
+
+<pre class="brush: bash">
+var=brbread 
+echo ${var##*br} 
+echo ${var#*br} 
+
+ead 
+bread
+</pre>
+<ul>
+<li>
+去尾:
+<pre class="brush: bash">
+${parameter%word}
+# 或
+${parameter%%word}
+</pre>
+
+</ul>
+
+<p>
+作用: 与掐头相同，唯一不同的是从$parameter的尾部开始匹配。例子:
+</p>
+<pre class="brush: bash">
+var="La.Maison.en.Petits.Cubes.avi" 
+echo ${var%.*} 
+echo ${var%%.*}
+
+La.Maison.en.Petits.Cubes 
+La
+</pre>
+
+<p>
+匹配示例中的”.*”时, shell会从$var的尾部开始查找”.”，如果是最短匹配(第一个示例)，则找到第一个”.”就停止，否则(第二个示例)会一直找到最后一个”.”才 停止。可以看到，这种用法可以很方便地去掉文件后缀，从而得到文件名，正是本文开头所用到的方法。
+</p>
+
+<h3 id="toc_1.3.4">字符串替换</h3>
+
+<p>
+格式:
+</p>
+<pre class="brush: bash">
+${parameter/pattern/string}
+</pre>
+
+<p>
+作用: 将$parameter中出现的第一个pattern替换为string。值得注意的是，除了”*”, “?” 和”[]“以外，pattern的头部还可以使用下面几个字符:
+</p>
+<pre>
+“/”: 如果pattern以”/”起始，则所有的匹配项都要替换。而默认的行为只是替换最左侧的一个。
+“#”: 如果pattern以”#”起始，则与正则表达式匹配规则相同，只有在$parameter的头部找到匹配项才会进行替换。
+“%”: 与”#”类似，只是这次变成了尾部匹配。
+</pre>
+
+<p>
+例子:
+</p>
+<pre class="brush: bash">
+var="see" 
+echo ${var/e/a} #只有第一个e会被替换 
+sae 
+
+echo ${var/ee/it} 
+sit 
+
+echo ${var//e/a} #所有的e都会被替换 
+saa 
+
+echo ${var/#e/a} #头部的e才会被替换 
+see 
+
+echo ${var/#s/b} 
+bee 
+
+echo ${var/%e/a} 
+sea
+</pre>
+
+<h3 id="toc_1.3.5">截取子串</h3>
+
+<p>
+格式:
+</p>
+<pre class="brush: bash">
+${parameter:offset:length}
+</pre>
+
+<p>
+作用: 从offset处开始，截取$parameter中长度为length的子串。其中offset如果为负数的话，表示从尾部开始数。并且要注意这时 候”:”和offset之间至少要有一个空格，不然shell会当成”:-”处理，这个是后面要介绍到的空参数处理操作符。比如:
+</p>
+<pre class="brush: bash">
+var="hello" 
+echo ${var:2:2} 
+ll 
+echo ${var: -3:2} 
+ll 
+echo ${var:-3:2} 
+hello
+</pre>
+
+<h3 id="toc_1.3.6">查找参数名</h3>
+<pre class="brush: bash">
+${!prefix*}
+</pre>
+<p>
+Shell会自动将其展开为所有以prefix开头的参数名。如：
+</p>
+<pre class="brush: bash">
+var1= 
+var2= 
+echo ${!var*} 
+var1 var2
+</pre>
+
+<h3 id="toc_1.3.7">空参数处理</h3>
+
+<p>
+在这个部分介绍的操作符都是与空参数相关的，而空参数就是值为空，或unset掉的参数。比如说:
+</p>
+<pre class="brush: bash">
+var=
+#或
+unset var
+</pre>
+
+<p>
+这样操作后的参数var就是一个空参数。
+</p>
+<pre class="brush: bash">
+${parameter:-word}
+# parameter不为空则用$parameter，不然就用word。例子:
+unset bread 
+echo ${bread:-hello} 
+hello
+
+# 设置默认值
+eval nginx_enable="\${nginx_${profile}_enable:-${nginx_enable}}"
+</pre>
+
+<p>
+这样实际上是为parameter提供了一个默认值。类似swith..case中的default语句。
+</p>
+<pre class="brush: bash">
+${parameter:+word}
+# 如果parameter不为空，就返回word。例子:
+var="hello" 
+echo ${var:+"var is not null"}
+</pre>
+
+<p>
+除了上面介绍到的之外，shell参数展开还有很多其他的用法，比如说转换大小写，返回有效的数组下标等等。具体的请参见GNU bash manual.
+</p>
+
+<h2 id="toc_1.4">更多信息</h2>
+<ul>
+<li>
+另外再介绍篇文章：
+
+</ul>
+<p>
+Linux tip: Bash parameters and parameter expansions 
+</p>
+
+<p>
+出处：<a href="http://www.ibm.com/developerworks/library/l-bash-parameters.html?ca=drs-">http://www.ibm.com/developerworks/library/l-bash-parameters.html?ca=drs-</a>
+</p>
+
+<ul>
+<li>
+man sh
+<pre>
+
+Parameter Expansion
+The  `$'  character  introduces parameter expansion, command substitution, or arithmetic expansion.  The parameter name or symbol to be expanded
+may be enclosed in braces, which are optional but serve to protect the variable to be expanded from characters immediately  following  it  which
+could be interpreted as part of the name.
+
+When braces are used, the matching ending brace is the first `}' not escaped by a backslash or within a quoted string, and not within an embed‐
+ded arithmetic expansion, command substitution, or parameter expansion.
+
+${parameter}
+       The value of parameter is substituted.  The braces are required when parameter is a positional parameter with more  than  one  digit,  or
+       when parameter is followed by a character which is not to be interpreted as part of its name.
+
+If  the  first  character  of  parameter is an exclamation point (!), a level of variable indirection is introduced.  Bash uses the value of the
+variable formed from the rest of parameter as the name of the variable; this variable is then expanded and that value is used in the rest of the
+substitution,  rather  than  the  value of parameter itself.  This is known as indirect expansion.  The exceptions to this are the expansions of
+${!prefix*} and ${!name[@]} described below.  The exclamation point must immediately follow the left brace in order to introduce indirection.
+
+In each of the cases below, word is subject to tilde expansion, parameter expansion, command substitution, and arithmetic expansion.
+
+When not performing substring expansion, using the forms documented below, bash tests for a parameter that is unset or null.  Omitting the colon
+results in a test only for a parameter that is unset.
+
+${parameter:-word}
+       Use  Default Values.  If parameter is unset or null, the expansion of word is substituted.  Otherwise, the value of parameter is substi‐
+       tuted.
+${parameter:=word}
+       Assign Default Values.  If parameter is unset or null, the expansion of word is assigned to parameter.  The value of  parameter  is  then
+       substituted.  Positional parameters and special parameters may not be assigned to in this way.
+${parameter:?word}
+       Display  Error  if  Null  or  Unset.   If  parameter  is null or unset, the expansion of word (or a message to that effect if word is not
+       present) is written to the standard error and the shell, if it is not interactive, exits.  Otherwise, the value of parameter is  substi‐
+       tuted.
+${parameter:+word}
+       Use Alternate Value.  If parameter is null or unset, nothing is substituted, otherwise the expansion of word is substituted.
+${parameter:offset}
+${parameter:offset:length}
+       Substring Expansion.  Expands to up to length characters of parameter starting at the character specified by offset.  If length is omit‐
+       ted, expands to the substring of parameter starting at the character specified by offset.  length and offset are  arithmetic  expressions
+       parameters  beginning  at  offset.   If parameter is an indexed array name subscripted by @ or *, the result is the length members of the
+       array beginning with ${parameter[offset]}.  A negative offset is taken relative to one greater than the maximum index  of  the  specified
+       array.   Substring  expansion  applied to an associative array produces undefined results.  Note that a negative offset must be separated
+       from the colon by at least one space to avoid being confused with the :- expansion.  Substring indexing is zero-based unless  the  posi‐
+       tional  parameters  are used, in which case the indexing starts at 1 by default.  If offset is 0, and the positional parameters are used,
+       $0 is prefixed to the list.
+
+${!prefix*}
+${!prefix@}
+       Names matching prefix.  Expands to the names of variables whose names begin with prefix, separated by the  first  character  of  the  IFS
+       special variable.  When @ is used and the expansion appears within double quotes, each variable name expands to a separate word.
+
+${!name[@]}
+${!name[*]}
+       List  of  array  keys.   If  name  is an array variable, expands to the list of array indices (keys) assigned in name.  If name is not an
+       array, expands to 0 if name is set and null otherwise.  When @ is used and the expansion appears within double quotes, each  key  expands
+       to a separate word.
+
+${#parameter}
+       Parameter  length.   The length in characters of the value of parameter is substituted.  If parameter is * or @, the value substituted is
+       the number of positional parameters.  If parameter is an array name subscripted by * or @, the value substituted is the number  of  ele‐
+       ments in the array.
+
+${parameter#word}
+${parameter##word}
+       Remove  matching  prefix  pattern.   The word is expanded to produce a pattern just as in pathname expansion.  If the pattern matches the
+       beginning of the value of parameter, then the result of the expansion is the expanded value of parameter with the shortest matching pat‐
+       tern  (the  ``#'' case) or the longest matching pattern (the ``##'' case) deleted.  If parameter is @ or *, the pattern removal operation
+       is applied to each positional parameter in turn, and the expansion is the resultant list.  If parameter is an array variable  subscripted
+       with @ or *, the pattern removal operation is applied to each member of the array in turn, and the expansion is the resultant list.
+
+${parameter%word}
+${parameter%%word}
+       Remove  matching  suffix  pattern.   The  word  is expanded to produce a pattern just as in pathname expansion.  If the pattern matches a
+       trailing portion of the expanded value of parameter, then the result of the expansion is the expanded value of parameter with the short‐
+       est  matching  pattern  (the  ``%'' case) or the longest matching pattern (the ``%%'' case) deleted.  If parameter is @ or *, the pattern
+       removal operation is applied to each positional parameter in turn, and the expansion is the resultant list.  If  parameter  is  an  array
+       variable  subscripted with @ or *, the pattern removal operation is applied to each member of the array in turn, and the expansion is the
+       resultant list.
+
+${parameter/pattern/string}
+       Pattern substitution.  The pattern is expanded to produce a pattern just as in pathname expansion.  Parameter is expanded and the longest
+       match  of  pattern against its value is replaced with string.  If pattern begins with /, all matches of pattern are replaced with string.
+       Normally only the first match is replaced.  If pattern begins with #, it must match at the beginning of the expanded value of  parameter.
+       If pattern begins with %, it must match at the end of the expanded value of parameter.  If string is null, matches of pattern are deleted
+       and the / following pattern may be omitted.  If parameter is @ or *, the substitution operation is applied to each  positional  parameter
+       in  turn, and the expansion is the resultant list.  If parameter is an array variable subscripted with @ or *, the substitution operation
+       is applied to each member of the array in turn, and the expansion is the resultant list.
+
+${parameter^pattern}
+${parameter^^pattern}
+${parameter,pattern}
+${parameter,,pattern}
+       Case modification.  This expansion modifies the case of alphabetic characters in parameter.  The pattern is expanded to produce a pattern
+       just as in pathname expansion.  The ^ operator converts lowercase letters matching pattern to uppercase; the , operator converts matching
+       uppercase letters to lowercase.  The ^^ and ,, expansions convert each matched character in the expanded value; the ^  and  ,  expansions
+       match  and  convert  only the first character in the expanded value..  If pattern is omitted, it is treated like a ?, which matches every
+       character.  If parameter is @ or *, the case modification operation is applied to each positional parameter in turn, and the expansion is
+       the resultant list.  If parameter is an array variable subscripted with @ or *, the case modification operation is applied to each member
+       of the array in turn, and the expansion is the resultant list.
+</pre>
+
+</ul>
+<h2 id="toc_1.5">如何列出目录树</h2>
+
+<p>
+下面的短小的shell程序可以列出目录树, 充分利用了sed强大的模式匹配能力.目录树形式如下:
+</p>
+<pre>
+.
+`----shellp
+`----updates
+`----wu-ftpd-2.4
+| `----doc
+| | `----examples
+| `----src
+| | `----config
+| | `----makefiles
+| `----support
+| | `----makefiles
+| | `----man
+| `----util
+</pre>
+<pre class="brush: bash">
+#!/bin/sh
+# dtree: Usage: dtree [any directory]
+dir=${1:-.}
+(cd $dir; pwd)
+find $dir -type d -print | sort -f | sed -e "s,^$1,," -e "/^$/d" -e "s,[^/]*/([^/]*)$,`----1," -e "s,[^/]*/,| ,g"
+</pre>
+
+
+
+<h1 id="toc_2">Shell扩展</h1>
+
+<ul>
+<li>
+原文链接
+
+<ol>
+<li>
+<a href="http://www.gnu.org/software/bash/manual/bash.html#Shell-Expansions">http://www.gnu.org/software/bash/manual/bash.html#Shell-Expansions</a>
+
+<li>
+<a href="http://blog.csdn.net/jackyyen/article/details/8517617">http://blog.csdn.net/jackyyen/article/details/8517617</a>
+
+</ol>
+</ul>
+
+<h2 id="toc_2.1">扩展类型</h2>
+
+<p>
+在命令被分解后，扩展在命令行上执行。有执行7种类型的扩展要执行：
+</p>
+
+<ol>
+<li>
+大括号扩展
+
+<li>
+波浪线扩展
+
+<li>
+参数和变量扩展
+
+<li>
+命令替换
+
+<li>
+算术扩展
+
+<li>
+单词分割
+
+<li>
+文件名扩展
+
+</ol>
+
+<table>
+<tr>
+<td>
+大括号扩展
+</td>
+<td>
+扩展大括号内的表达式。
+</td>
+</tr>
+<tr>
+<td>
+波浪线扩展
+</td>
+<td>
+扩展〜字符。
+</td>
+</tr>
+<tr>
+<td>
+shell参数扩展
+</td>
+<td>
+Bash扩展变量为值的方法。
+</td>
+</tr>
+<tr>
+<td>
+命令替换
+</td>
+<td>
+使用一个命令的输出作为参数。
+</td>
+</tr>
+<tr>
+<td>
+算术扩展
+</td>
+<td>
+在shell扩展中如何使用算术计算。
+</td>
+</tr>
+<tr>
+<td>
+进程替换
+</td>
+<td>
+从命令读取和向命令写入的方法。
+</td>
+</tr>
+<tr>
+<td>
+单词分割
+</td>
+<td>
+把扩展的结果分割成单独的参数。
+</td>
+</tr>
+<tr>
+<td>
+文件名扩展
+</td>
+<td>
+指定文件名匹配模式的简写。
+</td>
+</tr>
+<tr>
+<td>
+引号移除
+</td>
+<td>
+如何以及何时从单词中移除引号字符。
+</td>
+</tr>
+</table>
+
+<h2 id="toc_2.2">扩展顺序</h2>
+
+<p>
+扩展的顺序是：大括号扩展，波浪线扩展，参数，变量和算术扩展和命令替换（由左到右的方式进行），单词分割，文件名扩展。
+</p>
+
+<p>
+有一个额外的扩展——进程替换，在能够支持它的系统上使用。它和参数，变量，和算术扩展和命令替换同时执行。
+</p>
+
+<p>
+仅有大括号扩展，单词分割，文件名扩展可以改变的扩展的单词数目，其他扩展把一个单一单词扩展成一个单一单词。
+</p>
+<pre>
+唯一的例外是“$ @”（见特殊参数）和“\${name[@]}”（请参阅阵列）的扩展。
+</pre>
+
+<p>
+引号扩展在所有扩展完成后执行（见引号移除）。
+</p>
+
+<h2 id="toc_2.3">大括号扩展</h2>
+
+<p>
+大括号扩展是一个产生任意字符串的机制。这个机制和文件名扩展（见文件名扩展）相似，但生成的文件名必须不存在。被大括号扩展的模式一般是这种形式，一个可选的preamble（序言），后跟位于一对大括号之间的一系列以逗号分隔的字符串或一个序列表达，后跟一个可选的postscript（附言）。序言将被作为包含在大括号中的每个字符串的前缀，附言被附加到每个生成的字符串后边，扩展从左到右执行。
+</p>
+
+<p>
+括号扩展可以嵌套。被扩展结果中的字符串是没有排序的，从左至右的顺序被保留。例如：
+</p>
+
+<pre class="brush:bash">
+echo a{d,c,b}e
+#ade ace abe
+</pre>
+
+<p>
+序列表达式采取 <strong>{x..y[..incr]}</strong> 的形式，其中x和y是整数或单个的字符，incr是可选的增量，是一个整数。
+</p>
+
+<p>
+当序列是整数时，该表达式扩展为x和y之间的数字，包括x和y。可以在整数前面加上'0'，以强制每个段都具有相同的宽度。
+</p>
+
+<p>
+当x或y以零开头时，shell试图强制所有产生的字段包含相同的位数，必要填充时零。
+</p>
+
+<p>
+当序列是字符串时，表达式扩展为x和y之间的字符，包括x和y。需要注意的是，x和y必须是相同类型。
+</p>
+
+<p>
+如果指定增量时，该增量被用于每个字段之间的差值。默认的增量根据情况是1或-1。
+</p>
+
+<p>
+大括号扩展在任何其他扩展之前执行，在结果中保留对其他扩展具有特殊含义的字符。它是严格按照字面扩展的。
+</p>
+
+<p>
+Bash不对扩展内容或者大括号之间的文本进行任何句法翻译。为了避免和参数扩展冲突，字符串'$ {'不被视为大括号扩展。
+</p>
+
+<p>
+一个正确形式的大括号扩展，必须包含不带引号的左右大括号，以及至少一个的不带引号的逗号，或一个有效的序列表达式。任何不正确的大括号扩展将保持不变。
+</p>
+
+<p>
+{或者'，'可以用引号包含并加上反斜杠，以防止其被认为是一个大括号表达式。为了避免和参数扩展冲突，字符串'$ {'不被视为大括号扩展。
+</p>
+
+<p>
+当要生成的字符串的公共前缀的长度比在上面的例子中的长时，常用此结构来缩短命令的长度：
+</p>
+<pre class="brush:bash">
+mkdir /usr/local/src/bash/{old,new,dist,bugs}
+# or
+chown root /usr/{ucb/{ex,edit},lib/{ex?.?*,how_ex}}
+</pre>
+
+<h2 id="toc_2.4">波浪线扩展</h2>
+
+<p>
+如果一个单词以未被引号包含的波形符（“~”）开头，那么，从开始到第一个没有引号包含的斜杠（或所有字符，如果没有引号包含的斜杠）被认为是一个 tilde-prefix(波浪线前缀)。
+</p>
+
+<p>
+如果波浪线前缀中的字符没有被引号包括，则波浪线前缀中波浪线后的字符被视为一个login name(登录名)。如果该登录名是空字符串，波浪线被替换为shell变量HOME的值。如果HOME没被设置，则它被替换为执行当前shell的用户的主目录。否则，波浪线前缀将被指定的登录名的主目录替换。
+</p>
+
+<p>
+如果波浪线前缀是'~+'，shell变量PWD的值将取代波浪线前缀。
+</p>
+
+<p>
+如果波浪线前缀是' ~-'，将被替换为shell变量OLDPWD的值。
+</p>
+
+<p>
+如果波浪线前缀中的波浪号后面的字符组成一个数字N，并由'+'或' - '前缀，则波浪线前缀被替换为目录栈中的相应元素，如同使用内建命令dirs，并且命令参数就是上述波浪线前缀中的波浪号后面的字符（见目录堆栈）。如果波浪线前缀，除了波浪线外，由一个前边没有加上一个'+'或' - '的数字组成的话，则假定是带'+'的。
+</p>
+
+<p>
+如果登录名是无效的，或波浪线扩展失败，这个单词保持不变。
+</p>
+
+<p>
+任何后跟':'或'='的变量赋值，将检查是否是不带括号的波浪线扩展。在这些情况下，也进行波浪线扩展。因此，给PATH，MAILPATH，和CDPATH赋值时，可以使用带波浪线的文件名，shell会把扩展后的值赋给这些变量。
+</p>
+
+<p>
+下表显示了bash如何对待不带括号的波浪线前缀：
+</p>
+<pre class="brush:bash">
+~
+    # $HOME的值
+~/foo
+    # $HOME/foo
+~fred/foo
+    # 用户fred的主目录的foo子目录
+~+/foo
+    # $PWD/foo
+~-/foo
+    # ${OLDPWD-'~-'}/foo
+~N
+    # 将显示一个'dirs +N'命令的结果字符串
+~+N
+    # 将显示一个'dirs +N'命令的结果字符串
+~-N
+    # 将显示一个'dirs -N'命令的结果字符串
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

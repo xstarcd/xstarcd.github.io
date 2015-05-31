@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>利用rinted转接服务</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">利用rinted转接服务</a>
+<ul>
+<li><a href="#toc_1.1">简介</a>
+<li><a href="#toc_1.2">安装使用</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">利用rinted转接服务</h1>
+
+<p>
+原文：<a href="http://www.aslibra.com/blog/read.php?1053">http://www.aslibra.com/blog/read.php?1053</a>
+</p>
+
+<h2 id="toc_1.1">简介</h2>
+
+<p>
+Rinetd是为在一个Unix和Linux操作系统中为重定向传输控制协议(TCP)连接的一个工具。Rinetd是单一过程的服务器，它处理任何数量的连接到在配置文件etc/rinetd中指定的地址/端口对。尽管rinetd使用非闭锁I/O运行作为一个单一过程，它可能重定向很多连接而不对这台机器增加额外的负担。
+</p>
+
+<p>
+使用iptables 很容易将TCP 和UDP 端口从防火墙转发到内部主机上。但是如果您需要将流量从专用地址转发到甚至不在您当前网络上的机器上，又该怎么办呢？可尝试另一个应用层端口转发程序，如rinetd。
+</p>
+
+<p>
+这些代码有点古老，但很短小、高效，对于解决这种问题来说是非常完美的。
+</p>
+
+<pre>
+rinetd - Internet TCP redirection server
+socat - multipurpose relay for bidirectional data transfer
+</pre>
+
+<h2 id="toc_1.2">安装使用</h2>
+
+<p>
+下载地址： <a href="http://www.boutell.com/rinetd/">http://www.boutell.com/rinetd/</a>
+</p>
+
+<p>
+Linux版本：<a href="../files/rinetd.tar.gz">rinetd.tar.gz</a>
+</p>
+
+<p>
+Windows版本：<a href="../files/rinetd.zip">rinetd.zip</a>
+</p>
+
+<p>
+解压后，make &amp;&amp; make install 就可以了
+</p>
+
+<p>
+程序路径 /usr/sbin/rinetd
+</p>
+
+<p>
+需要配置文件 /etc/rinetd.conf
+</p>
+
+<p>
+配置文件格式很简单：
+</p>
+<pre>
+[Source Address] [Source Port] [Destination Address] [Destination Port]
+</pre>
+<p>
+在每一单独的行中指定每个要转发的端口。源地址和目的地址都可以是
+</p>
+
+<p>
+主机名或IP 地址，IP 地址0.0.0.0 将rinetd 绑定到任何可用的本地IP地址上：
+</p>
+<pre>
+0.0.0.0 8080 www.aslibra.com 80
+0.0.0.0 3306 192.168.1.77 3306
+0.0.0.0 88 127.0.0.1 80
+</pre>
+
+<p>
+直接运行程序就可以了看到占用端口服务了。
+</p>
+
+<p>
+上面是把访问本机的8080端口的服务都迁移到www.aslibra.com的机器上，把访问本地的数据库的转移到192.168.1.77上，把访问本地88端口的指向80端口服务。
+</p>
+
+<p>
+可是阿权发现这个只是做了个代理的功能，比如最后一条得到的访问者IP：
+</p>
+<pre>
+REMOTE_ADDR 192.168.1.77  
+</pre>
+
+<p>
+也就是没法获取到用户ip，这个比较可惜，但是对于IP访问的服务做迁移还是不错的，比如数据库服务，可以在保留很多程序的连接方式不变的情况下，直接切换数据库，也就是在主数据库出问题了，可以立刻用这种方法转换到备份数据库。
+</p>
+
+<p>
+所以，服务器主备模式的情况还是可以备一个的，这样保证准时切换，可以做shell程序判断端口服务是否正常，如果实在不正常或者无法服务，就自动切换到备份的，多方便呀~
+</p>
+
+<p>
+当你的服务器要重新编号或物理位置变化而改变IP地址时你就能切实感受到这个工具的好处了，因为服务看上去就像保留在原始IP 地址（即便它们实际上完全是来自其他网络）上。如果仅仅是绑定大于1024的端口，那么rinetd就不需要以root账户来运行。这种小工具很值得放在身边，以便随时调用TCP 端口间接寻址。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

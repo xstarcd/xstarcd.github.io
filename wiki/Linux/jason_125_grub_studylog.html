@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>jason_125的grub学习笔记</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>jason_125的grub学习笔记</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">GRUB 简介</a>
+<li><a href="#toc_0.2">GRUB软件包版安装</a>
+<li><a href="#toc_0.3">GRUB的配置文件</a>
+<ul>
+<li><a href="#toc_0.3.1">设备命名命名习惯</a>
+<li><a href="#toc_0.3.2">grub.conf的写法</a>
+<li><a href="#toc_0.3.3">boot分区为独立分区</a>
+<li><a href="#toc_0.3.4">boot分区非独立分区</a>
+</ul>
+<li><a href="#toc_0.4">GRUB和stage文件</a>
+<ul>
+<li><a href="#toc_0.4.1">stage文件</a>
+<li><a href="#toc_0.4.2">grub启动方式</a>
+</ul>
+<li><a href="#toc_0.5">GRUB三种安装方式</a>
+<ul>
+<li><a href="#toc_0.5.1">install命令</a>
+<li><a href="#toc_0.5.2">setup命令</a>
+<li><a href="#toc_0.5.3">grub-install命令</a>
+</ul>
+<li><a href="#toc_0.6">安装测试</a>
+<ul>
+<li><a href="#toc_0.6.1">boot为独立分区</a>
+<li><a href="#toc_0.6.2">boot为非独立分区</a>
+</ul>
+<li><a href="#toc_0.7">修复grub.conf</a>
+<li><a href="#toc_0.8">附录</a>
+</ul>
+</ul>
+</div>
+
+
+<ul>
+<li>
+原创作品，允许转载，转载时请务必以超链接形式标明文章原始出处 、作者信息和本声明。否则将追究法律责任。
+
+<li>
+原文：<a href="http://dreamsanqin.blog.51cto.com/845412/177656">http://dreamsanqin.blog.51cto.com/845412/177656</a>
+
+</ul>
+
+<h2 id="toc_0.1">GRUB 简介</h2>
+<p>
+系统启动引导管理器，是在计算机启动后运行的第一个程序，他是用来负责加载、传输控制到操作系统的内核，一旦把内核挂载，系统引导管理器的任务就算完成退出，系统引导的其它部份，比如系统的初始化及启动过程则完全由内核来控制完成。
+</p>
+
+<h2 id="toc_0.2">GRUB软件包版安装</h2>
+<p>
+在linux系统中查看有没有安装grub-0.97-13.2包，如过没有安装此包，那么可以在光盘中找到grub-0.97-13.2进行安装即可。一般在安装完系统后该包已经被安装到系统中。如果没有rpm包可以下载tar包进行编译安装。（grub-0.97-13.2是安装grub到mbr中的工具包）
+</p>
+<pre>
+rpm -qa grub
+grub-0.97-13.2
+</pre>
+
+<h2 id="toc_0.3">GRUB的配置文件</h2>
+
+<h3 id="toc_0.3.1">设备命名命名习惯</h3>
+
+<p>
+首先GRUB要求设备名被括在一个括号中。fd表示软盘，hd 表示硬盘（不区分IDE还是SCSI）。其次设备是从0开始编号。分区也是如此，分区和设备之间用一个逗号分开。
+</p>
+
+<p>
+下面给出几个例子 ：
+<table>
+<tr>
+<th>
+设备名
+</th>
+<th>
+含义
+</th>
+</tr>
+<tr>
+<td>
+(fd0)
+</td>
+<td>
+表示整个软盘
+</td>
+</tr>
+<tr>
+<td>
+(hd0,1)
+</td>
+<td>
+表示系统的第一个硬盘的第2个分区
+</td>
+</tr>
+<tr>
+<td>
+(hd0,0)
+</td>
+<td>
+表示系统中的第一个硬盘的第一个分区
+</td>
+</tr>
+</table>
+</p>
+
+<p>
+如果没有指定某个分区，则表示使用整个设备，否则只使用指定的分区。
+</p>
+
+<h3 id="toc_0.3.2">grub.conf的写法</h3>
+
+<table>
+<tr>
+<td>
+选项
+</td>
+<td>
+说明
+</td>
+</tr>
+<tr>
+<td>
+default
+</td>
+<td>
+定义默认引导的操作系统。0 表示第一个操作系统，1表示第2个，依此类推。
+</td>
+</tr>
+<tr>
+<td>
+hiddenmenu
+</td>
+<td>
+用于启动时隐藏菜单，除非在timeout之前按下 ESC 才能看到菜单。
+</td>
+</tr>
+<tr>
+<td>
+timeout
+</td>
+<td>
+定义多少秒内如果用户没有按下键盘上的某个按键，就自动引导 default 所指定的操作系统。
+</td>
+</tr>
+<tr>
+<td>
+splashimage
+</td>
+<td>
+指定启动的背景图片，一般为压缩文件。路径为绝对路径。
+</td>
+</tr>
+<tr>
+<td>
+title
+</td>
+<td>
+定义引导项目的名称。
+</td>
+</tr>
+<tr>
+<td>
+root
+</td>
+<td>
+指定boot分区所在磁盘及分区，如: root (hd0,0)。
+</td>
+</tr>
+<tr>
+<td>
+kernel
+</td>
+<td>
+指定kernel文件所在绝对目录地址，如: kernel /boot/vmlinuz-2.6.18-92.el5 ro root=LABEL=/ rhgb quiet
+</td>
+</tr>
+<tr>
+<td>
+initrd
+</td>
+<td>
+指定ramdisk盘所在绝对目录地址，如: initrd /boot/initrd-2.6.18-92.el5.img
+</td>
+</tr>
+</table>
+ 
+<ul>
+<li>
+<strong>注意：</strong>
+
+<ul>
+<li>
+kernel与initrd这两个设置项中，指定的路径都是绝对路径。因为这两个文件都存放在/boot目录。
+
+<li>
+而且/boot所在的分区已经在root (hd[0-n],[0-n])中指定，所以就无需再指明kernel与initrd在哪个分区了。
+
+<li>
+<strong>如果boot分区为独立分区，那么前面的/boot省略掉。如果boot分区为非独立分区，那么必须加上/boot。</strong>
+
+</ul>
+</ul>
+ 
+<h3 id="toc_0.3.3">boot分区为独立分区</h3>
+
+<ul>
+<li>
+grub.conf
+<pre class="brush:bash">
+default=0 #默认启动第一个操作系统
+timeout=5 #超时时间为5秒
+splashimage=(hd0,0)/grub/splash.xpm.gz
+hiddenmenu
+title Red Hat Enterprise Linux Server (2.6.18-92.el5) #设置项目标题
+    #设置boot分区所在位置，第一个硬盘的第一分区
+    root (hd0,0)
+    #设置kernel所在位置。注意这里的root指的系统根所在位置，与上面的root不同
+    kernel /vmlinuz-2.6.18-92.el5 ro root=LABEL=/ rhgb quiet
+    #设置initrd所在位置
+    initrd /initrd-2.6.18-92.el5.img
+</pre>
+
+</ul>
+
+<h3 id="toc_0.3.4">boot分区非独立分区</h3>
+
+<ul>
+<li>
+/boot/grub/grub.conf
+<pre class="brush:bash">
+default=0 #默认启动第一个操作系统
+timeout=5 #超时时间为5秒
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
+hiddenmenu
+title Red Hat Enterprise Linux Server (2.6.18-92.el5) #设置项目标题
+    #设置boot分区所在位置，第一个硬盘的第一分区。
+    root (hd0,0)
+    #设置kernel所在位置。注意这里的root指的系统根所在位置，与上面的root不同。
+    kernel /boot/vmlinuz-2.6.18-92.el5 ro root=LABEL=/ rhgb quiet
+    #设置initrd所在位置。
+    initrd /boot/initrd-2.6.18-92.el5.img
+</pre>
+
+</ul>
+
+<h2 id="toc_0.4">GRUB和stage文件</h2>
+ 
+<h3 id="toc_0.4.1">stage文件</h3>
+
+<p>
+GRUB含有几个images文件，两个必需的文件stage1和 stage2，可选的为stage1_5和两个网络引导的文件nxgrub和pxegrub。
+</p>
+
+<p>
+stage1是用于引导GURB的一个必须的映象文件。通常它是被嵌入到 MBR。或者一个分区的引导扇区之中。因为 PC 的引导扇区是 512 字节，所以 stage1也是512字节。stage1的作用就是从一个本地磁盘加载stage 2 或者stage1_5 。因为大小的限制，stage1 对stage2 或者stage1_5的位置进行编码。
+</p>
+
+<p>
+stage1与stage2文件一般位于/boot/grub/目录下，在这个目录下还有很多stage1_5的文件，而且都是以文件系统格式命名的。它们的目的是在stage1和stage2之间搭建一个桥梁，也就是stage1加载stage1_5, 然后stage1_5加载stage2。stage1 和stage1_5的不同之处是stage1无法识别文件系统，stage1_5可以。因为 Stage2 太大了，无法被嵌入到某个固定的区域，而stage1_5可以安装在 MBR 之后的位置。
+</p>
+
+<h3 id="toc_0.4.2">grub启动方式</h3>
+
+<ul>
+<li>
+stage1_5 -&gt; stage2 方式
+
+</ul>
+<p>
+首先监测是否是合适的文件系统的驱动，如果存在就使用文件系统逻辑的方式stage2；如果找不到就用blocklist的方式再找stage2，找到了挂起来，找不到报错。
+</p>
+
+<ul>
+<li>
+stage1 -&gt; stage2方式
+
+</ul>
+<p>
+如果确认stage1_5没有被安装在MBR之后， stage1就会使用记录的stage2的blocklist寻找stage2,找到后挂起来，找不到报错。
+</p>
+
+<h2 id="toc_0.5">GRUB三种安装方式</h2>
+
+<p>
+在linux系统中可以执行grub命令。
+</p>
+
+<p>
+进入grub的命令界面，在这里面可以使用一些常用的命令。也可以对不太了解的命令进行帮助查看。可以使用TAB键对命令进行补全操作，系统会给予提示信息。如下：
+</p>
+
+<ul>
+<li>
+help
+<pre class="brush:bash">
+grub
+
+Probing devices to guess BIOS drives. This may take a long time.
+    GNU GRUB  version 0.97  (640K lower / 3072K upper memory)
+ [ Minimal BASH-like line editing is supported.  For the first word, TAB
+   lists possible command completions.  Anywhere else TAB lists the possible
+   completions of a device/filename.]
+ 
+grub&gt; help
+blocklist FILE                         boot
+cat FILE                               chainloader [--force] FILE
+clear                                  color NORMAL [HIGHLIGHT]
+configfile FILE                        device DRIVE DEVICE
+displayapm                             displaymem
+find FILENAME                          geometry DRIVE [CYLINDER HEAD SECTOR [
+halt [--no-apm]                        help [--all] [PATTERN ...]
+hide PARTITION                         initrd FILE [ARG ...]
+kernel [--no-mem-option] [--type=TYPE] makeactive
+map TO_DRIVE FROM_DRIVE                md5crypt
+module FILE [ARG ...]                  modulenounzip FILE [ARG ...]
+pager [FLAG]                           partnew PART TYPE START LEN
+parttype PART TYPE                     quit
+reboot                                 root [DEVICE [HDBIAS]]
+rootnoverify [DEVICE [HDBIAS]]         serial [--unit=UNIT] [--port=PORT] [--
+setkey [TO_KEY FROM_KEY]               setup [--prefix=DIR] [--stage2=STAGE2_
+terminal [--dumb] [--no-echo] [--no-ed terminfo [--name=NAME --cursor-address
+testvbe MODE                           unhide PARTITION
+uppermem KBYTES                        vbeprobe [MODE]
+grub&gt; help root
+root: root [DEVICE [HDBIAS]]
+    Set the current "root device" to the device DEVICE, then attempt
+    to mount it to get the partition size (for passing the partition
+    descriptor in `ES:ESI', used by some chain-loaded bootloaders),
+    the BSD drive-type (for booting BSD kernels using their native
+    boot format), and correctly determine  the PC partition where a
+    BSD sub-partition is located. The optional HDBIAS parameter is a
+    number to tell a BSD kernel how many BIOS drive numbers are on
+    controllers before the current one. For example, if there is an
+    IDE disk and a SCSI disk, and your FreeBSD root partition is on
+    the SCSI disk, then use a `1' for HDBIAS.
+rootnoverify: rootnoverify [DEVICE [HDBIAS]]
+    Similar to `root', but don't attempt to mount the partition. This
+    is useful for when an OS is outside of the area of the disk that
+    GRUB can read, but setting the correct root device is still
+    desired. Note that the items mentioned in `root' which derived
+    from attempting the mount will NOT work correctly.
+grub&gt;
+</pre>
+
+</ul>
+
+<h3 id="toc_0.5.1">install命令</h3>
+<pre class="brush:bash">
+# 命令格式：
+install: install [--stage2=STAGE2_FILE] [--force-lba] STAGE1 [d] DEVICE STAGE2 [ADDR] [p] [CONFIG_FILE] [REAL_CONFIG_FILE]
+
+# STAGE1：指定stage1文件所在绝对路径。
+# DEVICE：指定vstage1装载的位置。
+# STAGGE2：指定stage2文件所在绝对路径。
+# ADDR：指定装载stage2的位置，如果不写，系统自动决定。
+
+# 例如：
+# boot为独立分区时：
+grub&gt;root (hd0,0)
+grub&gt;install /grub/stage1 (hd0) /grub/stage2 p /grub/grub.conf
+ 
+# boot为非独立分区时：
+grub&gt;root (hd0,0)
+grub&gt;install (hd0,0)/boot/grub/stage1 (hd0) (hd0,0)/boot/grub/stage2 p (hd0,0)/boot/grub/grub.conf
+
+# 该句可以写成如下这样：
+grub&gt;root (hd0,0)
+grub&gt;install /boot/grub/stage1 (hd0) /boot/grub/stage2 p /boot/grub/grub.conf
+# 注意：boot分区为独立分区与非独立分区时，安装方法有区别。
+</pre>
+
+<h3 id="toc_0.5.2">setup命令</h3>
+<pre class="brush:bash">
+# 命令格式：
+setup [--prefix=DIR] [--stage2=STAGE2_FILE] [--force-lba] INSTALL_DEVICE [IMAGE_DEVICE]
+# INSTALL_DEVICE：指定安装grub的位置。
+# IMAGE_DEVICE：指定要安装的镜象文件。
+# 例如：
+grub
+
+Probing devices to guess BIOS drives. This may take a long time.
+    GNU GRUB  version 0.97  (640K lower / 3072K upper memory)
+ [ Minimal BASH-like line editing is supported.  For the first word, TAB
+   lists possible command completions.  Anywhere else TAB lists the possible
+   completions of a device/filename.]
+grub&gt; root (hd0,)
+ Possible partitions are:
+   Partition num: 0,  Filesystem type is ext2fs, partition type 0x83
+   Partition num: 1,  Filesystem type unknown, partition type 0x82
+   Partition num: 2,  Filesystem type is ext2fs, partition type 0x83
+grub&gt; root (hd0,0)
+ Filesystem type is ext2fs, partition type 0x83
+grub&gt; setup (hd0)
+ Checking if "/boot/grub/stage1" exists... no
+ Checking if "/grub/stage1" exists... yes
+ Checking if "/grub/stage2" exists... yes
+ Checking if "/grub/e2fs_stage1_5" exists... yes
+ Running "embed /grub/e2fs_stage1_5 (hd0)"...  15 sectors are embedded.
+succeeded
+ Running "install /grub/stage1 (hd0) (hd0)1+15 p (hd0,0)/grub/stage2 /grub/grub.conf"... succeeded
+Done.
+grub&gt;
+</pre>
+
+<h3 id="toc_0.5.3">grub-install命令</h3>
+<p>
+grub-install拷贝grub镜象文件到DIR/boot目录中（可以通过参数--root-directory指定目录），并用grub shell安装grub到MBR中。
+</p>
+<pre class="brush:bash">
+# 命令格式：
+grub-install [OPTION] install_device
+
+# 例如：
+grub-install hd0
+
+Installation finished. No error reported.
+This is the contents of the device map /boot/grub/device.map.
+Check if this is correct or not. If any of the lines is incorrect,
+fix it and re-run the script `grub-install'.
+# this device map was generated by anaconda
+(hd0)     /dev/sda
+
+</pre>
+<ul>
+<li>
+三种安装方式的区别
+
+<ul>
+<li>
+这3种方式中，最常用的是grub-install，其中install是最底层的方式。setup是更高一层的方式，而grub-install是最高级最简单的方式。
+
+<li>
+安装源
+
+<ul>
+<li>
+grub-install命令安装grub到MBR中的时候利用的安装源是/usr/share/grub/i386-redhat/下的stage1、stage2和各种stage1_5。
+
+<li>
+而install命令与setup命令安装grub的安装源是/boot/grub目录中的stage1、stage2和各种stage1_5。
+
+<li>
+所以要使用这两种安装方法来安装grub到MBR中的时候，确保/boot/grub目录中的stage1、stage2和各种stage1_5必须存在。
+
+</ul>
+<li>
+查找stage2方式
+
+<ul>
+<li>
+grub-install命令安装的grub只是利用stage1_5 -&gt; stage2 方式的文件系统方式去查找，如果stage2不存在，那么系统就不能启动。
+
+<li>
+setup命令安装的grub是stage1_5 -&gt; stage2 方式去查找stage2，首先监测是否是合适的文件系统的驱动，如果存在就使用文件系统逻辑的方式查找stage2；如果找不到就用blocklist的方式再找stage2。
+
+<li>
+install命令安装的grub使用stage1 -&gt; stage2方式去查找。
+
+</ul>
+</ul>
+</ul>
+
+<h2 id="toc_0.6">安装测试</h2>
+
+<h3 id="toc_0.6.1">boot为独立分区</h3>
+
+<p>
+该测试boot分区为独立分区。分区情况如下：
+</p>
+<pre class="brush:bash">
+fdisk -l
+Disk /dev/sda: 32.2 GB, 32212254720 bytes
+255 heads, 63 sectors/track, 3916 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *           1          13      104391   83  Linux
+/dev/sda2              14          78      522112+  82  Linux swap / Solaris
+/dev/sda3              79        3916    30828735   83  Linux
+</pre>
+
+<ul>
+<li>
+grub-install命令测试
+
+</ul>
+<p>
+首先使用grub-install命令对已安装好的系统进行重新安装grub（因为系统默认的安装方式是用install安装的）。
+</p>
+<pre class="brush:bash">
+grub-install hd0
+Installation finished. No error reported.
+This is the contents of the device map /boot/grub/device.map.
+Check if this is correct or not. If any of the lines is incorrect,
+fix it and re-run the script `grub-install'.
+# this device map was generated by anaconda
+(hd0)     /dev/sda
+</pre>
+
+<p>
+执行完成之后，使用rm命令删除/boot/grub下的stage2文件，重启系统。会看到有如下的错误出现：
+</p>
+<pre>
+GRUB Loading stage1.5.
+
+GRUB loading, please wait...
+Error 15
+_
+</pre>
+
+<p>
+这个时候我们只能进入linux rescue模式对系统进行修复了，而且只可以使用grub-install命令对系统进行修复。因为/boot/grub下的stage2文件已经被我们删掉了。原因是的安装源已被破坏。
+</p>
+
+<p>
+这个时候插入光盘，设置为cdrom启动，输入linux rescue回车进入rescue模式中。挂载你的系统到/mnt/sysimage目录下。执行命令<code>grub-install hd0</code>命令来重新安装grub系统可以正常启动。具体操作如下：
+</p>
+
+<ul>
+<li>
+用光盘启动，选择rescue模式或输入<code>linux rescue</code>，进入linux rescue模式
+
+<li>
+进入shell后，执行：
+<pre class="brush:bash">
+chroot /mnt/sysimage/
+ls /
+grub-install hd0
+</pre>
+
+<li>
+完成后重新启动系统
+
+</ul>
+
+<p>
+备注：
+那么在什么情况下使用grub-install命令来重新安装grub呢？
+</p>
+<ol>
+<li>
+grub被擦掉的时候。
+
+<li>
+/boot/grub目录下的所有镜像文件都给删除时。
+
+<li>
+使用grub-install命令安装的grub且boot/grub目录下stage2文件被误删除时（有人会考虑到把/usr/share/grub/i386-redhat/下的stage2拷贝到/boot/grub目录中，此方法是不成功的）。
+
+</ol>
+
+<ul>
+<li>
+setup命令测试
+
+</ul>
+<p>
+使用setup命令重新安装grub到MBR中。
+</p>
+<pre class="brush:bash">
+grub
+Probing devices to guess BIOS drives. This may take a long time.
+    GNU GRUB  version 0.97  (640K lower / 3072K upper memory)
+ [ Minimal BASH-like line editing is supported.  For the first word, TAB
+   lists possible command completions.  Anywhere else TAB lists the possible
+   completions of a device/filename.]
+
+grub&gt; root (hd0,0)
+ Filesystem type is ext2fs, partition type 0x83
+grub&gt; setup (hd0)
+ Checking if "/boot/grub/stage1" exists... no
+ Checking if "/grub/stage1" exists... yes
+ Checking if "/grub/stage2" exists... yes
+ Checking if "/grub/e2fs_stage1_5" exists... yes
+ Running "embed /grub/e2fs_stage1_5 (hd0)"...  15 sectors are embedded.
+succeeded
+ Running "install /grub/stage1 (hd0) (hd0)1+15 p (hd0,0)/grub/stage2 /grub/grub.conf"... succeeded
+Done.
+grub&gt; quit
+</pre>
+
+<p>
+使用rm命令删除/boot/grub/目录中的stage2文件重启系统。系统仍然可以启动，而且重新生成了stage2文件。
+</p>
+
+<p>
+现在使用shred命令删除stage2文件，再使用rm命令把stage2文件删除。重新启动系统。
+</p>
+<pre class="brush:bash">
+# shred - overwrite a file to hide its contents, and optionally delete it
+
+shred -v stage2
+shred: stage2: pass 1/25 (random)...
+shred: stage2: pass 2/25 (ffffff)...
+shred: stage2: pass 3/25 (492492)...
+shred: stage2: pass 4/25 (888888)...
+shred: stage2: pass 5/25 (924924)...
+shred: stage2: pass 6/25 (249249)...
+shred: stage2: pass 7/25 (cccccc)...
+shred: stage2: pass 8/25 (222222)...
+shred: stage2: pass 9/25 (db6db6)...
+shred: stage2: pass 10/25 (777777)...
+shred: stage2: pass 11/25 (999999)...
+shred: stage2: pass 12/25 (eeeeee)...
+shred: stage2: pass 13/25 (random)...
+shred: stage2: pass 14/25 (dddddd)...
+shred: stage2: pass 15/25 (000000)...
+shred: stage2: pass 16/25 (555555)...
+shred: stage2: pass 17/25 (111111)...
+shred: stage2: pass 18/25 (444444)...
+shred: stage2: pass 19/25 (aaaaaa)...
+shred: stage2: pass 20/25 (333333)...
+shred: stage2: pass 21/25 (bbbbbb)...
+shred: stage2: pass 22/25 (b6db6d)...
+shred: stage2: pass 23/25 (666666)...
+shred: stage2: pass 24/25 (6db6db)...
+shred: stage2: pass 25/25 (random)...
+
+rm –rf stage2
+reboot
+</pre>
+
+<p>
+这个时候系统不能再启动了，出现如下显示：
+</p>
+<pre>
+GRUB Loading stage1.5.
+GRUB loading, please wait...
+_
+</pre>
+
+<p>
+现在要恢复系统的话，只能是使用grub-install命令对系统进行恢复。修复方法与上面相同。
+</p>
+
+<ul>
+<li>
+install命令测试
+
+</ul>
+<p>
+使用install命令重新写MBR。如下：
+</p>
+<pre class="brush:bash">
+grub
+Probing devices to guess BIOS drives. This may take a long time.
+    GNU GRUB  version 0.97  (640K lower / 3072K upper memory)
+ [ Minimal BASH-like line editing is supported.  For the first word, TAB
+   lists possible command completions.  Anywhere else TAB lists the possible
+   completions of a device/filename.]
+grub&gt; root (hd0,0)
+ Filesystem type is ext2fs, partition type 0x83
+grub&gt; install /grub/stage1 (hd0) /grub/stage2 p /grub/grub.conf
+grub&gt; quit
+</pre>
+
+<p>
+使用rm命令删除/boot/grub/目录中的stage2文件重启系统。系统仍然可以启动，而且重新生成了stage2文件。
+</p>
+
+<p>
+现在使用shred命令删除stage2文件，再使用rm命令把stage2文件删除。重新启动系统。
+</p>
+<pre class="brush:bash">
+shred -v stage2
+
+shred: stage2: pass 1/25 (random)...
+shred: stage2: pass 2/25 (ffffff)...
+shred: stage2: pass 3/25 (492492)...
+shred: stage2: pass 4/25 (888888)...
+shred: stage2: pass 5/25 (924924)...
+shred: stage2: pass 6/25 (249249)...
+shred: stage2: pass 7/25 (cccccc)...
+shred: stage2: pass 8/25 (222222)...
+shred: stage2: pass 9/25 (db6db6)...
+shred: stage2: pass 10/25 (777777)...
+shred: stage2: pass 11/25 (999999)...
+shred: stage2: pass 12/25 (eeeeee)...
+shred: stage2: pass 13/25 (random)...
+shred: stage2: pass 14/25 (dddddd)...
+shred: stage2: pass 15/25 (000000)...
+shred: stage2: pass 16/25 (555555)...
+shred: stage2: pass 17/25 (111111)...
+shred: stage2: pass 18/25 (444444)...
+shred: stage2: pass 19/25 (aaaaaa)...
+shred: stage2: pass 20/25 (333333)...
+shred: stage2: pass 21/25 (bbbbbb)...
+shred: stage2: pass 22/25 (b6db6d)...
+shred: stage2: pass 23/25 (666666)...
+shred: stage2: pass 24/25 (6db6db)...
+shred: stage2: pass 25/25 (random)...
+
+rm –rf stage2
+reboot
+</pre>
+
+<p>
+这个时候系统不能再启动了，出现如下显示：
+</p>
+<pre>
+GRUB _
+</pre>
+
+<h3 id="toc_0.6.2">boot为非独立分区</h3>
+
+<p>
+该测试系统boot分区与根在同一分区中。
+</p>
+
+<pre class="brush:bash">
+fdisk -l
+Disk /dev/sda: 21.4 GB, 21474836480 bytes
+255 heads, 63 sectors/track, 2610 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *           1        2544    20434648+  83  Linux
+/dev/sda2            2545        2609      522112+  82  Linux swap / Solaris
+</pre>
+
+<p>
+grub-install命令与setup命令与boot为独立分区时使用方法一样。而install命令略有不同。就是在指定路径的时候不能省略boot目录。如下：
+</p>
+<pre class="brush:bash">
+grub&gt;root (hd0,0)
+grub&gt;install /boot/grub/stage1 (hd0) /boot/grub/stage2 p /boot/grub/grub.conf
+</pre>
+ 
+<p>
+以下为测试结果：
+</p>
+
+<p>
+使用install命令重新写MBR。如下：
+</p>
+<pre class="brush:bash">
+grub
+Probing devices to guess BIOS drives. This may take a long time.
+    GNU GRUB  version 0.97  (640K lower / 3072K upper memory)
+ [ Minimal BASH-like line editing is supported.  For the first word, TAB
+   lists possible command completions.  Anywhere else TAB lists the possible
+   completions of a device/filename.]
+
+grub&gt; root (hd0,0)
+ Filesystem type is ext2fs, partition type 0x83
+grub&gt;install /boot/grub/stage1 (hd0) /boot/grub/stage2 p /boot/grub/grub.conf
+grub&gt; quit
+</pre>
+
+<p>
+使用rm命令删除/boot/grub/目录中的stage2文件重启系统。系统仍然可以启动。
+</p>
+
+<p>
+现在使用shred命令删除stage2文件，再使用rm命令把stage2文件删除。重新启动系统。
+</p>
+<pre class="brush:bash">
+shred -v stage2
+shred: stage2: pass 1/25 (random)...
+shred: stage2: pass 2/25 (ffffff)...
+shred: stage2: pass 3/25 (492492)...
+shred: stage2: pass 4/25 (888888)...
+shred: stage2: pass 5/25 (924924)...
+shred: stage2: pass 6/25 (249249)...
+shred: stage2: pass 7/25 (cccccc)...
+shred: stage2: pass 8/25 (222222)...
+shred: stage2: pass 9/25 (db6db6)...
+shred: stage2: pass 10/25 (777777)...
+shred: stage2: pass 11/25 (999999)...
+shred: stage2: pass 12/25 (eeeeee)...
+shred: stage2: pass 13/25 (random)...
+shred: stage2: pass 14/25 (dddddd)...
+shred: stage2: pass 15/25 (000000)...
+shred: stage2: pass 16/25 (555555)...
+shred: stage2: pass 17/25 (111111)...
+shred: stage2: pass 18/25 (444444)...
+shred: stage2: pass 19/25 (aaaaaa)...
+shred: stage2: pass 20/25 (333333)...
+shred: stage2: pass 21/25 (bbbbbb)...
+shred: stage2: pass 22/25 (b6db6d)...
+shred: stage2: pass 23/25 (666666)...
+shred: stage2: pass 24/25 (6db6db)...
+shred: stage2: pass 25/25 (random)...
+
+rm –rf stage2
+reboot
+</pre>
+
+<p>
+这个时候系统不能再启动了，出现如下显示：
+</p>
+<pre>
+GNU GRUB version 0.97 (638K lower / 522176K upper memory)
+[ Minimal BASH-like line editing is supported. For the first word, TAB
+  lists possible command completions. Anywhere else TAB lists the possible
+  completions of a device/filename.]
+
+grub&gt; _
+</pre>
+
+<p>
+同样现在要恢复系统的话，只能是使用grub-install命令对系统进行恢复。恢复后系统就可以正常启动了。
+</p>
+
+<h2 id="toc_0.7">修复grub.conf</h2>
+
+<p>
+当系统中的grub.conf文件被删除掉后。在没有备份的情况下我们只能用grub交互模式来写grub.conf文件让系统重新启动起来。正如下图所示:
+</p>
+
+<p>
+这台测试机的分区如下：
+</p>
+<pre class="brush:bash">
+fdisk -l
+ Disk /dev/sda: 21.4 GB, 21474836480 bytes
+ 255 heads, 63 sectors/track, 2610 cylinders
+ Units = cylinders of 16065 * 512 = 8225280 bytes
+   Device Boot      Start         End      Blocks   Id  System
+ /dev/sda1   *           1        2544    20434648+  83  Linux
+ /dev/sda2            2545        2609      522112+  82  Linux     swap / Solaris
+</pre>
+
+<p>
+boot分区为非独立分区。grub.conf文件内容如下：
+</p>
+<ul>
+<li>
+grub.conf
+<pre class="brush:bash">
+default=0
+timeout=5
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
+hiddenmenu
+title Red Hat Enterprise Linux Server (2.6.18-92.el5)
+    root (hd0,0)
+    kernel /boot/vmlinuz-2.6.18-92.el5 ro root=LABEL=/ rhgb quiet
+    initrd /boot/initrd-2.6.18-92.el5.img
+</pre>
+
+</ul>
+
+<p>
+现在尝试用如下操作修复grub.conf文件来启动系统。
+</p>
+<pre class="brush:bash">
+GNU GRUB version 0.97 (638K lower / 522176K upper memory)
+[ Minimal BASH-like line editing is supported. For the first word, TAB
+  lists possible command completions. Anywhere else TAB lists the possible
+  completions of a device/filename.]
+
+grub&gt; root (hd0,0)
+ Filesystem type is ext2fs, partition type 0x83
+
+grub&gt; kernel /boot/vmlinuz-2.6.18-92.e15 ro root=LABEL=/ rhgt quiet
+    [Linux-bzImage, setup=0x1e00, size=0x1b7034]
+
+grub&gt; initrd /boot/initrd-2.6.18-92.e15.img
+    [Linux-initrd @ 0x1fc84000, 0x25ba3a bytes]
+
+grub&gt; boot_
+</pre>
+
+<p>
+输入完成后按回车开始正常启动系统。
+</p>
+
+<p>
+也可以写成下面这样使系统可以正常启动。不使用卷标指定根，直接使用设备名。
+</p>
+<pre>
+kernel /boot/vmlinuz-2.6.18-92.e15 ro root=/dev/sda1 rhgt quiet
+</pre>
+
+<p>
+正常进入系统之后在重新编写grub.conf文件。
+</p>
+
+<h2 id="toc_0.8">附录</h2>
+
+<p>
+grub的详细使用说明参考info grub的帮助内容或登陆<code>http://www.gnu.org/software/grub/grub.html</code>参考官方说明对grub更深了解。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>tcpdump</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">tcpdump</a>
+<ul>
+<li><a href="#toc_1.1">TCP/IP协议</a>
+<li><a href="#toc_1.2">tcpdump使用范例</a>
+<li><a href="#toc_1.3">TCPDUMP的使用</a>
+<ul>
+<li><a href="#toc_1.3.1">命令格式</a>
+<li><a href="#toc_1.3.2">选项介绍</a>
+<li><a href="#toc_1.3.3">表达式</a>
+<li><a href="#toc_1.3.4">例子</a>
+<li><a href="#toc_1.3.5">输出结果介绍</a>
+<li><a href="#toc_1.3.6">wireshark查看</a>
+<li><a href="#toc_1.3.7">其他</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">tcpdump</h1>
+
+<h2 id="toc_1.1">TCP/IP协议</h2>
+
+<ul>
+<li>
+<a href="tcpdump_TCP_three-way_handshake.html">tcpdump查看三次握手</a>
+
+<li>
+<a href="TCP_ACK.html">TCP报文到达确认（ACK）机制</a>
+
+<li>
+TCP协议的一些认识及实践:<a href="http://www.cnblogs.com/geekma/archive/2012/10/23/2735944.html">http://www.cnblogs.com/geekma/archive/2012/10/23/2735944.html</a>
+
+</ul>
+
+
+<h2 id="toc_1.2">tcpdump使用范例</h2>
+<pre class="brush:bash">
+# 调试keepalived/lvs时，抓包分析：
+# 把125.70.148.77改成你自己的IP，避免远程登录的流量。
+tcpdump -n -i bond0 -s 0 -l -w - 'not host 125.70.148.77'|strings|more
+tcpdump -n -i bond0 -s 0 -l -w - 'not host 125.70.148.77'
+tcpdump -n -i bond0 -s 0 -l 'not host 125.69.149.152'|grep VRRP
+
+# 截取eth1，端口号6881的tcp数据包。数据文件保存为test.pcap。
+tcpdump -w test.pcap -i eth1 tcp port 6881
+
+# 同时截取udp端口号33210和33220的数据包呢？
+tcpdump -w test.pcap -i eth1 tcp port 6881 or udp \( 33210 or 33220 \)
+
+# 显示指定目标ip的、端口不为80、2222的流量
+tcpdump -i eth0 'dst 118.123.242 and ! port 80 and ! port 2222'
+tcpdump -i eth0 'dst 118.123.242 and ( port 80 or port 8008)'
+
+# 读取数据包文件(-nn不做名称转换,r读取包)：
+tcpdump -nnr test.pcap
+# 添加 -tttt 选项使时间戳格式更加可读。
+tcpdump -ttttnnr test.pcap
+# 读取数据包中所有内容，转换为文本形式
+tcpdump -ttttnnr test.pcap -w -|strings|more
+
+cat test.pcap|tcpdump -ttttnr -|more
+cat test.pcap|tcpdump -s 0 -X -ttttnr -|more
+
+# 显示数据内容
+tcpdump -s 0 -X -ttttnnr test.pcap|more
+
+# 有些版本的tcpdump允许指定端口范围,下述指令为针对一定端口范围截取数据。
+tcpdump tcp portrange 20-24
+
+# 显示所有非80、2222的tcp流量：
+tcpdump -i eth0 'tcp and ! port 80 and ! port 2222'
+
+# 显示dns流量：
+tcpdump -i eth1 'udp port 53'
+
+# 显示所有ipv4 http、端口为80的流量?
+tcpdump 'tcp port 80 and (((ip[2:2] - ((ip[0]&amp;0xf)&lt;&lt;2)) - ((tcp[12]&amp;0xf0)&gt;&gt;2)) != 0)'
+
+# 显示所有到202.54.1.5的FTP会话：
+tcpdump -i eth1 'dst 202.54.1.5 and (port 21 or 20)'
+
+# 显示192.168.1.5的所有http会话：
+tcpdump -ni eth0 'dst 192.168.1.5 and tcp and port http'
+
+# 记录到文件(记录可使用wireshark查看)：
+tcpdump -n -i eth1 -s 0 -w output.txt src or dst port 80
+
+# 抓取nginx与fcgi之间的数据包：
+tcpdump -i lo -w - -s 1500 '(src host 127.0.0.1 and (src or dst port 8004  or src or dst port 8005))'|strings
+
+# 指定主机、端口
+tcpdump -n -s 0 -i wlan0 -w - 'host 115.182.65.216 and port 8005'
+tcpdump -n -s 0 -i wlan0 -w - 'host 118.123.242.105 and port 9099'
+tcpdump -nn -s 0 -i eth0 -w tcp5010_20131021_1.tcpdump tcp port 5010
+</pre>
+
+<ul>
+<li>
+<a href="RunTcpdump.sh.html">RunTcpdump.sh</a>
+
+</ul>
+
+<h2 id="toc_1.3">TCPDUMP的使用</h2>
+
+<h3 id="toc_1.3.1">命令格式</h3>
+
+<ul>
+<li>
+tcpdump采用命令行方式，它的命令格式为：
+<pre>
+  tcpdump [ -adeflnNOpqStvx ] [ -c 数量 ] [ -F 文件名 ]
+          [ -i 网络接口 ] [ -r 文件名] [ -s snaplen ]
+          [ -T 类型 ] [ -w 文件名 ] [表达式 ]
+</pre>
+
+</ul>
+
+<h3 id="toc_1.3.2">选项介绍</h3>
+
+<table>
+<tr>
+<th>
+选项
+</th>
+<th>
+说明
+</th>
+</tr>
+<tr>
+<td>
+-a
+</td>
+<td>
+将网络地址和广播地址转变成名字；
+</td>
+</tr>
+<tr>
+<td>
+-d
+</td>
+<td>
+将匹配信息包的代码以人们能够理解的汇编格式给出；
+</td>
+</tr>
+<tr>
+<td>
+-dd
+</td>
+<td>
+将匹配信息包的代码以c语言程序段的格式给出；
+</td>
+</tr>
+<tr>
+<td>
+-ddd
+</td>
+<td>
+将匹配信息包的代码以十进制的形式给出；
+</td>
+</tr>
+<tr>
+<td>
+-e
+</td>
+<td>
+在输出行打印出数据链路层的头部信息；
+</td>
+</tr>
+<tr>
+<td>
+-f
+</td>
+<td>
+将外部的Internet地址以数字的形式打印出来；
+</td>
+</tr>
+<tr>
+<td>
+-l
+</td>
+<td>
+使标准输出变为缓冲行形式；
+</td>
+</tr>
+<tr>
+<td>
+-n
+</td>
+<td>
+不把网络地址转换成名字；
+</td>
+</tr>
+<tr>
+<td>
+-t
+</td>
+<td>
+在输出的每一行不打印时间戳；
+</td>
+</tr>
+<tr>
+<td>
+-v
+</td>
+<td>
+输出一个稍微详细的信息，例如在ip包中可以包括ttl和服务类型的信息；
+</td>
+</tr>
+<tr>
+<td>
+-vv
+</td>
+<td>
+输出详细的报文信息；
+</td>
+</tr>
+<tr>
+<td>
+-c
+</td>
+<td>
+在收到指定的包的数目后，tcpdump就会停止；
+</td>
+</tr>
+<tr>
+<td>
+-F
+</td>
+<td>
+从指定的文件中读取表达式,忽略其它的表达式；
+</td>
+</tr>
+<tr>
+<td>
+-i
+</td>
+<td>
+指定监听的网络接口；
+</td>
+</tr>
+<tr>
+<td>
+-r
+</td>
+<td>
+从指定的文件中读取包(这些包一般通过-w选项产生)；
+</td>
+</tr>
+<tr>
+<td>
+-w
+</td>
+<td>
+直接将包写入文件中，并不分析和打印出来；
+</td>
+</tr>
+<tr>
+<td>
+-T
+</td>
+<td>
+将监听到的包直接解释为指定的类型的报文，常见的类型有rpc(远程过程调用)和snmp(简单网络管理协议)
+</td>
+</tr>
+</table>
+
+<h3 id="toc_1.3.3">表达式</h3>
+
+<p>
+表达式是一个逻辑表达式，tcpdump利用它作为过滤报文的条件，如果一个报文满足表达式的条件，则这个报文将会被捕获。如果没有给出任何条件，则网络上所有的信息包将会
+被截获。
+</p>
+
+<p>
+在表达式中一般如下几种类型的关键字:
+</p>
+
+<ul>
+<li>
+类型:host,net,port
+
+</ul>
+
+<p>
+一种是关于类型的关键字，主要包括host，net，port, 例如 host 210.27.48.2，指明 210.27.48.2是一台主机，net 202.0.0.0 指明202.0.0.0是一个网络地址，port 23 指明端口号是23。如果没有指定类型，缺省的类型是host.
+</p>
+
+<ul>
+<li>
+传输方向:src,dst,dst or src,dst and src
+
+</ul>
+
+<p>
+第二种是确定传输方向的关键字，主要包括src,dst,dst or src,dst and src,这些关键字指明了传输的方向。举例说明，src 210.27.48.2 ,指明ip包中源地址是210.27.48.2 , dst net 202.0.0.0 指明目的网络地址是202.0.0.0 。如果没有指明方向关键字，则缺省是src or dst关键字。
+</p>
+
+<ul>
+<li>
+协议：fddi,ip,arp,rarp,tcp,udp等
+
+</ul>
+<p>
+第三种是协议的关键字，主要包括fddi,ip ,arp,rarp,tcp,udp等类型。Fddi指明是在FDDI(分布式光纤数据接口网络)上的特定的网络协议，实际上它是"ether"的别名，fddi和e
+ther具有类似的源地址和目的地址，所以可以将fddi协议包当作ether的包进行处理和分析。
+</p>
+
+<p>
+其他的几个关键字就是指明了监听的包的协议内容。如果没有指定任何协议，则tcpdump将会监听所有协议的信息包。
+</p>
+
+<ul>
+<li>
+其他重要关键字
+
+</ul>
+<p>
+除了这三种类型的关键字之外，其他重要的关键字如下：gateway, broadcast,less,greater。
+</p>
+
+<ul>
+<li>
+逻辑运算符
+
+</ul>
+<p>
+还有三种逻辑运算，
+</p>
+<ol>
+<li>
+非运算 'not ' '! '
+
+<li>
+与运算 'and','&amp;&amp;'
+
+<li>
+或运算 'or' ,'||'
+
+</ol>
+
+<p>
+这些关键字可以组合起来构成强大的组合条件来满足人们的需要，下面举几个例子来说明。
+</p>
+
+<h3 id="toc_1.3.4">例子</h3>
+
+<ul>
+<li>
+想要截获所有210.27.48.1 的主机收到的和发出的所有的数据包：
+
+</ul>
+<p>
+<code>tcpdump host 210.27.48.1</code>
+</p>
+
+<ul>
+<li>
+想要截获主机210.27.48.1 和主机210.27.48.2 或210.27.48.3的通信，使用命令
+
+</ul>
+<p>
+<code>tcpdump host 210.27.48.1 and \(210.27.48.2 or 210.27.48.3\)</code>
+</p>
+
+<ol>
+<li>
+如果想要获取主机210.27.48.1除了和主机210.27.48.2之外所有主机通信的ip包，使用命令：
+
+</ol>
+<p>
+<code>tcpdump ip host 210.27.48.1 and ! 210.27.48.2</code>
+</p>
+
+<ol>
+<li>
+如果想要获取主机210.27.48.1接收或发出的telnet包，使用如下命令：
+
+</ol>
+<p>
+<code>tcpdump tcp port 23 host 210.27.48.1</code>
+</p>
+
+<h3 id="toc_1.3.5">输出结果介绍</h3>
+
+<p>
+下面我们介绍几种典型的tcpdump命令的输出信息
+</p>
+
+<ul>
+<li>
+数据链路层头信息
+
+</ul>
+<p>
+使用命令<code>tcpdump --e host ice</code>
+</p>
+
+<p>
+ice 是一台装有linux的主机，她的MAC地址是0:90:27:58:af:1a
+</p>
+
+<p>
+H219是一台装有SOLARIC的SUN工作站，它的MAC地址是8:0:20:79:5b:46
+</p>
+
+<p>
+命令的输出结果如下所示：
+</p>
+
+<p>
+21:50:12.847509 eth0 &lt; 8:0:20:79:5b:46 0:90:27:58:af:1a ip 60: h219.33357 &gt; ice.telnet 0:0(0) ack 22535 win 8760 (DF)
+</p>
+
+<p>
+分析：
+</p>
+<ol>
+<li>
+<code>21:50:12</code> 是显示的时间
+
+<li>
+<code>847509</code> 是ID号
+
+<li>
+<code>eth0 &lt;</code> 表示从网络接口eth0 接受该数据包
+
+<li>
+<code>eth0 &gt;</code> 表示从网络接口设备发送数据包
+
+<li>
+<code>8:0:20:79:5b:46</code> 是主机H219的MAC地址,它表明是从源地址H219发来的数据包
+
+<li>
+<code>0:90:27:58:af:1a</code> 是主机ICE的MAC地址,表示该数据包的目的地址是ICE
+
+<li>
+<code>ip</code> 是表明该数据包是IP数据包,
+
+<li>
+<code>60</code> 是数据包的长度, 
+
+<li>
+<code>h219.33357 &gt; ice.telnet</code> 表明该数据包是从主机H219的33357端口发往主机ICE的TELNET(23)端口
+
+<li>
+<code>ack 22535</code> 表明对序列号是222535的包进行响应
+
+<li>
+<code>win 8760</code> 表明发送窗口的大小是8760
+
+</ol>
+
+<ul>
+<li>
+ ARP包的TCPDUMP输出信息
+
+</ul>
+
+<p>
+使用命令#tcpdump arp
+</p>
+
+<p>
+得到的输出结果是：
+</p>
+<pre>
+22:32:42.802509 eth0 &gt; arp who-has route tell ice (0:90:27:58:af:1a)
+22:32:42.802902 eth0 &lt; arp reply route is-at 0:90:27:12:10:66 (0:90:27:58:af:1a)
+</pre>
+
+<p>
+分析: 
+</p>
+<ol>
+<li>
+<code>22:32:42</code> 时间戳
+
+<li>
+<code>802509</code> ID号
+
+<li>
+<code>eth0 &gt;</code> 表明从主机发出该数据包
+
+<li>
+<code>arp</code> 表明是ARP请求包
+
+<li>
+<code>who-has route tell ice</code> 表明是主机ICE请求主机ROUTE的MAC地址
+
+<li>
+<code>0:90:27:58:af:1a</code> 是主机ICE的MAC地址。
+
+</ol>
+
+<ul>
+<li>
+TCP包的输出信息
+
+</ul>
+<p>
+用TCPDUMP捕获的TCP包的一般输出信息是：
+</p>
+
+<p>
+<code>src &gt; dst: flags data-seqno ack window urgent options</code>
+</p>
+
+<ol>
+<li>
+<code>src &gt; dst</code> 表明从源地址到目的地址
+
+<li>
+<code>flags</code> 是TCP包中的标志信息,S 是SYN标志, F(FIN), P(PUSH) , R(RST) "."(没有标记)
+
+<li>
+<code>data-seqno</code> 是数据包中的数据的顺序号
+
+<li>
+<code>ack</code> 是下次期望的顺序号
+
+<li>
+<code>window</code> 是接收缓存的窗口大小
+
+<li>
+<code>urgent</code> 表明数据包中是否有紧急指针
+
+<li>
+<code>options</code> 是选项
+
+</ol>
+
+<ul>
+<li>
+UDP包的输出信息
+
+</ul>
+<p>
+用TCPDUMP捕获的UDP包的一般输出信息是：
+</p>
+
+<p>
+<code>route.port1 &gt; ice.port2: udp lenth</code>
+</p>
+
+<p>
+UDP十分简单，上面的输出行表明从主机ROUTE的port1端口发出的一个UDP数据包到主机ICE的port2端口，类型是UDP， 包的长度是lenth
+</p>
+ 
+
+<h3 id="toc_1.3.6">wireshark查看</h3>
+
+<p>
+要让wireshark能分析tcpdump的包，关键的地方是 -s 参数， 还有要保存为-w文件，例如下面的例子：
+</p>
+
+<pre class="brush:bash">
+./tcpdump -i eth0 -s 0 -w SuccessC2Server.pcap host 192.168.1.20 # 抓该主机的所有包,在wireshark中过滤
+./tcpdump -i eth0 'dst host 239.33.24.212' -w raw.pcap           # 抓包的时候就进行过滤
+</pre>
+
+<p>
+wireshark的过滤，很简单的，比如:
+</p>
+<pre>
+tcp.port eq 5541  
+ip.addr eq 192.168.2.1
+</pre>
+
+<p>
+过滤出来后， 用fllow tcp 查看包的内容。
+</p>
+
+<h3 id="toc_1.3.7">其他</h3>
+
+<ul>
+<li>
+device eth0/eth1 entered promiscuous mode
+
+<ul>
+<li>
+message日志中提示：
+<pre>
+kernel: device eth0 entered promiscuous mode
+kernel: device eth0 left promiscuous mode
+</pre>
+
+<li>
+网卡进入了混杂模式。一般对通信进行抓包分析时进入混杂模式（tcpdump）。（默认网卡启用了混杂模式的）
+
+<li>
+关闭混杂模式：<code>ifconfig eth0 -promisc</code>
+
+<li>
+启用混杂模式：<code>ifconfig eth0 promisc</code>
+
+</ul>
+<li>
+TCP协议的KeepAlive机制与HeartBeat心跳包:<a href="http://www.nowamagic.net/academy/detail/23350382">http://www.nowamagic.net/academy/detail/23350382</a>
+
+<li>
+TCP Keepalive HOWTO:<a href="http://www.tldp.org/HOWTO/html_single/TCP-Keepalive-HOWTO/">http://www.tldp.org/HOWTO/html_single/TCP-Keepalive-HOWTO/</a>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

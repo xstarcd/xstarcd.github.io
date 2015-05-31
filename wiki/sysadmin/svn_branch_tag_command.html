@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>svn命令行创建和删除分支和tags</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>svn命令行创建和删除分支和tags</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">创建分支</a>
+<li><a href="#toc_0.2">合并一个分支到主干</a>
+<li><a href="#toc_0.3">两个分支合并</a>
+<li><a href="#toc_0.4">合并主干上的最新代码到分支上</a>
+<li><a href="#toc_0.5">发布</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+原文：
+
+<ul>
+<li>
+<a href="http://blog.csdn.net/yangzhongxuan/article/details/7519948">http://blog.csdn.net/yangzhongxuan/article/details/7519948</a>
+
+<li>
+<a href="http://zccst.iteye.com/blog/1430823">http://zccst.iteye.com/blog/1430823</a>
+
+</ul>
+</ul>
+
+
+<h2 id="toc_0.1">创建分支</h2>
+
+<ul>
+<li>
+创建一个分支
+<pre class="brush:bash">
+svn copy svn://xx.com/repo/trunk svn://xx.com/repo/branches/TRY-something -m 'make branches TRY-something'
+</pre>
+
+</ul>
+
+<ul>
+<li>
+把工作目录转到分支
+<pre class="brush:bash">
+svn switch svn://xx.com/repo/branches/TRY-something
+</pre>
+
+</ul>
+
+<p>
+当然，也可以再转到主干: <code>svn switch svn://xx.com/repo/trunk</code>
+</p>
+
+
+<h2 id="toc_0.2">合并一个分支到主干</h2>
+
+<p>
+一旦分支上的开发结束，分支上的代码需要合并到主干。SVN中执行该操作需要在trunk的工作目录下进行。
+</p>
+
+<ul>
+<li>
+ 查找到分支版本
+
+<ul>
+<li>
+方法一：最后一个r11340就是创建分支时的reversion
+<pre class="brush:bash">
+cd branch
+svn log --stop-on-copy
+</pre>
+
+<li>
+方法二：
+<pre class="brush:bash">
+cd trunk
+svn -q --stop-on-copy 分支URL #这条命令会查询出自创建分支以后分支上的所有修改，最下面的那个版本号就是我们要找的版本号.
+
+#示例：
+svn log -q --stop-on-copy svn://192.168.1.177/tags/beta_2009_12_24
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+分支合并到主干
+<pre class="brush:bash">
+svn merge -r 分支版本号:HEAD 分支的URL   #HEAD为当前主干上的最新版本
+
+#示例：
+cd trunk
+svn merge -r 12:HEAD svn://192.168.1.177/tags/beta_2009_12_24
+
+cd trunk
+svn merge --reintegrate http://svn_server/xxx_repository/branches/br_feature001
+# 分支合并到主干中完成后应当删该分支，因为在SVN中该分支已经不能进行刷新也不能合并到主干。
+
+# 合并版本并将合并后的结果应用到现有的分支上
+svn -r 148:149 merge http://svn_server/xxx_repository/trunk
+</pre>
+
+</ul>
+
+<ul>
+<li>
+解决冲突：
+<pre class="brush:bash">
+svn st | grep ^C      # 查找合并时的冲突文件，手工解决冲突
+svn resolved filename # 告知svn冲突已解决
+svn commit -m ""      # 提示合并后的版本
+
+svn: Aborting commit: '/path/resources/noc' remains in conflict
+$ svn revert resources/noc
+Reverted 'resources/noc'
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">两个分支合并</h2>
+
+<p>
+两个分支合并可以拆分为一下两步：
+</p>
+
+<ul>
+<li>
+第一步：
+
+</ul>
+
+<p>
+197从旧主干引出，186打完tag，表示是新主干
+</p>
+
+<p>
+合并最新代码的意思是：将新主干与旧主干比对，并添加到197中。这样197既有自己的新增的代码，也同时有最新线上的代码。
+</p>
+<pre class="brush:bash">
+cd 197_Branch
+svn merge https://xxx.com/tags/project/project_Old_BL https://xxx.com/tags/project/project_New_BL
+svn ci -m 'merge 186 trunk'
+</pre>
+
+<ul>
+<li>
+第二步：
+
+</ul>
+
+<p>
+但是后来，其他人又向186提了代码，所以还需要将186分支（即打了tag后的186，打了tag前的186已是主干）合并至197中。
+</p>
+
+<p>
+合并办法：找出186分支，比对与新主干之间的差别，并添加到197中。这样197就有最新的全部代码了。
+</p>
+<pre class="brush:bash">
+cd 197_Branch
+svn merge https://xxx.com/tags/project/project_New_BL https:/xxx.com/project/branches/project/186_Branch
+svn ci -m 'merge 186 branch'
+</pre>
+
+
+<h2 id="toc_0.4">合并主干上的最新代码到分支上</h2>
+
+<pre class="brush:bash">
+cd br_feature001
+svn merge http://svn_server/xxx_repository/trunk
+
+# 如果需要预览该刷新操作，可以使用svn mergeinfo命令，如：
+svn mergeinfo http://svn_server/xxx_repository/trunk --show-revs eligible
+
+# 或使用`svn merge --dry-run`选项以获取更为详尽的信息。
+</pre>
+
+
+<h2 id="toc_0.5">发布</h2>
+
+<p>
+产品开发已经基本完成，并且通过很严格的测试，这时候我们就想发布给客户使用，发布我们的1.0版本。
+</p>
+
+<p>
+给当前主干打个标签，并且这个标签不再改动了，但是实际上标签和分支是一个意思，你可以在标签上继续做改动，但这不推荐。
+</p>
+
+<pre class="brush:bash">
+# 建立tags
+svn copy svn://xx.com/repo/trunk svn://xx.com/repo/tags/RB-1.0 
+svn copy http://svn_server/xxx_repository/trunk http://svn_server/xxx_repository/tags/release-1.0 -m "1.0 released"
+
+# 删除分支或tags
+svn rm http://svn_server/xxx_repository/branches/br_feature001
+svn rm http://svn_server/xxx_repository/tags/release-1.0
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

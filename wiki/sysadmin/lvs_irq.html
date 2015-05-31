@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>lvs/irq</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>lvs/irq</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">LVS网卡软中断配置</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+lvs的性能问题，软中断耗尽CPU单核后到达处理极限:<a href="http://zh.linuxvirtualserver.org/node/2500">http://zh.linuxvirtualserver.org/node/2500</a>
+
+<ul>
+<li>
+瓶颈现象:当压力较大时，Lvs服务器CPU的其中一个核使用率达到100%（处理软中断）。
+
+<ul>
+<li>
+当Lvs服务器处理软中断的那个核使用率达到100%，就到达系统处理上限。
+
+<li>
+占用CPU的是进程“ksoftirqd”，它未能使用到多核。
+
+</ul>
+<li>
+做双网卡绑定，然后调试内核SMP，中断主要是来自网卡的，不是LVS本身。需要把2个网卡来的IRQ均衡在双核CPU上面。
+
+</ul>
+</ul>
+
+<ul>
+<li>
+Google RPS和RFS: <a href="http://www.igigo.net/archives/204">http://www.igigo.net/archives/204</a>
+
+<ul>
+<li>
+RPS 全称是 <code>Receive Packet Steering</code>, 这是Google工程师 Tom Herbert (therbert@google.com )提交的内核补丁, 在2.6.35进入Linux内核. 这个patch采用软件模拟的方式，实现了多队列网卡所提供的功能，分散了在多CPU系统上数据接收时的负载, 把软中断分到各个CPU处理，而不需要硬件支持，大大提高了网络性能。
+
+<li>
+RFS 全称是 <code>Receive Flow Steering</code>, 这也是Tom提交的内核补丁，它是用来配合RPS补丁使用的，是RPS补丁的扩展补丁，它把接收的数据包送达应用所在的CPU上，提高cache的命中率。
+
+<li>
+这两个补丁往往都是一起设置，来达到最好的优化效果, 主要是针对单队列网卡多CPU环境(多队列多重中断的网卡也可以使用该补丁的功能，但多队列多重中断网卡有更好的选择:SMP IRQ affinity)
+
+<li>
+RPS cpu bitmap测试分类: 
+
+<ul>
+<li>
+0(不开启rps功能)
+
+<li>
+one cpu per queue(每队列绑定到1个CPU核上)
+
+<li>
+all cpus per queue(每队列绑定到所有cpu核上)
+
+</ul>
+<li>
+设置位置
+
+<ul>
+<li>
+/sys/class/net/eth0/queues/rx-0/rps_cpus
+
+<li>
+/sys/class/net/eth0/queues/rx-0/rps_flow_cnt
+
+<li>
+/proc/sys/net/core/rps_sock_flow_entries
+
+</ul>
+</ul>
+</ul>
+
+<ul>
+<li>
+SMP IRQ affinity: <a href="http://www.igigo.net/archives/231">http://www.igigo.net/archives/231</a>
+
+<ul>
+<li>
+Linux 2.4内核之后引入了将特定中断绑定到指定的CPU的技术，称为SMP IRQ affinity。
+
+<li>
+/proc/irq/IRQ#/smp_affinity
+
+<ul>
+<li>
+如把44号中断绑定到前4个CPU(CPU0-3)上面：
+
+<li>
+<code>echo f &gt; /proc/irq/44/smp_affinity</code>
+
+</ul>
+<li>
+/proc/irq/IRQ#/smp_affinity_list
+
+<ul>
+<li>
+效果与/proc/irq/IRQ#/smp_affinity是一致的，它们两者是联动关系
+
+<li>
+<code>echo \(cpuindex1-\)cpuindex2 &gt;/proc/irq/IRQ#/smp_affinity_list</code> 
+
+<li>
+示例(把44号中断绑定到前4个CPU(CPU0-3)上面)
+
+<li>
+<code>echo 0-3 &gt; /proc/irq/44/smp_affinity_list</code>
+
+</ul>
+<li>
+/proc/irq/default_smp_affinity
+
+<li>
+指定了默认情况下未激活的IRQ的中断亲和掩码(affinity mask).一旦IRQ被激活，它将被设置为默认的设置(即default_smp_affinity中记录的设置). 该文件能被修改. 默认设置是0xffffffff.
+
+</ul>
+</ul>
+
+
+<h2 id="toc_0.1">LVS网卡软中断配置</h2>
+
+<p>
+原文：<a href="http://jasonwu.me/2012/09/08/adjust_nic_irq_for_lvs.html">http://jasonwu.me/2012/09/08/adjust_nic_irq_for_lvs.html</a>
+</p>
+
+
+<ul>
+<li>
+第一步:将内核升级到2.6.32以上，升级过程略去
+
+</ul>
+
+<p>
+这个主要是因为2.6.18还不支持RPS这个特性，具体可以参看：
+</p>
+<ul>
+<li>
+<a href="http://lwn.net/Articles/328339/">http://lwn.net/Articles/328339/</a>
+
+<li>
+<a href="http://lwn.net/Articles/378617/">http://lwn.net/Articles/378617/</a>
+
+<li>
+<a href="http://lwn.net/Articles/328339/">http://lwn.net/Articles/328339/</a>
+
+<li>
+<a href="http://lwn.net/Articles/378617/">http://lwn.net/Articles/378617/</a>
+
+</ul>
+
+<ul>
+<li>
+第二步：Broadcom网卡禁用msi
+
+</ul>
+
+<p>
+如果你的服务器网卡和我一样是Broadcom的，那么你就得做这一步，不是请跳到第三步 
+</p>
+
+<pre>
+sudo lspci|grep Ethernet
+02:00.0 Ethernet controller: Marvell Technology Group Ltd. 88E8057 PCI-E Gigabit Ethernet Controller (rev 10)
+</pre>
+<p>
+在/etc/modprobe.conf加上下面这行：
+</p>
+
+<p>
+<code>options bnx2 disable_msi=1</code>
+</p>
+
+<p>
+改完这个重新加载下网卡模块<code>modprobe -r bnx2;modprobe bnx2</code>或者重新启动服务器。
+</p>
+
+<p>
+这个主要是因为broadcom网卡开启msi后，会造成后面的修改smp_affinity丌生效，intel的网卡没这个问题。
+</p>
+
+<p>
+关于MSI是什么:<a href="http://lwn.net/Articles/44139/">http://lwn.net/Articles/44139/</a>
+</p>
+
+<ul>
+<li>
+第三步：停用irqbalance
+
+</ul>
+
+<p>
+<code>/etc/init.d/irqbalance stop</code>
+</p>
+
+<p>
+这个是一个自动调整中断的工具，有兴趣的可以看下irqbalance的官方网站： <a href="http://irqbalance.org/">http://irqbalance.org/</a>
+</p>
+
+<ul>
+<li>
+第四步：设置smp_affinity
+
+</ul>
+
+<p>
+相看网卡的中断号：
+</p>
+<pre>
+cat /proc/interrupts 
+
+           CPU0       CPU1       
+  0:         42          0   IO-APIC-edge      timer
+  1:      92972      95568   IO-APIC-edge      i8042
+  7:          0          0   IO-APIC-edge      parport0
+  8:          1          0   IO-APIC-edge      rtc0
+  9:          0          0   IO-APIC-fasteoi   acpi
+ 14:          0          0   IO-APIC-edge      ata_piix
+ 15:          0          0   IO-APIC-edge      ata_piix
+ 16:          0          0   IO-APIC-fasteoi   uhci_hcd:usb5
+ 18:          0          0   IO-APIC-fasteoi   uhci_hcd:usb4
+ 19:     777725     819541   IO-APIC-fasteoi   ata_piix, uhci_hcd:usb3
+ 23:      49276      50731   IO-APIC-fasteoi   ehci_hcd:usb1, uhci_hcd:usb2
+ 40:          0          0   PCI-MSI-edge      PCIe PME, pciehp
+ 41:          0          0   PCI-MSI-edge      PCIe PME, pciehp
+ 42:    1853046         12   PCI-MSI-edge      eth0
+ 43:    1512907    1627996   PCI-MSI-edge      i915
+...
+</pre>
+<p>
+图中网卡eth0的中断号为42。
+将各网卡对应中断号的smp_affinity(<code>/proc/irq/中断号/smp_affinity</code>)设置为 <code>ff</code> ，修改完成后就可以开启lvs了，现在中断应该均分到各个核心上了。
+</p>
+
+<p>
+smp_affinity这个参数是怎么得来的？ 可参考下面链接：
+<a href="http://www.cs.uwaterloo.ca/~brecht/servers/apic/SMP-affinity.txt">http://www.cs.uwaterloo.ca/~brecht/servers/apic/SMP-affinity.txt</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

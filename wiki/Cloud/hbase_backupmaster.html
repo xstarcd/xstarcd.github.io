@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>hbase增加backup master</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">hbase增加backup master</a>
+</ul>
+</div>
+
+<h1 id="toc_1">hbase增加backup master</h1>
+
+<p>
+原文：<a href="http://www.oratea.net/?p=1177">http://www.oratea.net/?p=1177</a>
+</p>
+
+<p>
+为了增加hbase集群的可用性，可以为hbase增加多个backup master。当master挂掉后，backup master可以自动接管整个hbase的集群。
+</p>
+
+<p>
+配置backup master的方式是在hbase的conf下增加文件backup-masters，在该文件里面增加backup master的机器列表，每台机器一条记录。
+</p>
+
+<p>
+如：
+</p>
+<ul>
+<li>
+backup-masters
+
+</ul>
+
+<pre>
+hadoop02
+</pre>
+
+<p>
+整个集群启动后，在hadoop02的机器上也会启动hmaster的进程：
+</p>
+
+<pre>
+4301 Jps
+4175 HMaster
+</pre>
+
+<p>
+查看hadoop02上该master的log，可以看到如下的信息：
+</p>
+
+<pre>
+2012-04-10 05:53:10,120 INFO org.apache.hadoop.hbase.master.ActiveMasterManager: Another master is the active master, 
+   hadoop01,60000,1334008045435; waiting to become the next active master
+</pre>
+
+<p>
+该信息说明，当前hbase集群有活动的master节点，该master节点为hadoop01，所以hadoop02节点开始等待，直到hadoop01上的master挂掉。hadoop02会变成新的hmaster节点。
+</p>
+
+<p>
+当当前的master挂掉后，backup master会接管，进而变成新的active master
+</p>
+
+<pre>
+2012-04-10 06:48:52,436 DEBUG org.apache.hadoop.hbase.master.ActiveMasterManager: No master available. Notifying waiting threads
+2012-04-10 06:48:52,438 INFO org.apache.hadoop.hbase.master.ActiveMasterManager: Master=hadoop02,60000,1334011638701
+2012-04-10 06:48:52,443 DEBUG org.apache.hadoop.hbase.master.ActiveMasterManager: A master is now available
+</pre>
+
+<ul>
+<li>
+启动的命令
+
+</ul>
+
+<pre class="brush:bash">
+# 从start-hbase.sh里找到，这应该也是hbase的启动顺序？
+
+$bin/hbase-daemons.sh --config "${HBASE_CONF_DIR}" start zookeeper
+$bin/hbase-daemon.sh --config "${HBASE_CONF_DIR}" start master
+
+$bin/hbase-daemons.sh --config "${HBASE_CONF_DIR}" --hosts "${HBASE_REGIONSERVERS}" start regionserver
+$bin/hbase-daemons.sh --config "${HBASE_CONF_DIR}" --hosts "${HBASE_BACKUP_MASTERS}" start master-backup
+
+# 手工、本地启动master?
+$bin/hbase-daemon.sh --config "${HBASE_CONF_DIR}" start master
+$bin/hbase-daemon.sh --config "${HBASE_CONF_DIR}" start master --backup
+
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>awk_tips</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>awk_tips</h1>
+
+<ul>
+<li>
+简单统计
+
+<ul>
+<li>
+目标：过滤i.txt中的空行、输出错误(非OK结束)的行、并统计错误行数量以exitstatus输出：
+
+<li>
+i.txt范本：
+<pre>
+
+   physicaldrive 1I:1:1 (port 1I:box 1:bay 1, 146 GB): OK
+   physicaldrive 1I:1:2 (port 1I:box 1:bay 2, 146 GB): Failed
+
+</pre>
+
+<li>
+处理命令
+<pre class="brush:bash">
+cat i.txt |awk 'BEGIN{err=0;}{if($0~/.*physicaldrive.*/){if($NF!="OK"){print "Failed:"$0;err++;}}}END{exit err;}'
+# 错误记数在退出状态里面：
+echo $?
+</pre>
+
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

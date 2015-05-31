@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>xargs - 通过管道运行命令</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>xargs - 通过管道运行命令</h1>
+
+<ul>
+<li>
+范例
+<pre class="brush:bash">
+ls | xargs -P 2 -I% echo "This: [%]"
+
+# 查找/tmp目录中文件名为core的文件，并删除。
+# 使用find使用-print0选项将输入用null分隔，避免文件名中包含空格造成处理出错
+find /tmp -name core -type f -print0 | xargs -0 /bin/rm -f
+find /tmp -depth -name core -type f -delete
+
+# 使用sh -c执行复杂的处理
+ls / |xargs -I% sh -c 'n=%;echo "[$n]"'
+
+# 查看所有java进程的线程数量
+jps |xargs -I{} sh -c 'echo -n {} threads:;ps auxTH|grep -v grep|grep $(echo {}|awk "{print \$1}")|wc -l'
+jps |xargs -I{} sh -c 'echo -n {} threads:;p=$(echo {}|awk "{print \$1}");ps auxTH|grep -v grep|grep $p|wc -l'
+
+1373 Bootstrap threads:215
+15723 Jps threads:0
+9472 Application threads:23
+9526 Application threads:25
+9495 NettyNetworkServerMain threads:259
+</pre>
+
+</ul>
+
+<ul>
+<li>
+常用参数
+
+<ul>
+<li>
+<code>-a file</code>:从文件读取输入:<code>xargs -a a.txt echo</code>
+
+<li>
+<code>-P max-procs</code>:同时运行进程数，缺省为1个，指定0表示尽可能多
+
+<li>
+<code>-I replace-str</code>:使用replace-str来引用输入(替换)
+
+<li>
+<code>-L max-lines</code>:一次从标准输入读取的个数
+
+<li>
+<code>-0</code>或<code>--null</code>:将输入按null字符分割(缺省使用换行分割)
+
+<li>
+<code>-d delim</code>:指定xargs分割字符
+
+<li>
+<code>-E eof-str</code>:当xargs分析到含有eof-str这个标志的时候就停止
+
+<li>
+<code>-n max-args</code>:一次使用的参数个数，缺省为1
+
+<li>
+<code>-p</code>:每次执行命令都交互式提示用户选择确认
+
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

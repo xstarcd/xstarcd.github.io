@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>批处理常用命令总结 - 批处理符号简介</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>批处理常用命令总结 - 批处理符号简介</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.0.1">回显屏蔽 @</a>
+<li><a href="#toc_0.0.2">重定向1 &gt;与&gt;&gt;</a>
+<li><a href="#toc_0.0.3">重定向2 &lt;</a>
+<li><a href="#toc_0.0.4">管道符号 |</a>
+<li><a href="#toc_0.0.5">转义符 ^</a>
+<li><a href="#toc_0.0.6">逻辑命令符</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h3 id="toc_0.0.1">回显屏蔽 @</h3>
+
+<p>
+表示不显示@后面的命令，在入侵过程中（例如使用批处理来格式化敌人的硬盘）自然不能让对方看到你使用的命令啦。
+</p>
+
+<p>
+@用法举例：通过运行批处理文件对比pause和@pause命令即可明了@的效果。
+</p>
+
+<h3 id="toc_0.0.2">重定向1 &gt;与&gt;&gt;</h3>
+
+<p>
+将输出信息重定向到指定的设备或文件。系统默认输出到显示器。
+</p>
+
+<p>
+如：<code>echo aaaaa&gt;a.txt</code> 即可将本在显示器上显示的信息aaaaa输出到文件a.txt中，屏幕上没有任何显示。如果文件a.txt本来已经存在，该命令将首先擦除a.txt中的所有信息，然后写入信息aaaaa；若a.txt本来就不存在，该命令即可新建一个a.txt文件，并写入信息aaaaa。
+</p>
+
+<p>
+echo aaaaa&gt;&gt;a.txt 类似于echo aaaaa&gt;a.txt。区别在于：如果a.txt本已存在，&gt;a.txt会擦除a.txt中的原有内容，而&gt;&gt;a.txt并不擦除原有内容，仅在a.txt文件的末尾添加信息aaaaa。a.txt不存在时，二者没有差别。
+</p>
+
+<h3 id="toc_0.0.3">重定向2 &lt;</h3>
+
+<p>
+将输入信息来源重定向为指定的设备或文件。系统默认从显示器读取输入信息。
+</p>
+
+<p>
+重定向使用举例：
+</p>
+<pre>
+=========================================
+@echo off
+echo abcdefg——这是文件a.txt中的信息&gt;a.txt
+echo 请任意输入字符，以回车结束：
+set /p ifo=
+cls
+echo 【 从屏幕获得的输入信息 】
+echo %ifo%
+set /p ifo=&lt;a.txt
+echo 【 从文件a.txt获得的输入信息 】
+echo %ifo%
+pause&gt;nul
+=========================================
+</pre>
+
+<p>
+读者观察命令与输出即可体会到重定向的功能和效果。
+</p>
+
+<h3 id="toc_0.0.4">管道符号 |</h3>
+
+<p>
+将管道符号前面命令的输出结果重定向输出到管道符号后面的命令中去，作为后面命令的输入。使用格式为：<code>command_1|command_2</code>
+</p>
+
+<p>
+管道符号使用举例：
+</p>
+<pre>
+=========================================
+@echo off
+echo aaaa&gt;a.txt
+del /p a.txt
+pause
+=========================================
+@echo off
+echo aaaa&gt;a.txt
+echo y|del /p a.txt
+pause
+=========================================
+</pre>
+
+<p>
+对比以上两个批处理执行结果，读者即可明白管道符的用法和效果。
+</p>
+
+<p>
+需要说明的是，上面del命令添加开关/p只是为了让读者明白管道符号的使用方法，实际删除文件时不加/p开关即可实现无提示直接删除。
+</p>
+
+<h3 id="toc_0.0.5">转义符 ^</h3>
+
+<p>
+将特殊符号转化为一般符号，即剥离特殊符号的特殊地位。特殊符号指：<code>| &amp; &gt; &lt;</code>
+</p>
+
+<p>
+比如，如果我们想输出符号“&gt;”，直接用命令 echo &gt; 是不行的，必须修改为 echo ^&gt; 。其余几个特殊符号类似需要有同样的处理。
+</p>
+
+<p>
+转义字符使用举例：
+</p>
+<pre>
+=========================================
+@echo off
+echo aaaa&gt;a.txt
+echo 第一句echo执行完毕
+echo aaaa^&gt;a.txt
+echo 第二句echo执行完毕
+pause
+=========================================
+</pre>
+
+<p>
+比较上面的两句echo，第一句echo将信息aaaa输出到了文件a.txt，而第二句echo则在直接屏幕上显示除aaaa&gt;a.txt
+</p>
+
+<h3 id="toc_0.0.6">逻辑命令符</h3>
+<p>
+逻辑命令符包括：<code>&amp;、&amp;&amp;、||</code>
+</p>
+
+<ul>
+<li>
+<code>&amp;</code>  -无条件执行&amp;符号后面的命令；
+
+<li>
+<code>&amp;&amp;</code> -当&amp;&amp;前面的命令成功执行时，执行&amp;&amp;后面的命令，否则不执行；
+
+<li>
+<code>||</code> -当||前面的命令失败时，执行||后面的命令，否则不执行。
+<pre>
+=========================================
+@echo off
+echo ^|^|
+reg add HKCU /v try /f||echo **成功**
+reg add HKCU1 /v try /f||echo **失败**
+echo ^&amp;^&amp;
+reg delete HKCU /v try /f&amp;&amp;echo **成功**
+reg delete HKCU /v try /f&amp;&amp;echo **失败**
+echo ^&amp;
+reg delete HKCU /v try /f&amp;echo **成功**
+reg delete HKCU /v try /f&amp;echo **失败**
+pause
+=========================================
+</pre>
+
+</ul>
+
+<p>
+执行reg add或reg delete后，系统会给出执行结果；我们通过echo命令也给出了“执行结果”。对比系统和我们自己给出的结果，既可以验证逻辑命令的判断机理。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>OpenSSL</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">OpenSSL</a>
+<ul>
+<li><a href="#toc_1.1">私钥及证书</a>
+<li><a href="#toc_1.2">文件加密</a>
+<li><a href="#toc_1.3">产生随机密语</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">OpenSSL</h1>
+
+<h2 id="toc_1.1">私钥及证书</h2>
+
+<ul>
+<li>
+生成普通私钥 <code>openssl genrsa -out privatekey.key (1024)</code>
+
+<li>
+生成带加密口令的密钥 <code>openssl genrsa -des3 -out privatekey.key (1024)</code>
+
+<li>
+加密算法
+
+<ul>
+<li>
+des encrypt the generated key with DES in cbc mode
+
+<li>
+des3 encrypt the generated key with DES in ede cbc mode (168 bit key)
+
+<li>
+aes128, -aes192, -aes256 encrypt PEM output with cbc aes
+
+</ul>
+<li>
+去除密钥的口令 <code>openssl rsa -in privatekey.key</code>
+
+<li>
+通过私钥生成证书 <code>openssl req -new -x509 -key privatekey.key -out cacert.crt (-days 1095)</code>
+
+<li>
+通过私钥生成公钥 <code>openssl rsq -in privatekey.key -pubout -out pubkey.key</code>
+
+<li>
+得到DH <code>openssl dhparam -out dh1024.pem (1024)</code>
+
+<li>
+显示模式
+<pre>
+    openssl x509 -in privekey.crt -noout -text -modulus
+    openssl rsa -in privatekey-passwd.key -noout -text -modulus
+</pre>
+
+<li>
+申请证书 <code>openssl ca -in privatekey-passwd.crt -out privatekey-passwd.csr -cert privatekey-passwd.crt -keyfile privatekey-passwd.key</code>
+
+</ul>
+
+<h2 id="toc_1.2">文件加密</h2>
+
+<ul>
+<li>
+二进制文件保护(文件内容加密)
+
+<ul>
+<li>
+要使用64位编码打包二进制文件成文本文件，输入：
+    <code>openssl base64 &lt; filename.bin &gt; filename.txt</code>
+
+<li>
+要打开64位编码的文本文件，输入：
+    <code>openssl base64 -d &lt; filename.txt &gt; filename.bin</code>
+
+<li>
+注意OpenSSL不会关心文件扩展名。
+
+<li>
+OpenSSL与GnuPG或MIME不一样，它还能对短字符串进行编码，如下：
+<pre>
+echo "The Linux Journal" | openssl base64
+VGhlIExpbnV4IepvdXJuYWwK
+</pre>
+
+<li>
+解码：
+<pre>
+echo "VGhlIExpbnV4IEpvdXJuYWwK" | openssl base64 -d
+The Linux Journal
+</pre>
+
+</ul>
+</ul>
+<p>
+注意-d选项，它意味着解码。
+</p>
+<ul>
+<li>
+对文件进行校验和
+<pre>
+openssl sha1 filename
+openssl md5 filename
+</pre>
+
+<li>
+文件内容加密
+<pre>
+openssl enc -aes-128-cbc &lt; filename &gt; filename.aes-128-cbc
+enter aes-128-cbc encryption password:
+Verifying - enter aes-128-cbc encryption password:
+</pre>
+
+</ul>
+<p>
+与GnuPG一样，OpenSSL要求提供2次密语，并且不会回显到屏幕上。
+</p>
+<ul>
+<li>
+文件解密
+
+</ul>
+<p>
+解密也比GnuPG更复杂一点：
+</p>
+<pre>
+openssl enc -d -aes-128-cbc -in filename.aes-128-cbc &gt; filename
+enter aes-128-cbc decryption password:
+</pre>
+<p>
+注意例子中的-d参数，它意味着解密。
+</p>
+
+<ul>
+<li>
+openssl批量加密文件
+<pre class="brush:bash">
+#!/bin/bash
+
+password="password"
+
+file=`find -type f /tmp/test | awk 'NR&gt;1{print $0}'`
+
+auto_des_openssl () {
+    expect -c "set timeout -1;
+            spawn -noecho openssl enc -des -e -a -in $2 -out $2.des;
+            expect *password:*;
+            send -- $1\n;
+            set timeout 100;
+            send -- $1\n;
+            interact;"
+}
+
+for i in $file
+do
+    auto_des_openssl $password $i
+    rm -rf $i     #如果不想删除源文件，可以注释掉这一行
+done
+</pre>
+
+<li>
+解密文件
+
+</ul>
+
+<p>
+<code>openssl enc -des -d -a -in file.des -out file</code>
+</p>
+
+
+<h2 id="toc_1.3">产生随机密语</h2>
+<pre>
+openssl rand 15 -base64
+wGcwstkb8Er0g6w1+Dm+
+</pre>
+<p>
+如果你运行了这个例子，你的输出将与这里的输出不同，因为密语是随机产生的。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

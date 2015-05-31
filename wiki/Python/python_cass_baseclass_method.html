@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>python调用基类方法</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>python调用基类方法</h1>
+
+<ul>
+<li>
+测试代码
+<pre class="brush:python">
+class P(object):
+    def __init__(self):
+        print "calling P's constructor"
+
+class C(P):
+    def __init__(self):
+        P.__init__(self)  # 硬编码显式调用
+        print "calling C's constructor"
+
+class D(C):
+    def __init__(self):
+        super(D,self).__init__()  # 使用super调用
+        print "calling D's constructor"
+
+print "---------p()-----------"
+p=P()
+print "---------c()-P()-------"
+c=C()
+print '---------d()-C()-------'
+d=D()
+</pre>
+
+<li>
+输出
+<pre>
+---------p()-----------
+calling P's constructor
+---------c()-P()-------
+calling P's constructor
+calling C's constructor
+---------d()-C()-------
+calling P's constructor
+calling C's constructor
+calling D's constructor
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

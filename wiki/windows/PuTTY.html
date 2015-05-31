@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>PuTTY</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>PuTTY</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">PuTTY命令行参数</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/">http://www.chiark.greenend.org.uk/~sgtatham/putty/</a>
+
+</ul>
+
+<h2 id="toc_0.1">PuTTY命令行参数</h2>
+
+<p>
+原文: <a href="http://blog.csdn.net/five3/article/details/8115120">http://blog.csdn.net/five3/article/details/8115120</a>
+</p>
+
+<pre class="brush:bash">
+putty.exe [-ssh | -telnet | -rlogin | -raw] [user@]host
+Example: putty -ssh -l vagrant -pw vagrant -P 2222 127.0.0.1
+
+-V                            #print version information and exit
+-pgpfp                        #print PGP key fingerprints and exit
+-v                            #show verbose messages
+-load sessname                #Load settings from saved session
+-ssh -telnet -rlogin -raw     #force use of a particular protocol
+-P port                       #connect to specified port
+-l user                       #connect with specified username
+-batch                        #disable all interactive prompts
+
+# The following options only apply to SSH connections
+-pw                           #passw login with specified password
+-D [listen-IP:]listen-port    #Dynamic SOCKS-based port forwarding
+-L [listen-IP:]listen-port:host:port    #Forward local port to remote address
+-R [listen-IP:]listen-port:host:port    #Forward remote port to local address
+-X -x                         #enable / disable X11 forwarding
+-A -a                         #enable / disable agent forwarding
+-t -T                         #enable / disable pty allocation
+-1 -2                         #force use of particular protocol version
+-4 -6                         #force use of IPv4 or IPv6
+-C                            #enable compression
+-i key                        #private key file for authentication
+-m file                       #read remote command(s) from file
+-s                            #remote command is an SSH subsystem (SSH-2 only)
+-N                            #don't start a shell/command (SSH-2 only)
+</pre>
+
+<ul>
+<li>
+自动登录后执行默认的命令：
+<pre>
+putty [-pw password] [-m file] user@ip_addr
+</pre>
+
+</ul>
+<p>
+主要在于-m参数，其后面跟着的是当前目录下存在的一个shell脚本，记住了不是在【远程】的计算上，而是在putty程序的相同目录中。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>vmstat -系统活动、硬件及系统信息</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>vmstat -系统活动、硬件及系统信息</h1>
+
+<p>
+来源： <a href="http://kangyang.blog.51cto.com/471772/611459">http://kangyang.blog.51cto.com/471772/611459</a>
+</p>
+
+<p>
+使用vmstat命令可以得到关于进程、内存、内存分页、堵塞IO、traps及CPU活动的信息。
+</p>
+<pre>
+vmstat 3
+
+输出样例：
+procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu------
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 0  0      0 2540988 522188 5130400    0    0     2    32    4    2  4  1 96  0  0
+ 1  0      0 2540988 522188 5130400    0    0     0   720 1199  665  1  0 99  0  0
+ 0  0      0 2540956 522188 5130400    0    0     0     0 1151 1569  4  1 95  0  0
+ 0  0      0 2540956 522188 5130500    0    0     0     6 1117  439  1  0 99  0  0
+ 0  0      0 2540940 522188 5130512    0    0     0   536 1189  932  1  0 98  0  0
+ 0  0      0 2538444 522188 5130588    0    0     0     0 1187 1417  4  1 96  0  0
+ 0  0      0 2490060 522188 5130640    0    0     0    18 1253 1123  5  1 94  0  0
+</pre>
+<ul>
+<li>
+显示内存使用详细信息:<code>vmstat -m</code>
+
+<li>
+显示内存活动/不活动的信息: <code>vmstat -a</code>
+
+</ul>
+
+<ul>
+<li>
+<a href="http://hi.baidu.com/imlidapeng/item/41eee8db9db966ed795daa88">Linux系统管理员必备工具系列之vmstat</a>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

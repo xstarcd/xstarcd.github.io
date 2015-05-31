@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>nmap_网络探测工具和安全/端口扫描器</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>nmap_网络探测工具和安全/端口扫描器</h1>
+
+<ul>
+<li>
+Nmap在实战中的高级用法: <a href="http://www.91ri.org/4105.html">http://www.91ri.org/4105.html</a>
+
+<li>
+总结Linux的一些渗透技巧: <a href="http://www.91ri.org/4466.html">http://www.91ri.org/4466.html</a>
+
+<li>
+Linux提权后获取敏感信息的方法与途径: <a href="http://www.sablog.net/blog/archives/614/">http://www.sablog.net/blog/archives/614/</a>
+
+</ul>
+
+<p>
+Nmap (“Network Mapper(网络映射器)”) 是一款开放源代码的网络探测和安全审核的工具。它的设计目标是快速地扫描大型网络，当然用它扫描单个主机也没有问题。Nmap以新颖的方式使用原始IP报文来发现网络上有哪些主机，那些主机提供什么服务(应用程序名和版本)，那些服务运行在什么操作系统(包括版本信息)，它们使用什么类型的报文过滤器/防火墙，以及一堆其它功能。虽然Nmap通常用于安全审核，许多系统管理员和网络管理员也用它来做一些日常的工作，比如查看整个网络的信息， 管理服务升级计划，以及监视主机和服务的运行。
+</p>
+
+<p>
+Nmap输出的是扫描目标的列表，以及每个目标的补充信息，至于是哪些信息则依赖于所使用的选项。
+</p>
+
+<p>
+“所感兴趣的端口表格”是其中的关键。那张表列出端口号，协议，服务名称和状态。
+</p>
+
+<p>
+状态可能是 open(开放的)，filtered(被过滤的)，closed(关闭的)，或者unfiltered(未被过滤的)。
+</p>
+
+<ul>
+<li>
+Open(开放的)意味着目标机器上的应用程序正在该端口监听连接/报文。
+
+<li>
+filtered(被过滤的)意味着防火墙，过滤器或者其它网络障碍阻止了该端口被访问，Nmap无法得知它是 open(开放的) 还是 closed(关闭的)。
+
+<li>
+closed(关闭的)端口没有应用程序在它上面监听，但是他们随时可能开放。
+
+<li>
+当端口对Nmap的探测做出响应，但是Nmap无法确定它们是关闭还是开放时，这些端口就被认为是unfiltered(未被过滤的)。
+
+<li>
+如果Nmap报告状态组合 open|filtered 和 closed|filtered时，那说明Nmap无法确定该端口处于两个状态中的哪一个状态。
+
+</ul>
+
+<p>
+当要求进行版本探测时，端口表也可以包含软件的版本信息。当要求进行IP协议扫描时(-sO)，Nmap提供关于所支持的IP协议而不是正在监听的端口的信息。
+</p>
+
+<p>
+除了所感兴趣的端口表，Nmap还能提供关于目标机的进一步信息，包括反向域名，操作系统猜测，设备类型，和MAC地址。
+</p>
+
+
+<ul>
+<li>
+一个典型的Nmap扫描
+
+</ul>
+<p>
+在这个例子中，唯一的选项是-A， 用来进行操作系统及其版本的探测，-T4可以加快执行速度，接着是两个目标主机名。
+</p>
+<pre>
+nmap -A -T4 scanme.nmap.org playground
+</pre>
+
+<ul>
+<li>
+命令参考:<code>nmap [扫描类型...] [选项] {扫描目标说明}</code>
+<pre class="brush:bash">
+sudo apt-get install nmap,zenmap
+
+# Ping扫描
+nmap -sP 192.168.0.0/24
+
+nmap -PNv 192.168.1.1
+nmap -sV -p 22,53,110,143,4564 198.116.0-255.1-127
+nmap -sS --host-timeout 1501 -p 22,53,110,143,4564 198.168.0.15
+nmap -PNv --host-timeout 1501 -p 22,53,110,143,4564 198.168.0.15
+nmap -PS -n -w 2s -r -p 1231-1233 192.168.0.236 # 按端口顺序扫描
+
+# 用netcat进行端口扫描
+nc -zv localhost 1-65535
+nc -v -z -w 1 192.168.0.236 1231-1233
+...
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

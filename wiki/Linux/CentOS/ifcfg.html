@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>网络参数配置</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">网络参数配置</a>
+<ul>
+<li><a href="#toc_1.1">DHCP方式</a>
+<li><a href="#toc_1.2">静态配置</a>
+<li><a href="#toc_1.3">DNS可选配置</a>
+<li><a href="#toc_1.4">虚拟IP地址</a>
+<li><a href="#toc_1.5">ifconfig</a>
+<li><a href="#toc_1.6">route</a>
+<li><a href="#toc_1.7">ip</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">网络参数配置</h1>
+
+<p>
+原文：<a href="http://wiki.centos.org/zh/FAQ/CentOS6">http://wiki.centos.org/zh/FAQ/CentOS6</a>
+</p>
+
+<p>
+很多安装无须 NetworkManager 工具的复杂性，而采用人手编辑的配置文件。以下是一个 非 NetworkManager 的 DHCP 界面设置样例：
+</p>
+
+<h2 id="toc_1.1">DHCP方式</h2>
+
+<pre class="brush: bash">
+cat /etc/sysconfig/network-scripts/ifcfg-eth0
+
+DEVICE="eth0"
+BOOTPROTO=dhcp
+NM_CONTROLLED="no"
+PERSISTENT_DHCLIENT=1
+ONBOOT="yes"
+TYPE=Ethernet
+DEFROUTE=yes
+PEERDNS=yes
+PEERROUTES=yes
+IPV4_FAILURE_FATAL=yes
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_PEERDNS=yes
+IPV6_PEERROUTES=yes
+IPV6_FAILURE_FATAL=no
+NAME="eth0"
+</pre>
+
+<h2 id="toc_1.2">静态配置</h2>
+
+<p>
+以及一个「静态配置」配置文件的样例：
+</p>
+
+<pre class="brush: bash">
+cat /etc/sysconfig/network-scripts/ifcfg-eth0
+
+DEVICE="eth0"
+HWADDR="00:21:70:10:7E:CD"
+NM_CONTROLLED="no"
+ONBOOT="yes"
+BOOTPROTO=static
+# BOOTPROTO=dhcp
+IPADDR=10.16.1.106
+NETMASK=255.255.255.0
+#
+# the GATEWAY is sometimes in: /etc/sysconfig/network
+GATEWAY=10.16.1.1
+</pre>
+
+<h2 id="toc_1.3">DNS可选配置</h2>
+
+<p>
+此外，通用项目如主机名称及 DNS 服务器可选择性地放置在：
+</p>
+
+<pre class="brush: bash">
+cat /etc/sysconfig/network
+
+HOSTNAME=acme.example.com
+DNS1=10.16.1.112
+DNS2=8.8.8.8
+## DNS2=76.242.0.28
+SEARCH=example.com
+</pre>
+
+<p>
+这些信息是「选择性」的，因为一台 DHCP 服务器能派发这些数值。当一个良好部署的 DNS 环境存在时，initscripts 能够从 PTR 等记录找出主机名称等信息，但有些用户需要以人手管理这些细节。要最得更多信息，你可用以下方式列出整全的 initscripts 文档：
+</p>
+ 
+<pre class="brush: bash">
+rpm -qd initscripts 
+</pre>
+
+<p>
+不论该环境是否安装了 man 阅读说明手册的组件及所依赖的组件。 
+</p>
+
+<h2 id="toc_1.4">虚拟IP地址</h2>
+
+<p>
+你可以将数个 IP 地址加到一个实体的网络界面上。一个好的初始化点，就是把属於新增虚拟 IP 地址的设备的界面定义档复制过来。
+</p>
+
+<pre class="brush: bash">
+cp /etc/sysconfig/network-scripts/ifcfg-eth0 /etc/sysconfig/network-scripts/ifcfg-eth0:0 
+</pre>
+
+<p>
+你可能要修改 ifcfg-eth0 来配合你的实体界面名称。
+</p>
+
+<p>
+现在你可以编辑一个新的 ifcfg-eth0:0 文件来指定虚拟界面的网络设置。
+</p>
+
+<p>
+如果你希望虚拟 IP 地址在开机时生效，你需要删除ONBOOT，并将它改为ONPARENT
+</p>
+
+<pre class="brush: bash">
+ONBOOT=YES
+#将它改为
+ONPARENT=YES
+</pre>
+
+<p>
+这样做会令这个界面在实体界面起动时才启用，但若采用 ONBOOT=YES，就算它已被停用，实体界面仍会在开机时被迫起动。
+</p>
+
+<p>
+要令这些改动生效，请重新引导网络服务：
+</p>
+
+<pre class="brush: bash">
+service network restart
+</pre>
+
+<h2 id="toc_1.5">ifconfig</h2>
+<pre class="brush:bash">
+#ifconfig  接口  选项|地址
+ifconfig eth0 up                                #开启eth0网卡
+ifconfig eth0 down                              #关闭eth0网卡
+ifconfig eth0 -arp                              #关闭eth0网卡arp协议
+ifconfig eth0 promisc                           #开启eth0网卡的混合模式
+ifconfig eth0 mtu 1400                          #设置eth0网卡的最大传输单元为1400
+ifconfig eth0 192.168.0.2/24                    #设置eth0网卡IP地址
+ifconfig eth0 192.168.0.2 netmask 255.255.255.0 #功能同上
+</pre>
+
+<h2 id="toc_1.6">route</h2>
+<pre class="brush:bash">
+route  add [-net|-host] target [netmask] gw
+route  del [-net|-host] target [netmask] gw
+
+route add -net 192.168.3.0/24  gw 192.168.0.254      #设置到192.168.3.0网段的网关为192.168.0.254
+route add -net 192.168.3.0 netmask 255.255.255.0 gw 192.168.0.254   #功能同上
+route add -host 192.168.4.4  gw 192.168.0.254        #设置到192.168.4.4主机的网关为192.168.0.254
+route del -net 192.168.3.0/24                        #删除192.168.3.0网段的网关信息
+route del -host 192.168.4.4                          #删除192.168.4.4主机的网关信息
+route add default gw 192.168.0.254                   #设置默认网关为192.168.0.254
+route del default gw 192.168.0.254                   #删除默认网关为192.168.0.254
+</pre>
+
+<h2 id="toc_1.7">ip</h2>
+
+<pre class="brush:bash">
+# ip  [选项]  操作对象{link|addr|route...}
+ip link show                         #显示网络接口信息
+ip link set eth0 up                  #开启网卡
+ip link set eth0 down                #关闭网卡
+ip link set eth0 promisc on          #开启网卡的混合模式
+ip link set eth0 promisc off         #关闭网卡的混个模式
+ip link set eth0 txqueuelen 1200     #设置网卡队列长度
+ip link set eth0 mtu 1400            #设置网卡最大传输单元
+
+ip addr show                         #显示网卡IP信息
+ip addr add 192.168.0.1/24 dev eth0  #设置eth0网卡IP地址192.168.0.1
+ip addr del 192.168.0.1/24 dev eth0  #删除eth0网卡IP地址
+
+ip route list                                           #查看路由信息
+ip route add 192.168.4.0/24 via 192.168.0.254 dev eth0  #设置192.168.4.0网段的网关为192.168.0.254,数据走eth0接口
+ip route add default via 192.168.0.254 dev eth0         #设置默认网关为192.168.0.254
+ip route del 192.168.4.0/24                             #删除192.168.4.0网段的网关
+ip route del default                                    #删除默认路由
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

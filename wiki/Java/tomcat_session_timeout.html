@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>tomcat session timeout 配置</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>tomcat session timeout 配置</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Web容器级别</a>
+<li><a href="#toc_0.2">webapp级别</a>
+<li><a href="#toc_0.3">应用程序代码中硬编码</a>
+<li><a href="#toc_0.4">Context配置</a>
+<li><a href="#toc_0.5">重启时保持会话</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+原文
+
+<ul>
+<li>
+<a href="http://blog.csdn.net/fz_zhou/article/details/4141358">http://blog.csdn.net/fz_zhou/article/details/4141358</a>
+
+<li>
+<a href="http://jiangshuiy.iteye.com/blog/1843622">http://jiangshuiy.iteye.com/blog/1843622</a>
+
+</ul>
+</ul>
+
+<p>
+Tomcat的会话超时可以在多个级别上设置：tomcat实例级别、Web应用级别、servlet级别以及运行时Context代码级别。 较低级别的设定会覆盖较高级别的设定。
+</p>
+
+<p>
+优先级:越细粒度优先级越高，也就是应用程序代码中硬编码&gt;webapp级别&gt;Web容器级别。
+</p>
+
+<h2 id="toc_0.1">Web容器级别</h2>
+<p>
+在conf/web.xml中设置：
+</p>
+<pre class="brush:xml">
+&lt;!-- ==================== Default Session Configuration ================= --&gt;
+&lt;!-- You can set the default session timeout (in minutes) for all newly   --&gt;
+&lt;!-- created sessions by modifying the value below.                       --&gt;
+    &lt;session-config&gt;
+        &lt;session-timeout&gt;30&lt;/session-timeout&gt;
+    &lt;/session-config&gt;
+</pre>
+<p>
+这里是以分钟为单位的，默认是30分；
+</p>
+
+<h2 id="toc_0.2">webapp级别</h2>
+<p>
+在webapp中的WEB-INF/web.xml
+</p>
+
+<pre class="brush:xml">
+&lt;!-- 配置Session失效时间 --&gt;
+&lt;session-config&gt;
+    &lt;session-timeout&gt;30&lt;/session-timeout&gt;
+&lt;/session-config&gt;
+</pre>
+<p>
+也是以min为单位；
+</p>
+
+
+<h2 id="toc_0.3">应用程序代码中硬编码</h2>
+
+<pre class="brush:java">
+session.setMaxInactiveInterval（30*60）;  //以秒为单位
+</pre>
+
+<ul>
+<li>
+在程序中通过servlet api直接修改
+<pre class="brush:java">
+HttpSession ses = request.getSession();
+ses.setMaxInactiveInterval(10);
+</pre>
+
+</ul>
+<p>
+设置单位为秒，设置为-1永不过期。
+</p>
+
+<h2 id="toc_0.4">Context配置</h2>
+
+<p>
+还有一种配置，但现在比较少见了，因为需要将Context配置在server.xml里：
+修改conf/server.xml，单位为秒：
+</p>
+<pre class="brush:xml">
+&lt;Context path="/test" docBase="/home/httpd/html/test"
+    defaultSessionTimeOut="3600" isWARExpanded="true"
+    isWARValidated="false" isInvokerEnabled="true"
+    isWorkDirPersistent="false"/&gt;
+</pre>
+
+<h2 id="toc_0.5">重启时保持会话</h2>
+
+<p>
+在关闭Tomcat实例/取消Web应用部署时，缺省会把当前的活动会话保存到硬盘上，并在重启启动/部署时在把会话从硬盘上加载到内存中。
+</p>
+
+<p>
+文件保存在各目录下的SESSIONS.SER中。有时可能会话中保存了敏感信息，或者不希望使用这个特性，可以配置Context.xml文件关闭这个选项。
+</p>
+
+<p>
+配置 manager.pathname == ""即可，形如：
+</p>
+<pre class="brush:xml">
+    &lt;Manager pathname="" /&gt;
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

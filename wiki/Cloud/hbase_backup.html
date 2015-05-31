@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>hbase备份恢复</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">hbase备份恢复</a>
+<ul>
+<li><a href="#toc_1.1">hbase本身提供的接口</a>
+<li><a href="#toc_1.2">表迁移至另一集群</a>
+<li><a href="#toc_1.3">HBase Backup Options</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">hbase备份恢复</h1>
+
+<h2 id="toc_1.1">hbase本身提供的接口</h2>
+<pre>
+Usage: Import [options] &lt;tablename&gt; &lt;inputdir&gt;
+By default Import will load data directly into HBase. To instead generate
+HFiles of data to prepare for a bulk data load, pass the option:
+  -Dimport.bulk.output=/path/for/output
+For performance consider the following options:
+  -Dmapred.map.tasks.speculative.execution=false
+  -Dmapred.reduce.tasks.speculative.execution=false
+</pre>
+
+<ul>
+<li>
+导出
+<pre>
+hbase org.apache.hadoop.hbase.mapreduce.Driver export 'tablename' Path/to/dumpfile  &lt;versions&gt;
+</pre>
+
+</ul>
+
+
+<p>
+其中数据文件位置可为本地文件目录，也可以分布式文件系统hdfs的路径。
+</p>
+
+<p>
+当其为前者时，直接指定即可，也可以加前缀<a href="file:///">file:///</a>
+</p>
+
+<p>
+而当其伟后者时，必须明确指明hdfs的路径，例如hdfs://mymaster:9000/path
+</p>
+
+<p>
+另外，该接口类还提供了一些其它的方法，例如表与表之间的数据拷贝，导入tsv文件等，可回车键查看
+</p>
+
+<ul>
+<li>
+导入
+<pre>
+hbase org.apache.hadoop.hbase.mapreduce.Driver import 'tablename' Path/to/dumpfile
+</pre>
+
+</ul>
+
+<ul>
+<li>
+python调用export脚本
+<pre class="brush:python">
+import time
+import datetime
+from datetime import date
+import sys
+import os
+
+tablename=sys.argv[1]
+backupDst=sys.argv[2]
+today=date.today()
+if today.day == 15:    //every month, we do a full backup
+    backupSubFolder=backupDst+today.isoformat()+"-full"
+    cmd="hbase org.apache.hadoop.hbase.mapreduce.Export %s %s"%(tablename,backupSubFolder)
+else:
+    yesterday=datetime.date.today()- datetime.timedelta(days=1)
+    todayTimeStamp=time.mktime(today.timetuple())
+    yesTimeStamp=time.mktime(yesterday.timetuple())
+    backupSubFolder=backupDst+today.isoformat()
+    cmd="hbase org.apache.hadoop.hbase.mapreduce.Export %s %s %s"%(tablename,backupSubFolder,str(int(todayTimeStamp)*1000)
+
+print cmd
+os.system(cmd)
+
+</pre>
+
+</ul>
+
+
+<h2 id="toc_1.2">表迁移至另一集群</h2>
+
+<p>
+把某个表(table1)从集群1迁移到集群2（两个集群互相看不见），步骤如下
+</p>
+
+<ul>
+<li>
+拷贝集群1的表文件到本地磁盘， <strong>拷贝之前要停掉集群1的hbase服务，否则会丢失数据</strong>
+<pre>
+hadoop fs -copyToLocal /hbase/table1 /home/fred/hb_bak/table1
+</pre>
+
+<li>
+对于文件操作，很简单吧，随便你怎么去拷贝来拷贝去
+
+<li>
+如果集群2中也有对应的表文件，那么删除掉，然后拷贝
+<pre>
+hadoop fs -rmr /hbase/table1
+hadoop fs -copyFromLocal /home/fred/hb_bak/table1 /hbase/table1
+</pre>
+
+<li>
+到hbase的bin目录下，重置该表在.META.表中的分区信息
+<pre>
+hbase org.jruby.Main add_table.rb /hbase/table1
+</pre>
+
+<li>
+重启hbase使表的重置信息生效，切忌强制停掉hbase服务，否侧损坏数据
+
+<li>
+另外：
+
+<ol>
+<li>
+如果表的数据量过大呢？ 那么按照该表在HDFS中的文件夹数据，分批拷贝。
+
+<li>
+如果两个集群可以互相通信呢？那么更爽了，直接使用distcp对拷，是并行的。
+
+</ol>
+</ul>
+
+
+<h2 id="toc_1.3">HBase Backup Options</h2>
+
+<p>
+<a href="http://hbase.info/tag/distcp">http://hbase.info/tag/distcp</a>
+</p>
+
+<p>
+如果你打算部署HBase，那么你一定要考虑如何备份的问题，下面是作者列举的他所知道的一些备份方式，如果有遗漏的，欢迎补充。
+</p>
+
+<ul>
+<li>
+Export
+
+</ul>
+<p>
+HBase提供了export的MapReduce Job(org.apache.hadoop.hbase.mapreduce.Export)可以将表导出为HDFS的顺序文件(SequenceFile)，这是由HBASE-1684贡献的工具。此工具一次只能操作一张表，导出的顺序文件可以通过Import工具导入HBase。
+</p>
+
+<ul>
+<li>
+Copy Table
+
+</ul>
+<p>
+在两个HBase集群之间复制数据，也可以通过Copy Table工具，这也是MapReduce实现的，一次操作一张表。
+</p>
+
+<ul>
+<li>
+Distcp
+
+</ul>
+<p>
+你也可以利用HDFS的Distcp工具将整个/hbase复制到另外一个HDFS集群，但这可能导致复制的数据不一致，所以尽量不要这么做，除非先将源集群停止服务，参考： <a href="http://search-hadoop.com/m/wkMgSjVLDb">http://search-hadoop.com/m/wkMgSjVLDb</a>
+</p>
+
+<ul>
+<li>
+Backup from Mozilla
+
+</ul>
+<p>
+由于Dictcp做集群复制存在数据不一致的问题，Mozilla的开发人员开发了一个Backup工具，具体情况请参考他们的这篇Migrating HBase in the Trenches。
+</p>
+
+<ul>
+<li>
+Cluster Replication
+
+</ul>
+<p>
+HBase从0.89版本开始引入集群复制功能，所以我们也可以利用此功能将数据备份到另一个集群。复制的目标集群不需要和源集群同配置，因此可以将数据通过复制备份到一个较低成本的集群中。
+</p>
+
+<ul>
+<li>
+Table Snapshot
+
+</ul>
+<p>
+在著名的HBase-50中就提出了Snapshot的问题，尽管在GSoC 2010期间做了大量的工作，但不知由于什么原因，一直没有合并进HBase的主流分支。Jira上已经有一个Patch，但已经较长时间无进展了。
+</p>
+
+<ul>
+<li>
+HDFS Replication
+
+</ul>
+<p>
+HDFS中的数据是有多份拷贝的，你也可以把这多份的拷贝当作一种备份，它虽然不能防止数据损坏，但能容忍部分硬件故障。 
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

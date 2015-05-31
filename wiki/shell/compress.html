@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>compress</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>compress</h1>
+
+<ul>
+<li>
+语法
+<pre>
+compress [-dcr] 文件或目录
+</pre>
+
+</ul>
+
+<ul>
+<li>
+参数
+<pre>
+-d ：用来解压缩的参数
+-r ：可以连同目录下的文件也同时给予压缩呢！
+-c ：将压缩资料输出成为 standard output (输出到萤幕)
+</pre>
+
+</ul>
+
+<ul>
+<li>
+范例
+<pre class="brush:bash">
+# 范例一：将 /etc/man.config 複制到 /tmp ，并加以压缩
+cd /tmp
+cp /etc/man.config .
+compress man.config
+ls -l
+
+-rw-r--r-- 1 root root 2605 Jul 27 11:43 man.config.Z
+
+# 范例二：将刚刚的压缩档解开
+compress -d man.config.Z
+
+# 范例三：将 man.config 压缩成另外一个文件来备份
+compress -c man.config &gt; man.config.back.Z
+ll man.config*
+
+-rw-r--r-- 1 root root 4506 Jul 27 11:43 man.config
+-rw-r--r-- 1 root root 2605 Jul 27 11:46 man.config.back.Z
+# 这个 -c 的参数比较有趣！他会将压缩过程的资料输出到萤幕上，而不是写入成为
+# file.Z 文件。所以，我们可以透过资料流重导向的方法将资料输出成为另一个档名。
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

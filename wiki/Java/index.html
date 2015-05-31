@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Java</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Java</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">tomcat</a>
+<li><a href="#toc_0.2">JVM</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="jmap_jstack.html">jmap_jstack</a>
+
+<li>
+<a href="JVM_GC.html">JVM gc参数设置与分析</a>
+
+<li>
+<a href="JVM_Heap_Non-heap.html">JVM堆内存和非堆内存</a>
+
+<li>
+<a href="java_classpath_-Djava.ext.dirs.html">java启动时的classpass及扩展类目录</a>
+
+<li>
+<a href="http://kenwublog.com/docs/java6-jvm-options-chinese-edition.htm">Java 6 JVM参数选项大全（中文版）</a>
+
+<li>
+<a href="artifactory_maven_install.html">artifactory maven仓库安装</a>
+
+<li>
+<a href="log4j.html">log4j</a>
+
+<li>
+Java基础语法:<a href="http://www.w3cschool.cc/java/java-basic-syntax.html">http://www.w3cschool.cc/java/java-basic-syntax.html</a>
+
+</ul>
+
+<h2 id="toc_0.1">tomcat</h2>
+
+<ul>
+<li>
+<a href="tomcat7_vhost.html">Tomcat7配置虚拟主机</a>
+
+<li>
+<a href="tomcat7Install.html">tomcat7部署</a>
+
+<li>
+<a href="tomcat_http_Connector_confs.html">Tomcat处理HTTP请求 详解Connector模块</a>
+
+<li>
+<a href="jar_configmodify.html">jar包中配置文件修改</a>
+
+<li>
+<a href="tomcat_log.html">Tomcat日志设定</a>
+
+<li>
+<a href="tomcat_cluster.html">tomcat集群负载均衡配置</a>
+
+<li>
+<a href="tomcat_server.xml.html">tomcat_server.xml</a>
+
+<li>
+<a href="tomcat_context_Elements_detail.html">Tomcat中Context元素详解</a>
+
+<li>
+<a href="tomcat_session_timeout.html">tomcat session timeout 配置</a>
+
+<li>
+DBCP连接池介绍:<a href="http://elf8848.iteye.com/blog/1931778">http://elf8848.iteye.com/blog/1931778</a>
+
+<li>
+Tomcat与Apache或Nginx的集群负载均衡设置及Sersync同步应用:<a href="http://huangrs.blog.51cto.com/2677571/1058579">http://huangrs.blog.51cto.com/2677571/1058579</a>
+
+<li>
+<a href="jboss-log4j.html">jboss日志输出设置</a>
+
+<li>
+<a href="jboss_init_redhat.sh.html">jboss_init_redhat.sh</a>
+
+<li>
+tomcat开启jmx
+<pre class="brush:bash">
+#在tomcat/bin/catalina.sh开头出加入如下代码，其中JMX_REMOTE_PORT是JMX的侦听端口；
+JAVA_OPTS="-Xms1024m -Xmx1024m -XX:MaxPermSize=256m"
+if [ "$1" = "start" ] ; then
+    JMX_REMOTE_PORT=9009
+    JAVA_OPTS="$JAVA_OPTS -Dcom.sun.management.jmxremote.port=$JMX_REMOTE_PORT
+    -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
+fi
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">JVM</h2>
+
+<ul>
+<li>
+JVM系列三:JVM参数设置、分析:<a href="http://www.cnblogs.com/redcreen/archive/2011/05/04/2037057.html">http://www.cnblogs.com/redcreen/archive/2011/05/04/2037057.html</a>
+
+<li>
+JVM系列五:JVM监测&amp;工具[整理中]:<a href="http://www.cnblogs.com/redcreen/archive/2011/05/09/2040977.html">http://www.cnblogs.com/redcreen/archive/2011/05/09/2040977.html</a>
+
+<li>
+Java HotSpot VM Options:<a href="http://www.oracle.com/technetwork/java/javase/tech/vmoptions-jsp-140102.html">http://www.oracle.com/technetwork/java/javase/tech/vmoptions-jsp-140102.html</a>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

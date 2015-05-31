@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>vim不易发现的强大功能</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">vim不易发现的强大功能</a>
+<ul>
+<li><a href="#toc_1.1">* （super star）</a>
+<li><a href="#toc_1.2">C-R (magic insert)</a>
+<li><a href="#toc_1.3">删掉偶数行</a>
+<li><a href="#toc_1.4">怎样输入连续的数字？</a>
+<li><a href="#toc_1.5">C-O (fast out, fast in)</a>
+<li><a href="#toc_1.6">[I (fast grep )</a>
+<li><a href="#toc_1.7">object-select</a>
+<li><a href="#toc_1.8">宏纪录的功能</a>
+<li><a href="#toc_1.9">C-p 自动补全</a>
+<li><a href="#toc_1.10">从外部命令输入</a>
+<li><a href="#toc_1.11">:make</a>
+<li><a href="#toc_1.12">在数字上ctrl-a可使该数字加1</a>
+<li><a href="#toc_1.13">另外，有一些总结</a>
+<ul>
+<li><a href="#toc_1.13.1">为什么别人的方法在我这里行不通？</a>
+<li><a href="#toc_1.13.2">如何找到上次编辑的文件？</a>
+<li><a href="#toc_1.13.3">如何复制粘贴？</a>
+<li><a href="#toc_1.13.4">如何在多个文件中进行替换？</a>
+<li><a href="#toc_1.13.5">如何把fold一次全部打开？</a>
+<li><a href="#toc_1.13.6">如何选择或者复制光标所在的单词？</a>
+<li><a href="#toc_1.13.7">如何计数搜索的字符串？</a>
+<li><a href="#toc_1.13.8">如何去掉高亮搜索？</a>
+<li><a href="#toc_1.13.9">如何解决linux下gvim中文菜单乱码问题？</a>
+<li><a href="#toc_1.13.10">如何对所编辑的文件语法高亮显示？</a>
+<li><a href="#toc_1.13.11">如何快速插入多行数字0-99？</a>
+<li><a href="#toc_1.13.12">Vim 7.3 的中文帮助文件已经发布，下载、使用如下：</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">vim不易发现的强大功能</h1>
+
+
+<p>
+原文: <a href="http://dpinglee.blog.163.com/blog/static/144097753201158112057803/?suggestedreading&amp;wumii">http://dpinglee.blog.163.com/blog/static/144097753201158112057803/?suggestedreading&amp;wumii</a>
+</p>
+
+<h2 id="toc_1.1">* （super star）</h2>
+<blockquote>
+向下查找光标下（或附近）的。向上找用#。g*查找则不限制whole word。
+区别：比如在if这个单词上按*键则查找\&lt;if\&gt;，按g*键则查找if。
+</blockquote>
+
+<h2 id="toc_1.2">C-R (magic insert)</h2>
+<blockquote>
+在insert模式下，C-R (register) 插入register里的内容，一个有趣的reg是"=".
+假设你想输入123K的具体字节数，不用打开计算器，试试这个"=1024*123"，"125952"就出来了！
+另外在命令行里C-R C-W和C-R C-A是必用的技巧，它们将光标下的和拷贝到命令行里，省了你无数的typing。
+</blockquote>
+
+<h2 id="toc_1.3">删掉偶数行</h2>
+<blockquote>
+:g/^/+1 d
+或
+%norm jdd
+</blockquote>
+
+<h2 id="toc_1.4">怎样输入连续的数字？</h2>
+<blockquote>
+比如
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+</blockquote>
+<blockquote>
+:r!seq 10
+</blockquote>
+
+<h2 id="toc_1.5">C-O (fast out, fast in)</h2>
+<blockquote>
+在insert模式下，用C-O后可以执行一个normal命令，然后立即返回insert模式，省去了用ESC的麻烦。
+</blockquote>
+
+<h2 id="toc_1.6">[I (fast grep )</h2>
+<blockquote>
+[I显示文件中包含光标下的所有行。我常用来浏览某个id在程序中的引用情况。
+还有很多相关的命令：:h include-search
+</blockquote>
+
+<h2 id="toc_1.7">object-select</h2>
+<blockquote>
+iw, aw, ib, i], i} ... 都非常有用！看help吧
+:h object-select
+fx
+x 表示任何一个字符。
+这是最快的在一行种移动的方法了。
+0fx 用0先回到行首，再f
+任何一个操作命令在加一个移动命令。实现对某个范围的操作。
+例如dfx表示删除到下一个出现 x 的地方， x 可以使任意字符。
+操作命令有 d (cut), y(copy) , p(paste), v (select)
+移动命令有 hjkl, f, /， gg, G
+任何命令组合都可以先按一些 数字健 表示重复操作。
+如： d123j 删除下面123行。
+</blockquote>
+
+<h2 id="toc_1.8">宏纪录的功能</h2>
+<blockquote>
+例如，把文件中所有奇数行和偶数行合并。按如下序列
+gg
+qq
+J
+q
+100000000@q
+</blockquote>
+
+<h2 id="toc_1.9">C-p 自动补全</h2>
+<blockquote>
+在 insert mode 下
+写程序的时候，任何超长的变量名字都不成问题。
+</blockquote>
+
+<h2 id="toc_1.10">从外部命令输入</h2>
+<blockquote>
+:r !ls
+可以读取当前目录的文件列表。
+</blockquote>
+
+<h2 id="toc_1.11">:make</h2>
+<blockquote>
+可以用外部命令 make 编译工程。
+:cw
+查看出错信息，
+:cn
+:cp
+在出错信息之间跳转。
+11. ]] , [[ , [] , ][ 命令可以在函数之间移动。
+</blockquote>
+
+<h2 id="toc_1.12">在数字上ctrl-a可使该数字加1</h2>
+
+<h2 id="toc_1.13">另外，有一些总结</h2>
+
+<h3 id="toc_1.13.1">为什么别人的方法在我这里行不通？</h3>
+<blockquote>
+估计这是最难回答的一个问题了。:-)
+不过首先应该确定你的VIM版本是否足够新，功能是否完整。使用 :version 命令查看你
+的VIM版本以及功能。一个常见的情况，如果你用的是RedHat系统，请确定安装了
+vim-enhance的rpm包，否则将是不完整的VIM。
+</blockquote>
+
+<h3 id="toc_1.13.2">如何找到上次编辑的文件？</h3>
+<blockquote>
+Ctrl+O （按两次）
+</blockquote>
+
+<h3 id="toc_1.13.3">如何复制粘贴？</h3>
+<blockquote>
+方法一：先ma标记当前位置为a，移动到新的位置，再y`a或者y'a复制从标记位置a到
+当前位置的内容。<code>和'的区别：</code>以字符为单位，'以行为单位。这个方法应该是所有vi
+都适用的。（如果不对请指正。）
+</blockquote>
+<blockquote>
+方法二：按v或V或Ctrl+V进入visual模式，移动光标选择一段内容，按y。三者的区别：
+v以字符为单位，V以行为单位，Ctrl+V是块选择。这个方法只在VIM下适用。
+</blockquote>
+
+<h3 id="toc_1.13.4">如何在多个文件中进行替换？</h3>
+<pre>
+    一般可以用sed或者vim来做。比如要对当前目录下的*.c文件进行替换：
+    方法一：
+    for i in *.c; do
+    sed -i -e 's/oldvalue/newvalue/g' $i
+    done
+    方法二：
+    vim *.c
+    :argdo %s/oldvalue/newvalue/g
+</pre>
+
+<h3 id="toc_1.13.5">如何把fold一次全部打开？</h3>
+<blockquote>
+zR 或者 :set foldlevel=999
+</blockquote>
+
+<h3 id="toc_1.13.6">如何选择或者复制光标所在的单词？</h3>
+<blockquote>
+在VIM中用iw或者aw表示一个单词，两者稍有区别。
+选择光标所在的单词：viw （v进入visual模式，然后iw）
+复制光标所在的单词：yiw
+</blockquote>
+
+<h3 id="toc_1.13.7">如何计数搜索的字符串？</h3>
+<pre>
+    如果需要统计缓冲中一个模式（pattern）出现的频率，需要把 'report' 置为0，然后
+    用替换命令把模式替换成它自己。Vim 报告的已替换的数目就是模式出现的次数。例：
+    :set report=0
+    :%s/./&amp;/g characters
+    :%s/\i\+/&amp;/g words
+    :%s/^ lines
+    :%s/the/&amp;/g "the" anywhere
+    :%s/\/&amp;/g "the" as a word
+    你可能希望复位 'hlsearch' 或者使用 ":nohlsearch"。
+</pre>
+
+<h3 id="toc_1.13.8">如何去掉高亮搜索？</h3>
+<blockquote>
+方法一：:nohlsearch
+</blockquote>
+<blockquote>
+方法二：/awertgvcxz （查找一个肯定不存在的字符串）
+设置了高亮搜索（:set hlsearch）以后，可以通过 :set nohlsearch 永久地关闭高亮
+显示，也可以通过 :nohlsearch 暂时关闭高亮显示，下次搜索时将自动恢复高亮。
+</blockquote>
+
+<h3 id="toc_1.13.9">如何解决linux下gvim中文菜单乱码问题？</h3>
+<pre>
+
+    以vim7.3为例
+    source /usr/local/vim/share/vim/vim73/delmenu.vim
+    source /usr/local/vim/share/vim/vim73/menu.vim
+    光source一个menu.vim或者啥也不source都是乱码
+    另外，也有网友报告说没有遇到此类问题
+</pre>
+
+<h3 id="toc_1.13.10">如何对所编辑的文件语法高亮显示？</h3>
+<blockquote>
+需要解释的是，VI有很多变种，它本身并没有这种功能，提供这种功能往往是其各种衍生版本，比如说vim。下面就vim中如何语法高亮简单解释一下。
+首先，确定一下你所用的操作系统，如果是windows，那么默认的配置文件就可以工作了。如果还不行，可以用鼠标从syntax菜单下选择一下适合你的文件类型（新版本的gvim默认把文件类型选择关闭了，需要点开，然后按照开头字母选择类型）
+如果是linux，那么确认一下是否是redhat。如果是redhat，那么需要安装vim-enhanced的rpm包。这些都做了以后，可以用:syntax on来打开语法高亮。
+必要时可以用:set filetype=...来设定你的文件类型。
+如果使用图形界面，比如gvim，那么syntax on和set filetype的操作可以用鼠标在菜单中选择，同windows下。
+如果是在控制台中使用vim，还应当确定你的终端设置支持颜色。
+</blockquote>
+
+<h3 id="toc_1.13.11">如何快速插入多行数字0-99？</h3>
+<pre>
+    在命令行中输入以下代码，或者先把代码保存到一个外部文件，然后source这个文件：
+    let i = 0
+    while i &lt; 100
+    put = i
+    let i = i + 1
+    endw
+    如果位数不足需要在前面补零，可以用Ctrl-V块选择，然后I插入0。
+</pre>
+
+<h3 id="toc_1.13.12">Vim 7.3 的中文帮助文件已经发布，下载、使用如下：</h3>
+
+<ul>
+<li>
+链接: <a href="http://www.newsmth.net/bbscon.php?bid=731&amp;id=57199">http://www.newsmth.net/bbscon.php?bid=731&amp;id=57199</a>
+
+<li>
+解压到合适路径，如 d:\soft\Vim\vimfiles\doc\
+
+<li>
+更新帮助文件的tags，如：:helptags d:\soft\Vim\vimfiles\doc\
+
+<li>
+测试新特性的中文帮助，如 :h rnu
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

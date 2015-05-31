@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>HDFS:不同版本评比分析</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">HDFS:不同版本评比分析</a>
+<ul>
+<li><a href="#toc_1.1">版本功能对比</a>
+<li><a href="#toc_1.2">改造相关版本对比</a>
+<li><a href="#toc_1.3">成本优劣对比</a>
+<li><a href="#toc_1.4">总结</a>
+<li><a href="#toc_1.5">参考资料</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">HDFS:不同版本评比分析</h1>
+
+<p>
+原文:<a href="http://blog.csdn.net/liuhong1123/article/details/8372517">http://blog.csdn.net/liuhong1123/article/details/8372517</a>
+</p>
+
+<p>
+liuhong1123 2012-12-22 10:08
+</p>
+
+<h2 id="toc_1.1">版本功能对比</h2>
+
+<table>
+<tr>
+<td>
+版本名称
+</td>
+<td>
+版本时间
+</td>
+<td>
+功能名称
+</td>
+<td>
+说明
+</td>
+</tr>
+<tr>
+<td>
+0.20.x
+</td>
+<td>
+2009.4.22-2011.10.17
+</td>
+<td>
+目前线上基本功能
+</td>
+<td>
+Avatarnode,cloudera3均以该版本作为基础版本
+</td>
+</tr>
+<tr>
+<td>
+0.23.x
+</td>
+<td>
+2011/11/11-现在
+</td>
+<td>
+Federation;WebHDFS REST API；HttpFS Gateway
+</td>
+<td>
+与2.x.x相似，但是没有HA
+</td>
+</tr>
+<tr>
+<td>
+1.0.x（稳定版本）
+</td>
+<td>
+2011.12.27-2012.10.12
+</td>
+<td>
+配额功能（某目录存储文件大小）;Synthetic Load;权限改进;WebHDFS REST API;C API libhdfs;
+</td>
+<td>
+弃用secondary namenode，引入checkpointnamenode（在snn基础上有改进），backupnode（温备，元数据存储在内存和磁盘）；
+</td>
+</tr>
+<tr>
+<td>
+1.1.x（测试版本）
+</td>
+<td>
+2012.10.13-现在
+</td>
+<td>
+同上
+</td>
+<td>
+ 
+</td>
+</tr>
+<tr>
+<td>
+2.0.x（与cdh4类似）
+</td>
+<td>
+2012.5.23-现在
+</td>
+<td>
+HA（NFS,bookKeeper,QJM）；Federation；WebHDFS REST API；HttpFS Gateway（支持类似curl等shell命令）；RPC可定制（比如thrift，arvo，protocal Buffer）；
+</td>
+<td>
+共享存储edits共享不仅支持NFS，还支持bookkeeper，QJM方式，支持自动，手动切换
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+注：
+
+<ol>
+<li>
+此处比较apache相关版本；
+
+<li>
+此处没有再列出HDFS基础功能；
+
+</ol>
+</ul>
+
+
+<h2 id="toc_1.2">改造相关版本对比</h2>
+
+<table>
+<tr>
+<td>
+版本名称
+</td>
+<td>
+版本功能
+</td>
+<td>
+说明
+</td>
+</tr>
+<tr>
+<td>
+Cdh3
+</td>
+<td>
+目前线上HDFS基本功能
+</td>
+<td>
+有稳定的hive，hbase与其兼容
+</td>
+</tr>
+<tr>
+<td>
+Avatarnode
+</td>
+<td>
+HA；手动切换；snapshot；raid
+</td>
+<td>
+Facebook内部应该广泛，开源动力不足，开源的HA有不少bug；client端不能做到无缝failover；对zk依赖比较大；
+</td>
+</tr>
+<tr>
+<td>
+Jhdfs
+</td>
+<td>
+HA；手动，自动
+</td>
+<td>
+与hbase，hive等兼容；Client不能完全做到无缝failover；自动切换功能不成熟待升级；
+</td>
+</tr>
+<tr>
+<td>
+Cdh4
+</td>
+<td>
+HA；手动，自动；支持nfs，bookkeeper，QJM等方式日志同步；
+</td>
+<td>
+版本不稳定；有相应的hbase，hive等版本与其兼容；
+</td>
+</tr>
+<tr>
+<td>
+Apache 2.X
+</td>
+<td>
+HA；手动，自动；支持nfs，bookkeeper，QJM等方式日志同步；
+</td>
+<td>
+由cloudera，hortonwork等开源，版本不稳定，有相应的hbase，hive等版本与其兼容；
+</td>
+</tr>
+</table>
+
+<h2 id="toc_1.3">成本优劣对比</h2>
+
+<table>
+<tr>
+<td>
+版本名称
+</td>
+<td>
+人力成本
+</td>
+<td>
+社区
+</td>
+<td>
+风险
+</td>
+</tr>
+<tr>
+<td>
+Jhdfs
+</td>
+<td>
+客户端failover；升级自动切换功能；引入federation机制；日志共享机制多样化；RPC协议机制；性能优化；测试；
+</td>
+<td>
+基于cdh3，与avatarnode改造，社区不活跃
+</td>
+<td>
+目前几轮测试均通过；生产检验不足
+</td>
+</tr>
+<tr>
+<td>
+Apache 2.x
+</td>
+<td>
+需代码深入研究；测试；跟踪修改bug；
+</td>
+<td>
+社区活跃，大量开发者提交代码；发表意见；
+</td>
+<td>
+代码不成熟； 有相应的hbase，hive等版本与其兼容；
+</td>
+</tr>
+<tr>
+<td>
+Cdh4
+</td>
+<td>
+需代码深入研究；测试；跟踪修改bug；
+</td>
+<td>
+社区不活跃；
+</td>
+<td>
+代码不成熟；有相应的hbase，hive等版本与其兼容；
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+注：
+
+<ol>
+<li>
+hbase之前使用的版本与apache2.0不兼容（见下面的jira连接地址），目前cloudera提供了与其相兼容的版本；
+
+<li>
+hive之前使用的版本与apache2.0兼容；
+
+</ol>
+</ul>
+
+<h2 id="toc_1.4">总结</h2>
+
+<p>
+根据各个角度比较的结果，及其我们这边需求，我们将版本选择的关注点集中到jhdfs，apache2.x，cdh4三个版本，具体如下：
+</p>
+
+<ol>
+<li>
+jhdfs兼容性没有问题，也完成了初期HA改造并测试通过，但还需要生产检验；基础版本为cdh3；相比cdh4及其apache2.x,还有比较多的新功能需要加入进去；
+
+<li>
+ apache2.x，cdh4与hbase等兼容性均没有问题，相比jhdfs，有比较多的新功能和性能方面的优化，并且3个版本中，apache2.x社区是最活跃的；
+
+</ol>
+
+<h2 id="toc_1.5">参考资料</h2>
+
+<p>
+1）QJM设计文档：
+</p>
+
+<p>
+<a href="https://issues.apache.org/jira/browse/HDFS-3077">https://issues.apache.org/jira/browse/HDFS-3077</a>
+</p>
+
+<p>
+2）snapshot机制：
+</p>
+
+<p>
+<a href="http://hortonworks.com/blog/snapshots-for-hdfs/">http://hortonworks.com/blog/snapshots-for-hdfs/</a>
+</p>
+
+<p>
+3）bookkeeper与nfs等性能对比测试：
+</p>
+
+<p>
+<a href="https://cwiki.apache.org/BOOKKEEPER/hdfs-bookkeeperjournalmanager.html">https://cwiki.apache.org/BOOKKEEPER/hdfs-bookkeeperjournalmanager.html</a>
+</p>
+
+<p>
+4）hadoop版本发布相关信息：
+</p>
+
+<p>
+<a href="http://hadoop.apache.org/releases.html">http://hadoop.apache.org/releases.html</a>
+</p>
+
+<p>
+5）hadoop性能测试工具
+</p>
+
+<p>
+<a href="http://hortonworks.com/blog/delivering-on-hadoop-next-benchmarking-performance/">http://hortonworks.com/blog/delivering-on-hadoop-next-benchmarking-performance/</a>
+</p>
+
+<p>
+6）High AvailabilityFramework for HDFS NN
+</p>
+
+<p>
+<a href="https://issues.apache.org/jira/browse/HDFS-1623">https://issues.apache.org/jira/browse/HDFS-1623</a>
+</p>
+
+<p>
+7）分布式namenode实现方案
+</p>
+
+<p>
+<a href="http://yanbohappy.sinaapp.com/?m=201204">http://yanbohappy.sinaapp.com/?m=201204</a>
+</p>
+
+<p>
+8）Likely hadoop23 vshadoop 20.x/1.x incompatibility
+</p>
+
+<p>
+<a href="https://issues.apache.org/jira/browse/HBASE-5680">https://issues.apache.org/jira/browse/HBASE-5680</a>
+</p>
+
+<p>
+9）cloudera推出与hadoop 2.0兼容版本
+</p>
+
+<p>
+<a href="https://ccp.cloudera.com/display/SUPPORT/CDH4+Downloadable+Tarballs">https://ccp.cloudera.com/display/SUPPORT/CDH4+Downloadable+Tarballs</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

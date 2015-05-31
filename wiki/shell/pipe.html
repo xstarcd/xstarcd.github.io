@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>管道pipe</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">管道pipe</a>
+<ul>
+<li><a href="#toc_1.1">日志打印到屏幕同时保存到文件及获取管道返回状态</a>
+<li><a href="#toc_1.2">从Shell脚本内部将所有标准输出及标准错误显示在屏幕并同时写入文件的方法</a>
+<li><a href="#toc_1.3">在shell中从管道读取输入</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">管道pipe</h1>
+
+<h2 id="toc_1.1">日志打印到屏幕同时保存到文件及获取管道返回状态</h2>
+
+<p>
+<a href="http://blog.csdn.net/rainharder/article/details/7165526">http://blog.csdn.net/rainharder/article/details/7165526</a>
+</p>
+
+<p>
+为了记录执行日志，又不想在每个脚本里都定义日志函数，还想同时在屏幕输出，（需求有点变态）在网上翻啊翻，终于选择一种方法：在顶层脚本里用管道加tee（也许定义系统级的日志输出更合适）
+</p>
+<pre class="brush:bash">
+sh somescripts.sh 2&gt;&amp;1 | tee -a $logfile
+</pre>
+
+<p>
+2&gt;&amp;1 把标准错误重定义到标准输出，可以避免日志被覆盖
+</p>
+
+<p>
+-a 是为了追加日志追加输出，避免日志被覆盖
+</p>
+
+<p>
+这里还遇到一个问题，如何获取脚本的执行状态。脚本里通过exit 返回执行结果，但是加了tee之后，总是返回正常(0)
+</p>
+
+<p>
+又翻啊翻，终于知道了PIPESTATUS的存在，可以获取管道命令返回状态，多个管道可以通过数组，单个管道可以直接访问PIPESTATUS。
+</p>
+<pre>
+cmd1 | cmd2 | cmd3
+
+with bash:
+
+   The exit codes are provided in the PIPESTATUS special array.
+   cmd1 exit code is in ${PIPESTATUS[0]}, cmd3 exit code in
+   ${PIPESTATUS[2]}, so that $? is always the same as
+   ${PIPESTATUS: -1}.
+</pre>
+
+<ul>
+<li>
+测试
+<pre class="brush:bash">
+#!/bin/sh
+# test.sh
+if [ -n "$1" ];then
+    echo echo status: $1
+    exit $1
+else
+    echo $0 exitValue
+    exit 0
+fi
+</pre>
+<pre class="brush:bash">
+./exit.sh 99| gzip -c &gt; 1.gz;echo ${PIPESTATUS[0]};zcat 1.gz
+# 99
+# echo status: 99
+</pre>
+
+</ul>
+
+<h2 id="toc_1.2">从Shell脚本内部将所有标准输出及标准错误显示在屏幕并同时写入文件的方法</h2>
+
+<p>
+<a href="http://wiki.klniu.com/wiki/从Shell脚本内部将所有标准输出及标准错误显示在屏幕并同时写入文件的方法">http://wiki.klniu.com/wiki/从Shell脚本内部将所有标准输出及标准错误显示在屏幕并同时写入文件的方法</a>
+</p>
+
+
+<p>
+产生这个话题的缘由：
+</p>
+
+<p>
+在编写稍微复杂的Shell脚本时，我们常常需要将标准输出和标准错误信息记录下来，以往我们通过如下形式办到：
+</p>
+<pre class="brush:bash">
+somescript.sh &gt; log 2&gt;&amp;1
+</pre>
+
+<p>
+但这对规范的shell是不太完美的，一是log文件的位置及名称，只能由着执行者来定，存在不确定性；二是执行者是否记得使用这样的句式来确保操作显示有记录，也无法保证。
+</p>
+
+<p>
+所以，我们需要在shell脚本内部指定，不受执行者影响而记录下显示输出的手段，而且，我们还不能用愚蠢的每句后面来一个| tee $logfile的方式
+</p>
+
+<p>
+以下为实现方法，以Korn Shell为准：
+</p>
+
+<p>
+变量： 
+</p>
+
+<p>
+logfile - 所有信息输出的文件 fifofile - 为同时输出到屏幕和文件所建立的管道文件
+</p>
+
+<p>
+Shell内部可以支持的重定向标准输出和标准错误设备的基本方法：
+</p>
+
+<pre class="brush:bash">
+exec 1&gt;$logfile
+exec 2&gt;&amp;1
+</pre>
+
+<p>
+但是，这样就只能将所有信息输出到logfile，无法实现同时显示在屏幕的目的。不可能有exec 1&gt;|tee \$logfile的用法
+</p>
+
+<p>
+以往，在命令行将错误输出也导向屏幕及文件的方法是：
+</p>
+
+<pre class="brush:bash">
+somescript.sh 2&gt;&amp;1 | tee $logfile
+</pre>
+
+<p>
+这里用到管道，而exec命令并不支持管道用法，所以我们需要建立fifo文件来完成
+</p>
+
+<ol>
+<li>
+但是，fifo管道文件是阻塞形管道，没有随时将其内容输出的话，脚本将hang住无法继续，所以我们要用“cat 管道文件”的方式将其随时导出；
+
+<li>
+为了不影响后续命令执行，cat这一句必须放到后台；
+
+<li>
+因为cat管道文件内容的时候，永远不会结束，因为不会遇到EOF标记（就是控制字符Ctrl-D），除非在管道中出现了Ctrl-D，所以我们在脚本最后需要显示一个Ctrl-D，比较方便的方法是print "\015"（015是8进制，换算成10进制就是13，即Ctrl-D的ASCII码）
+
+</ol>
+
+<ul>
+<li>
+最后写法：
+<pre class="brush:bash">
+#!/bin/sh
+# test.sh
+
+logfile=test.log
+fifofile=test.fifo
+ 
+mkfifo $fifofile
+cat $fifofile | tee $logfile &amp;
+ 
+exec 1&gt;$fifofile
+exec 2&gt;&amp;1
+ 
+# some commands to produce normal and error output
+cal
+badcommand to generate stderr messages
+#
+ 
+print "\015"
+</pre>
+
+</ul>
+
+<ul>
+<li>
+运行结果：
+<pre>
+[root@system:/tt] sh test.sh
+      October 2008
+Sun Mon Tue Wed Thu Fri Sat
+            1   2   3   4
+5   6   7   8   9  10  11
+12  13  14  15  16  17  18
+19  20  21  22  23  24  25
+26  27  28  29  30  31
+ 
+test.sh[12]: badcommand:  not found.
+
+[root@system:/tt] cat test.log
+      October 2008
+Sun Mon Tue Wed Thu Fri Sat
+            1   2   3   4
+5   6   7   8   9  10  11
+12  13  14  15  16  17  18
+19  20  21  22  23  24  25
+26  27  28  29  30  31
+ 
+test.sh[12]: badcommand:  not found.
+[root@system:/tt]
+</pre>
+
+</ul>
+
+<ul>
+<li>
+参考文献
+
+</ul>
+
+<p>
+larryh. 从Shell脚本内部将所有标准输出及标准错误显示在屏幕并同时写入文件的方法. [EB/OL], 2008-10-8. [2011-05-23]. 
+<a href="http://www.loveunix.net/thread-90320-1-1.html">http://www.loveunix.net/thread-90320-1-1.html</a>
+</p>
+
+<h2 id="toc_1.3">在shell中从管道读取输入</h2>
+
+<pre class="brush:bash">
+echo "---OK---"|cat /dev/fd/0| grep OK
+echo "---OK---"|cat - | grep OK
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

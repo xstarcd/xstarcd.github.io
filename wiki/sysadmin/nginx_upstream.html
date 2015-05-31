@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>nginx_upstream</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">关于nginx upstream的几种配置方式</a>
+<ul>
+<li><a href="#toc_1.1">轮询</a>
+<li><a href="#toc_1.2">权重</a>
+<li><a href="#toc_1.3">ip_hash</a>
+<li><a href="#toc_1.4">fair</a>
+<li><a href="#toc_1.5">自定义hash</a>
+<li><a href="#toc_1.6">可设参数</a>
+</ul>
+<li><a href="#toc_2">ngx_http_upstream_module模块</a>
+<ul>
+<li><a href="#toc_2.1">upstream</a>
+<li><a href="#toc_2.2">server</a>
+<li><a href="#toc_2.3">ip_hash</a>
+<li><a href="#toc_2.4">keepalive</a>
+<li><a href="#toc_2.5">嵌入的变量</a>
+<li><a href="#toc_2.6">Real-IP</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">关于nginx upstream的几种配置方式</h1>
+
+<p>
+发表于 2011 年 06 月 16 日 由 edwin 
+</p>
+
+<p>
+<a href="http://www.ttjoin.com/blog/index.php/archives/51">http://www.ttjoin.com/blog/index.php/archives/51</a>
+</p>
+
+<p>
+平时一直依赖硬件来作load blance，最近研究Nginx来做负载设备，记录下upstream的几种配置方式。
+</p>
+
+<h2 id="toc_1.1">轮询</h2>
+<pre>
+upstream test{
+    server 192.168.0.1:3000;
+    server 192.168.0.1:3001;
+}
+</pre>
+
+<h2 id="toc_1.2">权重</h2>
+<pre>
+upstream test{
+    server 192.168.0.1 weight=2;
+    server 192.168.0.2 weight=3;
+}
+</pre>
+
+<p>
+这种模式可解决服务器性能不等的情况下轮询比率的调配
+</p>
+
+<h2 id="toc_1.3">ip_hash</h2>
+<pre>
+upstream test{
+    ip_hash;
+    server 192.168.0.1;
+    server 192.168.0.2;
+}
+</pre>
+
+<p>
+这种模式会根据来源IP和后端配置来做hash分配，确保固定IP只访问一个后端。
+</p>
+
+<p>
+1.2.2,1.3.1开始支持ip_hash加权重。
+</p>
+
+<h2 id="toc_1.4">fair</h2>
+
+<p>
+需要安装Upstream Fair Balancer Module
+</p>
+<pre>
+upstream test{
+    server 192.168.0.1;
+    server 192.168.0.2;
+    fair;
+}
+</pre>
+
+<p>
+这种模式会根据后端服务的响应时间来分配，响应时间短的后端优先分配
+</p>
+
+<h2 id="toc_1.5">自定义hash</h2>
+
+<p>
+需要安装Upstream Hash Module
+</p>
+<pre>
+upstream test{
+    server 192.168.0.1;
+    server 192.168.0.2;
+    hash $request_uri;
+}
+</pre>
+
+<p>
+这种模式可以根据给定的字符串进行Hash分配
+</p>
+
+<p>
+具体应用：
+</p>
+<pre>
+server{
+    listen 80;
+    server_name .test.com;
+    charset utf-8;
+   
+    location / {
+        proxy_pass http://test/;
+    }
+}
+</pre>
+
+<h2 id="toc_1.6">可设参数</h2>
+
+<p>
+此外upstream每个后端的可设置参数为：
+</p>
+
+<ul>
+<li>
+down: 表示此台server暂时不参与负载。
+
+<li>
+weight: 默认为1，weight越大，负载的权重就越大。
+
+<li>
+max_fails: 允许请求失败的次数默认为1.当超过最大次数时，返回proxy_next_upstream模块定义的错误。
+
+<li>
+fail_timeout: max_fails次失败后，暂停的时间。
+
+<li>
+backup: 其它所有的非backup机器down或者忙的时候，请求backup机器，应急措施。
+
+</ul>
+
+
+<h1 id="toc_2">ngx_http_upstream_module模块</h1>
+
+<p>
+ngx_http_upstream_module模块: <a href="http://nginx.org/cn/docs/http/ngx_http_upstream_module.html">http://nginx.org/cn/docs/http/ngx_http_upstream_module.html</a>
+</p>
+
+<p>
+翻译: Weibin Yao
+</p>
+
+<h2 id="toc_2.1">upstream</h2>
+
+<p>
+ngx_http_upstream_module模块 允许定义一组服务器。它们可以在指令proxy_pass、 fastcgi_pass和 memcached_pass中被引用到。
+</p>
+
+<pre>
+upstream backend {
+    server backend1.example.com      weight=5;
+    server 127.0.0.1:8080            max_fails=3 fail_timeout=30s;
+    server unix:/tmp/backend3;
+    server backend2.example.com:8080 backup;
+}
+
+server {
+    location / {
+        proxy_pass http://backend;
+    }
+}
+</pre>
+
+<p>
+默认情况下，nginx按加权轮转的方式将请求分发到各服务器。
+</p>
+
+<h2 id="toc_2.2">server</h2>
+
+<pre>
+server address [parameters];
+</pre>
+
+<p>
+定义服务器的地址address和其他参数parameters。 地址可以是域名或者IP地址，端口是可选的，或者是指定“unix:”前缀的UNIX域套接字的路径。
+如果没有指定端口，就使用80端口。如果一个域名解析到多个IP，本质上是定义了多个server。 
+</p>
+
+<p>
+你可以定义下面的参数：
+</p>
+
+<ul>
+<li>
+weight=number
+
+</ul>
+<p>
+设定服务器的权重，默认是1。 
+</p>
+
+
+<ul>
+<li>
+max_fails=number
+
+</ul>
+<p>
+设定Nginx与服务器通信的尝试失败的次数。
+</p>
+
+<p>
+在fail_timeout参数定义的时间段内，如果失败的次数达到此值，Nginx就认为服务器不可用。在下一个fail_timeout时间段，服务器不会再被尝试。
+</p>
+
+<p>
+失败的尝试次数默认是1。设为0就会停止统计尝试次数，认为服务器是一直可用的。
+</p>
+
+<p>
+你可以通过指令proxy_next_upstream、fastcgi_next_upstream和 memcached_next_upstream来配置什么是失败的尝试。
+</p>
+
+<p>
+默认配置时，http_404状态不被认为是失败的尝试。 
+</p>
+
+<ul>
+<li>
+proxy_next_upstream
+<pre>
+语法:   proxy_next_upstream error | timeout | invalid_header | http_500 | http_502 | http_503 | http_504 | http_404 | off ...;
+默认值: proxy_next_upstream error timeout;
+上下文: http, server, location
+</pre>
+
+</ul>
+
+<ul>
+<li>
+fail_timeout=time
+
+</ul>
+
+<p>
+设定统计失败尝试次数的时间段。在这段时间中，服务器失败次数达到指定的尝试次数，服务器就被认为不可用。
+</p>
+
+<p>
+设定服务器被认为不可用的时间段。
+</p>
+
+<p>
+默认情况下，该超时时间是10秒。 
+</p>
+
+<ul>
+<li>
+backup
+
+</ul>
+
+<p>
+标记为备用服务器。当主服务器不可用以后，请求会被传给这些服务器。 
+</p>
+
+<ul>
+<li>
+down
+
+</ul>
+
+<p>
+标记服务器永久不可用，可以跟ip_hash指令一起使用。 
+</p>
+
+<h2 id="toc_2.3">ip_hash</h2>
+
+<p>
+指定服务器组的负载均衡方法，请求基于客户端的IP地址在服务器间进行分发。
+</p>
+
+<p>
+IPv4地址的前三个字节或者IPv6的整个地址，会被用来作为一个散列key。这种方法可以确保从同一个客户端过来的请求，会被传给同一台服务器。
+</p>
+
+<p>
+除了当服务器被认为不可用的时候，这些客户端的请求会被传给其他服务器，而且很有可能也是同一台服务器。 
+</p>
+
+<p>
+如果其中一个服务器想暂时移除，应该加上down参数。这样可以保留当前客户端IP地址散列分布。
+</p>
+
+<p>
+从1.3.2和1.2.2版本开始支持IPv6地址。
+</p>
+
+<p>
+从1.3.1和1.2.2版本开始，ip_hash的负载均衡方法才支持设置服务器权重值。
+</p>
+
+<pre>
+upstream backend {
+    ip_hash;
+    server backend1.example.com;
+    server backend2.example.com;
+    server backend3.example.com down;
+    server backend4.example.com;
+}
+</pre>
+
+<h2 id="toc_2.4">keepalive</h2>
+
+<p>
+激活对上游服务器的连接进行缓存。
+</p>
+
+<p>
+connections参数设置每个worker进程与后端服务器保持连接的最大数量。这些保持的连接会被放入缓存。 如果连接数大于这个值时，最久未使用的连接会被关闭。
+</p>
+
+<p>
+需要注意的是，keepalive指令不会限制Nginx进程与上游服务器的连接总数。 新的连接总会按需被创建。 connections参数应该稍微设低一点，以便上游服务器也能处理额外新进来的连接。 
+</p>
+
+<p>
+配置memcached上游服务器连接keepalive的例子：
+</p>
+<pre>
+    upstream memcached_backend {
+        server 127.0.0.1:11211;
+        server 10.0.0.2:11211;
+
+        keepalive 32;
+    }
+
+    server {
+        ...
+
+        location /memcached/ {
+            set $memcached_key $uri;
+            memcached_pass memcached_backend;
+        }
+
+    }
+</pre>
+
+<p>
+对于HTTP代理，proxy_http_version指令应该设置为“1.1”，同时“Connection”头的值也应被清空。
+</p>
+
+<pre>
+    upstream http_backend {
+        server 127.0.0.1:8080;
+
+        keepalive 16;
+    }
+
+    server {
+        ...
+
+        location /http/ {
+            proxy_pass http://http_backend;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            ...
+        }
+    }
+</pre>
+
+<p>
+另外一种选择是，HTTP/1.0协议的持久连接也可以通过发送“Connection: Keep-Alive”头来实现。不过不建议这样用。 
+</p>
+
+<p>
+对于FastCGI的服务器，需要设置 fastcgi_keep_conn 指令来让连接keepalive工作：
+</p>
+
+<pre>
+    upstream fastcgi_backend {
+        server 127.0.0.1:9000;
+
+        keepalive 8;
+    }
+
+    server {
+        ...
+
+        location /fastcgi/ {
+            fastcgi_pass fastcgi_backend;
+            fastcgi_keep_conn on;
+            ...
+        }
+    }
+</pre>
+
+<p>
+当使用的负载均衡方法不是默认的轮转法时，必须在keepalive 指令之前配置。 
+</p>
+
+<p>
+针对SCGI和uwsgi协议，还没有实现其keepalive连接的打算。 
+</p>
+
+<h2 id="toc_2.5">嵌入的变量</h2>
+
+<p>
+ngx_http_upstream_module模块支持以下嵌入变量：
+</p>
+
+<ul>
+<li>
+$upstream_addr
+
+</ul>
+<p>
+保存服务器的IP地址和端口或者是UNIX域套接字的路径。
+</p>
+
+<p>
+在请求处理过程中，如果有多台服务器被尝试了，它们的地址会被拼接起来，以逗号隔开，比如： “192.168.1.1:80, 192.168.1.2:80, unix:/tmp/sock”。
+</p>
+
+<p>
+如果在服务器之间通过“X-Accel-Redirect”头或者error_page有内部跳转，那么这些服务器组之间会以冒号隔开，比如：“192.168.1.1:80, 192.168.1.2:80, unix:/tmp/sock : 192.168.10.1:80, 192.168.10.2:80”。 
+</p>
+
+<ul>
+<li>
+$upstream_response_time
+
+</ul>
+<p>
+以毫秒的精度保留服务器的响应时间，（输出）单位是秒。 出现多个响应时，也是以逗号和冒号隔开。 
+</p>
+
+<ul>
+<li>
+$upstream_status
+
+</ul>
+<p>
+保存服务器的响应代码。 出现多个响应时，也是以逗号和冒号隔开。 
+</p>
+
+<ul>
+<li>
+$upstream_http_...
+
+</ul>
+<p>
+保存服务器的响应头的值。比如“Server”响应头的值可以通过$upstream_http_server变量来获取。 需要注意的是只有最后一个响应的头会被保留下来。 
+</p>
+
+<h2 id="toc_2.6">Real-IP</h2>
+
+<p>
+Nginx给后端传递真实IP地址设置：
+</p>
+
+<ul>
+<li>
+nginx配置中添加：<code>proxy_set_header X-Real-IP $remote_addr;</code>
+
+<li>
+tomcat中server.xml设置修改:
+
+</ul>
+
+<p>
+没有Nginx这一层的时候直接用%a就可以获得客户端IP，现在我们得用%{X-Real-IP}i 来获得真实的IP：
+</p>
+
+<pre class="brush:xml">
+        &lt;Valve className="org.apache.catalina.valves.AccessLogValve" directory="/var/log/tima" 
+               prefix="tomcat_access_log." suffix=".txt"
+               pattern="%a %l %u %t &amp;quot;%r&amp;quot; %s %b %{Referer}i %{User-Agent}i %D"
+               resolveHosts="false"/&gt;
+
+        &lt;Valve className="org.apache.catalina.valves.AccessLogValve" directory="/var/log/tima" 
+               prefix="tomcat_access_log." suffix=".txt"
+               pattern="%{X-Real-IP}i %l %u %t &amp;quot;%r&amp;quot; %s %b %{Referer}i %{User-Agent}i %D %a"
+               resolveHosts="false"/&gt;
+</pre>
+<ul>
+<li>
+在tomcat中，可能需要使用<code>String ip = request.getHeader("X-Real-IP");</code>替代<code>String ip = request.getRemoteAddr();</code>来获取用户端IP。
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

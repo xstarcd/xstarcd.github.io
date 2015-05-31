@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Tomcat处理HTTP请求详解Connector模块</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Tomcat处理HTTP请求 详解Connector模块</a>
+<ul>
+<li><a href="#toc_1.1">Connector介绍</a>
+<ul>
+<li><a href="#toc_1.1.1">Connector的种类</a>
+<li><a href="#toc_1.1.2">Connector的配置</a>
+<ul>
+<li><a href="#toc_1.1.2.1">BIO HTTP/1.1 Connector配置</a>
+<li><a href="#toc_1.1.2.2">NIO HTTP/1.1 Connector配置</a>
+<li><a href="#toc_1.1.2.3">Native APR Connector配置</a>
+</ul>
+</ul>
+<li><a href="#toc_1.2">Connector在Tomcat中所处的位置</a>
+<ul>
+<li><a href="#toc_1.2.1">Tomcat架构</a>
+<li><a href="#toc_1.2.2">Tomcat运行流程</a>
+</ul>
+<li><a href="#toc_1.3">Connector源码分析</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">Tomcat处理HTTP请求 详解Connector模块</h1>
+
+<p>
+原文：<a href="http://tech.it168.com/a2011/1220/1291/000001291047_all.shtml">http://tech.it168.com/a2011/1220/1291/000001291047_all.shtml</a>
+</p>
+
+<p>
+2011年12月20日10:44 来源：InfoQ 作者：张华
+</p>
+
+<p>
+【IT168 技术】很多开源应用服务器都是集成tomcat作为web container的，而且对于tomcat的servlet container这部分代码很少改动。这样，这些应用服务器的性能基本上就取决于Tomcat处理HTTP请求的connector模块的性能。本文首先从应用层次分析了tomcat所有的connector种类及用法，接着从架构上分析了connector模块在整个tomcat中所处的位置，最后对connector做了详细的源代码分析。并且我们以Http11NioProtocol为例详细说明了tomcat是如何通过实现ProtocolHandler接口而构建connector的。
+</p>
+
+<p>
+通过本文的学习，应该可以轻松做到将tomcat做为web container集成到第三方系统，并且自定义任何你想要的高性能的HTTP连接器。
+</p>
+
+<h2 id="toc_1.1">Connector介绍</h2>
+
+<h3 id="toc_1.1.1">Connector的种类</h3>
+
+<p>
+Tomcat源码中与connector相关的类位于org.apache.coyote包中，Connector分为以下几类：
+</p>
+
+<table>
+<tr>
+<td>
+Http Connector
+</td>
+<td>
+基于HTTP协议，负责建立HTTP连接。它又分为BIO Http Connector与NIO Http Connector两种，后者提供非阻塞IO与长连接Comet支持。
+</td>
+</tr>
+<tr>
+<td>
+AJP Connector
+</td>
+<td>
+基于AJP协议，AJP是专门设计用来为tomcat与http服务器之间通信专门定制的协议，能提供较高的通信速度和效率。如与Apache服务器集成时，采用这个协议。
+</td>
+</tr>
+<tr>
+<td>
+APR HTTP Connector
+</td>
+<td>
+用C实现，通过JNI调用的。主要提升对静态资源(如HTML、图片、CSS、JS等)的访问性能。现在这个库已独立出来可用在任何项目中。Tomcat在配置APR之后性能非常强劲。
+</td>
+</tr>
+</table>
+
+<h3 id="toc_1.1.2">Connector的配置</h3>
+
+<p>
+对Connector的配置位于conf/server.xml文件中。
+</p>
+
+<h4 id="toc_1.1.2.1">BIO HTTP/1.1 Connector配置</h4>
+
+<ul>
+<li>
+一个典型的配置如下：
+<pre>
+connectionTimeout=”20000” redirectPort=”8443”
+</pre>
+
+</ul>
+ 
+<ul>
+<li>
+其它一些重要属性如下：
+
+</ul>
+
+<table>
+<tr>
+<td>
+acceptCount
+</td>
+<td>
+接受连接request的最大连接数目，默认值是10
+</td>
+</tr>
+<tr>
+<td>
+address
+</td>
+<td>
+绑定IP地址，如果不绑定，默认将绑定任何IP地址
+</td>
+</tr>
+<tr>
+<td>
+allowTrace
+</td>
+<td>
+如果是true,将允许TRACE HTTP方法
+</td>
+</tr>
+<tr>
+<td>
+compressibleMimeTypes
+</td>
+<td>
+各个mimeType, 以逗号分隔，如text/html,text/xml
+</td>
+</tr>
+<tr>
+<td>
+compression
+</td>
+<td>
+如果带宽有限的话，可以用GZIP压缩
+</td>
+</tr>
+<tr>
+<td>
+connectionTimeout
+</td>
+<td>
+超时时间，默认为60000ms (60s)
+</td>
+</tr>
+<tr>
+<td>
+maxKeepAliveRequest
+</td>
+<td>
+默认值是100
+</td>
+</tr>
+<tr>
+<td>
+maxThreads
+</td>
+<td>
+处理请求的Connector的线程数目，默认值为200
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+如果是SSL配置，如下：
+
+</ul>
+
+<pre>
+maxThreads="150" scheme="https" secure="true"
+clientAuth="false" sslProtocol = "TLS"
+address="0.0.0.0"
+keystoreFile="E:/java/jonas-full-5.1.0-RC3/conf/keystore.jks"
+keystorePass="changeit" /&gt;
+</pre>
+
+<p>
+其中，keystoreFile为证书位置，keystorePass为证书密码
+</p>
+
+<h4 id="toc_1.1.2.2">NIO HTTP/1.1 Connector配置</h4>
+
+<pre>
+&lt;Connector port=”8080” protocol=”org.apache.coyote.http11.Http11NioProtocol”
+    maxThreads=”150” connectionTimeout=”20000” redirectPort=”8443”
+</pre>
+
+<h4 id="toc_1.1.2.3">Native APR Connector配置</h4>
+
+<p>
+ARP是用C/C++写的，对静态资源(HTML，图片等)进行了优化。所以要下载本地库
+</p>
+
+<p>
+tcnative-1.dll与openssl.exe，将其放在%tomcat%\bin目录下。
+</p>
+
+<p>
+下载地址是：<a href="http://tomcat.heanet.ie/native/1.1.10/binaries/win32/">http://tomcat.heanet.ie/native/1.1.10/binaries/win32/</a>
+</p>
+
+<p>
+在server.xml中要配置一个Listener,如下图。这个配置tomcat是默认配好的。
+</p>
+
+<pre>
+&lt;!--APR library loader. Documentation at /docs/apr.html --&gt;
+&lt;Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on" /&gt;
+</pre>
+
+<p>
+配置使用APR connector 
+</p>
+
+<pre>
+&lt;Connector port=”8080” protocol=”org.apache.coyote.http11.Http11AprProtocol”
+maxThreads=”150” connectionTimeout=”20000” redirectPort=”8443”
+</pre>
+ 
+<p>
+如果配置成功，启动tomcat,会看到如下信息：
+</p>
+<pre>
+org.apache.coyote.http11.Http11AprProtocol init
+</pre>
+
+
+<h2 id="toc_1.2">Connector在Tomcat中所处的位置</h2>
+
+<h3 id="toc_1.2.1">Tomcat架构</h3>
+
+<ul>
+<li>
+Tomcat架构图
+
+</ul>
+
+<p>
+<img src="../files/tomcat/tomcat_structure.jpg" />
+</p>
+
+<p>
+<strong>Server(服务器)</strong> 是Tomcat构成的顶级构成元素，所有一切均包含在Server中，Server的实现类StandardServer可以包含一个到多个Services;
+</p>
+
+<p>
+次顶级元素 <strong>Service</strong> 的实现类为StandardService调用了容器(Container)接口，其实是调用了Servlet Engine(引擎)，而且StandardService类中也指明了该Service归属的Server;
+</p>
+
+<p>
+接下来次级的构成元素就是 <strong>容器(Container)</strong> ， <strong>主机(Host)</strong> 、 <strong>上下文(Context)</strong> 和 <strong>引擎(Engine)</strong> 均继承自Container接口，所以它们都是容器。但是，它们是有父子关系的，在主机(Host)、上下文(Context)和引擎(Engine)这三类容器中，引擎是顶级容器，直接包含是主机容器，而主机容器又包含上下文容器，所以引擎、主机和上下文从大小上来说又构成父子关系，虽然它们都继承自Container接口。
+</p>
+
+<p>
+<strong>连接器(Connector)</strong> 将Service和Container连接起来，首先它需要注册到一个Service，它的作用就是把来自客户端的请求转发到Container(容器)，这就是它为什么称作连接器的原因。
+</p>
+
+<p>
+故我们从功能的角度将Tomcat源代码分成5个子模块，它们分别是：
+</p>
+
+<ul>
+<li>
+Jsper子模块：
+
+</ul>
+
+<p>
+这个子模块负责jsp页面的解析、jsp属性的验证，同时也负责将jsp页面动态转换为java代码并编译成class文件。在Tomcat源代码中，凡是属于org.apache.jasper包及其子包中的源代码都属于这个子模块;
+</p>
+
+<ul>
+<li>
+Servlet和Jsp规范的实现模块：
+
+</ul>
+
+<p>
+这个子模块的源代码属于javax.servlet包及其子包，如我们非常熟悉的javax.servlet.Servlet接口、javax.servet.http.HttpServlet类及javax.servlet.jsp.HttpJspPage就位于这个子模块中;
+</p>
+
+<ul>
+<li>
+Catalina子模块：
+
+</ul>
+
+<p>
+这个子模块包含了所有以org.apache.catalina开头的java源代码。该子模块的任务是规范了Tomcat的总体架构，定义了Server、Service、Host、Connector、Context、Session及Cluster等关键组件及这些组件的实现，这个子模块大量运用了Composite设计模式。同时也规范了Catalina的启动及停止等事件的执行流程。从代码阅读的角度看，这个子模块应该是我们阅读和学习的重点。
+</p>
+
+<ul>
+<li>
+Connectors子模块：
+
+</ul>
+
+<p>
+如果说上面三个子模块实现了Tomcat应用服务器的话，那么这个子模块就是Web服务器的实现。所谓连接器(Connector)就是一个连接客户和应用服务器的桥梁，它接收用户的请求，并把用户请求包装成标准的Http请求(包含协议名称，请求头Head，请求方法是Get还是Post等等)。同时，这个子模块还按照标准的Http协议，负责给客户端发送响应页面，比如在请求页面未发现时，connector就会给客户端浏览器发送标准的Http 404错误响应页面。
+</p>
+
+<ul>
+<li>
+Resource子模块：
+
+</ul>
+
+<p>
+这个子模块包含一些资源文件，如Server.xml及Web.xml配置文件。严格说来，这个子模块不包含java源代码，但是它还是Tomcat编译运行所必需的。
+</p>
+
+<h3 id="toc_1.2.2">Tomcat运行流程</h3>
+
+<p>
+假设来自客户的请求为：<a href="http://localhost:8080/test/index.jsp">http://localhost:8080/test/index.jsp</a>
+</p>
+
+<ol>
+<li>
+请求被发送到本机端口8080，被在那里侦听的Coyote HTTP/1.1 Connector获得
+
+<li>
+Connector把该请求交给它所在的Service的Engine来处理，并等待Engine的回应
+
+<li>
+Engine获得请求localhost:8080/test/index.jsp，匹配它所有虚拟主机Host
+
+<li>
+Engine匹配到名为localhost的Host(即使匹配不到也把请求交给该Host处理，因为该Host被定义为该Engine的默认主机)
+
+<li>
+localhost Host获得请求/test/index.jsp，匹配它所拥有的所有Context
+
+<li>
+Host匹配到路径为/test的Context(如果匹配不到就把该请求交给路径名为""的Context去处理)
+
+<li>
+path="/test"的Context获得请求/index.jsp，在它的mapping table中寻找对应的servlet
+
+<li>
+Context匹配到URL PATTERN为*.jsp的servlet，对应于JspServlet类
+
+<li>
+构造HttpServletRequest对象和HttpServletResponse对象，作为参数调用JspServlet的doGet或doPost方法
+
+<li>
+Context把执行完了之后的HttpServletResponse对象返回给Host
+
+<li>
+Host把HttpServletResponse对象返回给Engine
+
+<li>
+Engine把HttpServletResponse对象返回给Connector
+
+<li>
+Connector把HttpServletResponse对象返回给客户browser
+
+</ol>
+
+<h2 id="toc_1.3">Connector源码分析</h2>
+
+<p>
+略，请看原文。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

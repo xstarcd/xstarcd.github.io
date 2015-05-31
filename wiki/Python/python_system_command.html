@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Python执行系统命令的方法</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Python执行系统命令的方法</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">os.system</a>
+<li><a href="#toc_0.2">os.popen</a>
+<li><a href="#toc_0.3">使用模块subprocess</a>
+<li><a href="#toc_0.4">使用模块commands模块</a>
+</ul>
+</ul>
+</div>
+
+<p>
+原文: <a href="http://www.cnblogs.com/xuxm2007/archive/2011/01/17/1937220.html">http://www.cnblogs.com/xuxm2007/archive/2011/01/17/1937220.html</a>
+</p>
+
+<p>
+Python执行系统命令的方法
+<a href="http://www.linux-field.com/?p=15">http://www.linux-field.com/?p=15</a>
+</p>
+
+<p>
+Python中执行系统命令常见方法有两种：两者均需 import os
+</p>
+
+<h2 id="toc_0.1">os.system</h2>
+
+<p>
+仅仅在一个子终端运行系统命令，而不能获取命令执行后的返回信息
+</p>
+
+<p>
+system(command) -&gt; exit_status
+</p>
+
+<p>
+Execute the command (a string) in a subshell.
+</p>
+
+<ul>
+<li>
+如果再命令行下执行，结果直接打印出来
+<pre>
+&gt;&gt;&gt; os.system('ls')
+04101419778.CHM   bash      document    media      py-django   video
+11.wmv            books     downloads   Pictures  python
+all-20061022      Desktop   Examples    project    tools
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">os.popen</h2>
+
+<p>
+该方法不但执行命令还返回执行后的信息对象
+</p>
+
+<p>
+popen(command [, mode='r' [, bufsize]]) -&gt; pipe
+</p>
+
+<p>
+Open a pipe to/from a command returning a file object.
+</p>
+
+<p>
+例如：
+</p>
+<pre>
+&gt;&gt;&gt;tmp = os.popen('ls *.py').readlines()
+&gt;&gt;&gt;tmp
+Out[21]:
+['dump_db_pickle.py ',
+'dump_db_pickle_recs.py ',
+'dump_db_shelve.py ',
+'initdata.py ',
+'__init__.py ',
+'make_db_pickle.py ',
+'make_db_pickle_recs.py ',
+'make_db_shelve.py ',
+'peopleinteract_query.py ',
+'reader.py ',
+'testargv.py ',
+'teststreams.py ',
+'update_db_pickle.py ',
+'writer.py ']
+</pre>
+
+<p>
+好处在于：将返回的结果赋于一变量，便于程序的处理。
+</p>
+
+<h2 id="toc_0.3">使用模块subprocess</h2>
+
+<ul>
+<li>
+Python中subprocess学习: <a href="http://blog.csdn.net/imzoer/article/details/8678029">http://blog.csdn.net/imzoer/article/details/8678029</a>
+
+<ul>
+<li>
+<a href="python_subprocess_study.html">Python中subprocess学习</a>
+
+</ul>
+</ul>
+
+<pre>
+&gt;&gt;&gt; import subprocess
+&gt;&gt;&gt; subprocess.call(["cmd", "arg1", "arg2"],shell=True)
+</pre>
+
+<p>
+获取返回和输出:
+</p>
+<pre>
+import subprocess
+p = subprocess.Popen('ls', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+for line in p.stdout.readlines():
+    print line,
+retval = p.wait()
+</pre>
+
+<h2 id="toc_0.4">使用模块commands模块</h2>
+<pre>
+&gt;&gt;&gt; import commands
+&gt;&gt;&gt; dir(commands)
+['__all__', '__builtins__', '__doc__', '__file__', '__name__', 'getoutput', 'getstatus','getstatusoutput', 'mk2arg', 'mkarg']
+&gt;&gt;&gt; commands.getoutput("date")
+'Wed Jun 10 19:39:57 CST 2009'
+&gt;&gt;&gt;
+&gt;&gt;&gt; commands.getstatusoutput("date")
+(0, 'Wed Jun 10 19:40:41 CST 2009')
+</pre>
+
+<p>
+注意： 当执行命令的参数或者返回中包含了中文文字，那么建议使用subprocess，如果使用os.popen则会出现下面的错误:
+</p>
+<pre>
+Traceback (most recent call last):
+  File "./test1.py", line 56, in &lt;module&gt;
+    main()
+  File "./test1.py", line 45, in main
+    fax.sendFax()
+  File "./mailfax/Fax.py", line 13, in sendFax
+    os.popen(cmd)
+UnicodeEncodeError: 'ascii' codec can't encode characters in position 46-52: ordinal not inrange(128)
+</pre>
+
+<ul>
+<li>
+关于本文更多的延伸阅读地址：
+
+<ul>
+<li>
+<a href="http://zh-cn.how-to.mobi/index.php?id=89228">http://zh-cn.how-to.mobi/index.php?id=89228</a>
+
+<li>
+<a href="http://www.javaeye.com/topic/406623">http://www.javaeye.com/topic/406623</a>
+
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>SecureCRT实用配置</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>SecureCRT实用配置</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">SecureCRT常用配置</a>
+<ul>
+<li><a href="#toc_0.1.1">小技巧</a>
+<li><a href="#toc_0.1.2">显示设置</a>
+<li><a href="#toc_0.1.3">Zmodem上传下载</a>
+</ul>
+<li><a href="#toc_0.2">端口转发及Firewall</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="../cygwin/KeepassX_SecureCRT.html">KeepassX结合SecureCRT登录</a>
+
+</ul>
+
+<h2 id="toc_0.1">SecureCRT常用配置</h2>
+
+<p>
+参考：<a href="http://blog.csdn.net/ithomer/article/details/9503123">http://blog.csdn.net/ithomer/article/details/9503123</a>
+</p>
+
+<h3 id="toc_0.1.1">小技巧</h3>
+
+<ul>
+<li>
+设置SecureCRT支持在vim中使用鼠标滚动
+<pre>
+Options-&gt;Global Options-&gt;Edit Default Session-&gt;Terminal-&gt;Mouse
+勾选Send scroll wheel events to remote
+</pre>
+
+<li>
+设置SecureCRT右键菜单
+<pre>
+Options-&gt;Global Options-&gt;Terminal-&gt;Mouse
+勾选:Copy on select
+取消勾选:Paste on [middle/right] button
+这样选中内容后，占击右键会弹出右键菜单，否则会直接完成复制、粘贴动作。
+</pre>
+
+</ul>
+
+<ul>
+<li>
+防止服务端断开连接
+
+</ul>
+<p>
+SecureCRT长时间不使用时，ssh服务端会主动断开连接，可设置Anti-idel来防止掉线：
+</p>
+<pre>
+Options-&gt;Global Options-&gt;Default Session-&gt;Edit Default Settings...-&gt;Terminal:
+Anti-idel:勾选Send Protocol NO-OP,every 60 seconds
+</pre>
+
+<h3 id="toc_0.1.2">显示设置</h3>
+<ul>
+<li>
+ANSI Color项设置
+<pre>
+Options-&gt;Global Options-&gt;Terminal-&gt;Apperarance-&gt;ANSI Color：
+背景颜色:Normal colors第1个
+字体颜色:Normal colors/Bold colors:第8个
+目录颜色:Normal colors/Bold colors:第5个
+压缩文件颜色:Normal colors/Bold colors:第2个
+光标颜色:Terminal-&gt;Appearance-&gt;Cursor
+
+颜色参考：
+背景颜色：(RGB)0,40,51;或11,22,33(就是这个Wiki页面的背景色)
+字体颜色：(RGB)31,148,150(较暗);或191,191,191
+目录颜色：(RGB)255,128,128
+压缩文件颜色：(RGB)128,128,0
+
+字体：Consolas,Courier New,Fixedsys,YaHei Consolas hybrid
+
+注意：Global Options-&gt;Default Session-&gt;Terminal-&gt;Emulation中：Terminal选择Linux或Xterm，勾选ANSI Color，但不要勾选Use color scheme，否则自定义颜色不生效。
+</pre>
+
+<li>
+防止中文乱码
+<pre>
+Global Options-&gt;Default Session-&gt;Edit Default Settings...-&gt;Terminal-&gt;Appearance:
+修改Character encoding，一般设置为UTF-8。
+</pre>
+
+<li>
+大显示器上若SecureCRT显示不能占满整个屏幕，可通过 Global Options/Terminal/Appearance/Maximum columns 来调整。
+
+<li>
+SecureCRT设置字体为YaHei Consolas Hybird
+
+<ul>
+<li>
+YaHei Consolas hybrid.1.12字体下载：
+
+<li>
+<a href="../files/YaHei.Consolas.1.12.7z">YaHei.Consolas.1.12.7z</a>
+
+<li>
+<a href="http://pan.baidu.com/s/1qWJc7oC">百度网盘下载：YaHei.Consolas.1.12.7z</a>
+<pre>
+Global Options-&gt;Default Session-&gt;Edit Default Settings...-&gt;Terminal-&gt;Appearance:
+Fonts:Normal font设置为YaHei Consolas Hybird.1.12
+</pre>
+
+</ul>
+<li>
+设置Windows控制台(CMD)使用YaHei Consolas Hybird字体
+
+<ul>
+<li>
+原文: <a href="http://www.echold.com/2011/04/%E5%9C%A8windows%E5%91%BD%E4%BB%A4%E6%8F%90%E7%A4%BA%E7%AC%A6%E4%B8%AD%E4%BD%BF%E7%94%A8%E2%80%9Cyahei-consolas-hybrid%E2%80%9D%E5%AD%97%E4%BD%93.html">在Windows命令提示符中使用“YaHei Consolas Hybrid”字体</a> 
+
+<li>
+修改注册表(如果没有"936"这一项请自行添加，其他请保持不变)
+<pre>
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Console\TrueTypeFont]
+"936"="YaHei Consolas Hybrid"
+</pre>
+
+<li>
+重新打开"命令提示符"，在标题栏右击-&gt;默认值，选项-默认代码页设置为：936；字体选择"YaHei Consolas Hybrid"，字体大小设置为20。
+
+</ul>
+</ul>
+
+<h3 id="toc_0.1.3">Zmodem上传下载</h3>
+
+<p>
+SecureCRT下的文件传输协议有：ASCII、Xmodem、Ymodem、Zmodem。
+</p>
+
+<p>
+文件传输是数据交换的主要形式，在进行文件传输时，为使文件能被正确识别和传送，我们需要在两台计算机之间建立统一的传输协议，这个协议包括了文件的识别、传送的起止时间、错误的判断与纠正等内容。常见的传输协议有以下几种： 
+</p>
+<ol>
+<li>
+ASCII：这是最快的传输协议，但只能传送文本文件。 
+
+<li>
+Xmodem：这种古老的传输协议速度较慢，但由于使用了CRC错误侦测方法，传输的准确率可高达99.6%。 
+
+<li>
+Ymodem：这是Xmodem的改良版，使用了1024位区段传送，速度比Xmodem要快。 
+
+<li>
+Zmodem：Zmodem采用了串流式（streaming）传输方式，传输速度较快，而且还具有自动改变区段大小和断点续传、快速错误侦测等功能。这是目前最流行的文件传输协议。 
+
+</ol>
+
+<p>
+除以上几种外，还有Imodem、Jmodem、Bimodem、Kermit、Lynx等协议，由于没有多数厂商支持，这里就略去不讲。
+</p>
+
+<p>
+SecureCRT可以使用Linux下的zmodem协议来快速的传送文件，你只要设置一下上传和下载的默认目录就行。options-&gt;session options -&gt;Terminal-&gt;Xmodem/Zmodem 下，在右栏Directories设置上传和下载的目录。
+</p>
+
+<ul>
+<li>
+上传文件:使用Zmodem从客户端上传文件到linux服务器
+
+<ul>
+<li>
+先用SecureCRT登陆Linux终端的目录下，该目录是你存放上传文件的目录
+
+<li>
+在Linux下选中你要放置上传文件的路径，并在此目录下然后输入rz命令，SecureCRT会弹出文件选择对话框，在查找范围中找到你要上传的文件，按Add按钮；然后OK，就可以把文件上传到linux上了。
+
+<li>
+或者在Transfer-&gt;Zmodem Upoad list弹出文件选择对话框，选好文件后按Add按钮；然后OK，窗口自动关闭；最后在linux下选中存放文件的目录，输入rz命令；Liunx就把那个文件上传到这个目录下了。
+
+</ul>
+</ul>
+
+<ul>
+<li>
+下载文件:使用Zmodem下载文件到客户端：<code>sz filename</code>
+
+<ul>
+<li>
+zmodem接收可以自行启动，下载的文件存放在你设定的默认下载目录下
+
+<li>
+rz，sz是Linux/Unix同Windows进行ZModem文件传输的命令行工具，Windows端只要支持ZModem的telnet/ssh客户端，SecureCRT就可以用SecureCRT登陆到Unix/Linux主机（telnet或ssh均可）
+
+<li>
+上传：运行命令rz，是接收文件，SecureCRT就会弹出文件选择对话框，选好文件之后关闭对话框，文件就会上传到当前目录 
+
+<li>
+下载：运行命令sz file1 file2就是发文件到windows上（保存的目录是可以配置） 比ftp命令方便多了，而且服务器不用再开FTP服务了
+
+</ul>
+</ul>
+
+<ul>
+<li>
+注意： 如果rz、sz命令无效，所以请大家先安装rzsz-0.12.20-853.2.i586.rpm
+
+</ul>
+
+<h2 id="toc_0.2">端口转发及Firewall</h2>
+
+<p>
+在SecureCRT中设置ssh端口转发可启动一个本地的sock5的代理，再配合SecureCRT的防火墙功能，可实现通过某台主机跳转/Proxy方式连接服务器。
+</p>
+
+<ul>
+<li>
+设置端口转发
+
+<ul>
+<li>
+配置作为跳转的服务器连接的端口转发，进入Options-&gt;Sesion Options-&gt;connection-&gt;Port Forwarding设置界面，点击"Add"按钮添加转发：
+
+<li>
+Name:转发名称，如：Proxy
+
+<li>
+Local IP:不勾选Manually项，使其自动获取本地IP地址
+
+<li>
+Local Port:输出本地侦听端口，如：2223
+
+<li>
+Remote:勾选Dyanmic forwarding using SOCKS 4 or 5，使其动态转发。
+
+<li>
+设置完成后，连接该服务器后，会在本地生成一个127:0.0.1:2223的侦听，该服务为一SOCK5代理，可配置到浏览器、SecureCRT中作为代理使用。
+
+</ul>
+<li>
+设置SecureCRT防火墙
+
+<ul>
+<li>
+进入Options-&gt;Global Options-&gt;Firewall设置界面，点击"Add"添加防火墙：
+
+<li>
+Name:Firewall名称
+
+<li>
+Type:SOCKS version 5(no authentication)
+
+<li>
+Hostname or IP: 127.0.0.1
+
+<li>
+Port:2223(刚才设置端口转发设置的本地端口)
+
+<li>
+设置完成后，先连接端口转发服务器，之后连接其他服务器时，即可在Session Options中选项Firewall。
+
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

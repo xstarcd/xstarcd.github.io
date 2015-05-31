@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>OpenLDAP How To (Fedora)</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">OpenLDAP How To (Fedora)</a>
+<ul>
+<li><a href="#toc_1.1">Outline</a>
+<li><a href="#toc_1.2">Prerequisites</a>
+<li><a href="#toc_1.3">Let’s begin!</a>
+<li><a href="#toc_1.4">Configuration</a>
+<ul>
+<li><a href="#toc_1.4.1">Config file</a>
+<li><a href="#toc_1.4.2">Non-config file</a>
+<li><a href="#toc_1.4.3">Database cache</a>
+<li><a href="#toc_1.4.4">Test configuration</a>
+<li><a href="#toc_1.4.5">Encryption (LDAPS) using TLS</a>
+</ul>
+<li><a href="#toc_1.5">Start LDAP service</a>
+<li><a href="#toc_1.6">Configure base domain</a>
+<li><a href="#toc_1.7">Migrate users and groups</a>
+<li><a href="#toc_1.8">Adding a new user and group</a>
+<li><a href="#toc_1.9">Client Configuration</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">OpenLDAP How To (Fedora)</h1>
+
+<p>
+<a href="http://blog.christophersmart.com/articles/openldap-how-to-fedora/">http://blog.christophersmart.com/articles/openldap-how-to-fedora/</a>
+</p>
+
+<p>
+This tutorial explains how you can set up centralised LDAP authentication for a network, covering both the setting up of the LDAP server and client. Whilst based on Fedora 13, it may also apply to other versions.
+</p>
+
+<p>
+LDAP stands for Lightweight Directory Access Protocol, which is a computer protocol for querying and modifying a database backed directory service. While Fedora ships its own LDAP based server (389 Directory Server), we will be using the OpenLDAP implementation, with Berkley Database (bdb) as the database backend. Data is entered into the LDAP server via plain text LDIF (LDAP Data Interchange Format) files. We will use a set of perl scripts from the migrationtools package to create most of these for us, but we will also create a few manually for adding a new user and group.
+</p>
+
+<p>
+Finally, there are probably better (and more Fedora-specific) ways to do some of these tasks. If so, please let me know!
+</p>
+
+<p>
+Note: For the purposes of this how to, our domain is test.lan and our LDAP server is server.test.lan – replace this with your server details instead!
+</p>
+
+<h2 id="toc_1.1">Outline</h2>
+
+<ul>
+<li>
+The outline of steps is as follows
+
+</ul>
+
+<ol>
+<li>
+Install required packages.
+
+<li>
+Configure the LDAP server configuration file for our domain, test.lan (dc=test,dc=lan).
+
+<li>
+Configure the LDAP server to use TLS encryption, using a self-signed certificate.
+
+<li>
+Start the LDAP server and test.
+
+<li>
+Create LDIF files of our base domain, users and groups using migration tools.
+
+<li>
+Populate the LDAP server using LDIF files.
+
+<li>
+Configure clients to authenticate to LDAP server over secure channel.
+
+</ol>
+
+<h2 id="toc_1.2">Prerequisites</h2>
+
+<p>
+This how to assumes you have performed a standard Fedora install, or a base install with relevant configuration tools installed.
+</p>
+
+<ol>
+<li>
+Networking is configured (see below).
+
+<li>
+DNS is working, or at least you can resolve the LDAP server’s FQDN (fully qualified domain name), i.e. server.test.lan.
+
+<li>
+You have the (awesome) text editor vim installed (if not, substitute and edit as required).
+
+</ol>
+
+<ul>
+<li>
+Disable NetworkManager
+
+</ul>
+
+<p>
+First, you may wish to use standard network configuration rather than NetworkManager on the server.
+</p>
+
+<p>
+If so, let’s become root, disable NetworkManager and tell it to not start automatically on boot.
+</p>
+<pre class="brush: bash">
+ [user@server ~]$ su -
+ [root@server ~]$ service NetworkManager stop
+ [root@server ~]$ chkconfig NetworkManager off
+</pre>
+
+<ul>
+<li>
+Enable standard networking
+
+</ul>
+
+<p>
+Next we enable the standard networking daemon and tell it to start automatically on boot.
+</p>
+<pre class="brush: bash">
+ [root@server ~]$ service network start
+ [root@server ~]$ chkconfig network on
+</pre>
+<p>
+Now you’ll need to configure networking, which you can do via the graphical tool.
+</p>
+
+<pre class="brush: bash">
+ [root@server ~]$ service network start
+ [root@server ~]$ system-configure-network-gui
+</pre>
+
+<p>
+Set eth0 (or your network device) to be static/use DHCP, whatever is required by your network setup, by selecting it and clicking edit.
+</p>
+
+<p>
+Finally, activate the device and close the tool.
+</p>
+
+<p>
+Now that your network is configured, let’s get started with LDAP!
+</p>
+
+<h2 id="toc_1.3">Let’s begin!</h2>
+
+<p>
+As we need to run lots of commands on the LDAP server, it’s easier to to this as root.
+</p>
+
+<p>
+If you’re not yet root, become so.
+</p>
+
+<pre>
+[user@server ~]$ su -
+</pre>
+
+<ul>
+<li>
+Install packages
+
+</ul>
+
+<p>
+We must install the required packages. The first is the LDAP server itself, the second is a set of perl scripts which help us create LDIF files for populating the LDAP server.
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ yum install openldap-servers migrationtools
+</pre>
+
+<ul>
+<li>
+Create admin password
+
+</ul>
+
+<p>
+There is an all-powerful root LDAP user which will populate our directory. Rather than publishing this password in cleartext with in the configuration file, we want to encrypt it.
+</p>
+
+<p>
+To do so, we run the slappasswd command, which will encrypt our password and return the value.
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ slappasswd
+New password:
+Re-enter new password:
+{SSHA}MP0BeMJzmCoCi5olBhwcRDYJaGBFgN5K
+</pre>
+
+<p>
+Copy the final encrypted output (i.e. {SSHA}MP0BeMJzmCoCi5olBhwcRDYJaGBFgN5K) for use in the next section.
+</p>
+
+<h2 id="toc_1.4">Configuration</h2>
+
+<p>
+Previously, OpenLDAP was previously managed via a single configuration file (/etc/openldap/slapd.conf), however these days the configuration for LDAP is stored inside the LDAP server itself! As such, the configuration is done by editing LDIF files under the /etc/openldap/slapd.d/ directory.
+</p>
+
+<p>
+Fedora supports both methods. We can either delete the slapd.d directory and use a slapd.conf file, or go along with the new method and edit the LDIF files before starting up our LDAP server.
+</p>
+
+<h3 id="toc_1.4.1">Config file</h3>
+
+<p>
+If you wish to use the config file (which some will find easier), then follow these instructions.
+</p>
+
+<p>
+Remove the existing slapd.d directory (else Fedora will not read our configuration).
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ rm -Rf /etc/openldap/slapd.d/
+</pre>
+
+<p>
+Create a new config file from the existing template.
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ cp -a /etc/openldap/slapd.conf.bak /etc/openldap/slapd.conf
+</pre>
+
+<p>
+Now that we have the base files in place, we need to begin configuring the file. We need to set several options, most importantly the domain (dc=test,dc=lan), and the admin password.
+</p>
+
+<p>
+First, open it.
+</p>
+<pre class="brush: bash">
+[root@server ~]$ vim /etc/openldap/slapd.conf
+</pre>
+
+<p>
+If you’re using Vim, just run the following command.
+</p>
+<pre>
+:%s/dc=my-domain,dc=com/dc=test,dc=lan/g
+</pre>
+<p>
+If not, find and set the following domain values
+</p>
+
+<pre>
+suffix  "dc=test,dc=lan"
+ rootdn "cn=Manager,dc=test,dc=lan"
+...
+ # allow only rootdn to read the monitor
+ access to *
+      by dn.exact="cn=Manager,dc=test,dc=lan" red
+      by * none
+</pre>
+
+<p>
+Next, we need to set the admin user’s password (which we generated earlier) and tell LDAP where to find the certificate and key for encryption (which we will create in a later step).
+</p>
+<pre>
+rootpw {SSHA}MP0BeMJzmCoCi5olBhwcRDYJaGBFgN5K
+TLSCertificateFile: /etc/openldap/ssl/slapdcert.pem
+TLSCertificateKeyFile: /etc/openldap/ssl/slapdkey.pem
+</pre>
+
+<p>
+Finally, save and quit the file.
+</p>
+
+<p>
+:wq
+</p>
+
+<h3 id="toc_1.4.2">Non-config file</h3>
+
+<p>
+Here’s now to edit the LDIF files under slapd.d to store the LDAP server configuration within LDAP (cn=config) itself.
+</p>
+
+<p>
+The first of two LDIF files is the base database file.
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ vim /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{1\}bdb.ldif
+</pre>
+
+<p>
+If you’re using Vim, then just run the following.
+</p>
+
+<pre>
+:%s/dc=my-domain,dc=com/dc=test,dc=lan/g
+</pre>
+
+<p>
+Else, find and replace the following entry.
+</p>
+<pre>
+olcRootDN: dc=test,dc=lan
+</pre>
+
+<p>
+Now we must set the admin password and specify the location of our encryption certificate and key.
+</p>
+<pre>
+olcRootPW: {SSHA}ccFKiy8ska8IhNwwlaNYxiBNbilWe5M1
+olcTLSCertificateFile /etc/openldap/ssl/slapdcert.pem
+olcTLSCertificateKeyFile /etc/openldap/ssl/slapdkey.pem
+</pre>
+<p>
+Open the second file, which specifies monitoring privileges.
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ vim /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}monitor.ldif
+</pre>
+
+<p>
+Once again, use Vim to replace the required entry.
+</p>
+<pre>
+:%s/cn=manager,dc=my-domain,dc=com/cn=Manager,dc=test,dc=lan/g
+</pre>
+
+<p>
+Or replace it yourself.
+</p>
+
+<p>
+That’s it! Now you can continue with the how to.
+</p>
+
+<h3 id="toc_1.4.3">Database cache</h3>
+
+<p>
+You should now have configured LDAP using either the single config file, or by specifying LDIF files. If not, see above.
+</p>
+
+<p>
+Back at the terminal, copy a default DB_CONFIG file which sets cache and tuning options for the Berkley database backend (this also needs to be writeable by the ldap user).
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ cp /usr/share/doc/openldap-servers-*/DB_CONFIG.example /var/lib/ldap/DB_CONFIG
+[root@server ~]$ chown -Rf ldap:ldap /var/lib/ldap/
+</pre>
+
+<h3 id="toc_1.4.4">Test configuration</h3>
+
+<p>
+Lastly, test your configuration by running the command, and check return:
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ slaptest -u 
+config file testing succeeded
+</pre>
+
+<p>
+That’s all the initial base configuration we should need to do! Next we will configure encryption.
+</p>
+
+<h3 id="toc_1.4.5">Encryption (LDAPS) using TLS</h3>
+
+<p>
+Because we are using LDAP for authentication across a network, we want to encrypt the traffic. This means we can either run LDAP (on default port of 389) with TLS, or the LDAPS (on port 636) with TLS. We will do the latter.
+</p>
+
+<p>
+We need to tell Fedora how to start the secure LDAP daemon, which is done by editing the sysconfig entry for ldap.
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ vim /etc/sysconfig/ldap
+</pre>
+
+<p>
+Set the following:
+</p>
+<pre>
+SLAPD_LDAPS=yes
+</pre>
+
+<p>
+When the service is started, it will also run LDAP Secure (LDAPS).
+</p>
+
+<ul>
+<li>
+Generate and configure keys
+
+</ul>
+
+<p>
+Now that we have told LDAP to run on secure port 636 we need to generate SSL keys and configure the LDAP service to use them!
+</p>
+
+<p>
+Fedora has a script to automate this process, but it’s easy enough to generate the keys manually (when prompted, fill in the information as below, but replace the hostname with the FQDN of the LDAP server!).
+</p>
+
+<pre class="brush: bash">
+ [root@server ~]$ mkdir /etc/openldap/ssl/
+ [root@server ~]$ openssl req -new -x509 -nodes -out /etc/openldap/ssl/slapdcert.pem -keyout /etc/openldap/ssl/slapdkey.pem -days 365
+ Generating a 2048 bit RSA private key
+ ....................................................+++
+ writing new private key to '/etc/openldap/ssl/slapdkey.pem'
+</pre>
+<pre>
+ -----
+ You are about to be asked to enter information that will be incorporated
+ into your certificate request.
+ What you are about to enter is what is called a Distinguished Name or a DN.
+ There are quite a few fields but you can leave some blank
+ For some fields there will be a default value,
+ If you enter '.', the field will be left blank.
+ -----
+ Country Name (2 letter code) [XX]: AU
+ State or Province Name (full name) []: ACT
+ Locality Name (eg, city) [Default City]: Canberra
+ Organization Name (eg, company) [Default Company Ltd]: Company
+ Organizational Unit Name (eg, section) []: Section
+ Common Name (eg, your name or your server's hostname) []: server.test.lan
+ Email Address []: user@test.lan
+</pre>
+
+<p>
+This will create the two required keys in the /etc/openldap/ssl/ directory, but we need to make sure that the ldap user can read them.
+</p>
+<pre class="brush: bash">
+[root@server ~]$ chown -Rf root:ldap /etc/openldap/ssl
+[root@server ~]$ chmod -Rf 750 /etc/openldap/ssl
+</pre>
+
+<p>
+We have already told the LDAP server to use them, so once we start the server it should be good to go!
+</p>
+
+<h2 id="toc_1.5">Start LDAP service</h2>
+
+<p>
+It’s time to start the LDAP service, and tell it to start on bootup.
+</p>
+<pre class="brush: bash">
+ [root@server ~]$ service slapd start
+ Starting slapd:                                            [  &lt;font color=green&gt;OK&lt;/font&gt;  ]
+</pre>
+
+<p>
+Test that the server came up properly and is listening on the LDAPS port
+</p>
+<pre>
+ [root@server ~]$ netstat -lt |grep ldap
+ tcp  0  0 *:ldap   *:*  LISTEN
+ tcp  0  0 *:ldaps  *:*  LISTEN
+</pre>
+
+<p>
+If so, tell Fedora to start the LDAP server on bootup.
+</p>
+<pre class="brush: bash">
+[root@server ~]$ chkconfig slapd on
+</pre>
+
+<ul>
+<li>
+Test configuration
+
+</ul>
+
+<pre class="brush: bash">
+ [root@server ~]$ ldapsearch -x -b '' -s base '(objectclass=*)' namingContexts
+ # extended LDIF
+ #
+ # LDAPv3
+ # base &lt;&gt; with scope baseObject
+ # filter: (objectclass=*)
+ # requesting: namingContexts 
+ #
+
+ #
+ dn:
+ namingContexts: dc=test,dc=lan
+
+ # search result
+ search: 2
+ result: 0 Success
+
+ # numResponses: 2
+ # numEntries: 1
+</pre>
+
+<p>
+This should returns a success, as above.
+</p>
+
+<p>
+If all that went as planned, congratulations, you have a basic LDAP server configured! Next we need to populate this with our users and groups.
+</p>
+
+<h2 id="toc_1.6">Configure base domain</h2>
+
+<p>
+We should now have a base LDAP server running, configured for our domain. However we do not have any users (People) or groups (Group) configured! We do that in the next step Now we need to set up our base, authentication and group files.
+</p>
+
+<p>
+This is done via a migration of your existing local unix accounts already configured on the system, which are converted into an LDIF file for loading into LDAP. First however, we need to create a template base.ldif file which creates the base structure of our directory (test.lan), which we will import into LDAP database first.
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ vim base.ldif
+</pre>
+
+<p>
+Add the following to the base.ldif file:
+</p>
+<pre>
+dn: dc=test,dc=lan
+dc: test
+objectClass: top
+objectClass: domain
+
+dn: ou=People,dc=test,dc=lan
+ou: People
+objectClass: top
+objectClass: organizationalUnit
+
+dn: ou=Group,dc=test,dc=lan
+ou: Group
+objectClass: top
+objectClass: organizationalUnit
+</pre>
+
+<p>
+Now that we have the base information for our LDAP structure, we can (hopefully!) import that information into our LDAP database (use the password you created above):
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ vim base.ldif
+[root@server ~]$ ldapadd -x -W -D "cn=Manager,dc=test,dc=lan" -f ./base.ldif
+ Enter LDAP Password:
+ adding new entry "dc=test,dc=lan"
+ adding new entry "ou=People,dc=test,dc=lan"
+ adding new entry "ou=Group,dc=test,dc=lan"
+</pre>
+
+<p>
+If you saw the above, then it worked! If you get an error about authentication issues connecting to my-domain.com then it’s not reading your configuration properly, and is using the default. Stop the service and start again.
+</p>
+
+<h2 id="toc_1.7">Migrate users and groups</h2>
+
+<p>
+We are now going to use the migration tools to create ldif files for our existing users and groups, which we will import into LDAP like in the previous step.
+</p>
+
+<p>
+First, tell the migration scripts which domain to use by default (we want to use test.lan instead of the default padl.com).
+</p>
+<pre class="brush: bash">
+[root@server ~]$ vim /usr/share/migrationtools/migrate_common.ph
+</pre>
+<p>
+Set the following:
+</p>
+<pre>
+ # Default DNS domain
+ $DEFAULT_MAIL_DOMAIN = "test.lan";
+ 
+ # Default base 
+ $DEFAULT_BASE = "dc=test,dc=lan";
+</pre>
+
+<ul>
+<li>
+Users (People)
+
+</ul>
+
+<p>
+Now, we will use the migration script to create an ldif which we will use to populate LDAP with all our existing users (note, this will pull in the user account).
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ /usr/share/migrationtools/migrate_passwd.pl /etc/passwd people.ldif
+</pre>
+
+<p>
+Once you have the file, we can import the entries into LDAP:
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ ldapadd -x -W -D "cn=Manager,dc=test,dc=lan" -f people.ldif
+</pre>
+
+<ul>
+<li>
+Groups (Group)
+
+</ul>
+
+<p>
+Now, we will use the migration script to create an ldif which we will use to populate LDAP with all our existing groups (note, this will pull in the user group).
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ /usr/share/migrationtools/migrate_group.pl /etc/group group.ldif
+</pre>
+
+<p>
+Once you have the file, we can import the entries into LDAP:
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$  ldapadd -x -W -D "cn=Manager,dc=test,dc=lan" -f group.ldif
+</pre>
+
+<ul>
+<li>
+Test contents of LDAP database
+
+</ul>
+
+<p>
+Now, we have our database populated with info. It’s time to test our work. First, you can use the ldapsearch command to look for your username. You should get a successful response back, as below.
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ ldapsearch -xWD “cn=Manager,dc=test,dc=lan” -b “dc=test,dc=lan” “cn=user”
+ # extended LDIF
+ #
+ ...
+ # user, Group, test.lan
+ dn: cn=user,ou=Group,dc=test,dc=lan
+ objectClass: posixGroup
+ objectClass: top
+ cn: user
+ userPassword:: E2NyeXB0fXG=
+ gidNumber: 500
+
+ # search result
+ search: 2
+ result: 0 Success
+ ...
+</pre>
+
+<h2 id="toc_1.8">Adding a new user and group</h2>
+
+<p>
+To add a new user, we create an ldif for the user account, and the group. Then we import these into the LDAP server, like we did with the base, people and groups previously.
+</p>
+
+<ul>
+<li>
+User
+
+</ul>
+
+<p>
+To add a user, simply create an ldif file (like chris.ldif) with contents like so:
+</p>
+
+<pre>
+dn: uid=chris,ou=People,dc=test,dc=lan
+uid: chris
+cn: Chris Smart
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+userPassword: {crypt}$6$XemGNmMU9f3FRFo/vt7Uld/gUcP/2N7/R.uw5SK.
+shadowLastChange: 14846
+shadowMax: 99999
+shadowWarning: 7
+loginShell: /bin/bash
+uidNumber: 501
+gidNumber: 501
+homeDirectory: /home/chris
+gecos: Chris Smart
+</pre>
+
+<ul>
+<li>
+Group
+
+</ul>
+
+<p>
+Then, add the group information for this user (like chris-group.ldif):
+</p>
+
+<pre>
+dn: cn=chris,ou=Group,dc=test,dc=lan
+objectClass: posixGroup
+objectClass: top
+cn: chris
+userPassword: {crypt}x
+gidNumber: 501
+</pre>
+
+<ul>
+<li>
+Add to LDAP
+
+</ul>
+
+<p>
+Then add these into LDAP!
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ ldapadd -x -W -D "cn=Manager,dc=test,dc=lan" -f chris.ldif
+#Enter LDAP Password:
+#adding new entry "uid=chris,ou=People,dc=test,dc=lan"
+ 
+[root@server ~]$ ldapadd -x -W -D "cn=Manager,dc=test,dc=lan" -f chris-group.ldif
+#Enter LDAP Password:
+#adding new entry "cn=chris,ou=Group,dc=test,dc=lan"
+</pre>
+
+<p>
+Now you have a new user called chris!
+</p>
+
+<h2 id="toc_1.9">Client Configuration</h2>
+
+<p>
+Now that we have a server which is responding correctly, we can configure our clients to authenticate to the LDAP server.
+</p>
+
+<p>
+For Fedora machines, authconfig-gtk or authconfig-tui:
+</p>
+
+<pre class="brush: bash">
+[root@server ~]$ authconfig-gtk
+# or
+[root@server ~]$ authconfig
+</pre>
+
+<p>
+In the tool, select and fill in the details below.
+</p>
+
+<ul>
+<li>
+User Account Configuration
+<pre>
+User Account Database: LDAP
+LDAP Search Base DN: dc=test,dc=lan
+LDAP Server: ldaps://server.test.lan
+</pre>
+
+</ul>
+
+<ul>
+<li>
+Authentication Configuration
+<pre>
+Authentication Method: LDAP Password
+</pre>
+
+</ul>
+
+<p>
+Now, we need to tell Fedora the location of the encryption certificate. Click on Download CA Certificate and pass the location of the file.
+Note: If this is a local machine, you can use <a href="file://,">file://,</a> however if it’s a remote machine, you’ll need to put the certificate on an NFS, FTP or HTTP share.
+</p>
+
+
+<p>
+On the <strong>Advanced Options</strong> tab, tick <strong>Create home directories on the first login</strong> – else although users can authenticate, they won’t have a home directory when they log in!
+</p>
+
+<p>
+Hit Apply and we should now be able to log in as our users!
+</p>
+
+<ul>
+<li>
+Test
+
+</ul>
+
+<p>
+Of course, to test this you can just log out and back in, but a quicker way (in case something’s not right) is to open a non-root terminal and switch to the new user you created (i.e. chris as above).
+</p>
+<pre class="brush: bash">
+[user@server ~]$ su - chris
+</pre>
+
+<p>
+This should ask for chris’ password and if everything’s working correctly, you should be able to switch to this user.
+</p>
+
+<p>
+If it fails, check your /var/log/messages to see if there are some helpful errors.
+</p>
+
+<p>
+Licensed under Creative Commons 3.0 non-ported license.
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

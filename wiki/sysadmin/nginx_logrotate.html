@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>nginx logrotate</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>nginx logrotate</h1>
+
+<ul>
+<li>
+/etc/logrotate.d/nginx
+<pre class="brush:bash">
+cat &gt; /etc/logrotate.d/nginx &lt;&lt;EOF
+/var/log/nginx/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    notifempty
+    dateext
+    sharedscripts
+    postrotate
+        [ -f /var/run/nginx.pid ] &amp;&amp; kill -USR1 \`cat /var/run/nginx.pid\`
+    endscript
+}
+EOF
+</pre>
+
+</ul>
+
+<ul>
+<li>
+执行logrotate
+<pre class="brush:bash">
+logrotate -f /etc/logrotate.d/nginx
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

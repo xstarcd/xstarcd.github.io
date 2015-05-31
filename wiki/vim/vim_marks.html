@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>vim marks</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+
+<h1 id="toc_1">vim marks</h1>
+
+
+<p>
+VIM标记 mark 详解  
+</p>
+
+<p>
+<a href="http://blog.163.com/lgh_2002/blog/static/44017526201081154512135/">http://blog.163.com/lgh_2002/blog/static/44017526201081154512135/</a>
+</p>
+
+<ul>
+<li>
+简要
+
+</ul>
+
+<pre>
+ma      #设置标记a，可使用a-z
+'a      #跳转到标记a行首
+`a      #跳转到标记a指定列
+''      #跳转前位置
+
+:marks  #列出标记
+</pre>
+<p>
+Vim 允许你在文本中放置自定义的标记。命令 "ma" 用 a 标记当前的光标位置。你可以在文本中使用 26 个标记（a到z）。这些标记是不可见的，只是一个由 Vim 记住的位置。
+</p>
+
+<p>
+要跳到一个你定义的标记，可以使用命令 `{mark}，这里 {mark} 是指定义标记的那个字母。所以，移到标记a的命令是：
+</p>
+<pre>
+`a
+</pre>
+<p>
+命令 'mark（单引号加上一个标记）会移到标记所在行的行首。这与 `mark 命令是不同的，后者是移到标记所在行上被标记的列。
+</p>
+
+<p>
+标记在需要处理一个文件的两个相关地方的时候非常有用。假设你在处理文末的时候需要查看文首的一些内容，先移动到行首，设置一个标记 s (start)：
+</p>
+<pre>
+ms
+</pre>
+
+<p>
+然后移动到你需要处理的地方，再设置一个标记 e (end)：
+</p>
+<pre>
+me
+</pre>
+
+<p>
+现在你可以随意移动，当你需要看开头的地方，可以使用这个命令移到那里：
+</p>
+<pre>
+'s
+</pre>
+
+<p>
+然后使用 '' 跳回来。或者用 'e 跳到你正在处理的文尾的地方。这里使用 s 和 e 作标记名没有特别的含义，只是为了好记而已。
+</p>
+<pre>
+''
+</pre>
+<p>
+你可以用如下命令取得所有的标记的列表：
+</p>
+<pre>
+:marks
+</pre>
+
+<p>
+你会注意到有一些特殊的标记，包括：
+</p>
+<pre>
+'       跳转前的位置
+"       最后编辑的位置
+[       最后修改的位置的开头
+]       最后修改的位置的结尾 
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

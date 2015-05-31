@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title> 压力测试和评测工具 Siege</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1> 压力测试和评测工具 Siege</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">安装</a>
+<li><a href="#toc_0.2">参数说明</a>
+<li><a href="#toc_0.3">结果说明</a>
+</ul>
+</ul>
+</div>
+
+
+<ul>
+<li>
+Web性能压力测试工具之Siege详解: <a href="http://www.ha97.com/4663.html">http://www.ha97.com/4663.html</a>
+
+<li>
+系统吞吐量（TPS）、用户并发量、性能测试概念和公式:<a href="http://www.ha97.com/5095.html">http://www.ha97.com/5095.html</a>
+
+<li>
+Siege官网：<a href="http://www.joedog.org/">http://www.joedog.org/</a>
+
+<li>
+下载地址
+
+<ul>
+<li>
+<a href="../files/shell/siege-3.0.6.tar.gz">siege</a>: <a href="http://www.joedog.org/pub/siege/">http://www.joedog.org/pub/siege/</a>
+
+<li>
+<a href="../files/shell/sproxy-1.02.tar.gz">Sproxy</a>: <a href="http://www.joedog.org/pub/sproxy/">http://www.joedog.org/pub/sproxy/</a>
+
+</ul>
+<li>
+压力测试工具siege的用法:<a href="http://buzheng.org/blog/usage-of-siege.html">http://buzheng.org/blog/usage-of-siege.html</a> 
+
+</ul>
+
+<p>
+Siege是一款开源的压力测试工具，设计用于评估WEB应用在压力下的承受能力。可以根据配置对一个WEB站点进行多用户的并发访问，记录每个用户所有请求过程的相应时间，并在一定数量的并发访问下重复进行。siege可以从您选择的预置列表中请求随机的URL。所以siege可用于仿真用户请求负载，而ab则不能。但不要使用siege来执行最高性能基准调校测试，这方面ab就准确很多。
+</p>
+
+<p>
+Sproxy做为一个代理侦听9001端口，可用于搜集正常访问的GET/POST请求、生成siege适用的Urls.txt文件格式。
+</p>
+
+<h2 id="toc_0.1">安装</h2>
+
+<pre class="brush:bash">
+# siege
+tar zxvf siege-3.0.6.tar.gz
+cd siege-3.0.6/
+./configure
+make
+make install
+
+# sproxy
+yum -y install perl-devel openssl-devel
+tar zxvf sproxy-1.02.tar.gz
+cd sproxy-1.02/
+./configure
+make
+make install
+</pre>
+
+<h2 id="toc_0.2">参数说明</h2>
+
+<pre class="brush:bash">
+siege --help
+
+SIEGE 3.0.6
+Usage: siege [options]
+       siege [options] URL
+       siege -g URL
+Options:
+  -V, --version             VERSION, prints the version number.
+  -h, --help                HELP, prints this section.
+  -C, --config              CONFIGURATION, show the current config.
+                            #在屏幕上打印显示出当前的配置,配置是包括在他的配置文件$HOME/.siegerc中,
+                            #可以编辑里面的参数,这样每次siege 都会按照它运行.
+  -v, --verbose             VERBOSE, prints notification to screen.
+                            #运行时能看到详细的运行信息
+  -q, --quiet               QUIET turns verbose off and suppresses output.
+  -g, --get                 GET, pull down HTTP headers and display the
+                            transaction. Great for application debugging.
+  -c, --concurrent=NUM      CONCURRENT users, default is 10
+                            #模拟有n个用户在同时访问,n不要设得太大,因为越大,siege 消耗本地机器的资源越多
+  -i, --internet            INTERNET user simulation, hits URLs randomly.
+                            #随机访问urls.txt中的url列表项,以此模拟真实的访问情况(随机性)
+  -b, --benchmark           BENCHMARK: no delays between requests.
+  -t, --time=NUMm           TIMED testing where "m" is modifier S, M, or H
+                            ex: --time=1H, one hour test.
+                            #持续运行siege ‘n’秒(如10S),分钟(10M),小时(10H)
+  -r, --reps=NUM            REPS, number of times to run the test.
+                            #重复运行测试n次,不能与 -t同时存在
+  -f, --file=FILE           FILE, select a specific URLS FILE.
+                            #指定用urls文件,默认为siege安装目录下的etc/urls.txt
+                            #urls.txt文件：是很多行待测试URL的列表以换行符断开,格式为:
+                            #[protocol://]host.domain.com[:port][path/to/file]
+  -R, --rc=FILE             RC, specify an siegerc file
+                            #指定用特定的siege配置文件来运行,默认的为$HOME/.siegerc
+  -l, --log[=FILE]          LOG to FILE. If FILE is not specified, the
+                            default is used: PREFIX/var/siege.log
+                            #运行结束,将统计数据保存到日志文件siege.log中,可在.siegerc中自定义日志文件
+  -m, --mark="text"         MARK, mark the log file with a string.
+  -d, --delay=NUM           Time DELAY, random delay before each requst
+                            between 1 and NUM. (NOT COUNTED IN STATS)
+                            #hit每个url之间的延迟,在0-n之间
+  -H, --header="text"       Add a header to request (can be many)
+  -A, --user-agent="text"   Sets User-Agent in request
+  -T, --content-type="text" Sets Content-Type in request
+
+Copyright (C) 2014 by Jeffrey Fulmer, et al.
+This is free software; see the source for copying conditions.
+There is NO warranty; not even for MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.
+</pre>
+
+<ul>
+<li>
+url文件格式_GET
+<pre>
+server=172.17.19.80:80
+http://${server}/q?k1=v1&amp;k2=v2
+</pre>
+
+<li>
+url文件格式_POST
+<pre>
+server=172.17.19.80:80
+http://${server}/q POST k1=v1&amp;k2=v2
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">结果说明</h2>
+<pre class="brush:bash">
+** SIEGE 2.72
+** Preparing 300 concurrent users for battle.
+The server is now under siege.. done.
+
+Transactions:             30000 hits      #完成30000次处理
+Availability:            100.00 %         #成功率
+Elapsed time:             68.59 secs      #总共使用时间
+Data transferred:        817.76 MB        #共数据传输 817.76 MB
+Response time:             0.04 secs      #响应时间，显示网络连接的速度
+Transaction rate:        437.38 trans/sec #平均每秒完成 437.38 次处理
+Throughput:               11.92 MB/sec    #平均每秒传送数据
+Concurrency:              17.53           #实际最高并发连接数
+Successful transactions:  30000           #成功处理次数
+Failed transactions:          0           #失败处理次数
+Longest transaction:       3.12           #每次传输所花最长时间
+Shortest transaction:      0.00           #每次传输所花最短时间 
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

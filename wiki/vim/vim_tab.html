@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>vim的标签页功能</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Vim 的标签页功能</a>
+<ul>
+<li><a href="#toc_1.1">建立新的标签页</a>
+<li><a href="#toc_1.2">在标签页之间跳来跳去</a>
+<li><a href="#toc_1.3">gvim 的 remote-tab 功能</a>
+<li><a href="#toc_1.4">标签页的排序</a>
+<li><a href="#toc_1.5">优化标签页名的显示</a>
+<li><a href="#toc_1.6">标签页与会话</a>
+</ul>
+</ul>
+</div>
+
+<p>
+原文：<a href="http://liyanrui.is-programmer.com/posts/1857.html">http://liyanrui.is-programmer.com/posts/1857.html</a>
+</p>
+
+<h1 id="toc_1">Vim 的标签页功能</h1>
+
+<p>
+虽然一直在使用 Vim 写程序与文档，但是一直没有深究其标签页 (Tab Page) 功能的具体使用方法。现在开始重视这个问题，毕竟使用 Vim 的时间越来越少了，当然这只是针对我的所有生命而言。
+</p>
+
+<h2 id="toc_1.1">建立新的标签页</h2>
+
+<p>
+使用 Vim 在当前工作目录中新建或打开某一文件并开启新标签页显示文件内容，操作如下：
+</p>
+<blockquote>
+:tabnew filename
+</blockquote>
+
+<p>
+使用 tabf 指令基于正则表达式递归遍历当前工作目录查找名称匹配的文件并为其建立新标签页，用法如下：
+</p>
+<blockquote>
+:tabf filename_re
+</blockquote>
+
+<p>
+上述操作的前提是将 Vim 的工作目录定位到所期望的位置，否则所修改的文件可能会阴差阳错存储到你不知道的某一目录下。
+</p>
+
+<p>
+在终端里使用 Vim 打开某一文件时，会默认将当前目录作为 Vim 的工作目录，但是在使用 gvim 时，如果从桌面环境提供的文件管理器中直接打开某一文本文件，gvim 的工作目录默认是 HOME。可能你与我一样，喜欢自动将 Vim 工作目录迁移到所打开文本文件的目录下，解决方法是编辑 HOME/.vimrc 文件，添加以下代码：
+</p>
+<pre class="brush: bash">
+    "Change work dir to current dir
+    autocmd BufEnter * cd %:p:h
+</pre>
+
+<h2 id="toc_1.2">在标签页之间跳来跳去</h2>
+
+<p>
+使用 ":tabp" 与 ":tabn" 可分别实现在一组标签页中向前或向后切换当前标签页，但是这样太繁琐了，为了将当前标签页切换到相邻的标签页需要摁 7 次键。利用 Vim 提供的键映射功能，可将 ":tabp" 与 ":tabn" 命令映射到你喜欢的快捷键上。我热衷于将 ":tabp" 映射为 "Shift + Left" 组合键，将 ":tabn" 映射为 "Shift + Right" 组合键，做法是编辑 $HOME/.vimrc，添加：
+</p>
+<pre class="brush: bash">
+    " shift tab pages
+    map &lt;S-Left&gt; :tabp&lt;CR&gt;
+    map &lt;S-Right&gt; :tabn&lt;CR&gt;
+</pre>
+
+<h2 id="toc_1.3">gvim 的 remote-tab 功能</h2>
+
+<p>
+gvim 提供了 remote-tab 的功能，可以实现在 gvim 打开文件的同时为其建立标签页。这里，“remote” 的概念是指 gvim 好像一个当前正在运行的服务器程序，在终端下使用 "gvim --remote-tab-silent filename" 这样的命令时，会将“打开文档并为其建立标签页”的指令传递于当前正在运行的 gvim 进程，gvim 进程便会乖乖地执行这一命令。该功能所能带来的好处就是只需要开一个 gvim 进程，所有待编辑的文件都以标签页的形式出现在该 gvim 进程中，这样便于隶属于某一项目的多分文件的编辑与管理。
+</p>
+
+<p>
+先把你正在运行的所有 gvim 进程都关掉，然后依次执行以下的命令，就可以切身体验 remote-tab 的功用了。
+</p>
+<pre class="brush: bash">
+$ gvim    a.txt
+$ gvim    --remote-tab-silent    b.txt
+$ gvim    --remote-tab-silent    c.txt    d.txt    e.txt
+</pre>
+
+<p>
+实际应用中，可使用 Shell 提供的别名功能，对 “gvim --remote-tab-silent” 这样的长命令行进行友好简化，做法是编辑 $HOME/.bashrc 文件，向其中添加：
+</p>
+<pre class="brush: bash">
+alias vi='gvim --remote-tab-silent'
+</pre>
+
+<p>
+具体使用什么别名，要依据个人喜好。我之所以使用 "vi" 作为 "gvim --remote-tab-silent" 命令的别名，是因为我不大常用 vi 这个命令，而且在许多 linux 发行版中，"vi" 默认连接到 "vim" 的。
+</p>
+
+<p>
+现在使用 vi 别名来实现前面那个例子：
+</p>
+<pre class="brush: bash">
+$ vi    a.txt  b.txt  c.txt  d.txt  e.txt
+</pre>
+
+<p>
+以前我习惯使用 "vim" 在终端开启 vim，使用 "gvim" 开启 vim GUI，唯独不大用 "vi" 这个命令，但是从现在开始也许我用的最多的是 vi 指令了。
+</p>
+
+
+<h2 id="toc_1.4">标签页的排序</h2>
+
+<p>
+有时打开多个标签页，它们在标签页栏中的排列次序并不是我们所希望的，需要手动去调整。许多编辑器支持使用鼠标拖放来调整标签页的次序，但 vim 不可以，目前只能借助标签页编号机制并采用命令模式来解决标签页次序调整问题。
+</p>
+
+<p>
+在标签页栏中，每一标签页都是有编号的，从 0 开始，由左至右依次递增 1。
+</p>
+
+<p>
+使用 ':tabm n' 命令可以将当前标签所对应的编号调整为 'n'，即将当前标签页的位置调整到编号 'n' 所对应的标签页位置。
+</p>
+
+<h2 id="toc_1.5">优化标签页名的显示</h2>
+
+<p>
+Vim 的标签栏中，各标签页的名称默认是对应文件所在路径全称的简写，譬如 /usr/share/doc/test.txt 文件所对应的标签页名默认是 /u/s/d/test.txt，这样的标签页名看上去有些诡异。我觉得没有必要显示标签文件的路径名，因为在大多数情况下，用户是非常清楚所编辑文件的位置，即使一时忘记，也可以使用 ':f' 命令查看文件名。特别是在 gvim 里，鼠标往标签页名那里悬挂一下，就会出现一个很小的提示窗口，其中显示了标签文件的路径全称。
+</p>
+
+<p>
+下面是我对 Vim 标签页的 hack，在标签页栏中去除当前所编辑文件的路径信息，只保留文件名。
+</p>
+  
+<pre class="brush: bash">
+function ShortTabLabel ()
+    let bufnrlist = tabpagebuflist (v:lnum)
+    let label = bufname (bufnrlist[tabpagewinnr (v:lnum) -1])
+    let filename = fnamemodify (label, ':t')
+    return filename
+endfunction
+set guitablabel=%{ShortTabLabel()}
+</pre>
+
+<h2 id="toc_1.6">标签页与会话</h2>
+
+<p>
+Vim 可以将当前的工作状态存储为会话文件，通过读取该会话文件就可以将 vim 工作环境恢复到你上次退出之前的编辑环境。对于当前所开启的标签页组，在下一次编辑时，可以利用 vim 的会话功能将它们一并开启，快速复原到上一次工作状态，这样就可以在 vim 中模拟出 IDE 所特有的项目管理功能。
+</p>
+
+<p>
+要恢复上次的编辑环境，我们需要保存会话 (session) 信息与 viminfo 信息：
+</p>
+
+<ol>
+<li>
+会话信息中保存了所有窗口的视图，外加全局设置；
+
+<li>
+viminfo 信息中保存了命令行历史、搜索字符串历史、输入行历史、非空的寄存器内容、文件的位置标记、最近搜索/替换的模式、缓冲区列表、全局变量等信息。
+
+</ol>
+
+<p>
+对于 vim 会话功能的使用，具体细节请参阅 easwy 的一篇文章《Vim 会话与 info》。为了更方便地使用 vim 会话功能，推荐使用 sessionman.vim插件。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

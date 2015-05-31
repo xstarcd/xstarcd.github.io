@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Linux</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Linux</a>
+</ul>
+</div>
+<h1 id="toc_1">Linux</h1>
+
+<ul>
+<li>
+<a href="http://www.redhat.com/en/global/china"><img src="../img/linux/redhat-logo.png" alt="RedHat" /></a>
+
+<li>
+<a href="CentOS/index.html"><img src="../img/linux/modern-CentOS-logo.png" alt="CentOS" /></a>
+
+<li>
+<a href="Ubuntu/index.html"><img src="../img/linux/ubuntu_logo.png" alt="Ubuntu" /></a>
+
+<li>
+<a href="rsyslog_logrotate.html">rsyslog_logrotate</a>
+
+<li>
+<a href="system_options.html">system_options</a>
+
+<li>
+<a href="grub.html">grub</a>
+
+<li>
+<a href="nfs.html">nfs</a>
+
+<li>
+<a href="samba.html">samba</a>
+
+<li>
+<a href="lvm.html">lvm</a>
+
+<li>
+<a href="RemoteDesktop.html">RemoteDesktop</a>
+
+<li>
+<a href="linux_tips.html">linux_tips</a>
+
+<li>
+<a href="iptables.html">iptables</a>
+
+<li>
+<a href="pptp.html">pptp</a>
+
+<li>
+<a href="snmpd.html">snmpd</a>
+
+<li>
+<a href="http://www.cnblogs.com/tommyli/archive/2013/07/19/3201047.html">ext3，ext4，xfs和btrfs文件系统性能对比</a>
+
+<li>
+<a href="initramfs.html">initramfs</a>
+
+<li>
+金步国作品列表(Email(QQ)：70171448在QQ邮箱): 
+
+<ul>
+<li>
+<a href="http://lamp.linux.gov.cn/jinbuguo_florilegium.html">http://lamp.linux.gov.cn/jinbuguo_florilegium.html</a>
+
+<li>
+<a href="http://www.jinbuguo.com/">http://www.jinbuguo.com/</a>
+
+</ul>
+<li>
+Linux From Scratch 6.6: <a href="http://www.ha97.com/book/lfs-book-6.6/">http://www.ha97.com/book/lfs-book-6.6/</a>
+
+<li>
+鳥哥的 Linux 私房菜
+
+<ul>
+<li>
+<a href="http://linux.vbird.org/">http://linux.vbird.org/</a>
+
+<li>
+<a href="http://vbird.dic.ksu.edu.tw/">http://vbird.dic.ksu.edu.tw/</a>
+
+</ul>
+<li>
+<a href="Gnu_Development_Tools.html">GNU/Linux Unix下常用研发工具</a>
+
+<li>
+浅谈TCP优化: <a href="http://kb.cnblogs.com/page/197406/">http://kb.cnblogs.com/page/197406/</a>
+
+<ul>
+<li>
+TCP单连接/多连接: <a href="http://www.zhihu.com/question/21813579">http://www.zhihu.com/question/21813579</a>
+
+<li>
+<code>RTT: round-trip time</code>:来回通讯延迟
+
+<li>
+<code>rate~=cwnd/RTT bytes/sec</code>
+
+<li>
+流量控制:rwnd(接收窗口)
+
+<li>
+慢启动:cwnd(拥塞窗口,用来表示发送方在得到接收方确认前，最大允许传输的未经确认的数据。它只是发送方的一个内部参数，无需通知给接收方，其初始值往往比较小，然后随着数据包被接收方确认，窗口成倍扩大，有点类似于拳击比赛，开始时不了解敌情，往往是次拳试探，慢慢心里有底了，开始逐渐加大重拳进攻的力度。)
+
+<li>
+拥塞避免:ssthresh(如果「cwnd」小于「ssthresh」，那么表示在慢启动阶段；如果「cwnd」大于「ssthresh」，那么表示在拥塞避免阶段，此时「cwnd」不再像慢启动阶段那样呈指数级整整，而是趋向于线性增长，以期避免网络拥塞。)
+<pre class="brush:bash">
+# 接收缓冲的大小
+sysctl -a | grep memnet.ipv4.tcp_rmem = &lt;MIN&gt; &lt;DEFAULT&gt; &lt;MAX&gt;
+# 缓冲大小自动调优机制的状态（0：关闭、1：开启）
+sysctl -a | grep tcp_moderate_rcvbuf
+# 调整「cwnd」初始值
+ip route | while read p; do ip route change $p initcwnd 10; done
+</pre>
+
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

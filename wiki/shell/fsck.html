@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>fsck</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>fsck</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Linux文件系统只读Read-only file system的快速解决方法</a>
+<li><a href="#toc_0.2">fsck简介</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">Linux文件系统只读Read-only file system的快速解决方法</h2>
+
+<p>
+<a href="http://www.ha97.com/5428.html">http://www.ha97.com/5428.html</a>
+</p>
+
+<p>
+问题描述：上周公司的私有云（底层架构是Openstack+KVM，目前稳定性还不够好，开发团队在改进中）一个计算节点挂掉，之后恢复后发现这个计算节点的所有Linux虚拟机系统都变成只读了，复制文件提示：Read-only file system。
+</p>
+
+<p>
+问题原因：系统没有正常关机，导致虚拟磁盘出现文件系统错误。
+</p>
+
+<p>
+解决方法：使用fsck手动修复，具体操作如下：
+</p>
+
+<p>
+使用root进入单用户模式，运行
+</p>
+<pre>
+fsck.ext3 -y /dev/vda3
+</pre>
+
+<p>
+说明：ext3的文件系统使用fsck.ext3，ext4文件系统使用fsck.etx4。/dev/vda3是系统/根分区。运行完毕后，reboot重启系统就恢复正常。20多台出问题的都是这样修复的，无失败案例。fsck.ext3开始进入扫描、修正文件系统，这个过程有时很快，有时比较长，中间有数次停顿的过程，只需等待即可，千万不要以为死机而重启服务器。修正完文件系统后，如果没有提示重启系统，也需要reboot来重启系统。
+</p>
+
+
+<h2 id="toc_0.2">fsck简介</h2>
+
+<p>
+fsck不仅可以对文件系统进行扫描，还能修正文件系统的一些问题。注意的是fsck扫描文件系统时一定要在单用户模式、修复模式或把设备umount后进行。建议在单用户模式下运行。如果扫描正常运行中的系统，会造成系统文件损坏。
+</p>
+
+<p>
+文件系统扫描工具有fsck、fsck.ext2、fsck.ext3、fsck.ext4、fsck.msdos、fsck.cramfs、fsck.ext4dev、fsck.vfat。最好是根据不同的文件系统来调用不同的扫描工具，比如ext3的文件系统使用fsck.ext3，ext4文件系统使用fsck.ext4等。
+</p>
+
+<p>
+/dev/vda3是ext3的文件系统，这里介绍fsck.ext3的参数：
+</p>
+
+<p>
+fsck.ext3
+</p>
+
+<ul>
+<li>
+[语法]: fsck.ext3[必要参数][选择参数][设备代号]
+
+<li>
+[功能]: fsck.ext3命令：针对ext3文件系统进行检测修复
+
+<li>
+[执行权限]: root
+
+<li>
+必要参数
+
+<ol>
+<li>
+-a 非互交模式，自动修复
+
+<li>
+-c 检查是否存在有损坏的区块。
+
+<li>
+-C &lt;反叙述器&gt; fsck.ext3命令会把全部的执行过程，都交由其逆向叙述，便于监控程序
+
+<li>
+-d 详细显示命令执行过程
+
+<li>
+-f 强制进行检查
+
+<li>
+-F 检查文件系统之前，先清理该保存设备块区内的数据
+
+<li>
+-l &lt;损坏区块文件&gt;把文件中所列出的损坏区块，加入标记
+
+<li>
+-L &lt;损坏区块文件&gt;清除所有损坏标志，重新标记
+
+<li>
+-n 非交互模式,把欲检查的文件系统设成只读
+
+<li>
+-P &lt;数字&gt; 设置fsck.ext2命令所能处理的inode大小为多少
+
+<li>
+-r 交互模式
+
+<li>
+-R 忽略目录
+
+<li>
+-s 顺序检查
+
+<li>
+-S 效果和指定“-s”参数类似
+
+<li>
+-t 显示fsck.ext2命令的时序信息。
+
+<li>
+-v 显示详细的处理过程
+
+<li>
+-y 关闭互动模式
+
+</ol>
+<li>
+选择参数
+
+<ol>
+<li>
+-b &lt;分区第一个磁区地址&gt; 指定分区的第一个磁区的起始地址/Super Block
+
+<li>
+-B &lt;区块大小&gt; 设置该分区每个区块的大小
+
+<li>
+-I 设置欲检查的文件系统，其inode缓冲区的区块数目
+
+<li>
+-V 显示版本信息
+
+</ol>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

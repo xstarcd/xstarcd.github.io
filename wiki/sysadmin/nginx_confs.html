@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Nginx配置实例</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Nginx配置实例</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Auth</a>
+<li><a href="#toc_0.2">rewrite参数和例子</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">Auth</h2>
+
+<ul>
+<li>
+<a href="gen_htpasswd.html">gen_htpasswd</a>
+
+<li>
+HttpAuthBasicModule
+<pre class="brush: bash">
+location ~ ^/wiki/(TimaPlan|personal) {
+  auth_basic "Restricted";
+  auth_basic_user_file .htpasswd;
+}
+
+# 设置文件权限
+chown root:nobody .htpasswd
+chmod 640 .htpasswd
+</pre>
+
+<li>
+allow
+<pre>
+location / {
+  deny    192.168.1.1;
+  allow   192.168.1.0/24;
+  allow   10.1.1.0/16;
+  deny    all;
+}
+
+limit_except  GET {
+  allow  192.168.1.0/32;
+  deny   all;
+}
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">rewrite参数和例子</h2>
+
+<p>
+<a href="http://blog.c1gstudio.com/archives/434">http://blog.c1gstudio.com/archives/434</a>
+</p>
+
+<ul>
+<li>
+正则表达式匹配，其中：
+
+<ul>
+<li>
+~ 为区分大小写匹配
+
+<li>
+~* 为不区分大小写匹配
+
+<li>
+!~和!~*分别为区分大小写不匹配及不区分大小写不匹配
+
+</ul>
+<li>
+文件及目录匹配，其中：
+
+<ul>
+<li>
+-f和!-f用来判断是否存在文件
+
+<li>
+-d和!-d用来判断是否存在目录
+
+<li>
+-e和!-e用来判断是否存在文件或目录
+
+<li>
+-x和!-x用来判断文件是否可执行
+
+</ul>
+<li>
+flag标记有：
+
+<ul>
+<li>
+last 相当于Apache里的[L]标记，表示完成rewrite
+
+<li>
+break 终止匹配, 不再匹配后面的规则
+
+<li>
+redirect 返回302临时重定向 地址栏会显示跳转后的地址
+
+<li>
+permanent 返回301永久重定向 地址栏会显示跳转后的地址
+
+</ul>
+<li>
+一些可用的全局变量有，可以用做条件判断(待补全)
+
+<ul>
+<li>
+$args
+
+<li>
+$content_length
+
+<li>
+$content_type
+
+<li>
+$document_root
+
+<li>
+$document_uri
+
+<li>
+$host
+
+<li>
+$http_user_agent
+
+<li>
+$http_cookie
+
+<li>
+$limit_rate
+
+<li>
+$request_body_file
+
+<li>
+$request_method
+
+<li>
+$remote_addr
+
+<li>
+$remote_port
+
+<li>
+$remote_user
+
+<li>
+$request_filename
+
+<li>
+$request_uri
+
+<li>
+$query_string
+
+<li>
+$scheme
+
+<li>
+$server_protocol
+
+<li>
+$server_addr
+
+<li>
+$server_name
+
+<li>
+$server_port
+
+<li>
+$uri
+
+</ul>
+</ul>
+
+<ul>
+<li>
+结合QeePHP的例子
+<pre class="brush:bash">
+    if (!-d $request_filename) {
+    rewrite ^/([a-z-A-Z]+)/([a-z-A-Z]+)/?(.*)$ /index.php?namespace=user&amp;amp;controller=$1&amp;amp;action=$2&amp;amp;$3 last;
+    rewrite ^/([a-z-A-Z]+)/?$ /index.php?namespace=user&amp;amp;controller=$1 last;
+    break;
+</pre>
+
+<li>
+多目录转成参数
+<pre class="brush:bash">
+# abc.domian.com/sort/2 =&gt; abc.domian.com/index.php?act=sort&amp;name=abc&amp;id=2
+    if ($host ~* (.*)\.domain\.com) {
+    set $sub_name $1;   
+    rewrite ^/sort\/(\d+)\/?$ /index.php?act=sort&amp;cid=$sub_name&amp;id=$1 last;
+    }
+</pre>
+
+<li>
+目录对换
+<pre class="brush:bash">
+# /123456/xxxx -&gt; /xxxx?id=123456
+    rewrite ^/(\d+)/(.+)/ /$2?id=$1 last;
+
+# 例如下面设定nginx在用户使用ie的使用重定向到/nginx-ie目录下：
+
+    if ($http_user_agent ~ MSIE) {
+    rewrite ^(.*)$ /nginx-ie/$1 break;
+    }
+</pre>
+
+<li>
+目录自动加“/”
+<pre class="brush:bash">
+    if (-d $request_filename){
+    rewrite ^/(.*)([^/])$ http://$host/$1$2/ permanent;
+    }
+</pre>
+
+<li>
+禁止htaccess
+<pre class="brush:bash">
+    location ~/\.ht {
+        deny all;
+         }
+</pre>
+
+<li>
+禁止单个目录
+<pre class="brush:bash">
+    location /searchword/cron/ {
+        deny all;
+         }
+</pre>
+
+<li>
+禁止单个文件
+<pre class="brush:bash">
+    location ~ /data/sql/data.sql {
+        deny all;
+         }
+</pre>
+
+<li>
+禁止多个目录
+<pre class="brush:bash">
+    location ~ ^/(cron|templates)/ {
+        deny all;
+    break;
+         }
+</pre>
+
+<li>
+禁止以/data开头的文件
+<pre class="brush:bash">
+# 可以禁止/data/下多级目录下.log.txt等请求;
+    location ~ ^/data {
+        deny all;
+         }
+</pre>
+
+<li>
+给favicon.ico和robots.txt设置过期时间
+<pre class="brush:bash">
+# 这里为favicon.ico为99天,robots.txt为7天并不记录404错误日志
+    location ~(favicon.ico) {
+        log_not_found off;
+        expires 99d;
+        break;
+         }
+     
+    location ~(robots.txt) {
+        log_not_found off;
+        expires 7d;
+        break;
+         }
+</pre>
+
+<li>
+设定某个文件的过期时间;这里为600秒，且不记录访问日志
+<pre class="brush:bash">
+    location ^~ /html/scripts/loadhead_1.js {
+        access_log   off;
+        root /opt/lampp/htdocs/web;
+        expires 600;
+        break;
+    }
+</pre>
+
+<li>
+文件反盗链并设置过期时间
+<pre class="brush:bash">
+    location ~* ^.+\.(jpg|jpeg|gif|png|swf|rar|zip|css|js)$ {
+        valid_referers none blocked *.c1gstudio.com *.c1gstudio.net localhost 208.97.167.194;
+        if ($invalid_referer) {
+            rewrite ^/ http://leech.c1gstudio.com/leech.gif;  #显示一张防盗链图片
+            return 412;     # 自定义的http状态码，默认为403，方便找出正确的盗链的请求
+            break;
+        }
+        access_log   off;   # 不记录访问日志，减轻压力
+        root /opt/lampp/htdocs/web;
+        expires 3d;         # 浏览器缓存有效期3天
+        break;
+    }
+</pre>
+
+<li>
+只充许特定IP访问网站，并加上密码
+<pre class="brush:bash">
+    root  /opt/htdocs/www;
+    allow   208.97.167.194;
+    allow   222.33.1.2;
+    allow   231.152.49.4;
+    deny    all;
+    auth_basic "C1G_ADMIN";
+    auth_basic_user_file htpasswd;
+</pre>
+
+<li>
+将多级目录下的文件转成一个文件，增强seo效果
+<pre class="brush:bash">
+# /job-123-456-789.html 指向/job/123/456/789.html
+    rewrite ^/job-([0-9]+)-([0-9]+)-([0-9]+)\.html$ /job/$1/$2/jobshow_$3.html last;
+</pre>
+
+<li>
+将根目录下某个文件夹指向2级目录
+<pre class="brush:bash">
+# 如/shanghaijob/ 指向 /area/shanghai/
+# 如果你将last改成permanent，那么浏览器地址栏显是/location/shanghai/
+# 有个问题是访问/shanghai 时将不会匹配
+    rewrite ^/([0-9a-z]+)job/(.*)$ /area/$1/$2 last;
+
+# 这样/shanghai 也可以访问了，但页面中的相对链接无法使用，
+# 如./list_1.html真实地址是/area/shanghia/list_1.html会变成/list_1.html,导至无法访问。
+    rewrite ^/([0-9a-z]+)job$ /area/$1/ last;
+    rewrite ^/([0-9a-z]+)job/(.*)$ /area/$1/$2 last;
+
+# 加上自动跳转也是不行咯
+# (-d $request_filename)它有个条件是必需为真实目录，而我的rewrite不是的，所以没有效果
+    if (-d $request_filename){
+    rewrite ^/(.*)([^/])$ http://$host/$1$2/ permanent;
+    }
+
+# 知道原因后就好办了，让我手动跳转吧
+    rewrite ^/([0-9a-z]+)job$ /$1job/ permanent;
+    rewrite ^/([0-9a-z]+)job/(.*)$ /area/$1/$2 last;
+</pre>
+
+<li>
+文件和目录不存在的时候重定向
+<pre class="brush:bash">
+    if (!-e $request_filename) {
+    proxy_pass http://127.0.0.1;
+    }
+</pre>
+
+<li>
+域名跳转
+<pre class="brush:bash">
+    server
+    {
+         listen 80;
+         server_name  jump.c1gstudio.com;
+         index index.html index.htm index.php;
+         root /opt/lampp/htdocs/www;
+         rewrite ^/ http://www.c1gstudio.com/;
+         access_log off;
+    }
+</pre>
+
+<li>
+多域名转向
+<pre class="brush:bash">
+    server_name  www.c1gstudio.com www.c1gstudio.net;
+    index index.html index.htm index.php;
+    root  /opt/lampp/htdocs;
+    if ($host ~ "c1gstudio\.net") {
+        rewrite ^(.*) http://www.c1gstudio.com$1 permanent;
+    }
+</pre>
+
+<li>
+三级域名跳转
+<pre class="brush:bash">
+    if ($http_host ~* "^(.*)\.i\.c1gstudio\.com$") {
+    rewrite ^(.*) http://top.c1gstudio.com$1;
+    break;
+    }
+</pre>
+
+<li>
+域名镜向
+<pre class="brush:bash">
+    server
+         {
+         listen 80;
+         server_name  mirror.c1gstudio.com;
+         index index.html index.htm index.php;
+         root  /opt/lampp/htdocs/www;
+         rewrite ^/(.*) http://www.c1gstudio.com/$1 last;
+         access_log  off;
+         }
+</pre>
+
+<li>
+某个子目录作镜向
+<pre class="brush:bash">
+    location ^~ /zhaopinhui {
+      rewrite ^.+ http://zph.c1gstudio.com/ last;
+      break;
+         }
+</pre>
+
+<li>
+discuz ucenter home (uchome) rewrite
+<pre class="brush:bash">
+    rewrite ^/(space|network)-(.+)\.html$ /$1.php?rewrite=$2 last;
+    rewrite ^/(space|network)\.html$ /$1.php last;
+    rewrite ^/([0-9]+)$ /space.php?uid=$1 last;
+</pre>
+
+<li>
+discuz 7 rewrite
+<pre class="brush:bash">
+    rewrite ^(.*)/archiver/((fid|tid)-[\w\-]+\.html)$ $1/archiver/index.php?$2 last;
+    rewrite ^(.*)/forum-([0-9]+)-([0-9]+)\.html$ $1/forumdisplay.php?fid=$2&amp;page=$3 last;
+    rewrite ^(.*)/thread-([0-9]+)-([0-9]+)-([0-9]+)\.html$ $1/viewthread.php?tid=$2&amp;extra=page\%3D$4&amp;page=$3 last;
+    rewrite ^(.*)/profile-(username|uid)-(.+)\.html$ $1/viewpro.php?$2=$3 last;
+    rewrite ^(.*)/space-(username|uid)-(.+)\.html$ $1/space.php?$2=$3 last;
+    rewrite ^(.*)/tag-(.+)\.html$ $1/tag.php?name=$2 last;
+</pre>
+
+<li>
+给discuz某版块单独配置域名
+<pre class="brush:bash">
+    server_name  bbs.c1gstudio.com news.c1gstudio.com;
+    location = / {
+      if ($http_host ~ news\.c1gstudio.com$) {
+          rewrite ^.+ http://news.c1gstudio.com/forum-831-1.html last;
+      break;
+      }
+    }
+</pre>
+
+<li>
+discuz ucenter 头像 rewrite 优化
+<pre class="brush:bash">
+    location ^~ /ucenter {
+       location ~ .*\.php?$
+       {
+        #fastcgi_pass  unix:/tmp/php-cgi.sock;
+        fastcgi_pass  127.0.0.1:9000;
+        fastcgi_index index.php;
+        include fcgi.conf;     
+       }
+   
+       location /ucenter/data/avatar {
+          log_not_found off;
+          access_log  off;
+          location ~ /(.*)_big\.jpg$ {
+              error_page 404 /ucenter/images/noavatar_big.gif;
+          }
+          location ~ /(.*)_middle\.jpg$ {
+              error_page 404 /ucenter/images/noavatar_middle.gif;
+          }
+          location ~ /(.*)_small\.jpg$ {
+              error_page 404 /ucenter/images/noavatar_small.gif;
+          }
+          expires 300;
+          break;
+       }
+   }
+</pre>
+
+<li>
+jspace rewrite
+<pre class="brush:bash">
+    location ~ .*\.php?$
+    {
+     #fastcgi_pass  unix:/tmp/php-cgi.sock;
+     fastcgi_pass  127.0.0.1:9000;
+     fastcgi_index index.php;
+     include fcgi.conf;     
+    }
+
+    location ~* ^/index.php/
+    {
+     rewrite ^/index.php/(.*) /index.php?$1 break;
+     fastcgi_pass  127.0.0.1:9000;
+     fastcgi_index index.php;
+     include fcgi.conf;
+    }
+</pre>
+
+<li>
+wordpress rewrite
+<pre class="brush:bash">
+    location / {
+       index index.html index.php;
+       if (-f $request_filename/index.html){
+           rewrite (.*) $1/index.html break;
+       }
+       if (-f $request_filename/index.php){
+           rewrite (.*) $1/index.php;
+       }
+       if  (!-e $request_filename){
+           rewrite (.*) /index.php;
+       }
+    }
+</pre>
+
+<li>
+discuzx 1.5 rewrite
+<pre class="brush:bash">
+    rewrite ^([^\.]*)/topic-(.+)\.html$ $1/portal.php?mod=topic&amp;topic=$2 last;
+    rewrite ^([^\.]*)/article-([0-9]+)-([0-9]+)\.html$ $1/portal.php?mod=view&amp;aid=$2&amp;page=$3 last;
+    rewrite ^([^\.]*)/forum-(\w+)-([0-9]+)\.html$ $1/forum.php?mod=forumdisplay&amp;fid=$2&amp;page=$3 last;
+    rewrite ^([^\.]*)/thread-([0-9]+)-([0-9]+)-([0-9]+)\.html$ $1/forum.php?mod=viewthread&amp;tid=$2&amp;extra=page%3D$4&amp;page=$3 last;
+    rewrite ^([^\.]*)/group-([0-9]+)-([0-9]+)\.html$ $1/forum.php?mod=group&amp;fid=$2&amp;page=$3 last;
+    rewrite ^([^\.]*)/space-(username|uid)-(.+)\.html$ $1/home.php?mod=space&amp;$2=$3 last;
+    rewrite ^([^\.]*)/([a-z]+)-(.+)\.html$ $1/$2.php?rewrite=$3 last;
+    if (!-e $request_filename) {
+    return 404;
+    }
+</pre>
+
+<li>
+动态参数rewrite
+<pre class="brush:bash">
+# 以discuz7.2到discuzx1.5为例
+    if ($query_string ~* tid=([0-9]+)) {
+        set $id $1;
+        rewrite "^(.*)/viewthread.php$" $1/forum.php?mod=viewthread&amp;tid=$id&amp;extra=page%3D&amp;page=1 last;
+    }
+    if ($query_string ~* gid=([0-9]+)) {
+        set $id $1;
+        rewrite "^(.*)/index.php$" $1/forum.php?gid=$id last;
+    }
+    rewrite ^([^\.]*)/archiver/$ $1/forum.php?archiver=1 last;
+</pre>
+
+<li>
+nginx 嵌套if
+<pre class="brush:bash">
+# nginx不支持if and和多层嵌套if,让我头痛很久,需要通过其它方法实现.
+# 下面是把访问镜像网站cnc.c1gstudio.com的爬虫转到www站.
+    set $needrewrite '';
+    if ($http_user_agent ~* (baiduspider|googlebot|soso|bing|sogou|yahoo|sohu-search|yodao|YoudaoBot|robozilla|msnbot|MJ12bot|NHN|Twiceler)) {
+        set $needrewrite 'o';
+    }
+    if ($host ~ cnc\.c1gstudio\.com) {
+        set $needrewrite "${needrewrite}k";
+    }
+    if ($needrewrite = ok) {
+        #return 403;
+        rewrite ^(.*) http://www.c1gstudio.com$1 permanent;
+    }
+</pre>
+
+<li>
+reload nginx后可以用curl来做测试
+<pre class="brush:bash">
+curl -I -A “soso” cnc.c1gstudio.com
+</pre>
+
+<li>
+apache 转 nginx 规则工具: <a href="http://www.ubuntuset.com/apache2nginx">http://www.ubuntuset.com/apache2nginx</a>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

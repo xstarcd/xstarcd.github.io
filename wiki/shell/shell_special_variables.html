@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>shell的特殊变量</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>shell的特殊变量</h1>
+
+<p>
+原文:<a href="http://blog.csdn.net/imfinger/article/details/6257509">http://blog.csdn.net/imfinger/article/details/6257509</a>
+</p>
+
+<p>
+linux中shell变量<code>\(#,\)@,\(0,\)1,$2</code>的含义解释:
+<table>
+<tr>
+<th>
+变更
+</th>
+<th>
+说明
+</th>
+</tr>
+<tr>
+<td rowspan="2">
+$$
+</td>
+<td>
+Shell本身的PID（ProcessID）
+</td>
+</tr>
+<tr>
+<td>
+这个变量经常用来构造一个"unique"的临时文件名，通常比调用mktemp 来得简单
+</td>
+</tr>
+<tr>
+<td>
+$!
+</td>
+<td>
+Shell最后运行的后台Process的PID
+</td>
+</tr>
+<tr>
+<td>
+$?
+</td>
+<td>
+最后运行的命令的结束代码（返回值）
+</td>
+</tr>
+<tr>
+<td>
+$-
+</td>
+<td>
+使用Set命令设定的Flag一览
+</td>
+</tr>
+<tr>
+<td rowspan="2">
+$*
+</td>
+<td>
+<code>所有参数列表。如"\(*"用「"」括起来的情况、以"\)1 \(2 … \)n"的形式输出所有参数。</code>
+</td>
+</tr>
+<tr>
+<td>
+所有的位置参数,被作为一个单词，注意:"$*"必须被""引用。
+</td>
+</tr>
+<tr>
+<td rowspan="3">
+<code>$@</code>
+</td>
+<td>
+与$*同义,但是每个参数都是一个独立的""引用字串,这就意味着参数被完整地传递,
+</td>
+</tr>
+<tr>
+<td>
+并没有被解释和扩展.这也意味着,每个参数列表中的每个参数都被当成一个独立的单词。
+</td>
+</tr>
+<tr>
+<td>
+注意:"$@"必须被""引用。
+</td>
+</tr>
+<tr>
+<td>
+$#
+</td>
+<td>
+添加到Shell的参数个数
+</td>
+</tr>
+<tr>
+<td>
+$0
+</td>
+<td>
+Shell本身的文件名
+</td>
+</tr>
+<tr>
+<td>
+<code>$n</code>
+</td>
+<td>
+<code>添加到Shell的各参数值。n为数字1-9,只能表示前9个参数，使用shift命令可以改变这个限制</code>
+</td>
+</tr>
+<tr>
+<td>
+$_
+</td>
+<td>
+保存之前执行的命令的最后一个参数
+</td>
+</tr>
+</table>
+</p>
+
+<p>
+一个简单的脚本，执行以后再解释各个变量的意义:
+</p>
+<ul>
+<li>
+variable.sh
+<pre class="brush:bash">
+#!/bin/sh
+echo "number:$#"
+echo "scname:$0"
+echo "first :$1"
+echo "second:$2"
+echo "argume:$@"
+</pre>
+
+<li>
+执行结果：
+<pre>
+./variable aa bb
+number:2
+scname:./variable
+first: aa
+second:bb
+argume:aa bb
+</pre>
+
+<li>
+通过显示结果可以看到：
+<pre>
+$# 是传给脚本的参数个数
+$0 是脚本本身的名字
+$1 是传递给该shell脚本的第一个参数
+$2 是传递给该shell脚本的第二个参数
+$@ 是传给脚本的所有参数的列表
+</pre>
+
+</ul>
+
+<ul>
+<li>
+<code>$*</code>和<code>S@</code>的差别
+
+</ul>
+<p>
+test.sh
+</p>
+<pre class="brush:bash">
+#!/bin/sh
+
+echo "\$*=$*"
+echo --------------------------
+for n in "$*";do echo $n;done
+
+echo ""
+echo "\$@=$@"
+echo --------------------------
+for n in "$@";do echo $n;done
+</pre>
+<pre>
+./test 1 2 3 'asdf $asdfasdf'
+
+$\*=1 2 3 asdf $asdfasdf
+--------------------------
+1 2 3 asdf $asdfasdf
+
+$@=1 2 3 asdf $asdfasdf
+--------------------------
+1
+2
+3
+asdf $asdfasdf
+</pre>
+
+<p>
+从上面结果可以看到：
+</p>
+
+<p>
+<code>$*</code>将所有位置参数当做一个字符串输出；
+</p>
+
+<p>
+<code>$@</code>将每个位置参数当做独立的元素处理，带空格的参数也当做一个整体。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>linux忘记root密码又忘记grub密码怎么办</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>linux忘记root密码又忘记grub密码怎么办</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">用rescue重置密码</a>
+<li><a href="#toc_0.2">设置grub密码</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+原文：<a href="http://jianz.blog.51cto.com/199434/114004">http://jianz.blog.51cto.com/199434/114004</a>
+
+</ul>
+
+<h2 id="toc_0.1">用rescue重置密码</h2>
+
+<p>
+当我们忘记root密码时，如果GRUB没有设置密码（或者知道GRUB密码时）我们可以用单用户方法来修改密码，当GRUB密码也忘记了，这时我们就得用光盘修改root密码。
+</p>
+ 
+<ol>
+<li>
+将系统光盘放入光驱，设置光驱引导。
+
+<li>
+选择F2进入系统修复，输入命令：<code>linux rescue</code>
+
+<li>
+以下出现的几个选择和安装系统时一样。
+
+<li>
+当出现这个提示的时候应该记住，他提示的命令：<code>chroot /mnt/sysimage</code>
+
+<li>
+下一步就是进入修改密码，我们先行:chroot /mnt/sysimage 不然不能进入可写模式。
+
+<li>
+最后运行命令：passwd重置root密码
+
+<li>
+重启计算机
+
+</ol>
+
+<h2 id="toc_0.2">设置grub密码</h2>
+ 
+<p>
+为grub密分为二种，一是明文，二是采用MD5算法的加密。
+</p>
+ 
+<ul>
+<li>
+用grub-md5-crypt成生GRUB的md5密码
+
+</ul>
+
+<p>
+通过grub-md5-crypt对GRUB的密码进行加密码运算，比如我们想设置grub的密码是123456，所以我们先要用md5进行对123456这个密码进行加密。
+</p>
+
+<pre class="brush:bash">
+/sbin/grub-md5-crypt
+
+Password: 在这里输入123456
+Retype password: 再输入一次123456
+$1$7uDL20$eSB.XRPG2A2Fv8AeH34nZ0
+</pre>
+<p>
+<code>\(1\)7uDL20$eSB.XRPG2A2Fv8AeH34nZ0</code>就是通过grub-md5-crypt进行加密码后产生的值。这个值我们要记下来。
+</p>
+
+<ul>
+<li>
+更改 /etc/grub.conf
+
+</ul>
+
+<p>
+所以我要在/etc/grub.conf中加入<code>password --md5 \(1\)7uDL20$eSB.XRPG2A2Fv8AeH34nZ0</code> 这行，以及lock，应该加到哪呢，请看下面的更改实例：
+</p>
+
+<pre class="brush:bash">
+default=1
+timeout=10
+splashimage=(hd0，7)/boot/grub/splash.xpm.gz
+
+password --md5 $1$7uDL20$eSB.XRPG2A2Fv8AeH34nZ0  # 增加密码设置
+
+title Fedora Core (2.4.22-1.2061.nptl)
+    lock                                         # 增加锁定设置
+    root (hd0，7)
+    kernel /boot/vmlinuz-2.4.22-1.2061.nptl ro root=LABEL=/
+    initrd /boot/initrd-2.4.22-1.2061.nptl.img
+
+title WindowsXP
+    rootnoverify (hd0，0)
+    chainloader +1
+</pre>
+
+<p>
+lock的意思就是把Redhat Fedora锁住了。如果启动时会提示错误。这时就应该按P键，然后输入密码就行了。
+</p>
+
+<ul>
+<li>
+使用password，lock命令实现几种加密方法如下：
+
+<ul>
+<li>
+单纯对GRUB界面加密，而不对被引导的系统加密：
+
+<ul>
+<li>
+在timeout一行下面加一行： <code>password --md5 PASSWORD</code>
+
+</ul>
+<li>
+对GRUB界面加密，同时对被引导的系统加密：
+
+<ul>
+<li>
+在timeout一行下面加一行：<code>password --md5 PASSWORD</code>
+
+<li>
+在title一行下面加一行：<code>lock</code>
+
+</ul>
+<li>
+同时存在多个被引导系统，针对特定的系统实例分别加密(不对GRUB操作界面加密)：
+
+<ul>
+<li>
+在title一行下面加一行：lock
+
+<li>
+在lock一行下面紧贴着再加一行：<code>password ——md5 PASSWORD</code>(注：lock不能单独使用)
+
+</ul>
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

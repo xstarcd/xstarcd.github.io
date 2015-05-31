@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>lvm</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">LVM</a>
+<li><a href="#toc_2">linux下LVM术语与命令详解以及逻辑卷、卷组管理</a>
+<ul>
+<li><a href="#toc_2.1">常用命令</a>
+<li><a href="#toc_2.2">Linux对逻辑卷的创建与管理</a>
+<ul>
+<li><a href="#toc_2.2.1">基本概念</a>
+<li><a href="#toc_2.2.2">LVM的一般操作过程</a>
+<li><a href="#toc_2.2.3">常用命令</a>
+<li><a href="#toc_2.2.4">逻辑卷管理</a>
+<li><a href="#toc_2.2.5">卷组管理</a>
+<li><a href="#toc_2.2.6">物理卷组管理</a>
+<li><a href="#toc_2.2.7">linux创建分区</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">LVM</h1>
+
+<ul>
+<li>
+<a href="../sysadmin/lvm_rootresize.html">lvm修改根分区大小</a>
+
+<li>
+<a href="lvm_vgrename.html">lvm修改vg名字</a>
+
+</ul>
+
+<h1 id="toc_2">linux下LVM术语与命令详解以及逻辑卷、卷组管理</h1>
+
+<p>
+<a href="http://buptym.blog.163.com/blog/static/21113103420121020111612641/">http://buptym.blog.163.com/blog/static/21113103420121020111612641/</a>
+</p>
+
+<h2 id="toc_2.1">常用命令</h2>
+
+<ul>
+<li>
+vgcreate
+<pre>
+-l卷组最大能包含的逻辑参数
+-p卷组最大能包含的物理卷数
+-e卷组中每个物理卷最多能包括的物理单元(PE)数
+-s卷组中物理单元(PE)的尺寸大小
+</pre>
+
+<li>
+lvcreate
+<pre>
+-L 以MB为单位表示逻辑卷的大小
+-l 以逻辑单元的数目来表示逻辑卷的大小
+-n 逻辑卷的名称;若不指定,缺省的名为lvol1,lvol2等
+-C 用邻近的存储空间来创建逻辑卷
+-i 设定可被该逻辑卷占用的磁盘,它可以设成卷组中磁盘的总数
+-I 当逻辑卷使用一个以上的磁盘时,设定穿过每个物理卷得条带尺寸;选项"I"必须与"i"一同使用 
+</pre>
+
+</ul>
+
+<h2 id="toc_2.2">Linux对逻辑卷的创建与管理</h2>
+
+<p>
+LVM（Logicl Volume Manager），逻辑卷管理器，通过使用逻辑卷管理器对硬盘存储设备进行管理，可以实现硬盘空间的动态划分和调整。
+</p>
+
+<h3 id="toc_2.2.1">基本概念</h3>
+
+<ul>
+<li>
+物理卷-----PV（Physical Volume）
+
+</ul>
+<p>
+物理卷在逻辑卷管理中处于最底层，它可以是实际物理硬盘上的分区，也可以是整个物理硬盘。
+</p>
+
+<ul>
+<li>
+卷组--------VG（Volumne Group）
+
+</ul>
+<p>
+卷组建立在物理卷之上，一个卷组中至少要包括一个物理卷，在卷组建立之后可动态添加物理卷到卷组中。一个逻辑卷管理系统工程中可以只有一个卷组，也可以拥有多个卷组。
+</p>
+
+<ul>
+<li>
+逻辑卷-----LV（Logical Volume）
+
+</ul>
+<p>
+逻辑卷建立在卷组之上，卷组中的未分配空间可以用于建立新的逻辑卷，逻辑卷建立后可以动态地扩展和缩小空间。系统中的多个逻辑卷要以属于同一个卷组，也可以属于不同的多个卷组。
+</p>
+
+<ul>
+<li>
+物理区域--PE（Physical Extent）
+
+</ul>
+<p>
+物理区域是物理卷中可用于分配的最小存储单元，物理区域的大小可根据实际情况在建立物理卷时指定。物理区域大小一旦确定将不能更改，同一卷组中的所有物理卷的物理区域大小需要一致。
+</p>
+
+<ul>
+<li>
+逻辑区域—LE（Logical Extent）
+
+</ul>
+<p>
+逻辑区域是逻辑卷中可用于分配的最小存储单元，逻辑区域的大小取决于逻辑卷所在卷组中的物理区域的大小。
+</p>
+
+<ul>
+<li>
+卷组描述区域-----（Volume Group Descriptor Area）
+
+</ul>
+<p>
+卷组描述区域存在于每个物理卷中，用于描述物理卷本身、物理卷所属卷组、卷组中的逻辑卷及逻辑卷中物理区域的分配等所有信息，卷组描述区域是在使用pvcreate建立物理卷时建立的。
+</p>
+
+<h3 id="toc_2.2.2">LVM的一般操作过程</h3>
+
+<pre class="brush:bash">
+# 在磁盘分区上建立物理卷
+{{{class="brush:bash"
+fdisk /dev/hdb
+pvdisplay /dev/hdb1           # 在已经建立好的分区或硬盘上建立物理卷
+pvcreate /dev/hdb1
+
+# 使用物理卷建立卷组
+vgcreate myVG /dev/hdb1       # 建立卷组，日后可以根据需要添加新的物理卷到已有卷组中
+
+# 在卷组中建立逻辑卷
+lvcreate –L 10M –n myLV1 myVG # 从已有卷组建立逻辑卷，通常只分配部分空间给该逻辑卷
+
+# 在逻辑卷上建立文件系统
+# 将文件系统挂载到Linux系统的目录树中
+
+# 在卷组中添加新的物理卷
+#     当卷组中没有足够的空间分配给逻辑卷时，可以使用vgextend命令添加新的物理卷到该卷组中，来扩充卷组容量。
+#     在一引起特殊的情况下也可以把卷组中现有的物理卷移出卷组。
+vgextend myVG /dev/hdb2
+
+# 扩充逻辑卷的容量
+#     当逻辑卷的空间不能满足需要时，可以使用lvextend命令把卷组中的空闲空间分配到该逻辑卷以扩展逻辑卷的容量。
+#     在逻辑卷的空闲空间过大时，也可以使用lvreduce命令缩减逻辑卷的容量。这样就实现了逻辑卷容量的动态调整。
+lvextend –L +4M /dev/myVG/myLV
+
+# 调整逻辑卷中文件系统的大小
+</pre>
+
+<h3 id="toc_2.2.3">常用命令</h3>
+
+<ul>
+<li>
+物理卷命令
+
+</ul>
+
+<pre class="brush:bash">
+# 一般维护命令
+pvscan                         # 在系统的所有磁盘中搜索已存在的物理卷
+pvdisplay                      # 物理卷全路径名称 //用于显示指定物理卷的属性。
+pvdata                         # 物理卷全路径名称 //用于显示物理卷的卷组描述区域信息，用于调试目的。
+pvchange –x|--allocation {y|n} # 物理卷全路径名 //用于改变物理卷的分配许可设置
+
+
+# 物理卷的创建与删除
+pvcreate # 设备全路径名 //用于在磁盘或磁盘分区上创建物理卷初始化信息，以便对该物理卷进行逻辑卷管理。
+pvmove   # 源物理卷全路径我[目的物理卷全路径名] //用于把某物理卷中的数据转移到同卷组中其他的特刊卷中。
+</pre>
+
+<ul>
+<li>
+卷组命令
+
+</ul>
+
+<pre class="brush:bash">
+# 一般维护命令
+vgscan                      #检测系统中所有磁盘
+vgck [卷组名]               #用于检查卷组中卷组描述区域信息的一致性。
+vgdisplay [卷组名]          #显示卷组的属性信息
+vgrename 原卷组名 新卷组名 
+vgchange -a y|n [卷组名]    #改变卷组的相应属性。是否可分配
+vgchange -l 最大逻辑卷数    #卷组可容纳最大逻辑卷数
+vgchange -x y|n [卷组名]    #卷是否有效
+vgmknodes [卷组名|卷组路径] #用于建立（重新建立）已有卷组目录和其中的设备文件
+
+
+# 卷组配置的备份与恢复命令
+vgcfgbackup [卷组名]        #把卷组中的VGDA信息备份到“/etc/lvmconf”目录中的文件
+vgcfgrestore -n 卷组名 物理卷全路命名 #从备份文件中必得指定物理卷的信息
+
+
+# 卷组的建立与删除命令
+vgcreate 卷组名 物理卷全路径名[物理卷全路径名]
+vgmove 卷组名
+
+
+# 卷组的扩充与缩小命令
+vgextend 卷组名 物理卷全路径名[物理卷全路径名]
+vgreduce 卷组名 物理卷全路径名[物理卷全路径名]
+
+
+# 卷组的合并与拆分
+vgmerge 目的卷组名 源卷组名 #合并两个已经存在的卷组，要求两个卷组的物理区域大小相等且源卷组是非活动的。
+vgsplit 现有卷组 新卷组 物理卷全路径名[物理卷全路径名]
+
+# 卷组的输入与输出命令
+vgexport 卷组名
+vgimport 卷组名 卷组中的物理卷[卷组中的物理卷]
+</pre>
+
+<ul>
+<li>
+逻辑卷命令
+
+</ul>
+
+<pre class="brush:bash">
+# 一般命令
+lvscan
+lvdisplay 逻辑卷全路径名[逻辑卷全路径名]
+lvrename 旧逻辑卷全路径名 新逻辑卷全路径名
+lvrename 卷组名 旧逻辑卷名 新逻辑卷名
+lvchange
+e2fsadm -L +|- 逻辑卷增减量 逻辑卷全路径名
+
+
+# 逻辑卷的创建与删除命令
+lvcreate
+lvremove
+
+
+# 逻辑卷的扩充与缩小命令
+lvextend -L|--size +逻辑卷大小增量 逻辑卷全路径名
+lvreduce q -L|--size +逻辑卷减小量 逻辑卷全路径名
+
+
+# 逻辑卷管理命令
+lvmdiskscan                # 检测所有的SCSI、IDE等存储设备
+lvmchange -R|--reset       # 复位逻辑卷管理器 
+lvmsadc [日志文件全路径名] # 收信逻辑卷管理器读写统计信息，保存到日志文件中。
+lvmsar 日志文件全路径名 #从lvmsadc命令生成的日志文件中读取并报告逻辑卷管理器的读写统计信息。
+</pre>
+
+<h3 id="toc_2.2.4">逻辑卷管理</h3>
+ 
+<ul>
+<li>
+创建逻辑卷
+
+</ul>
+
+<p>
+以下的一组命令执行创建逻辑卷所需的步骤： 
+</p>
+
+<ol>
+<li>
+运行 vgscan 命令（ 在集群中所有的 RAC 节点上运行 ），以创建 /etc/lvmtab 文件。 
+
+<li>
+使用 pvcreate 创建由逻辑卷管理器 (LVM) 所使用的物理卷。 
+
+<li>
+使用 vgcreate ，为驱动器或者为您希望用于 RAW 设备的分区创建一个卷组。在这里我们为整个驱动器创建卷。在我们的示例中（如下所示），该命令将允许创建 256 个逻辑分区和 256 个物理分区，范围大小为 128K 。 
+
+<li>
+使用 lvcreate 在卷组中创建逻辑卷。 
+
+</ol>
+
+<p>
+注意： 上文讲到，我需要在所有节点上运行 vgscan 命令，以便该命令能够创建 /etc/lvmtab 文件。应该在运行下列命令之前执行该命令。 
+</p>
+
+<p>
+将以下命令放在一个 schell 脚本中，更改执行权限，然后以 “root”UNIX 用户 id 来运行该脚本： 
+</p>
+
+<pre>
+vgscan 
+
+pvcreate -d /dev/sda 
+vgcreate -l 256 -p 256 -s 128k /dev/pv1 /dev/sda 
+lvcreate -L 5m /dev/pv1 
+lvcreate -L 100m /dev/pv1 
+lvcreate -L 10m /dev/pv1 
+lvcreate -L 200m /dev/pv1 
+lvcreate -L 200m /dev/pv1 
+lvcreate -L 200m /dev/pv1 
+lvcreate -L 55m /dev/pv1 
+lvcreate -L 25m /dev/pv1 
+lvcreate -L 255m /dev/pv1 
+lvcreate -L 105m /dev/pv1 
+lvcreate -L 55m /dev/pv1 
+lvcreate -L 805m /dev/pv1 
+lvcreate -L 255m /dev/pv1 
+lvcreate -L 105m /dev/pv1 
+lvcreate -L 405m /dev/pv1 
+lvcreate -L 405m /dev/pv1 
+lvcreate -L 105m /dev/pv1 
+lvcreate -L 155m /dev/pv1 
+lvcreate -L 105m /dev/pv1 
+lvcreate -L 105m /dev/pv1 
+lvcreate -L 105m /dev/pv1 
+lvcreate -L 105m /dev/pv1 
+lvcreate -L 105m /dev/pv1 
+</pre>
+
+<p>
+使用该脚本（如上所示）将会创建 /dev/pv1/lvol1 - /dev/pv1/lvol23。
+</p>
+
+<p>
+我通常使用 lvscan 命令来检查逻辑卷的状态： 
+</p>
+
+<pre>
+lvscan
+
+lvscan -- ACTIVE "/dev/pv1/lvol1" [5 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol2" [100 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol3" [10 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol4" [200 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol5" [200 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol6" [200 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol7" [55 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol8" [25 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol9" [255 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol10" [105 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol11" [55 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol12" [805 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol13" [255 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol14" [105 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol15" [405 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol16" [405 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol17" [105 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol18" [155 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol19" [105 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol20" [105 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol21" [105 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol22" [105 MB] 
+lvscan -- ACTIVE "/dev/pv1/lvol23" [105 MB] 
+lvscan -- 23 logical volumes with 3.88 GB total in 1 volume group 
+lvscan -- 23 active logical volumes 
+</pre>
+
+<ul>
+<li>
+重新启动 RAC 集群中的所有节点
+
+</ul>
+
+<p>
+在完成分区的创建之后，建议您重新启动所有 RAC 节点上的内核，以确保所有的新分区被所有 RAC 节点上的内核所识别。
+</p>
+
+<ul>
+<li>
+添加逻辑卷
+
+</ul>
+
+<p>
+当卷组创建后，可以使用lvcreate命令在卷组上创建逻辑卷。例如要在卷组vg_data上创建一个1000MB的逻辑卷lv_data1，其命令如下所示。
+</p>
+<pre>
+lvcreate -L 1000m -n lv_data1 vg_data
+
+  Logical volume "lv_data1" created
+</pre>
+
+<p>
+除了KB、MB和GB这些常规单位以外，lvcreate命令还可以使用PE数作为单位。由vgdisplay可以看到卷组vg_data的PE大小为4MB，如果要创建一个大小为1000MB的逻辑卷，则需要250个PE，命令如下所示。
+</p>
+<pre>
+lvcreate -l 250 -n lv_data2 vg_data
+
+  Logical volume "lv_data2" created
+</pre>
+
+<p>
+卷组和逻辑卷创建后，会在/dev目录下创建一个以VG名称命名的目录，在目录下会创建以LV名称命名的设备文件，如下所示。
+</p>
+<pre>
+ll /dev/vg_data
+
+total 0
+lrwxrwxrwx 1 root root 28 Aug 24 22:22 lv_data1 -&gt; /dev/mapper/vg_ data-lv_data1
+lrwxrwxrwx 1 root root 28 Aug 24 22:21 lv_data2 -&gt; /dev/mapper/vg_ data-lv_data2
+</pre>
+
+<ul>
+<li>
+更改逻辑卷的大小
+
+</ul>
+
+<p>
+使用lvresize命令可以更改已有逻辑卷的大小。一般情况下不建议减少逻辑卷的空间，因为这样可能会导致逻辑卷上的文件系统中的数据丢失，所以除非用户已经确定被减少空间中的数据不再需要或者已经把重要数据备份出来，否则不要减少逻辑卷的空间以免造成不可挽回的损失。如果要把逻辑卷lv_data1的大小增加为1500MB，可以使用下面的命令。
+</p>
+<pre>
+lvresize -L 1500m /dev/vg_data/lv_data1
+
+  Extending logical volume lv_data1 to 1.46 GB
+  Logical volume lv_data1 successfully resized
+</pre>
+
+<ul>
+<li>
+查看逻辑卷的信息
+
+</ul>
+
+<p>
+使用lvdisplay命令可以查看指定逻辑卷的信息，例如要查看逻辑卷lv_data1的信息，命令和运行结果如下所示。
+</p>
+<pre>
+lvdisplay /dev/vg_data/lv_data1
+
+  --- Logical volume ---
+  LV Name                 /dev/vg_data/lv_data1     # 逻辑卷名称
+  VG Name                 vg_data                   # 逻辑卷所属的卷组
+  LV UUID                 3CrIH1-rZr6-UkNZ-1Z5n-gHw2-SM5T-by5fKg
+  LV Write Access        read/write
+  LV Status               available
+  # open                  0
+  LV Size                 1.46 GB                   # 逻辑卷的大小
+  Current LE              375                       # 逻辑卷的逻辑块数
+  Segments                1
+  Allocation              inherit
+  Read ahead sectors     auto
+  - currently set to     256
+  Block device            253:0
+</pre>
+
+<p>
+可以看到，逻辑卷/dev/vg_data/lv_data1所属的卷组为vg_data，访问许可为可读写，卷组状态为可用，逻辑卷大小为1.46GB，总的逻辑块数为375。
+</p>
+
+<ul>
+<li>
+删除逻辑卷
+
+</ul>
+
+<p>
+使用lvremove命令可以删除指定的逻辑卷，删除前系统会提示用户确认。例如要删除逻辑卷lv_data2，其命令和运行结果如下所示。
+</p>
+<pre>
+lvremove /dev/vg_data/lv_data2
+
+Do you really want to remove active logical volume "lv_data2"? [y/n]: y
+  Logical volume "lv_data2" successfully removed
+</pre>
+
+<p>
+删除后，逻辑卷上的所有数据均会被清除。
+</p>
+
+<h3 id="toc_2.2.5">卷组管理</h3>
+
+<p>
+LVM卷组类似于非LVM系统中的物理硬盘，它是由一个或者多个物理卷所组成，可以在卷组上创建一个或多个逻辑卷。通过它可以方便地管理磁盘空间，当卷组空间不足的时候可以往卷组中添加新的物理卷，扩展卷组的容量。
+</p>
+<ul>
+<li>
+添加卷组
+
+</ul>
+
+<p>
+物理卷创建完成后就可以开始创建卷组。卷组是由一个或多个物理卷所组成的存储池。例如要创建一个名为vg_data的卷组，可以使用下面的命令。
+</p>
+<pre>
+vgcreate vg_data /dev/hda13 /dev/hda14
+
+  Volume group "vg_data" successfully created
+</pre>
+
+<ul>
+<li>
+扩展卷组的容量
+
+</ul>
+<p>
+当卷组中的空间不足的时候，可以使用vgextend命令往卷组中添加新的物理卷，方便地扩展卷组的容量，如下所示。
+</p>
+<pre>
+vgextend vg_data /dev/hda15
+
+  Volume group "vg_data" successfully extended
+</pre>
+
+<ul>
+<li>
+查看卷组
+
+</ul>
+<p>
+使用vgdisplay命令可以查看卷组的信息。例如要查看上例中创建的卷组vg_data，执行的命令如下所示。
+</p>
+<pre>
+vgdisplay vg_data
+
+  --- Volume group ---
+  VG Name                 vg_data                 # vg名称
+  System ID
+  Format                  lvm2
+  Metadata Areas          3                       # 元信息区域
+  Metadata Sequence No    2
+  VG Access               read/write              # 访问许可，可读写
+  VG Status               resizable               # VG状态
+  MAX LV                  0                       # 最大的LV数
+  Cur LV                  0                       # 当前的LV数
+  Open LV                 0                       # 打开的LV数
+  Max PV                  0                       # 最大的PV数
+  Cur PV                  3                       # 当前的PV数
+  Act PV                  3
+  VG Size                 5.59 GB                 # VG的大小为5.59GB
+  PE Size                 4.00 MB                 # 物理块的大小为4MB
+  Total PE                1430                    # VG的物理块数为1430
+  Alloc PE / Size         0 / 0                   # 已经使用的物理块数和大小
+  Free  PE / Size         1430 / 5.59 GB          # 空闲的物理块数和大小
+  VG UUID                 djgPFx-LOGa-8ZOx-diNr-hxCs-qNip-vg0Hqu
+</pre>
+
+<p>
+可以看到，卷组vg_dat格式为lvm2，访问许可为可读写，卷组大小为5.59GB，物理块大小为4MB，总的物理块数为1430，已分配的物理块数为0，空闲的物理块数为1430，大小为5.59GB。
+</p>
+
+<ul>
+<li>
+从卷组中删除物理卷
+
+</ul>
+<p>
+通过vgreduce命令可以把VG中未被使用的PV从VG中删除，例如要从卷组vg_data中删除物理卷hda15，如下所示。
+</p>
+<pre>
+vgreduce vg_data /dev/hda15
+
+  Removed "/dev/hda15" from volume group "vg_data"
+</pre>
+
+<p>
+如果要从卷组中删除所有未被使用的物理卷，可以使用如下命令。
+</p>
+<pre>
+vgreduce –a
+</pre>
+
+<ul>
+<li>
+删除卷组
+
+</ul>
+<p>
+当卷组不再需要的时候，可以使用vgremove命令删除。如果卷组中已经创建了LV，则系统会提示用户确认是否要进行删除，命令及运行结果如下所示。
+</p>
+<pre>
+vgremove vg_data
+
+Do you really want to remove volume group "vg_data" containing 2 logical volumes
+? [y/n]: y
+Do you really want to remove active logical volume "lv_data1"? [y/n]: y
+                                                # 确定删除逻辑卷lv_data1
+  Logical volume "lv_data1" successfully removed
+Do you really want to remove active logical volume "lv_data2"? [y/n]: y
+                                                # 确定删除逻辑卷lv_data2
+  Logical volume "lv_data2" successfully removed
+  Volume group "vg_data" successfully removed
+</pre>
+
+<p>
+卷组被删除后，卷组中的所有物理卷将不属于任何卷组，可以对这些物理卷进行删除，命令如下所示。
+</p>
+<pre>
+pvdisplay /dev/hda14
+
+  "/dev/hda14" is a new physical volume of "1.86 GB"
+  --- NEW Physical volume ---
+  PV Name            /dev/hda14
+  VG Name                            # VG Name一列为空，表示该PV不属于任何的VG
+  PV Size            1.86 GB         # PV大小
+  Allocatable        NO              # 是否可分配
+  PE Size (KByte)    0               # PE大小
+  Total PE           0               # 总PE数
+  Free PE            0               # 空闲的PE
+  Allocated PE       0               # 分配的PE
+  PV UUID            VzjEpx-or1h-v3gN-zOCm-FnjC-eDOz-tp5Yzg
+</pre>
+
+<p>
+可以看到，物理卷hda14的VG Name一列为空，表示该物理卷不属于任何的卷组，用户可以删除该物理卷，或分配给其他卷组使用。
+本文来自CSDN博客，转载请标明出处：<a href="http://blog.csdn.net/warden2010/archive/2010/07/25/5764205.aspx">http://blog.csdn.net/warden2010/archive/2010/07/25/5764205.aspx</a>
+</p>
+
+<h3 id="toc_2.2.6">物理卷组管理</h3>
+
+<p>
+物理卷是卷组的组成部分，一个物理卷就是一个磁盘分区或在逻辑上与磁盘分区等价的设备（如RAID中的LUN）。每一个物理卷被划分成若干个被称为PE（Physical Extents）的基本单元，具有唯一编号的PE是可以被LVM寻址的最小单元。PE的大小是可以更改的，默认为4MB。
+</p>
+
+<ul>
+<li>
+添加物理卷
+
+</ul>
+<p>
+使用pvcreate命令可以创建物理卷，可以在整个磁盘上创建物理卷，也可以在一个磁盘分区上创建物理卷。例如如果要在第二块SCSI磁盘上创建物理卷，可以使用如下命令。
+</p>
+<pre>
+pvcreate /dev/sdb
+</pre>
+
+<p>
+如果要在磁盘分区上创建PV，首先要使用分区工具（fdisk或者parted）在磁盘上面创建分区，然后把分区的系统号码改为8e，即Linux LVM，命令如下所示。
+</p>
+<pre>
+Command (m for help): t
+Partition number (1-2): 1
+Hex code (type L to list codes): 8e
+Changed system type of partition 1 to 8e (Linux LVM)
+</pre>
+
+<p>
+最后使用pvcreate命令创建物理卷，例如在sdb1分区上创建物理卷，命令如下所示。
+</p>
+<pre>
+pvcreate /dev/sdb1
+</pre>
+
+<ul>
+<li>
+查看物理卷
+
+</ul>
+
+<p>
+使用pvdisplay命令可以查看物理卷的信息，如果不带任何选项，则pvdisplay将显示系统中所有物理卷的信息，如下所示。
+</p>
+<pre>
+pvdisplay
+
+  --- Physical volume --- 
+  PV Name            /dev/hda13                         # pv名称
+  VG Name            vg_data                            # pv所属的vg名称
+  PV Size            1.87 GB / not usable 1.96 MB       # pv的大小为1.87GB
+  Allocatable        yes
+  PE Size (KByte)    4096                               # 物理块大小为4MB
+  Total PE           478                                # 总的物理块数
+  Free PE            478                                # 空闲的物理块数
+  Allocated PE       0
+  PV UUID            jaVtOk-rpMb-QgbM-zx1N-DmCB-yGqm-hCVmiE
+  --- Physical volume ---                               # 另一个pv的信息
+  PV Name            /dev/hda14
+  VG Name            vg_data
+  PV Size            1.86 GB / not usable 2.12 MB
+  Allocatable        yes
+  PE Size (KByte)    4096
+  Total PE           476
+  Free PE            476
+  Allocated PE       0
+  PV UUID            VzjEpx-or1h-v3gN-zOCm-FnjC-eDOz-tp5YZg
+</pre>
+
+<p>
+可以看到，在本例中共有两个物理卷：/dev/hda13和/dev/hda14，其中hda13的大小为1.87GB，物理块大小为4096KB，总的物理块数为478，空闲的物理块数为478，已分配的物理块数为0。而hda14的大小为1.86GB，物理块大小为4096KB，总的物理块数为476，空闲的物理块数为476，已分配的物理块数为0。
+</p>
+
+<ul>
+<li>
+删除物理卷
+
+</ul>
+<p>
+如果物理卷不再需要，可以使用pvremove命令将其删除，如下所示。
+</p>
+<pre>
+pvremove /dev/hda16
+
+  Labels on physical volume "/dev/hda16" successfully wiped
+</pre>
+
+<p>
+物理卷被删除后，其所在的磁盘分区并不会被删除。需要被删除的物理卷必须是已经不属于任何卷组，否则将会失败，如下所示。
+</p>
+<pre>
+pvremove /dev/hda13
+  Can't pvremove physical volume "/dev/hda13" of volume group "vg_data" without-ff
+</pre>
+
+<p>
+本文来自CSDN博客，转载请标明出处：<a href="http://blog.csdn.net/warden2010/archive/2010/07/25/5764184.aspx">http://blog.csdn.net/warden2010/archive/2010/07/25/5764184.aspx</a>
+</p>
+
+<h3 id="toc_2.2.7">linux创建分区</h3>
+
+<p>
+为了给一个硬盘分区，你得在你开始运行 fdisk 的时候指定设备的名称。比如： 
+</p>
+<pre>
+fdisk /dev/hda （对第一个 IDE 硬盘驱动器重新分区）
+fdisk /dev/hdb （对第二个 IDE 硬盘驱动器重新分区）
+fdisk /dev/sda （对第一个 SCSI 硬盘驱动器重新分区）
+fdisk /dev/sdb （对第二个 SCSI 硬盘驱动器重新分区）
+</pre>
+
+<p>
+［注：如果你喜欢，也可以尝试一个叫做 'cfdisk' 的菜单操作的 Linux fdisk 版本。］ 
+</p>
+
+<p>
+你启动了 fdisk 之后，它会显示一个命令提示符。首先用 'p' 命令查看你现有的分区表： 
+</p>
+<pre>
+Command (m for help): p 
+Disk /dev/sda: 255 heads, 63 sectors, 1024 cylinders 
+Units = cylinders of 16065 * 512 bytes 
+Device Boot Start End Blocks Id System 
+/dev/sda1 * 1 702 5638783+ 4f Win95 FAT32 (LBA) 
+</pre>
+
+<p>
+在这里我们可以看到在硬盘上已经有了一个 DOS 分区，从第一个柱面开始扩展到702柱面。因为整个硬盘有1024个柱面，所以703 – 1024的范围是空闲的，可以用来安装 Linux。 
+</p>
+
+<p>
+如果 FAT32 分区已经使用了整个硬盘，那么除了把它整个地删除（这会破坏分区），或者返回以使用某些像 GNU parted 或者 Partition Magic 之类的分区调整工具来为安装创建一些空闲空间之外，你别无选择。 
+</p>
+
+<p>
+接下来，你可以用 'n' 命令来创建一个主分区。这将是你的 Linux 根分区。 
+</p>
+<pre>
+Command (m for help): n
+Command action
+e extended
+p primary partition (1-4)
+</pre>
+
+<p>
+你可以键入 'p' 来设定一个主分区。 
+</p>
+<pre>
+Partition number (1-4): 2
+</pre>
+
+<p>
+在这里，键入 "2" 是因为 DOS 已经使用了第一个主分区。Fdisk 首先会问你分区开始处的柱面。Fdisk 知道你最后一个分区是到哪里为止并且会建议你从硬盘上第一个可用的柱面开始作为新的分区。向前并接受这个值。然后，fdisk 需要知道分区的大小。你有两个办法可以指定它，或者输入结束处的柱面，或者输入一个大小值。在这里，我们输入一个大小值。为了做到这一点，你得输入 +sizeM ──在这里，+2300M。这里是输入这些数据之后的屏幕显示： 
+</p>
+<pre>
+First cylinder (703-1024): 703 
+Last cylinder or +size or +sizeM or +sizeK (33-92): +2300M 
+</pre>
+
+<p>
+你已经创建了一个2300 MB 大小的 Linux 主分区。接下来，你要设定一个 Linux 交换分区。你可以用同样的方法来做。首先，键入 'n' 来设定一个主分区： 
+</p>
+<pre>
+Command (m for help): n
+Command action
+e extended
+p primary partition (1-4)
+</pre>
+
+<p>
+键入 "p" 来选择一个主分区。主分区1已经被 DOS 占用，主分区2也已经被 Linux 占用，所以你可以输入 "3" 作为新分区号： 
+</p>
+<pre>
+Partition number (1-4): 3
+</pre>
+
+<p>
+由于这是我们要在硬盘上设定的最后一个分区，所以要这一次手动指定最后一个柱面。以下是这个条目： 
+</p>
+<pre>
+First cylinder (999-1024): 999 
+Last cylinder or +size or +sizeM or +sizeK (999-1024): 1024
+</pre>
+
+<p>
+现在我们要把分区类型设置为82，作为 Linux 交换分区。我们最后都要设置分区类型除非指定让 Linux fdisk 自动把新分区的类型设置为83（Linux）。用 "t" 命令来设置分区类型： 
+</p>
+<pre>
+Command (m for help): t
+Partition number (1-4): 3
+Hex code (type L to list codes): 82
+</pre>
+
+<p>
+现在你要把更新过的分区表信息保存到你的硬盘上。再次使用 "p" 命令查看结果并确认你对此满意： 
+</p>
+<pre>
+Command (m for help): p
+Disk /dev/sda: 255 heads, 63 sectors, 92 cylinders
+Units = cylinders of 16065 * 512 bytes
+Device Boot Start End Blocks Id System
+/dev/sda1 1 702 5638783+ 4f Win95 FAT32 (LBA)
+/dev/sda2 703 999 2385638 83 Linux
+/dev/sda3 999 1024 200811 82 Linux swap
+</pre>
+
+<p>
+这看上去没错了，那么我们就用 "w" 命令把分区表信息保存下来。如果你想不更新分区表就退出（如果你犯了一个错误），那你可以用 "q" 命令，从而不保存任何信息直接退出。 
+</p>
+
+<p>
+当你用 "w" 命令退出 fdisk 时，fdisk 建议你重新启动机器以确保改动生效。如果你没有创建扩展分区，那就可以继续并且在没有重启的情况下运行 setup。 
+</p>
+
+<p>
+注：有时候 fdisk 会给你一个类似于 "This drive has more than 1024 cylinders" 的信息并警告在 DOS 下使用这些分区可能产生的问题。这是因为 MS-DOS 受到只能使用硬盘上前面的1024柱面的限制。以前，LILO 使用标准 BIOS 惯例来读取扇区，所以这也是 LILO 的一个限制。幸运的是近来的 LILO 版本采用 LBA32 方法读取扇区，所以不再有这一限制了。如果你看到 fdisk 的警告信息，你可以放心地忽略它。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

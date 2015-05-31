@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>日志截取及常用统计技巧</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">日志常用统计技巧</a>
+<ul>
+<li><a href="#toc_1.1">常用命令</a>
+<li><a href="#toc_1.2">日志截取</a>
+<ul>
+<li><a href="#toc_1.2.1">按时间截取</a>
+<li><a href="#toc_1.2.2">按标识截取</a>
+<li><a href="#toc_1.2.3">按指定列截取</a>
+<li><a href="#toc_1.2.4">分页显示</a>
+<li><a href="#toc_1.2.5">使用管道、重定向</a>
+</ul>
+<li><a href="#toc_1.3">日志统计</a>
+<ul>
+<li><a href="#toc_1.3.1">分时访问量统计</a>
+<li><a href="#toc_1.3.2">日志中的IP地址</a>
+<li><a href="#toc_1.3.3">网络连接状态</a>
+<li><a href="#toc_1.3.4">URI、Agent统计</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">日志常用统计技巧</h1>
+
+<p>
+最后更新: 2013-01-08
+</p>
+
+<h2 id="toc_1.1">常用命令</h2>
+
+<table>
+<tr>
+<td>
+用途
+</td>
+<td>
+常用命令
+</td>
+</tr>
+<tr>
+<td>
+打包压缩
+</td>
+<td>
+gzip,tar
+</td>
+</tr>
+<tr>
+<td>
+内容输出
+</td>
+<td>
+tail,head,cat,zcat,more,less,管道,&gt;,&gt;&gt;
+</td>
+</tr>
+<tr>
+<td>
+内容过滤
+</td>
+<td>
+grep,sed
+</td>
+</tr>
+<tr>
+<td>
+内容拆分
+</td>
+<td>
+awk,cut
+</td>
+</tr>
+<tr>
+<td>
+排序汇总
+</td>
+<td>
+sort,uniq,awk
+</td>
+</tr>
+</table>
+
+<h2 id="toc_1.2">日志截取</h2>
+
+<h3 id="toc_1.2.1">按时间截取</h3>
+
+<pre class="brush: bash">
+# 截取指定时间段日志
+sed -n '/^2012-12-26 14:30/,/^2012-12-26 14:32/p' server.log|more
+</pre>
+
+<h3 id="toc_1.2.2">按标识截取</h3>
+
+<p>
+截取特定标识日志的内容(仅特定标识日志行、或标识附近日志行)
+</p>
+
+<pre class="brush: bash">
+# 过滤包含特定标识(忽略大小写)的日志、并显示前后10行
+grep -i  -A 10 -B 10 "error" server.log|more
+</pre>
+
+<h3 id="toc_1.2.3">按指定列截取</h3>
+
+<pre class="brush: bash">
+# 截取第7列为'/test'的行
+cat server.log|awk 'if($7=="/test"{print $0}'|more
+</pre>
+
+<h3 id="toc_1.2.4">分页显示</h3>
+
+<p>
+使用more,less进行分页显示，more仅能简单地向后翻页，less可上下翻页、并可通过/word来查找包含word的行。
+</p>
+<ul>
+<li>
+常用快键键
+
+</ul>
+<table>
+<tr>
+<td>
+按键
+</td>
+<td>
+功能
+</td>
+<td>
+备注
+</td>
+</tr>
+<tr>
+<td>
+空格
+</td>
+<td>
+下一页
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+q
+</td>
+<td>
+退出
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+PgUp
+</td>
+<td>
+上一页
+</td>
+<td>
+less
+</td>
+</tr>
+<tr>
+<td>
+PgDn
+</td>
+<td>
+下一页
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+/word
+</td>
+<td>
+查找word所在位置
+</td>
+<td>
+less
+</td>
+</tr>
+<tr>
+<td>
+n
+</td>
+<td>
+查找下一个
+</td>
+<td>
+less
+</td>
+</tr>
+<tr>
+<td>
+N
+</td>
+<td>
+查找下上个
+</td>
+<td>
+less
+</td>
+</tr>
+</table>
+
+
+<h3 id="toc_1.2.5">使用管道、重定向</h3>
+
+<p>
+通过管道可将截取内容或统计结果直接存入文件中，其中&gt;为覆盖原文件、&gt;&gt;为追加至文件。
+</p>
+
+<pre class="brush: bash">
+grep -i  -A 10 -B 10 "error" server.log &gt; server_error.txt
+
+# &gt;  : 覆盖文件
+# &gt;&gt; : 追加到文件末尾
+</pre>
+
+
+<h2 id="toc_1.3">日志统计</h2>
+
+<h3 id="toc_1.3.1">分时访问量统计</h3>
+
+<p>
+对日志中的时间列进行拆分，根据时间格式取YYYY-mm-DD HH:MM部分、进行排序、汇总，即可获得每分钟的访问量统计。
+</p>
+
+<pre class="brush: bash">
+# 按分钟汇总统计访问量
+cat server.log | grep "^2012-" | awk -F\: '{print $1" "$2":"$3}'|sort|uniq -c|more
+
+# 按小时汇总统计访问量
+cat server.log | grep "^2012-" | awk -F\: '{print $1" "$2"}'|sort|uniq -c|more
+</pre>
+
+
+<h3 id="toc_1.3.2">日志中的IP地址</h3>
+
+<p>
+WEB服务器日志(nginx,apache)中，通常第一列为客户端IP地址，取该段值进行排序、汇总，即可得到IP:访问次数的统计。
+</p>
+
+<pre class="brush: bash">
+# 从日志中统计IP访问次数
+cat server.log | awk '{print $1}'|sort|uniq -c|more
+
+# 统计来访唯一IP数
+cat server.log | awk '{print $1}'|sort|uniq|wc -l
+</pre>
+
+<h3 id="toc_1.3.3">网络连接状态</h3>
+
+<p>
+netstat命令可获取系统当前的侦听、连接状态，包括协议、源IP:端口、目标IP:端口、连接状态信息，取关注的列进行排序、汇总，即可获得连接数、状态等统计。
+</p>
+
+<pre class="brush:bash">
+# TCP连接数
+netstat -antp|grep ^tcp|awk '{print $5}'|awk -F\: '{print $1}'|sort|uniq -c|sort -nr
+
+      5 0.0.0.0
+      2 192.217.199.215
+      1 91.189.89.144
+      1 172.16.17.4
+      1 172.16.17.3
+      1 172.16.17.27
+
+# TCP连接状态
+netstat -antp|grep ^tcp|awk '{print $6}'|sort|uniq -c|sort -nr
+
+     17 ESTABLISHED
+      8 LISTEN
+      1 CLOSE_WAIT
+</pre>
+
+<h3 id="toc_1.3.4">URI、Agent统计</h3>
+
+<p>
+WEB服务器(apache,nginx,iis等)日志中，通常存有每个请求的URI、浏览器版本等信息，对其进行拆分、排序、汇总，即可获得各URI访问量统计。统计的命令与上面的类似。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

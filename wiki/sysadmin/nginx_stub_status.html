@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>nginx监控指标</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>nginx监控指标</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">配置说明</a>
+<li><a href="#toc_0.2">输出内容</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+ngx_http_stub_status_module:<a href="http://nginx.org/en/docs/http/ngx_http_stub_status_module.html">http://nginx.org/en/docs/http/ngx_http_stub_status_module.html</a>
+
+<li>
+用nginx-rrd监控nginx访问数:<a href="http://laoxu.blog.51cto.com/4120547/1159491">http://laoxu.blog.51cto.com/4120547/1159491</a>
+
+</ul>
+
+<p>
+ngx_http_stub_status_module模块能够获取Nginx自上次启动以来的工作状态。
+</p>
+
+<p>
+此模块非核心模块，需要在编译的时候手动添加编译参数<code>--with-http_stub_status_module</code>。
+</p>
+
+<h2 id="toc_0.1">配置说明</h2>
+
+<ul>
+<li>
+nginx配置
+<pre class="brush:bash">
+location /nginx_status {
+    # copied from http://blog.kovyrin.net/2006/04/29/monitoring-nginx-with-rrdtool/
+    stub_status on;
+    access_log off;
+    allow SOME.IP.ADD.RESS;
+    deny all;
+}
+</pre>
+<pre>
+语法: stub_status on
+默认值: None
+作用域: location
+创建一个 location 区域启用 stub_status
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">输出内容</h2>
+
+<p>
+"stub status" 模块返回的状态信息下：
+</p>
+<pre>
+Active connections: 291 
+server accepts handled requests
+ 16630948 16630948 31070465 
+Reading: 6 Writing: 179 Waiting: 106 
+</pre>
+
+<ul>
+<li>
+<code>Active connections</code>
+
+<ul>
+<li>
+当前连接数(包括Waiting状态的连接)。
+
+<li>
+The current number of active client connections including Waiting connections. 
+
+</ul>
+<li>
+<code>server accepts handled requests</code> 
+
+<ul>
+<li>
+<code>accepts</code>:nginx 总共处理了 16630948 个连接(The total number of accepted client connections)。
+
+<li>
+<code>handled</code>:成功创建 16630948 次握手(证明中间没有失败的)。The total number of handled connections. Generally, the parameter value is the same as accepts unless some resource limits have been reached (for example, the worker_connections limit). 
+
+<li>
+<code>requests</code>:总共处理了 31070465 个请求 (平均每次握手处理了1.8个数据请求)。The total number of client requests. 
+
+</ul>
+<li>
+<code>reading</code> -- The current number of connections where nginx is reading the request header. 
+
+<li>
+<code>writing</code> -- The current number of connections where nginx is writing the response back to the client.
+
+<li>
+<code>waiting</code> -- The current number of idle client connections waiting for a request. 开启 keep-alive 的情况下，<code>waiting = active - reading - writing</code>。
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

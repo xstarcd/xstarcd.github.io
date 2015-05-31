@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>KeepassX结合SecureCRT登录</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>KeepassX结合SecureCRT登录</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">SecureCRT</a>
+<li><a href="#toc_0.2">CygWin</a>
+<li><a href="#toc_0.3">调用putty</a>
+<li><a href="#toc_0.4">Linux桌面：gnome-terminal</a>
+</ul>
+</ul>
+</div>
+
+<p>
+以下配置实现：在KeepassX中双击一主机的"网址"部份，自动在SecureCRT的一个标签页中登录主机，将不用再输入帐号密码等信息。
+</p>
+
+<h2 id="toc_0.1">SecureCRT</h2>
+
+<ul>
+<li>
+ssh
+
+</ul>
+<p>
+把keepass中的key的url项改成如下形式：
+</p>
+<pre class="brush:bash">
+cmd://"D:\tools\SecureCRTPortable\App\SecureCRT\SecureCRT.exe" /N {TITLE} /L {USERNAME} /PASSWORD {PASSWORD} /T /P 22 {TITLE}
+</pre>
+
+<p>
+CRT的绝对路径是C:\SecureCRT\SecureCRT.exe，entry的title就是主机名(或IP地址)，端口是22，USERNAME是用户（root或者是其他的用户名）。
+</p>
+
+<p>
+详细说明可以查看crt的帮助文档的Using the Software--》Command-Line Options--》Table of Protocol-Specific Command-Line Options部分。
+</p>
+
+<ul>
+<li>
+ssh.cmd
+
+</ul>
+
+<p>
+用批处理将以上命令包装一下，简化KeepassX里的设置，又可方便统一进行入口参数检查和调整、以及更换其他ssh工具。放到C:\windows目录下，方便直接调用。
+</p>
+
+<p>
+在KeepassX的URL项设置为：<code>cmd://ssh.cmd {TITLE} {USERNAME} {PASSWORD} 22</code>。
+</p>
+
+<p>
+注意：KeepassX的标题要填写成IP地址。
+</p>
+
+<p>
+另外，因KeepassX不把windows下的转义符<code>^</code>当作特殊字符，若密码中包含<code>^</code>字符，会因传参数时未加双引号而丢失<code>^</code>符，造成登录失败。
+</p>
+
+<pre class="brush:bash">
+@ECHO OFF
+setlocal enabledelayedexpansion 
+@REM C:\Windows\ssh.cmd
+@REM KeepassXURL: cmd://ssh.cmd {TITLE} {USERNAME} {PASSWORD} PORTNumber
+@REM KeepassXURL: cmd://ssh.cmd {TITLE} {USERNAME} {PASSWORD} 22
+SET SSHTOOL=SecureCRT
+@REM SET SSHTOOL=FileZilla
+@REM SET SSHTOOL=PuTTY
+@REM SET SSHTOOL=MobaXterm
+SET SecureCRTBIN="D:\tools\SecureCRTPortable\App\SecureCRT\SecureCRT.exe"
+SET FileZillaBIN="d:\tools\FileZilla\filezilla.exe"
+SET PuTTYBIN="D:\tools\putty\putty.exe"
+SET MobaXtermBIN="D:\tools\MobaXterm\MobaXterm.exe"
+SET SSHFIREWALL=PX2223
+@REM SET SSHFIREWALL=
+@REM -------------------------------------------------------------------------------
+SET HOST=%1
+SET USER=%2
+SET PW=%3
+SET PORT=%4
+IF "%HOST%" == "" GOTO HELP
+IF "%USER%" == "" GOTO HELP
+IF "%PW%" == "" GOTO HELP
+IF "%PORT%" == "" SET PORT=22
+
+@REM IF "%HOST:~0,10%" == "172.16.33." SET SSHFIREWALL=PX2223
+IF "%HOST:~0,7%" == "10.224." SET SSHFIREWALL=
+@REM IF "%HOST:~0,5%" == "172.1" SET SSHFIREWALL=
+
+IF "%SSHTOOL%" == "SecureCRT" GOTO SecureCRT
+IF "%SSHTOOL%" == "FileZilla" GOTO FileZilla
+IF "%SSHTOOL%" == "PuTTY" GOTO PuTTY
+IF "%SSHTOOL%" == "MobaXterm" GOTO MobaXterm
+GOTO END
+
+:SecureCRT
+@REM SecureCRT.exe /N {TITLE} /L {USERNAME} /PASSWORD {PASSWORD} /T /P 22 /FIREWALL 2223 {TITLE}
+START "" %SecureCRTBIN% /N %HOST% /FIREWALL=%SSHFIREWALL% /L %USER% /PASSWORD %PW% /T /P %PORT% %HOST%
+GOTO END
+
+:FileZilla
+START "" %FileZillaBIN% "sftp://%USER%:%PW%@%HOST%:%PORT%"
+GOTO END
+
+:PuTTY
+SET PuTTYSession=
+IF "%SSHFIREWALL%" NEQ "" SET PuTTYSession=-load %SSHFIREWALL%
+START "" %PuTTYBIN% -ssh -C %PuTTYSession% -l %USER% -pw %PW% -P %PORT% %HOST%
+GOTO END
+
+:MobaXterm
+@REM cmd://"MobaXterm.exe" -newtab "sshpass -p '{PASSWORD}' ssh {USERNAME}@{S:IP}"
+START "" %MobaXtermBIN% -newtab "sshpass -p '%PW%' ssh %USER%@%HOST%"
+GOTO END
+
+:HELP
+ECHO Usage: ssh.cmd HOST USER PASSWD
+GOTO END
+
+:END
+@REM PAUSE
+</pre>
+
+<ul>
+<li>
+sftp的url
+
+</ul>
+
+<pre class="brush:bash">
+cmd://"C:\SecureCRT\SecureFX.exe" sftp://{USERNAME}:{PASSWORD}@{TITLE}
+</pre>
+
+<p>
+如果使用Keepass 2.0以上版本，则可以设置自定义属性。
+</p>
+
+<h2 id="toc_0.2">CygWin</h2>
+<p>
+需要另外用except或pexcept写自动登录脚本才能完成自动登录。
+</p>
+<pre class="brush:bash">
+# 先开一个终端，并运行以下命令开启sesssion
+screen -S ssh
+
+# 在keepassX中设置如下URL项：
+cmd://C:\cygwin\bin\bash.exe -c "/usr/bin/screen -dr -S ssh -X screen -t {TITLE} ssh {USERNAME}@{TITLE}"
+</pre>
+
+<h2 id="toc_0.3">调用putty</h2>
+
+<pre class="brush:bash">
+cmd://putty.exe -ssh {TITLE} -l {USERNAME} -pw {PASSWORD}
+</pre>
+
+<h2 id="toc_0.4">Linux桌面：gnome-terminal</h2>
+<ul>
+<li>
+需安装expect包:
+<pre class="brush:bash">
+# Ubuntu
+apt-get install expect
+# CentOS
+yum install expect
+</pre>
+
+<li>
+KeepassX网址设置如下内容：
+<pre class="brush:bash">
+cmd:///usr/bin/gnome-terminal -e "/usr/bin/expect -c 'spawn ssh {USERNAME}@{TITLE}; expect password:; send {PASSWORD}\r; interact &gt;'"
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

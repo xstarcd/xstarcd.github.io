@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>strace</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>strace</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">strace简介</a>
+<ul>
+<li><a href="#toc_0.1.1">输出参数含义</a>
+<li><a href="#toc_0.1.2">strace参数</a>
+<li><a href="#toc_0.1.3">命令实例</a>
+<li><a href="#toc_0.1.4">strace案例</a>
+<ul>
+<li><a href="#toc_0.1.4.1">用strace调试程序</a>
+<li><a href="#toc_0.1.4.2">解决库依赖问题</a>
+<li><a href="#toc_0.1.4.3">限制strace只跟踪特定的系统调用</a>
+</ul>
+</ul>
+<li><a href="#toc_0.2">strace使用详解</a>
+<ul>
+<li><a href="#toc_0.2.1">strace命令</a>
+<li><a href="#toc_0.2.2">应用</a>
+<ul>
+<li><a href="#toc_0.2.2.1">案例一：运行clint出现Segment Fault错误</a>
+<li><a href="#toc_0.2.2.2">案例二：vim启动速度明显变慢</a>
+<li><a href="#toc_0.2.2.3">案例三：用调试工具掌握软件的工作原理</a>
+</ul>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">strace简介</h2>
+
+<p>
+原文：<a href="http://www.cnblogs.com/ggjucheng/archive/2012/01/08/2316692.html">http://www.cnblogs.com/ggjucheng/archive/2012/01/08/2316692.html</a>
+</p>
+
+<p>
+strace常用来跟踪进程执行时的系统调用和所接收的信号。在Linux世界，进程不能直接访问硬件设备，当进程需要访问硬件设备(比如读取磁盘文件，接收网络数据等等)时，必须由用户态模式切换至内核态模式，通过系统调用访问硬件设备。strace可以跟踪到一个进程产生的系统调用，包括参数，返回值，执行消耗的时间。
+</p>
+
+<h3 id="toc_0.1.1">输出参数含义</h3>
+
+<pre class="brush:bash">
+root@ubuntu:/usr# strace cat /dev/null 
+execve("/bin/cat", ["cat", "/dev/null"], [/* 22 vars */]) = 0
+brk(0)                                  = 0xab1000
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f29379a7000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+...
+brk(0) = 0xab1000
+brk(0xad2000) = 0xad2000
+fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(136, 0), ...}) = 0
+open("/dev/null", O_RDONLY) = 3
+fstat(3, {st_mode=S_IFCHR|0666, st_rdev=makedev(1, 3), ...}) = 0
+read(3, "", 32768) = 0
+close(3) = 0
+close(1) = 0
+close(2) = 0
+exit_group(0) = ?
+</pre>
+
+<p>
+每一行都是一条系统调用，等号左边是系统调用的函数名及其参数，右边是该调用的返回值。
+</p>
+
+<p>
+strace 显示这些调用的参数并返回符号形式的值。strace 从内核接收信息，而且不需要以任何特殊的方式来构建内核。
+</p>
+
+<h3 id="toc_0.1.2">strace参数</h3>
+
+<pre class="brush:bash">
+-c 统计每一系统调用的所执行的时间,次数和出错的次数等. 
+-d 输出strace关于标准错误的调试信息. 
+-f 跟踪由fork调用所产生的子进程. 
+-ff 如果提供-o filename,则所有进程的跟踪结果输出到相应的filename.pid中,pid是各进程的进程号. 
+-F 尝试跟踪vfork调用.在-f时,vfork不被跟踪. 
+-h 输出简要的帮助信息. 
+-i 输出系统调用的入口指针. 
+-q 禁止输出关于脱离的消息. 
+-r 打印出相对时间关于,,每一个系统调用. 
+-t 在输出中的每一行前加上时间信息. 
+-tt 在输出中的每一行前加上时间信息,微秒级. 
+-ttt 微秒级输出,以秒了表示时间. 
+-T 显示每一调用所耗的时间. 
+-v 输出所有的系统调用.一些调用关于环境变量,状态,输入输出等调用由于使用频繁,默认不输出. 
+-V 输出strace的版本信息. 
+-x 以十六进制形式输出非标准字符串 
+-xx 所有字符串以十六进制形式输出. 
+-a column 设置返回值的输出位置.默认 为40. 
+-e expr   指定一个表达式,用来控制如何跟踪.格式如下: 
+[qualifier=][!]value1[,value2]... 
+qualifier只能是trace,abbrev,verbose,raw,signal,read,write其中之一.
+value是用来限定的符号或数字.默认的 qualifier是 trace.感叹号是否定符号.例如: 
+-eopen等价于 -e trace=open,表示只跟踪open调用.而-etrace!=open表示跟踪除了open以外的其他调用.有两个特殊的符号 all 和 none. 
+注意有些shell使用!来执行历史记录里的命令,所以要使用\\. 
+-e trace=set     只跟踪指定的系统 调用.例如:-e trace=open,close,rean,write表示只跟踪这四个系统调用.默认的为set=all. 
+-e trace=file    只跟踪有关文件操作的系统调用. 
+-e trace=process 只跟踪有关进程控制的系统调用. 
+-e trace=network 跟踪与网络有关的所有系统调用. 
+-e strace=signal 跟踪所有与系统信号有关的系统调用 
+-e trace=ipc  跟踪所有与进程通讯有关的系统调用 
+-e abbrev=set 设定 strace输出的系统调用的结果集.-v 等与 abbrev=none.默认为abbrev=all. 
+-e raw=set    将指定的系统调用的参数以十六进制显示. 
+-e signal=set 指定跟踪的系统信号.默认为all.如 signal=!SIGIO(或者signal=!io),表示不跟踪SIGIO信号. 
+-e read=set   输出从指定文件中读出 的数据.例如: 
+-e read=3,5 
+-e write=set  输出写入到指定文件中的数据. 
+-o filename   将strace的输出写入文件filename 
+-p pid        跟踪指定的进程pid. 
+-s strsize    指定输出的字符串的最大长度.默认为32.文件名一直全部输出. 
+-u username   以username 的UID和GID执行被跟踪的命令
+</pre>
+
+<h3 id="toc_0.1.3">命令实例</h3>
+
+<p>
+通用的完整用法：
+</p>
+<pre class="brush:bash">
+strace -o output.txt -T -tt -e trace=all -p 28979
+</pre>
+
+<p>
+上面的含义是跟踪28979进程的所有系统调用（-e trace=all），并统计系统调用的花费时间，以及开始时间（并以可视化的时分秒格式显示），最后将记录结果存在output.txt文件里面。
+</p>
+
+ 
+<h3 id="toc_0.1.4">strace案例</h3>
+ 
+<h4 id="toc_0.1.4.1">用strace调试程序</h4>
+
+<p>
+在理想世界里，每当一个程序不能正常执行一个功能时，它就会给出一个有用的错误提示，告诉你在足够的改正错误的线索。但遗憾的是，我们不是生活在理想世界里，起码不总是生活在理想世界里。有时候一个程序出现了问题，你无法找到原因。
+</p>
+
+<p>
+这就是调试程序出现的原因。strace是一个必不可少的调试工具，strace用来监视系统调用。你不仅可以调试一个新开始的程序，也可以调试一个已经在运行的程序（把strace绑定到一个已有的PID上面）。
+</p>
+
+<p>
+首先让我们看一个真实的例子：启动KDE时出现问题
+</p>
+
+<p>
+前一段时间，我在启动KDE的时候出了问题，KDE的错误信息无法给我任何有帮助的线索。
+</p>
+
+<pre>
+_KDE_IceTransSocketCreateListener: failed to bind listener
+_KDE_IceTransSocketUNIXCreateListener: ...SocketCreateListener() failed
+_KDE_IceTransMakeAllCOTSServerListeners: failed to create listener for local
+
+Cannot establish any listening sockets DCOPServer self-test failed.
+</pre>
+
+<p>
+对我来说这个错误信息没有太多意义，只是一个对KDE来说至关重要的负责进程间通信的程序无法启动。我还可以知道这个错误和ICE协议（Inter Client Exchange）有关，除此之外，我不知道什么是KDE启动出错的原因。
+</p>
+
+<p>
+我决定采用strace看一下在启动dcopserver时到底程序做了什么：
+</p>
+
+<pre>
+strace -f -F -o ~/dcop-strace.txt dcopserver
+</pre>
+
+<p>
+这里 -f -F选项告诉strace同时跟踪fork和vfork出来的进程，-o选项把所有strace输出写到~/dcop-strace.txt里面，dcopserver是要启动和调试的程序。
+</p>
+
+<p>
+再次出现错误之后，我检查了错误输出文件dcop-strace.txt，文件里有很多系统调用的记录。在程序运行出错前的有关记录如下：
+</p>
+
+<pre>
+27207 mkdir("/tmp/.ICE-unix", 0777) = -1 EEXIST (File exists)
+27207 lstat64("/tmp/.ICE-unix", {st_mode=S_IFDIR|S_ISVTX|0755, st_size=4096, ...}) = 0
+27207 unlink("/tmp/.ICE-unix/dcop27207-1066844596") = -1 ENOENT (No such file or directory)
+27207 bind(3, {sin_family=AF_UNIX, path="/tmp/.ICE-unix/dcop27207-1066844596"}, 38) = -1 EACCES (Permission denied) 
+27207 write(2, "_KDE_IceTrans", 13) = 13
+27207 write(2, "SocketCreateListener: failed to "..., 46) = 46
+27207 close(3) = 0 27207 write(2, "_KDE_IceTrans", 13) = 13
+27207 write(2, "SocketUNIXCreateListener: ...Soc"..., 59) = 59
+27207 umask(0) = 0 27207 write(2, "_KDE_IceTrans", 13) = 13
+27207 write(2, "MakeAllCOTSServerListeners: fail"..., 64) = 64
+27207 write(2, "Cannot establish any listening s"..., 39) = 39
+</pre>
+
+<p>
+其中第一行显示程序试图创建/tmp/.ICE-unix目录，权限为0777，这个操作因为目录已经存在而失败了。第二个系统调用（lstat64）检查 了目录状态，并显示这个目录的权限是0755，这里出现了第一个程序运行错误的线索：程序试图创建属性为0777的目录，但是已经存在了一个属性为 0755的目录。第三个系统调用（unlink）试图删除一个文件，但是这个文件并不存在。这并不奇怪，因为这个操作只是试图删掉可能存在的老文件。
+</p>
+
+<p>
+但是，第四行确认了错误所在。他试图绑定到/tmp/.ICE-unix/dcop27207-1066844596，但是出现了拒绝访问错误。.ICE_unix目录的用户和组都是root，并且只有所有者具有写权限。一个非root用户无法在这个目录下面建立文件，如果把目录属性改成0777， 则前面的操作有可能可以执行，而这正是第一步错误出现时进行过的操作。
+</p>
+
+<p>
+所以我运行了chmod 0777 /tmp/.ICE-unix之后KDE就可以正常启动了，问题解决了，用strace进行跟踪调试只需要花很短的几分钟时间跟踪程序运行，然后检查并分析输出文件。
+</p>
+
+<p>
+说明：运行chmod 0777只是一个测试，一般不要把一个目录设置成所有用户可读写，同时不设置粘滞位(sticky bit)。给目录设置粘滞位可以阻止一个用户随意删除可写目录下面其他人的文件。一般你会发现/tmp目录因为这个原因设置了粘滞位。KDE可以正常启动 之后，运行chmod +t /tmp/.ICE-unix给.ICE_unix设置粘滞位。
+</p>
+
+<h4 id="toc_0.1.4.2">解决库依赖问题</h4>
+
+<p>
+starce的另一个用处是解决和动态库相关的问题。当对一个可执行文件运行ldd时，它会告诉你程序使用的动态库和找到动态库的位置。但是如果你正在使用一个比较老 的glibc版本（2.2或更早），你可能会有一个有bug的ldd程序，它可能会报告在一个目录下发现一个动态库，但是真正运行程序时动态连接程序（/lib/ld-linux.so.2）却可能到另外一个目录去找动态连接库。这通常因为/etc/ld.so.conf和 /etc/ld.so.cache文件不一致，或者/etc/ld.so.cache被破坏。在glibc 2.3.2版本上这个错误不会出现，可能ld-linux的这个bug已经被解决了。
+</p>
+
+<p>
+尽管这样，ldd并不能把所有程序依赖的动态库列出来，系统调用dlopen可以在需要的时候自动调入需要的动态库，而这些库可能不会被ldd列出来。作为glibc的一部分的NSS（Name Server Switch）库就是一个典型的例子，NSS的一个作用就是告诉应用程序到哪里去寻找系统帐号数据库。应用程序不会直接连接到NSS库，glibc则会通 过dlopen自动调入NSS库。如果这样的库偶然丢失，你不会被告知存在库依赖问题，但这样的程序就无法通过用户名解析得到用户ID了。让我们看一个例子：
+</p>
+
+<p>
+whoami程序会给出你自己的用户名，这个程序在一些需要知道运行程序的真正用户的脚本程序里面非常有用，whoami的一个示例输出如下：
+</p>
+<pre>
+# whoami
+root
+</pre>
+
+<p>
+假设因为某种原因在升 级glibc的过程中负责用户名和用户ID转换的库NSS丢失，我们可以通过把nss库改名来模拟这个环境：
+</p>
+<pre>
+# mv /lib/libnss_files.so.2 /lib/libnss_files.so.2.backup 
+# whoami
+whoami: cannot find username for UID 0
+</pre>
+<p>
+这里你可以看到，运行whoami时出现了错误，ldd程序的输出不会提供有用的帮助：
+</p>
+<pre>
+# ldd /usr/bin/whoami
+libc.so.6 =&gt; /lib/libc.so.6 (0x4001f000)
+/lib/ld-linux.so.2 =&gt; /lib/ld-linux.so.2 (0x40000000)
+</pre>
+<p>
+你只会看到whoami依赖Libc.so.6和ld-linux.so.2，它没有给出运行whoami所必须的其他库。这里时用strace跟踪 whoami时的输出：
+</p>
+<pre>
+strace -o whoami-strace.txt whoami
+
+open("/lib/libnss_files.so.2", O_RDONLY) = -1 ENOENT (No such file or directory)
+open("/lib/i686/mmx/libnss_files.so.2", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/i686/mmx", 0xbffff190) = -1 ENOENT (No such file or directory) 
+open("/lib/i686/libnss_files.so.2", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/i686", 0xbffff190) = -1 ENOENT (No such file or directory)
+open("/lib/mmx/libnss_files.so.2", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/mmx", 0xbffff190) = -1 ENOENT (No such file or directory) 
+open("/lib/libnss_files.so.2", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib", {st_mode=S_IFDIR|0755, st_size=2352, ...}) = 0
+open("/usr/lib/i686/mmx/libnss_files.so.2", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/usr/lib/i686/mmx", 0xbffff190) = -1 ENOENT (No such file or directory) 
+open("/usr/lib/i686/libnss_files.so.2", O_RDONLY) = -1 ENOENT (No such file or directory)
+</pre>
+
+<p>
+你可以发现在不同目录下面查找libnss.so.2的尝试，但是都失败了。如果没有strace这样的工具，很难发现这个错误是由于缺少动态库造成的。现在只需要找到libnss.so.2并把它放回到正确的位置就可以了。　
+</p>
+ 
+<h4 id="toc_0.1.4.3">限制strace只跟踪特定的系统调用</h4>
+
+<p>
+如果你已经知道你要找什么，你可以让strace只跟踪一些类型的系统调用。例如，你需要看看在configure脚本里面执行的程序，你需要监视的系统调用就是execve。让strace只记录execve的调用用这个命令：
+</p>
+<pre>
+strace -f -o configure-strace.txt -e execve ./configure
+</pre>
+
+<ul>
+<li>
+参考资料
+
+<ul>
+<li>
+<a href="http://blog.sina.com.cn/s/blog_6e07f1eb0100t7rg.html">http://blog.sina.com.cn/s/blog_6e07f1eb0100t7rg.html</a>
+
+<li>
+<a href="http://blog.csdn.net/zdl1016/article/details/6359598">http://blog.csdn.net/zdl1016/article/details/6359598</a>
+
+</ul>
+</ul>
+
+
+<h2 id="toc_0.2">strace使用详解</h2>
+
+<p>
+原文：<a href="http://blog.csdn.net/rufeng18/article/details/3314216">http://blog.csdn.net/rufeng18/article/details/3314216</a>
+</p>
+
+
+<h3 id="toc_0.2.1">strace命令</h3>
+
+<ul>
+<li>
+用途：打印 STREAMS 跟踪消息。
+
+<li>
+语法：<code>strace [ mid sid level ] ...</code>
+
+<li>
+描述：没有参数的 strace 命令将所有的驱动程序和模块中的所有 STREAMS 事件跟踪消息写到它的标准输出中。这些消息是从 STREAMS 日志驱动程序中获取的。如果提供参数，它们必须是在三元组中。每个三元组表明跟踪消息要从给定的模块或驱动程序、子标识（通常表明次要设备）以及优先级别等于或小于给定级别的模块或驱动程序中接收。all 标记可由任何成员使用，以表明对该属性没有限制。
+
+</ul>
+<p>
+参数：mid---指定 STREAMS 模块的标识号 sid---指定子标识号 level----指定跟踪优先级别
+</p>
+<ul>
+<li>
+输出格式：每个跟踪消息输出的格式是：
+
+<ul>
+<li>
+跟踪序列号
+
+<li>
+消息时间（格式为 hh:mm:ss）
+
+<li>
+系统启动后，以机器滴答信号表示消息的时间
+
+<li>
+跟踪优先级别,有以下值之一：
+
+<ul>
+<li>
+E:消息也在错误日志中
+
+<li>
+F:表示一个致命错误
+
+<li>
+N:邮件已发送给系统管理员
+
+</ul>
+<li>
+源的模块标识号
+
+<li>
+源的子标识号
+
+<li>
+跟踪消息的格式化文本
+
+<ul>
+<li>
+在多处理器系统上， 由两部分组成：消息所有者发送处的处理器号码，格式化文本本身。
+
+</ul>
+</ul>
+<li>
+一旦启动，strace 命令将继续执行，直到用户终止该命令。
+
+</ul>
+
+<p>
+注：由于性能的考虑，所以一次只允许一个 strace 命令来打开 STREAMS 日志驱动程序。
+</p>
+
+<p>
+日志驱动程序有一个三元组的列表（该列表在命令调用中指定），并且程序会根据该列表比较每个潜在的跟踪消息，以决定是否要格式化和发送这个信息到 strace 进程中。因此，长的三元组列表会对 STREAMS 的总体性能的影响更大。 运行 strace 命令对于某些模块和驱动程序（生成要发送给 strace 进程的跟踪消息的模块和驱动程序）的定时的影响最大。如果跟踪消息生成过快，以至 strace 进程无法处理，那么就会丢失一些消息。最后的情况可以通过检查跟踪消息输出上的序列号来确定。
+</p>
+
+<ul>
+<li>
+示例:
+
+</ul>
+
+<p>
+要输出模块标识为 41 的模块或驱动程序中的所有跟踪消息，请输入：
+<code>strace 41 all all</code>
+</p>
+
+<p>
+要输出模块标识为 41，子标识为 0、1 或 2 的模块或驱动程序中的跟踪消息:
+<code>strace 41 0 1 41 1 1 41 2 0</code>
+</p>
+
+<p>
+子标识为 0 和 1 的模块或驱动程序中的消息必须具有小于或等于 1 的跟踪级别。子标识为 2 的模块或驱动程序中的消息必须具有跟踪级别 0。
+</p>
+
+<pre>
+strace: option requires an argument -- e
+usage: strace [-dffhiqrtttTvVxx] [-a column] [-e expr] ... [-o file]
+ [-p pid] ... [-s strsize] [-u username] [-E var=val] ...
+ [command [arg ...]]
+ or: strace -c [-e expr] ... [-O overhead] [-S sortby] [-E var=val] ...
+ [command [arg ...]]
+-c -- count time, calls, and errors for each syscall and report summary
+-f -- follow forks, -ff -- with output into separate files
+-F -- attempt to follow vforks, -h -- print help message
+-i -- print instruction pointer at time of syscall
+-q -- suppress messages about attaching, detaching, etc.
+-r -- print relative timestamp, -t -- absolute timestamp, -tt -- with usecs
+-T -- print time spent in each syscall, -V -- print version
+-v -- verbose mode: print unabbreviated argv, stat, termio[s], etc. args
+-x -- print non-ascii strings in hex, -xx -- print all strings in hex
+-a column -- alignment COLUMN for printing syscall results (default 40)
+-e expr -- a qualifying expression: option=[!]all or option=[!]val1[,val2]...
+ options: trace, abbrev, verbose, raw, signal, read, or write
+-o file -- send trace output to FILE instead of stderr
+-O overhead -- set overhead for tracing syscalls to OVERHEAD usecs
+-p pid -- trace process with process id PID, may be repeated
+-s strsize -- limit length of print strings to STRSIZE chars (default 32)
+-S sortby -- sort syscall counts by: time, calls, name, nothing (default time)
+-u username -- run command as username handling setuid and/or setgid
+-E var=val -- put var=val in the environment for command
+-E var -- remove var from the environment for command
+</pre>
+
+<ul>
+<li>
+strace - 跟踪系统调用和信号
+<pre>
+usage: strace [-dffhiqrtttTvVxx] [-a column] [-e expr] [-o file]
+[-p pid] [-s strsize] [-u username] [command [arg]]
+strace -c [-e expr] [-O overhead] [-S sortby] [command [arg]]
+</pre>
+
+<li>
+-a column 指定显示返回值的列位置，默认是40(从0开始计数)，就是说"="出现在40列的位置。
+
+<li>
+-c 产生类似下面的统计信息
+<pre>
+strace -c -p 14653 (Ctrl-C)
+% time seconds usecs/call calls errors syscall
+------ ----------- ----------- --------- --------- ----------------
+53.99 0.012987 3247 4 2 wait4
+42.16 0.010140 2028 5 read
+1.78 0.000429 61 7 write
+0.76 0.000184 10 18 ioctl
+0.50 0.000121 2 52 rt_sigprocmask
+0.48 0.000115 58 2 fork
+0.18 0.000043 2 18 rt_sigaction
+0.06 0.000014 14 1 1 stat
+0.03 0.000008 4 2 sigreturn
+0.02 0.000006 2 3 time
+0.02 0.000006 3 2 1 setpgid
+------ ----------- ----------- --------- --------- ----------------
+100.00 0.024053 114 4 total
+</pre>
+
+<li>
+-d 输出一些strace自身的调试信息到标准输出
+<pre>
+ strace -c -p 14653 -d (Ctrl-C)
+ [wait(0x137f) = 14653]
+ pid 14653 stopped, [SIGSTOP]
+ [wait(0x57f) = 14653]
+ pid 14653 stopped, [SIGTRAP]
+ cleanup: looking at pid 14653
+ % time seconds usecs/call calls errors syscall
+ ------ ----------- ----------- --------- --------- ----------------
+ ------ ----------- ----------- --------- --------- ----------------
+ 100.00 0.000000 0 total
+</pre>
+
+<li>
+-e expr
+<pre>
+ A qualifying expression which modifies which events to trace or how to trace
+ them. The format of the expression is:
+
+ [qualifier=][!]value1[,value2]...
+
+这里qualifier可以是trace、abbrev、verbose、raw、signal、read或者write。
+value是qualifier相关的符号或数值。缺省qualifier是trace。!表示取反。
+</pre>
+
+<li>
+-eopen等价于-e trace=open，表示只跟踪open系统调用。
+
+<li>
+-e trace=!open意思是跟踪除open系统调用之外的其他所有系统调用。此外value还可以取值all和none。
+
+<li>
+某些shell用!表示重复历史指令，此时可能需要引号、转义符号(/)的帮助。
+
+<li>
+-e trace=set
+
+</ul>
+<p>
+只跟踪指定的系统调用列表。决定跟踪哪些系统调用时，-c选项很有用。
+</p>
+<ul>
+<li>
+trace=open,close,read,write意即只跟踪这四种系统调用，缺省是trace=all
+
+<li>
+-e trace=file,跟踪以指定文件名做参数的所有系统调用。
+
+<li>
+-e trace=process
+<pre>
+ Trace all system calls which involve process management. This is
+ useful for watching the fork, wait, and exec steps of a process.
+</pre>
+
+<li>
+-e trace=network,跟踪所有和网络相关的系统调用
+
+<li>
+-e trace=signal, Trace all signal related system calls.
+
+<li>
+-e trace=ipc, Trace all IPC related system calls.
+
+<li>
+-e abbrev=set
+<pre>
+Abbreviate the output from printing each member of large structures.
+缺省是abbrev=all，-v选项等价于abbrev=none
+</pre>
+
+<li>
+-e verbose=set
+<pre>
+ Dereference structures for the specified set of system calls.
+ The default is verbose=all.
+</pre>
+
+<li>
+-e raw=set
+<pre>
+ Print raw, undecoded arguments for the specifed set of system calls.
+ This option has the effect of causing all arguments to be printed in
+ hexadecimal. This is mostly useful if you don"t trust the decoding or
+ you need to know the actual numeric value of an argument.
+</pre>
+
+<li>
+-e signal=set,只跟踪指定的信号列表，缺省是signal=all。
+
+<li>
+signal=!SIGIO (or signal=!io),导致 SIGIO 信号不被跟踪
+
+<li>
+-e read=set
+<pre>
+ Perform a full hexadecimal and ASCII dump of all the data read from
+ file descriptors listed in the specified set. For example, to see all
+ input activity on file descriptors 3 and 5 use -e read=3,5. Note that
+ this is independent from the normal tracing of the read(2) system call
+ which is controlled by the option -e trace=read.
+</pre>
+
+<li>
+-e write=set
+<pre>
+ Perform a full hexadecimal and ASCII dump of all the data written to
+ file descriptors listed in the specified set. For example, to see all
+ output activity on file descriptors 3 and 5 use -e write=3,5. Note
+ that this is independent from the normal tracing of the write(2)
+ system call which is controlled by the option -e trace=write.
+</pre>
+ -f,follow forks，跟随子进程？
+<pre>
+ Trace child processes as they are created by currently traced
+ processes as a result of the fork(2) system call. The new process
+ is attached to as soon as its pid is known (through the return value
+ of fork(2) in the parent process). This means that such children may
+ run uncontrolled for a while (especially in the case of a vfork(2)),
+ until the parent is scheduled again to complete its (v)fork(2)
+ call. If the parent process decides to wait(2) for a child that is
+ currently being traced, it is suspended until an appropriate child
+ process either terminates or incurs a signal that would cause it to
+ terminate (as determined from the child"s current signal disposition).
+
+ 意思应该是说跟踪某个进程时，如果发生fork()调用，则选择跟踪子进程
+ 可以参考gdb的set follow-fork-mode设置
+</pre>
+
+<li>
+-F,类似-f选项
+<pre>
+ attempt to follow vforks
+ (On SunOS 4.x, this is accomplished with some dynamic linking trickery.
+ On Linux, it requires some kernel functionality not yet in the
+ standard kernel.) Otherwise, vforks will not be followed even if -f
+ has been given.
+</pre>
+
+<li>
+-ff,如果-o file选项有效指定，则跟踪过程中新产生的其他相关进程的信息分别写入file.pid，这里pid是各个进程号。
+
+<li>
+-h,显示帮助信息
+
+<li>
+-i,显示发生系统调用时的IP寄存器值<code>strace -p 14653 -i</code>
+
+<li>
+-o filename,指定保存strace输出信息的文件，默认使用标准错误输出stderr
+<pre>
+ Use filename.pid if -ff is used. If the argument begins with `|" or
+ with `!" then the rest of the argument is treated as a command and all
+ output is piped to it. This is convenient for piping the debugging
+ output to a program without affecting the redirections of executed
+ programs.
+</pre>
+
+<li>
+-O overhead,好象是用于确定哪些系统调用耗时多
+<pre>
+ Set the overhead for tracing system calls to overhead microseconds.
+ This is useful for overriding the default heuristic for guessing how
+ much time is spent in mere measuring when timing system calls using
+ the -c option. The acuracy of the heuristic can be gauged by timing
+ a given program run without tracing (using time(1)) and comparing
+ the accumulated system call time to the total produced using -c.
+</pre>
+
+<li>
+-p pid
+<pre>
+ 指定待跟踪的进程号，可以用Ctrl-C终止这种跟踪而被跟踪进程继续运行。可以
+ 指定多达32个-p参数同时进行跟踪。
+
+ 比如 strace -ff -o output -p 14653 -p 14117
+</pre>
+
+<li>
+-q
+<pre>
+ Suppress messages about attaching, detaching etc. This happens
+ automatically when output is redirected to a file and the command is
+ run directly instead of attaching.
+</pre>
+
+<li>
+-r
+<pre>
+ Print a relative timestamp upon entry to each system call. This
+ records the time difference between the beginning of successive
+ system calls.
+
+ strace -p 14653 -i -r
+</pre>
+
+<li>
+-s strsize,指定字符串最大显示长度，默认32。但文件名总是显示完整。
+
+<li>
+-S sortby
+<pre>
+ Sort the output of the histogram printed by the -c option by the
+ specified critereon. Legal values are time, calls, name, and nothing
+ (default time).
+</pre>
+
+<li>
+-t,与-r选项类似，只不过-r采用相对时间戳，-t采用绝对时间戳(当前时钟)
+
+<li>
+-tt,与-t类似，绝对时间戳中包含微秒
+
+<li>
+-ttt
+<pre>
+ If given thrice, the time printed will include the microseconds and
+ the leading portion will be printed as the number of seconds since
+ the epoch.
+</pre>
+
+<li>
+-T,这个选项显示单个系统调用耗时
+
+<li>
+-u username,用指定用户的UID、GID以及辅助组身份运行待跟踪程序
+
+<li>
+-v,冗余显示模式
+<pre>
+ Print unabbreviated versions of environment, stat, termios, etc. calls.
+ These structures are very common in calls and so the default behavior
+ displays a reasonable subset of structure members. Use this option to
+ get all of the gory details.
+</pre>
+
+<li>
+-V,显示strace版本信息
+
+<li>
+-x,以16进制字符串格式显示非ascii码，比如"/x08"，默认采用8进制，比如"/10"
+
+<li>
+-xx,以16进制字符串格式显示所有字节
+
+</ul>
+
+
+<h3 id="toc_0.2.2">应用</h3>
+
+<p>
+strace 命令是一种强大的工具，它能够显示所有由用户空间程序发出的系统调用。
+</p>
+
+<p>
+strace 显示这些调用的参数并返回符号形式的值。strace 从内核接收信息，而且不需要以任何特殊的方式来构建内核。
+</p>
+
+<p>
+下面记录几个常用 option .
+</p>
+<ol>
+<li>
+-f -F选项告诉strace同时跟踪fork和vfork出来的进程
+
+<li>
+-o xxx.txt 输出到某个文件。
+
+<li>
+-e execve 只记录 execve 这类系统调用
+
+</ol>
+
+<p>
+进程无法启动，软件运行速度突然变慢，程序的"SegmentFault"等等都是让每个Unix系统用户头痛的问题，本文通过三个实际案例演示如何使用truss、strace和ltrace这三个常用的调试工具来快速诊断软件的"疑难杂症"。
+</p>
+
+<p>
+truss和strace用来跟踪一个进程的系统调用或信号产生的情况，而ltrace用来跟踪进程调用库函数的情况。truss是早期为System V R4开发的调试程序，包括Aix、FreeBSD在内的大部分Unix系统都自带了这个工具；
+</p>
+
+<p>
+而strace最初是为SunOS系统编写的，ltrace最早出现在GNU/DebianLinux中。
+</p>
+
+<p>
+这两个工具现在也已被移植到了大部分Unix系统中，大多数Linux发行版都自带了strace和ltrace，而FreeBSD也可通过Ports安装它们。
+</p>
+
+<p>
+你不仅可以从命令行调试一个新开始的程序，也可以把truss、strace或ltrace绑定到一个已有的PID上来调试一个正在运行的程序。三个调试工具的基本使用方法大体相同，下面仅介绍三者共有，而且是最常用的三个命令行参数：
+</p>
+
+<ol>
+<li>
+-f ：除了跟踪当前进程外，还跟踪其子进程。
+
+<li>
+-o file ：将输出信息写到文件file中，而不是显示到标准错误输出（stderr）。
+
+<li>
+-p pid ：绑定到一个由pid对应的正在运行的进程。此参数常用来调试后台进程。
+
+</ol>
+
+<p>
+使用上述三个参数基本上就可以完成大多数调试任务了，下面举几个命令行例子：
+</p>
+<ol>
+<li>
+<code>truss -o ls.truss ls -al</code>： 跟踪ls -al的运行，将输出信息写到文件/tmp/ls.truss中。
+
+<li>
+<code>strace -f -o vim.strace vim</code>： 跟踪vim及其子进程的运行，将输出信息写到文件vim.strace。
+
+<li>
+<code>ltrace -p 234</code>： 跟踪一个pid为234的已经在运行的进程。
+
+</ol>
+
+<p>
+三个调试工具的输出结果格式也很相似，以strace为例：
+</p>
+<pre>
+brk(0) = 0x8062aa8
+brk(0x8063000) = 0x8063000
+mmap2(NULL, 4096, PROT_READ, MAP_PRIVATE, 3, 0x92f) = 0x40016000
+</pre>
+
+<p>
+每一行都是一条系统调用，等号左边是系统调用的函数名及其参数，右边是该调用的返回值。truss、strace和ltrace的工作原理大同小异，都是使用ptrace系统调用跟踪调试运行中的进程，详细原理不在本文讨论范围内，有兴趣可以参考它们的源代码。
+</p>
+
+<p>
+举两个实例演示如何利用这三个调试工具诊断软件的"疑难杂症"：
+</p>
+
+<h4 id="toc_0.2.2.1">案例一：运行clint出现Segment Fault错误</h4>
+
+<p>
+操作系统：FreeBSD-5.2.1-release
+</p>
+
+<p>
+clint是一个C++静态源代码分析工具，通过Ports安装好之后，运行：
+</p>
+<pre>
+# clint foo.cpp
+Segmentation fault (core dumped)
+</pre>
+<p>
+在Unix系统中遇见"Segmentation Fault"就像在MS Windows中弹出"非法操作"对话框一样令人讨厌。OK，我们用truss给clint"把把脉"：
+</p>
+<pre class="brush:bash">
+truss -f -o clint.truss clint
+Segmentation fault (core dumped)
+ 
+tail clint.truss
+ 739: read(0x6,0x806f000,0x1000) = 4096 (0x1000)
+ 739: fstat(6,0xbfbfe4d0) = 0 (0x0)
+ 739: fcntl(0x6,0x3,0x0) = 4 (0x4)
+ 739: fcntl(0x6,0x4,0x0) = 0 (0x0)
+ 739: close(6) = 0 (0x0)
+ 739: stat("/root/.clint/plugins",0xbfbfe680) ERR#2 'No such file or directory'
+SIGNAL 11
+SIGNAL 11
+Process stopped because of: 16
+process exit, rval = 139
+</pre>
+
+<p>
+我们用truss跟踪clint的系统调用执行情况，并把结果输出到文件clint.truss，然后用tail查看最后几行。
+</p>
+
+<p>
+注意看clint执行的最后一条系统调用（倒数第五行）：
+</p>
+<pre>
+stat("/root/.clint/plugins",0xbfbfe680) ERR#2 'No such file or directory'
+</pre>
+<p>
+问题就出在这里：clint找不到目录"/root/.clint/plugins"，从而引发了段错误。怎样解决？很简单： <code>mkdir -p /root/.clint/plugins</code>，不过这次运行clint还是会"Segmentation Fault"。继续用truss跟踪，发现clint还需要这个目录"/root/.clint/plugins/python"，建好这个目录后 clint终于能够正常运行了。
+</p>
+
+<h4 id="toc_0.2.2.2">案例二：vim启动速度明显变慢</h4>
+
+<p>
+操作系统：FreeBSD-5.2.1-release
+</p>
+
+<p>
+vim版本为6.2.154，从命令行运行vim后，要等待近半分钟才能进入编辑界面，而且没有任何错误输出。仔细检查了.vimrc和所有的vim脚本都没有错误配置，在网上也找不到类似问题的解决办法，难不成要hacking source code？没有必要，用truss就能找到问题所在：
+</p>
+<pre>
+truss -f -D -o vim.truss vim
+</pre>
+
+<p>
+这里-D参数的作用是：在每行输出前加上相对时间戳，即每执行一条系统调用所耗费的时间。我们只要关注哪些系统调用耗费的时间比较长就可以了，用less仔细查看输出文件vim.truss，很快就找到了疑点：
+</p>
+<pre>
+735: 0.000021511 socket(0x2,0x1,0x0) = 4 (0x4)
+735: 0.000014248 setsockopt(0x4,0x6,0x1,0xbfbfe3c8,0x4) = 0 (0x0)
+735: 0.000013688 setsockopt(0x4,0xffff,0x8,0xbfbfe2ec,0x4) = 0 (0x0)
+735: 0.000203657 connect(0x4,{ AF_INET 10.57.18.27:6000 },16) ERR#61 'Connection refused'
+735: 0.000017042 close(4) = 0 (0x0)
+735: 1.009366553 nanosleep(0xbfbfe468,0xbfbfe460) = 0 (0x0)
+735: 0.000019556 socket(0x2,0x1,0x0) = 4 (0x4)
+735: 0.000013409 setsockopt(0x4,0x6,0x1,0xbfbfe3c8,0x4) = 0 (0x0)
+735: 0.000013130 setsockopt(0x4,0xffff,0x8,0xbfbfe2ec,0x4) = 0 (0x0)
+735: 0.000272102 connect(0x4,{ AF_INET 10.57.18.27:6000 },16) ERR#61 'Connection refused'
+735: 0.000015924 close(4) = 0 (0x0)
+735: 1.009338338 nanosleep(0xbfbfe468,0xbfbfe460) = 0 (0x0)
+</pre>
+<p>
+vim试图连接10.57.18.27这台主机的6000端口（第四行的connect（）），连接失败后，睡眠一秒钟继续重试（第6行的 nanosleep（））。以上片断循环出现了十几次，每次都要耗费一秒多钟的时间，这就是vim明显变慢的原因。
+</p>
+
+<p>
+可是，你肯定会纳闷："vim怎么会无缘无故连接其它计算机的6000端口呢？"。问得好，那么请你回想一下6000是什么服务的端口？没错，就是X Server。看来vim是要把输出定向到一个远程X Server，那么Shell中肯定定义了DISPLAY变量，查看.cshrc，果然有这么一行：setenv DISPLAY ${REMOTEHOST}:0，把它注释掉，再重新登录，问题就解决了。
+</p>
+
+
+<h4 id="toc_0.2.2.3">案例三：用调试工具掌握软件的工作原理</h4>
+
+<p>
+操作系统：Red Hat Linux 9.0
+</p>
+
+<p>
+用调试工具实时跟踪软件的运行情况不仅是诊断软件"疑难杂症"的有效的手段，也可帮助我们理清软件的"脉络"，即快速掌握软件的运行流程和工作原理，不失为一种学习源代码的辅助方法。下面这个案例展现了如何使用strace通过跟踪别的软件来"触发灵感"，从而解决软件开发中的难题的。
+</p>
+
+<p>
+大家都知道，在进程内打开一个文件，都有唯一一个文件描述符（fd：file descriptor）与这个文件对应。而本人在开发一个软件过程中遇到这样一个问题：
+</p>
+
+<p>
+已知一个fd，如何获取这个fd所对应文件的完整路径？不管是Linux、FreeBSD或是其它Unix系统都没有提供这样的API，怎么办呢？我们换个角度思考：Unix下有没有什么软件可以获取进程打开了哪些文件？如果你经验足够丰富，很容易想到lsof，使用它既可以知道进程打开了哪些文件，也可以了解一个文件被哪个进程打开。好，我们用一个小程序来试验一下lsof，看它是如何获取进程打开了哪些文件。lsof： 显示进程打开的文件。
+</p>
+<pre class="brush:c">
+/* testlsof.c */
+#include #include #include #include #include
+int main(void)
+{
+ open("/tmp/foo", O_CREAT|O_RDONLY); /* 打开文件/tmp/foo */
+ sleep(1200); /* 睡眠1200秒，以便进行后续操作 */
+ return 0;
+}
+</pre>
+
+<p>
+将testlsof放入后台运行，其pid为3125。
+</p>
+
+<p>
+命令<code>lsof -p 3125</code>查看进程3125打开了哪些文件，我们用strace跟踪lsof的运行，输出结果保存在lsof.strace中：
+</p>
+<pre>
+gcc testlsof.c -o testlsof
+./testlsof &amp;
+[1] 3125
+ 
+strace -o lsof.strace lsof -p 3125
+</pre>
+
+<p>
+我们以"/tmp/foo"为关键字搜索输出文件lsof.strace，结果只有一条：
+</p>
+
+<pre>
+grep '/tmp/foo' lsof.strace
+readlink("/proc/3125/fd/3", "/tmp/foo", 4096) = 8
+</pre>
+
+<p>
+原来lsof巧妙的利用了/proc/nnnn/fd/目录（nnnn为pid）：Linux内核会为每一个进程在/proc/建立一个以其pid为名的目录用来保存进程的相关信息，而其子目录fd保存的是该进程打开的所有文件的fd。目标离我们很近了。好，我们到/proc/3125/fd/看个究竟：
+</p>
+<pre>
+cd /proc/3125/fd/
+ls -l
+total 0
+lrwx------ 1 root root 64 Nov 5 09:50 0 -&gt; /dev/pts/0
+lrwx------ 1 root root 64 Nov 5 09:50 1 -&gt; /dev/pts/0
+lrwx------ 1 root root 64 Nov 5 09:50 2 -&gt; /dev/pts/0
+lr-x------ 1 root root 64 Nov 5 09:50 3 -&gt; /tmp/foo
+
+readlink /proc/3125/fd/3
+/tmp/foo
+</pre>
+
+<p>
+答案已经很明显了：/proc/nnnn/fd/目录下的每一个fd文件都是符号链接，而此链接就指向被该进程打开的一个文件。我们只要用readlink()系统调用就可以获取某个fd对应的文件了，代码如下：
+</p>
+<pre class="brush:c">
+
+#include #include #include #include #include #include
+int get_pathname_from_fd(int fd, char pathname[], int n)
+{
+ char buf[1024];
+ pid_t pid;
+ bzero(buf, 1024);
+ pid = getpid();
+ snprintf(buf, 1024, "/proc/%i/fd/%i", pid, fd);
+ return readlink(buf, pathname, n);
+}
+int main(void)
+{
+ int fd;
+ char pathname[4096];
+ bzero(pathname, 4096);
+ fd = open("/tmp/foo", O_CREAT|O_RDONLY);
+ get_pathname_from_fd(fd, pathname, 4096);
+ printf("fd=%d; pathname=%sn", fd, pathname);
+ return 0;
+}
+</pre>
+
+<p>
+出于安全方面的考虑，在FreeBSD 5 之后系统默认已经不再自动装载proc文件系统，因此，要想使用truss或strace跟踪程序，你必须手工装载proc文件系统：
+</p>
+<pre>
+mount -t procfs proc /proc
+</pre>
+
+<p>
+或者在/etc/fstab中加上一行：
+</p>
+<pre>
+proc /proc procfs rw 0 0
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

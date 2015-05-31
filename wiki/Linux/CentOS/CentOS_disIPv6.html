@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>CentOS关闭ipv6</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">CentOS关闭ipv6</a>
+<ul>
+<li><a href="#toc_1.1">查看状态</a>
+<li><a href="#toc_1.2">CentOS 4</a>
+<li><a href="#toc_1.3">CentOS 5</a>
+<li><a href="#toc_1.4">CentOS 5.4</a>
+<li><a href="#toc_1.5">CentOS 6</a>
+<li><a href="#toc_1.6">我如何停用 IPv6？</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">CentOS关闭ipv6</h1>
+<h2 id="toc_1.1">查看状态</h2>
+<pre class="brush: bash">
+ifconfig |grep inet6
+lsmod |grep ipv6
+</pre>
+
+<h2 id="toc_1.2">CentOS 4</h2>
+<pre class="brush: bash">
+echo "alias net-pf-10 off" &gt;&gt; /etc/modprobe.conf
+</pre>
+<h2 id="toc_1.3">CentOS 5</h2>
+<pre class="brush: bash">
+chkconfig ip6tables off 
+echo "NETWORKING_IPV6=no" &gt;&gt; /etc/sysconfig/network
+cat &gt;&gt; /etc/modprobe.conf &lt;&lt;EOF
+alias ipv6 off
+alias net-pf-10 off
+EOF
+</pre>
+<ul>
+<li>
+另外一种更简单的方法：
+<pre class="brush: bash">
+touch /etc/modprobe.d/disable-ipv6
+echo "install ipv6 /bin/true" &gt;&gt; /etc/modprobe.d/disable-ipv6
+</pre>
+
+</ul>
+
+<h2 id="toc_1.4">CentOS 5.4</h2>
+
+<p>
+由于centos 5.4升级了 symbol/ipv6 模块，所以按照上面的方法会出现内核模块failing to load
+</p>
+
+<p>
+使用如下方法：
+</p>
+
+<pre class="brush: bash">
+touch /etc/modprobe.d/disable-ipv6
+echo "options ipv6 disable=1" &gt;&gt; /etc/modprobe.d/disable-ipv6
+</pre>
+
+<h2 id="toc_1.5">CentOS 6</h2>
+<p>
+参考: <a href="http://blog.163.com/qiushuhui1989@126/blog/static/270110892011824114147246/">http://blog.163.com/qiushuhui1989@126/blog/static/270110892011824114147246/</a>
+</p>
+
+
+<pre class="brush: bash">
+echo "net.ipv6.conf.all.disable_ipv6=1" &gt;&gt; /etc/sysctl.conf
+echo "blacklist ipv6" &gt;&gt; /etc/modprobe.d/blacklist.conf
+chkconfig ip6tables off
+cat &gt;&gt; /etc/sysconfig/network &lt;&lt;EOF
+NETWORKING_IPV6=no
+IPV6_AUTOCONF=no
+EOF
+</pre>
+
+
+<h2 id="toc_1.6">我如何停用 IPv6？</h2>
+
+<p>
+引用：<a href="http://wiki.centos.org/zh/FAQ/CentOS6">http://wiki.centos.org/zh/FAQ/CentOS6</a>
+</p>
+
+<p>
+上游雇员 Daniel Walsh 推荐不要停用 ipv6 模块，因为这样会导致 SELinux 及其它组件出现问题。你可改而在 /etc/sysctl.conf 加入：
+</p>
+<pre class="brush: bash">
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+</pre>
+
+<p>
+要在运作中的系统停用它：
+</p>
+<pre class="brush: bash">
+echo 1 &gt; /proc/sys/net/ipv6/conf/all/disable_ipv6
+echo 1 &gt; /proc/sys/net/ipv6/conf/default/disable_ipv6
+# 或
+sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sysctl -w net.ipv6.conf.default.disable_ipv6=1
+</pre>
+
+<p>
+要是你在停用 IPv6 的系统上转接 X 时遇到问题，请编辑 /etc/ssh/sshd_config 及作出以下一组改动：
+</p>
+
+<p>
+(1) 更改这一行
+</p>
+<pre class="brush: bash">
+#AddressFamily any
+AddressFamily inet
+</pre>
+
+<p>
+（inet 指定 ipv4；inet6 指定 ipv6）
+</p>
+
+<p>
+或者
+</p>
+
+<p>
+(2) 删除这行行首的井号（#）
+</p>
+
+<pre class="brush: bash">
+#ListenAddress 0.0.0.0
+</pre>
+
+<p>
+然后重新引导 ssh。 
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

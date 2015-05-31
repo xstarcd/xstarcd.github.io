@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>GRUB安装及命令行排错</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">GRUB安装及命令行排错</a>
+<ul>
+<li><a href="#toc_1.1">GRUB安装</a>
+<ul>
+<li><a href="#toc_1.1.1">grub.conf</a>
+<li><a href="#toc_1.1.2">grub-install</a>
+<li><a href="#toc_1.1.3">用grub安装</a>
+<li><a href="#toc_1.1.4">独立boot分区</a>
+<li><a href="#toc_1.1.5">grub引导Windows</a>
+</ul>
+<li><a href="#toc_1.2">重新安装GRUB</a>
+<ul>
+<li><a href="#toc_1.2.1">Linux Rescue</a>
+<li><a href="#toc_1.2.2">Super Grub Disk</a>
+</ul>
+<li><a href="#toc_1.3">排除GRUB的问题</a>
+<ul>
+<li><a href="#toc_1.3.1">Grub命令行</a>
+<li><a href="#toc_1.3.2">操作技巧</a>
+<li><a href="#toc_1.3.3">排错范例</a>
+<ul>
+<li><a href="#toc_1.3.3.1">find定位boot分区和主目录</a>
+<li><a href="#toc_1.3.3.2">cat配置文件</a>
+<li><a href="#toc_1.3.3.3">setup安装至MBR</a>
+</ul>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">GRUB安装及命令行排错</h1>
+
+<ul>
+<li class="done2">
+参考链接
+
+<ul>
+<li class="done4">
+CentOS 5 及 6 上安装 Grub: <a href="http://wiki.centos.org/zh/HowTos/GrubInstallation">http://wiki.centos.org/zh/HowTos/GrubInstallation</a>
+
+<li class="done4">
+排除 GRUB 的问题: <a href="http://wiki.centos.org/zh/TipsAndTricks/TroubleshootGRUB">http://wiki.centos.org/zh/TipsAndTricks/TroubleshootGRUB</a>
+
+<li class="done4">
+如何重新安装开机管理程序（GRUB）: <a href="http://wiki.centos.org/zh/TipsAndTricks/ReinstallGRUB">http://wiki.centos.org/zh/TipsAndTricks/ReinstallGRUB</a>
+
+</ul>
+</ul>
+
+<h2 id="toc_1.1">GRUB安装</h2>
+
+<ul>
+<li>
+安装 Grub 涉及三个步骤：
+
+</ul>
+
+<ol>
+<li>
+创建 /boot/grub/grub.conf 配置文件。
+
+<li>
+在 /boot/grub 安装 Grub 文件。
+
+<li>
+安装 Grub 开机程序。 
+
+</ol>
+
+<p>
+第二及第三步可以通过 grub-install 单一个指令来完成。 另外，第二步亦可通过 grub 这个指令来完成。 
+</p>
+
+
+<ul>
+<li>
+Grub 惯用名称
+
+</ul>
+
+<p>
+Grub 按以下方式为碟盘及分区命名：
+</p>
+
+<ol>
+<li>
+不论碟盘是 IDE（PATA）、SATA 或 SCSI 碟盘，也不论它们的普遍称谓是 hd 或 sd，所有碟盘一律称为 hd。
+
+<li>
+所有碟盘及分区一律以 0 而不是 1 开始编号。
+
+<li>
+不论碟盘上有多少个主分区，扩展分区一律以 4 开始编号。
+
+<li>
+第一个数字代表碟盘；第二个数字（存在的话）代表分区。 
+
+</ol>
+
+<p>
+样例：
+</p>
+
+<table>
+<tr>
+<td>
+Grub 称谓
+</td>
+<td>
+意思
+</td>
+<td>
+普遍称谓
+</td>
+</tr>
+<tr>
+<td>
+(hd0)
+</td>
+<td>
+第一个碟盘
+</td>
+<td>
+/dev/sda（或/dev/hda）
+</td>
+</tr>
+<tr>
+<td>
+(hd1)
+</td>
+<td>
+第二个碟盘
+</td>
+<td>
+/dev/sdb（或/dev/hdb）
+</td>
+</tr>
+<tr>
+<td>
+(hd0,0)
+</td>
+<td>
+第一个碟盘，第一个分区
+</td>
+<td>
+/dev/sda1（或/dev/hda1）
+</td>
+</tr>
+<tr>
+<td>
+(hd1,0)
+</td>
+<td>
+第二个碟盘，第一个分区
+</td>
+<td>
+/dev/sdb1（或/dev/hdb1）
+</td>
+</tr>
+<tr>
+<td>
+(hd1,1)
+</td>
+<td>
+第二个碟盘，第二个分区
+</td>
+<td>
+/dev/sdb2（或/dev/hdb2）
+</td>
+</tr>
+</table>
+
+<h3 id="toc_1.1.1">grub.conf</h3>
+
+<p>
+创建或编辑 /boot/grub/grub.conf 配置文件
+</p>
+
+<p>
+首先，你应该创建或编辑 /boot/grub/grub.conf 这个配置文件。 要是你的碟盘未曾安装 Grub 开机程序，你应该先创建配置文件，然后才安装开机程序。
+</p>
+
+<p>
+在某些发行版本下，配置文件名为 /boot/grub/menu.lst。在 CentOS 下，/boot/grub/menu.lst 是条连结，它指向正式配置文件 /boot/grub/grub.conf。
+</p>
+
+<p>
+此文件含有以下信息：
+</p>
+
+<ol>
+<li>
+缺省的开机分区。
+
+<li>
+等候多久才自动引导缺省的分区。
+
+<li>
+选择性地提供一个开机划面，在等候用户输入时显示出来。
+
+<li>
+可供用户选择的各个开机分区。 
+
+</ol>
+
+
+<p>
+样例：
+</p>
+
+<p>
+（请勿输入行首的数字。它们索引样例档后的解释。）
+</p>
+<pre class="brush:bash">
+1 default=0                                    # 缺省引导清单内的首个分区。请注意 Grub 的编号以 0 开始，而不是 1。
+2 timeout=10                                   # 停顿 10 秒等候用户输入，然后引导缺省分区。
+3 splashimage=(hd0,5)/boot/grub/splash.xpm.gz  # 等候用户输入时显示开机划面（选择性的）。
+
+4 title CentOS 5.6 i686                        # 第一个可用的开机分区。在此样例中，它是缺省的分区（见行 1）。
+5   root (hd0,5)                               # 按Grub 的命名方式指定主分区。
+6   kernel /boot/vmlinuz-2.6.18-238.19.1.el5.centos.plusPAE ro root=/dev/sda6 rhgb noquiet # 内核位置、只读挂载分区、主分区位置等5个部份 
+7   initrd /boot/initrd-2.6.18-238.19.1.el5.centos.plusPAE.img  #以惯用的命名方式指出初始化 ramdisk initrd 或 initramfs 的位置。
+
+8 title Linux Mint 11                          # 第二个可用的开机分区。
+9   root (hd0,9)                               # 按 Grub 的命名方式指定主分区。
+10  kernel /boot/vmlinuz-2.6.32-26-generic-pae ro root=/dev/sda10 # 内核（vmlinuz）位置、只读挂载分区、主分区位置
+11  initrd /boot/initrd.img-2.6.32-26-generic-pae # 以惯用的命名方式指出初始化 ramdisk initrd 或 initramfs 的位置。
+</pre>
+
+<pre>
+假若你把 /boot 放在独立的分区内，请参阅以下的备注。
+
+XStar: 
+    root (hd0,0)指令指向boot分区位置；
+    kernel、initrd位置是以boot分区为起点计算；
+    kernel指令中root参数主分区应指向系统根分区。
+</pre>
+
+<p>
+解释：
+</p>
+
+<p>
+kernel行包含以下 5 部份： 
+</p>
+
+<table>
+<tr>
+<td>
+kernel /boot/vmlinuz-2.6.18-238.19.1.el5.centos.plusPAE
+</td>
+<td>
+以 <strong>惯用的命名方式</strong> 指出 <strong>内核（vmlinuz）</strong> 的位置。
+</td>
+</tr>
+<tr>
+<td>
+ro
+</td>
+<td>
+首先以 ro（只读）方式挂载分区，以便在有需要时执行 fsck。
+</td>
+</tr>
+<tr>
+<td>
+root=/dev/sda6
+</td>
+<td>
+以 <strong>惯用的命名方式</strong> 指出 <strong>主分区</strong> 的位置。你也可通过文件系统的 UUID（通用唯一标识码）来指定主分区，例如：root=UUID=134d2a24-2699-4b0c-823b-1e13633f3b07。CentOS 现在缺省采用 UUID。你可以利用这个指命来找出一个文件系统的 UUID：tune2fs -l /dev/sda6，或lsblk,blkid。
+</td>
+</tr>
+<tr>
+<td>
+rhgb
+</td>
+<td>
+采用图像式开机（Red Hat 图像式开机）。需要文字模式开机时可删除。
+</td>
+</tr>
+<tr>
+<td>
+noquiet
+</td>
+<td>
+输出详细信息。删除后可减低详细度。
+</td>
+</tr>
+</table>
+
+<h3 id="toc_1.1.2">grub-install</h3>
+
+<p>
+当可行时，安装 Grub 的最简易方法是利用 grub-install 这个指令。
+</p>
+
+<p>
+此指令将会：
+</p>
+
+<ul>
+<li>
+在现有分区的 /boot/grub 内安装所需文件。
+
+<li>
+在通过传统命名方式所指定的位置安装开机程序。 
+
+</ul>
+
+<p>
+样例：
+</p>
+
+
+<table>
+<tr>
+<td>
+指令
+</td>
+<td>
+含意
+</td>
+</tr>
+<tr>
+<td>
+grub-install /dev/sda
+</td>
+<td>
+在现有分区的 /boot/grub 目录内安装 Grub 的文件。在首个碟盘的主引导记录（MBR）内安装开机程序。这是安装 Grub 的推荐方式。
+</td>
+</tr>
+<tr>
+<td>
+grub-install /dev/sda1
+</td>
+<td>
+在现有分区的 /boot/grub 目录内安装 Grub 的文件。在首个碟盘的第一个分区内安装开机程序。
+</td>
+</tr>
+<tr>
+<td>
+grub-install /dev/sda2
+</td>
+<td>
+在现有分区的 /boot/grub 目录内安装 Grub 的文件。在首个碟盘的第二个分区内安装开机程序。
+</td>
+</tr>
+</table>
+
+<pre class="brush:bash">
+grub-install /dev/sda
+
+Installation finished. No error reported.
+This is the contents of the device map /boot/grub/device.map.
+Check if this is correct or not. If any of the lines is incorrect,
+fix it and re-run the script 'grub-install'.
+
+# this device map was generated by anaconda
+(hd0)     /dev/sda
+
+</pre>
+
+<ul>
+<li>
+关于新版grub2
+
+</ul>
+
+<p>
+新版的grub-install命令指定安装目录时不再使用--root-directory选项，改为 --boot-directory选项，安装文件不是安装在指定目录的/boot/grub下，而是安装在指定目录的/grub下，具体用法为：
+</p>
+<pre>
+grub-install --boot-directory=DIR Install-Device
+</pre>
+
+<p>
+举个例子说明，如果 /boot分区为 sda7，/ 分区为 sda8，在使用 livecd 模式修复grub2到mbr时使用的命令为
+</p>
+
+<pre class="brush:bash">
+
+# 如果是以前的grub2，必须先挂载系统的 / 分区，再把系统的 /boot分区挂载到系统 / 分区下
+sudo mount /sda8 /mnt
+sudo mount /sda7 /mnt/boot
+sudo grub-install --boot-directory=/mnt/boot /dev/sda
+
+# Ubuntu 11.04的版本可以不用挂载系统的 / 分区，直接挂载 /boot分区
+sudo mount /dev/sda7 /mnt
+sudo grub-install --boot-directory=/mnt /dev/sda
+
+# 而对于只有 / 分区(假设为 /dev/sda7) ，没有 /boot单独分区的，使用命令为
+sudo mount /dev/sda7 /mnt
+sudo grub-install --boot-directory=/mnt/boot /dev/sda
+
+</pre>
+
+<h3 id="toc_1.1.3">用grub安装</h3>
+
+<p>
+你也可利用 grub 这个指令来安装开机程序，它却不会在 /boot/grub 内安装 Grub 的文件。要是开机程序被盖过或损坏了，此方法可修复 Grub 的安装。
+</p>
+
+<ol>
+<li>
+执行 grub。
+
+<li>
+你可选择执行 find /boot/grub/stage1 寻找哪个分区在 /boot/grub 内含有 Grub 所需的文件。如果你的 /boot 采用独立分区，请执行 find /grub/stage1。
+
+<li>
+执行 root [按 Grub 方式命名的分区] 来指定哪个分区的 /boot/grub 内含有 Grub 文件及备有 /boot/grub/grub.conf。
+
+<li>
+利用 setup [按 Grub 方式命名的开机程序位置] 来安装开机程序。
+
+<li>
+执行 quit 来离开 Grub 程序。 
+
+</ol>
+
+<p>
+样例：
+</p>
+
+<pre class="brush:bash">
+[root@localhost ~]# grub
+Probing devices to guess BIOS drives. This may take a long time.
+
+    GNU GRUB  version 0.97  (640K lower / 3072K upper memory)
+
+ [ Minimal BASH-like line editing is supported.  For the first word, TAB
+   lists possible command completions.  Anywhere else TAB lists the possible
+   completions of a device/filename.]
+
+grub&gt; find /boot/grub/stage1
+ (hd0,5)
+ (hd0,9)
+
+grub&gt; root (hd0,5)
+ Filesystem type is ext2fs, partition type 0x83
+
+grub&gt; setup (hd0)
+ Checking if "/boot/grub/stage1" exists... yes
+ Checking if "/boot/grub/stage2" exists... yes
+ Checking if "/boot/grub/e2fs_stage1_5" exists... yes
+ Running "embed /boot/grub/e2fs_stage1_5 (hd0)"...  15 sectors are embedded.
+succeeded
+ Running "install /boot/grub/stage1 (hd0) (hd0)1+15 p (hd0,5)/boot/grub/stage2 /boot/grub/grub.conf"... succeeded
+Done.
+
+grub&gt; quit
+</pre>
+
+<h3 id="toc_1.1.4">独立boot分区</h3>
+
+<p>
+要是你的 /boot 放在独立的分区内，/boot/grub/grub.conf 内以 root、kernel 及 initrd 起首的行必须有下列改动：
+</p>
+
+<ol>
+<li>
+以 root 起首的那一行必须指定 /boot 的分区，而不是 / 的分区。
+
+<li>
+以 kernel 起首的那一行必须假设内核（vmlinuz）位于 /，而不是 /boot。然而，该行中 root 指令必须指定 / 的分区，而不是 /boot 的分区。
+
+<li>
+以 initrd 起首的那一行必须假设初始化 ramdisk（initrd 或 initramfs）位于 /，而不是 /boot。 
+
+</ol>
+
+<pre>
+XStar: 
+    root (hd0,0)指令指向boot分区位置；
+    kernel、initrd位置是以boot分区为起点计算；
+    kernel指令中root参数主分区应指向系统根分区。
+</pre>
+
+<p>
+样例：
+</p>
+
+<p>
+/boot 的分区是 /dev/sda1，或 hd(0,0)。/ 的分区是 /dev/sda2，或 hd(0,1)。/boot/grub/grub.conf 档须含有下列设置： 
+</p>
+
+<pre>
+title CentOS 5.6 i686
+  root (hd0,0)
+  kernel /vmlinuz-2.6.18-238.19.1.el5.centos.plusPAE ro root=/dev/sda2
+  initrd /initrd-2.6.18-238.19.1.el5.centos.plusPAE.img
+</pre>
+
+<h3 id="toc_1.1.5">grub引导Windows</h3>
+
+<p>
+要使用 Grub 来引导一个 Windows 分区，请在 /boot/grub/grub.conf 加入类似以下的内容：
+</p>
+
+<p>
+样例：
+</p>
+<pre>
+title Windows
+  rootnoverify (hd0,0)
+  makeactive
+  chainloader +1
+</pre>
+
+<ul>
+<li>
+grub2:ntldr命令
+
+</ul>
+
+<p>
+新版的grub2可以用ntldr命令引导windows，对同时安装有xp和win7的朋友可以用自定菜单来分别引导xp和win7。
+</p>
+
+<pre class="brush:bash">
+# windows 7
+menuentry "Windows 7" {
+        set root=(hd0,x)
+        ntldr /bootmgr
+        boot
+}
+
+# winxp
+menuentry "Windows XP" {
+        set root=(hd0,x)
+        ntldr /ntldr
+        boot
+}
+
+# ntldr 命令也可以引导grldr进入grub4dos
+menuentry "Grub4dos" {
+        set root=(hd0,x)
+        ntldr /grldr
+        boot
+}
+</pre>
+
+<h2 id="toc_1.2">重新安装GRUB</h2>
+
+<h3 id="toc_1.2.1">Linux Rescue</h3>
+
+<p>
+假若你曾经从备份磁带修复你的系统（例如通过 dump 或 tar），或者安装了一个好像来自 Redmond 般会盖过主引导记录（MBR）的操作系统，你便须要修复开机管理程序。
+</p>
+
+<p>
+请执行下列步骤：
+</p>
+
+<ol>
+<li>
+用 CentOS 安装碟片开机（例如首张 CD 或 DVD）。
+
+<li>
+CentOS-4 或 CentOS-5 请在 boot: 提示输入 linux rescue。CentOS-6 请从开机选单选择 Rescue installed system。
+
+<li>
+以读写模式挂载所有文件系统。
+
+<li>
+chroot 到你硬盘内的真正根目录（'/'）。
+<pre class="brush:bash">
+chroot /mnt/sysimage
+</pre>
+
+<li>
+重新安装开机管理程序（GRUB）
+<pre class="brush:bash">
+# 若果你要在 SCSI 硬盘或 SATA 硬盘的 MBR（/dev/sda）重新安装 GRUB：
+grub-install /dev/sda
+
+# 若果你要在 SCSI 硬盘或 SATA 硬盘的第二个分区内的 PBR（/dev/sda2）重新安装 GRUB：
+grub-install /dev/sda2
+
+# 若果你要在 IDE 硬盘的 MBR（/dev/hda）重新安装 GRUB：
+grub-install /dev/hda
+
+# 若果你要在 HP Smart Array 磁盘数组的 MBR（/dev/c0d0）重新安装 GRUB：
+grub-install /dev/cciss/c0d0
+
+</pre>
+
+</ol>
+
+<h3 id="toc_1.2.2">Super Grub Disk</h3>
+
+<p>
+Super Grub Disk 收录了各种开源的开机修复程序。就 CentOS 的旧版 GRUB 而言，SuperGRUB 非常实用。 
+</p>
+
+<p>
+<a href="http://www.supergrubdisk.org/">http://www.supergrubdisk.org/</a>
+</p>
+
+<p>
+<a href="http://www.supergrubdisk.org/wiki/SGD_Howto_make">http://www.supergrubdisk.org/wiki/SGD_Howto_make</a>
+</p>
+
+<ul>
+<li>
+Super Grub2 Disk
+<pre>
+    Boots into many systems and GRUB2 ones!
+    Loads Grub legacy confs (menu.lst)
+    Optional LVM / RAID support
+    ~ 7.00 MB Size
+</pre>
+
+</ul>
+
+<ul>
+<li>
+Rescatux
+<pre>
+    Includes Super Grub2 Disk
+    Fixes GRUB / GRUB2
+    Check and fix filesystems
+    Blank Windows password
+    Change Gnu/Linux password
+    Regenerate sudoers file
+    And much more features…
+    ~ 367 MB Size
+</pre>
+
+</ul>
+
+<p>
+Rescatux是debian系列系统 (Ubuntu, Linux Mint 等) 下的图形化Grub/Grub2修复工具。Rescatux的最新版支持文件系统的检测。
+</p>
+
+<p>
+要想使用Rescatux,首先把它刻录到CD或者USB启动上，重启，从 Live CD/USB 或启动，会自动弹出Grub 恢复界面。
+</p>
+
+<p>
+选择“grub-install”，恢复Grub菜单，后运行“update-grub”.重启计算机。
+</p>
+
+
+<h2 id="toc_1.3">排除GRUB的问题</h2>
+
+<h3 id="toc_1.3.1">Grub命令行</h3>
+
+<p>
+你可在开机程序内直接输入 Grub 的指令。在开机选单按 c，然后输入那些出现在 /boot/grub/grub.conf 配置文件内的 Grub 指令。
+</p>
+
+<p>
+当配置文件出错时，这个功能很有用。
+</p>
+
+<p>
+样例：
+</p>
+
+<pre>
+grub&gt; find /boot/grub/stage1
+ (hd0,5)
+
+grub&gt; root (hd0,5)
+grub&gt; kernel /boot/vmlinuz-2.6.18-238.19.1.el5.centos.plusPAE ro root=/dev/sda6
+grub&gt; initrd /boot/initrd-2.6.18-238.19.1.el5.centos.plusPAE.img
+grub&gt; boot
+</pre>
+
+<p>
+你也可以通过 e 这个指令在 Grub 开机程序内编辑 /boot/grub/grub.conf 内的某行。
+</p>
+
+<p>
+举个例说，要令 Linux 以单一用户模式（runlevel 1）引导，编辑含有 kernel 的那一行并在行末加入 1。按着按 b 来引导它。  
+</p>
+
+<h3 id="toc_1.3.2">操作技巧</h3>
+
+<p>
+在grub&gt;状态下输入时，可使用tab键自动被全来尝试正确的参数。
+</p>
+
+<pre class="brush:bash">
+grub&gt; &lt;tab&gt;         # 按tab键可以查看所有可用命令
+grub&gt; root (hd0,    # 按tab键自动提示，会列出hd0上所有分区信息
+
+grub&gt; root (hd0,1) 
+ Filesystem type is ext2fs, partition type 0x83
+
+grub&gt; kernel /VM    # 按Tab补全
+Error 15: File not found
+
+grub&gt; root (hd0,0)
+ Filesystem type is ext2fs, partition type 0x83
+
+grub&gt; kernel /vmlinuz-2.6.32-279.e16.i686 ro root=/dev/sda4  # 一个个试根分区，出错需重启动、再试
+    [Linux-bzImage, setup=0x3400, size=0x3aa5e0]
+ 
+grub&gt; initrd /initramfs-2.6.32=e16.i686.img   # 启动内核所使用的临时系统镜像文件位置，也是先输入initrd /in然后用tab补全
+    [Linux-initrd @ 0x37198000, 0xe57fd6 bytes]
+
+grub&gt; boot
+
+</pre>
+
+<p>
+另外，在vim编辑grub.conf时，使用':.!'命令可以方便地将命令内容追加至当前位置：
+</p>
+<pre class="brush:bash">
+# vim中将外部命令执行结果添加到文件中
+
+# 通过ls添加kernel信息
+:.! ls /boot/vmlinuz-2.6.32-279.e16.i686
+
+# 导入设备uuid信息
+:.! blkid /dev/sda4
+
+# 通过ls添加initrd信息
+:.! ls /boot/initramfs-2.6.32-279.e16.i686.img
+
+</pre>
+
+<h3 id="toc_1.3.3">排错范例</h3>
+
+<p>
+假若一个系统的 GRUB 设置出现问题（成因包括：不正确地修改 GRUB 配置文件、安装另一个操作系统、硬件上或 BIOS 内的改动引致设置的排序不相同），导致 GRUB 不能找到它的配置文件，你可能会面对 grub 的开机提示符而无从着手。普遍来说，第一步是要找出 GRUB 配置文件的位置。GRUB 的 find 指令可以为你效努。
+</p>
+
+<h4 id="toc_1.3.3.1">find定位boot分区和主目录</h4>
+
+<pre class="brush:bash">
+grub&gt; find /grub/grub.conf # 查找grub配置所在分区，可以查grub.conf(CentOS)、menu.lst(Ubuntu)
+
+ (hd0,2)
+ (hd1,2)
+</pre>
+
+<p>
+这里告欣我们有两个 /boot 分区，有可能源自软件 RAID 或不同操作系统。头一个位于第一个硬盘的第三个分区，而另一个位于第二个硬盘的第三个分区。
+</p>
+
+<p>
+如果你安装了其它 Linux 版本，例如 Ubuntu，它也设只有 menu.lst 档而没有 grub.conf，但由于 CentOS 利用连结把 menu.lst 指向 grub.conf，因此在这两款系统上寻找 menu.lst 亦可行：
+</p>
+
+<pre class="brush:bash">
+grub&gt; find /grub/menu.lst
+
+ (hd0,0)
+ (hd0,1)
+</pre>
+
+<p>
+这里告欣我们有两个 /boot 分区，头一个位于第一个硬盘的第一个分区，很可能正是 CentOS，而另一个 Linux 的 /boot 位于第一个硬盘的第二个分区。
+</p>
+
+<p>
+要是首轮尝试找不到文件，很可能 /boot 分区并不存在，而 grub 被安装在主目录内。你可试用
+</p>
+
+<pre class="brush:bash">
+grub&gt; find /boot/grub/grub.conf
+ (hd0,0)
+ (hd1,4)
+</pre>
+
+<p>
+同样地，这个例子里有两个 GRUB 安装。头一个在第一个硬盘的第一个分区，而另一个在第二个硬盘的第五个分区 —— 亦即首个扩展分区。
+</p>
+
+<p>
+若果要撤消第二个项目并将 GRUB 的开机程序安装在第一个硬盘的 MBR 上：
+</p>
+
+<pre class="brush:bash">
+grub&gt; root (hd1,4)
+grub&gt; setup (hd0)
+</pre>
+
+<p>
+要是你不清楚主目录的位置时，你可以尝试寻找 /etc 内的一个文件。譬如：
+</p>
+
+<pre class="brush:bash">
+grub&gt; root (hd1,4)
+grub&gt; find /etc/fstab
+ (hd0,1)
+</pre>
+
+<p>
+由此我们得知 / 位于第一个硬盘的第二个分区上 —— 采用 SCSI 或 SATA 等于 /dev/sda2，而采用 PATA 等于 /dev/hda2。
+</p>
+
+<h4 id="toc_1.3.3.2">cat配置文件</h4>
+
+<p>
+要查看 grub.conf 及 menu.lst 档的内容，可使用 GRUB 的 cat 指令：
+</p>
+
+<pre class="brush:bash">
+grub&gt; cat (hd0,0)/grub/grub.conf
+ ... 显示文件内容 ...
+grub&gt; cat (hd0,1)/grub/menu.lst
+ ... 显示文件内容 ...
+</pre>
+
+<h4 id="toc_1.3.3.3">setup安装至MBR</h4>
+
+<p>
+假若要将第一个项目的 GRUB 设置重新安装到 MBR：
+</p>
+
+<pre class="brush:bash">
+grub&gt; root (hd0,0)
+grub&gt; setup (hd0)
+</pre>
+
+
+<p>
+GRUB 的指令shell还有很多功能，并且在 GRUB 的 info 档内有详情记载，请利用 info grub 来访问它们。 
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

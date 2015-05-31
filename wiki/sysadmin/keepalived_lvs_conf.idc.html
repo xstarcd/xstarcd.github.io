@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>keepalived_lvs_conf.idc</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>keepalived_lvs_conf.idc</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">keepalived.conf</a>
+<li><a href="#toc_0.2">enabled/http.conf</a>
+<li><a href="#toc_0.3">enabled/5500.conf</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">keepalived.conf</h2>
+<pre class="brush:bash">
+! Configuration File for keepalived
+ 
+# Update: 2013-09-10 TimasyncLBIDC
+ 
+global_defs {
+#   notification_email {
+#     longber@gmail.com
+#   }
+#   notification_email_from longber@gmail.com
+#   smtp_server smtp.timanetworks.com
+#   smtp_connect_timeout 30
+    router_id TimasyncLB1IDC
+}
+ 
+# instance VI_1
+# ------------------------------------------------------------------------------
+vrrp_instance VI_1 {
+    state BACKUP
+    priority 200
+    virtual_router_id 100
+    interface eth0
+    lvs_sync_daemon_interface eth0
+    track_interface {
+        eth0
+    }
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass TimasyncLVSidc
+    }
+    virtual_ipaddress {
+        172.16.17.53/24 dev eth0 label eth0:0
+        172.16.17.54/24 dev eth0 label eth0:1
+        172.16.17.55/24 dev eth0 label eth0:2
+        172.16.17.56/24 dev eth0 label eth0:3
+        172.16.17.57/24 dev eth0 label eth0:4
+        172.16.17.58/24 dev eth0 label eth0:5
+        172.16.17.59/24 dev eth0 label eth0:6
+        172.16.17.60/24 dev eth0 label eth0:7
+        172.16.17.61/24 dev eth0 label eth0:8
+        172.16.17.62/24 dev eth0 label eth0:9
+        172.16.17.63/24 dev eth0 label eth0:10
+    }
+    nopreempt
+}
+
+include enabled/*.conf
+</pre>
+
+<h2 id="toc_0.2">enabled/http.conf</h2>
+<pre class="brush:bash">
+# Update: 2013-09-10
+# HTTPsession
+# ------------------------------------------------------------------------------
+virtual_server_group VSG_HTTPsession {
+    172.16.17.53 80
+}
+virtual_server group VSG_HTTPsession {
+    delay_loop 6
+    lb_algo wlc
+    lb_kind DR
+    persistence_timeout 65
+    protocol TCP
+    ha_suspend
+    #virtualhost 172.16.17.45
+    sorry_server 172.16.17.46 80
+    real_server 172.16.17.45 80 {
+        weight 1
+        TCP_CHECK {
+            connect_port 80
+            connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 3
+        }
+    } # end real_server
+} # end virtual_server
+# ------------------------------------------------------------------------------
+ 
+# HTTP
+# ------------------------------------------------------------------------------
+virtual_server_group VSG_HTTP {
+    172.16.17.54 80
+    172.16.17.55 80
+    172.16.17.56 80
+}
+virtual_server group VSG_HTTP {
+    delay_loop 6
+    lb_algo wlc
+    lb_kind DR
+    persistence_timeout 65
+    protocol TCP
+    ha_suspend
+    #virtualhost 172.16.17.45
+    sorry_server 172.16.17.46 80
+    real_server 172.16.17.45 80 {
+        weight 1
+        TCP_CHECK {
+            connect_port 80
+            connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 3
+        }
+    } # end real_server
+ 
+    real_server 172.16.17.46 80 {
+        weight 1
+        TCP_CHECK {
+            connect_port 80
+            connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 3
+        }
+    } # end real_server
+} # end virtual_server
+# ------------------------------------------------------------------------------
+</pre>
+
+<h2 id="toc_0.3">enabled/5500.conf</h2>
+<pre class="brush:bash">
+# Update: 2013-11-19
+# 5500-VT(HTTP),x.x.x.191:5500
+# ------------------------------------------------------------------------------
+virtual_server 172.16.17.54 5500 {
+    delay_loop 6
+    lb_algo wlc
+    lb_kind DR
+    persistence_timeout 65
+    protocol TCP
+    ha_suspend
+    #virtualhost 172.16.17.54
+    sorry_server 172.16.17.46 5500
+    real_server 172.16.17.45 5500 {
+        weight 1
+        TCP_CHECK {
+            connect_port 5500
+            connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 3
+        }
+    } # end real_server
+  
+    real_server 172.16.17.46 5500 {
+        weight 1
+        TCP_CHECK {
+            connect_port 5500
+            connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 3
+        }
+    } # end real_server
+} # end virtual_server 172.16.17.54:5500
+
+# 5500-websocket(TCP)
+# x.x.x.190:5500-&gt;172.16.17.60:8080-&gt;172.16.19.150/151:8080
+# ------------------------------------------------------------------------------
+virtual_server 172.16.17.60 8080 {
+    delay_loop 6
+    lb_algo rr
+    lb_kind TUN
+    persistence_timeout 120
+    protocol TCP
+    ha_suspend
+    #virtualhost 172.16.17.60
+    sorry_server 172.16.19.150 8080
+
+    real_server 172.16.19.150 8080 {
+        weight 1
+        TCP_CHECK {
+            connect_port 8080
+            connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 3
+        }
+    } # end real_server
+    real_server 172.16.19.151 8080 {
+        weight 1
+        TCP_CHECK {
+            connect_port 8080
+            connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 3
+        }
+    } # end real_server
+} # end virtual_server 172.16.17.60:8080
+# ------------------------------------------------------------------------------
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

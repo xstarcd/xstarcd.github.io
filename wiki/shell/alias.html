@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>alias</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>alias</h1>
+
+<p>
+alias定义指令别名，不带参数执行alias列出所有定义的别名，unalias取消别名。
+</p>
+
+<ul>
+<li>
+CgyWin中利用alias转换输出编码
+<pre class="brush:bash">
+# 方式一
+#_ifconfig () { ipconfig $* 2&gt;&amp;1| iconv -f gbk -t utf8; }
+#alias ifconfig='_ifconfig'
+
+# 方式二
+alias ifconfig='function _do () { ipconfig $* 2&gt;&amp;1| iconv -f gbk -t utf8; }; _do'
+alias ping='function _do () { ping $* 2&gt;&amp;1| iconv -f gbk -t utf8; }; _do'
+alias netstat='function _do () { netstat $* 2&gt;&amp;1| iconv -f gbk -t utf8; }; _do'
+
+# 方式三
+_runiconv () { _cmd=$1;shift;$_cmd $* 2&gt;&amp;1|iconv -f gbk -t utf8; }
+alias ping='_runiconv ping'
+alias ifconfig='_runiconv ipconfig'
+alias netstat='_runiconv netstat'
+alias tracert='_runiconv tracert'
+alias route='_runiconv route'
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

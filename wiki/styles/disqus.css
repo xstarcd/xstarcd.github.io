@@ -1,0 +1,64 @@
+
+#disqus_thread {
+    font-family: Candara, Verdana, Tahoma, sans-serif;
+    margin: 40px 0 10px;
+    padding: 10px 0;
+    border-top: solid 1px #246;
+}
+#disqus_thread a {
+    color: #b74;
+}
+#disqus_thread a:hover {
+    text-decoration: underline;
+}
+#disqus_thread h3 {
+    color: #C8C9AC;
+}
+
+#disqus_thread button.dsq-button, #disqus_thread button.dsq-button-small {
+    border: solid 1px #346;
+    color: #dee;
+}
+
+.dsq-brlink {
+    position: absolute;
+    right: 30px;
+    bottom: 36px;
+    font-family: Candara, Verdana, Tahoma, sans-serif;
+    color: #dff;
+    opacity: 0.25;
+}
+
+#dsq-toolbar-dropdown-wrap {
+    z-index: 10;
+}
+
+#dsq-toolbar-dropdown-wrap ul li h4 {
+    font-size: 12px;
+    margin: 0;
+}
+
+#dsq-content-stub { /* loading */
+    color: #38a;
+}
+
+#disqus_thread #dsq-content .dsq-textarea .dsq-textarea-wrapper, #disqus_thread #dsq-content .dsq-input-wrapper {
+    border: 1px solid #134;
+    color: #eff;
+    background: #9cd;
+    background: rgba(40,180,220,0.6);
+}
+#dsq-content input.dsq-trackback-url {
+    width: 25em;
+    background: #A0A7AD;
+    background: rgba(255,255,255,0.6);
+}
+
+#dsq-content .dsq-pagination img, #dsq-content #dsq-comments > img {
+    display: inline-block;
+    background: #fff;
+    border-radius: 3px;
+    -moz-border-radius: 3px;
+    padding: 5px;
+    border: 1px solid #ddd;
+}

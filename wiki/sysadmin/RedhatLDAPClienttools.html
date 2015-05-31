@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>红帽目录服务的基本客户端工具</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">红帽目录服务的基本客户端工具</a>
+<ul>
+<li><a href="#toc_1.1">客户端命令</a>
+<li><a href="#toc_1.2">配置客户端</a>
+<li><a href="#toc_1.3">查询</a>
+<li><a href="#toc_1.4">记录的删除</a>
+<li><a href="#toc_1.5">RDN的修改</a>
+<li><a href="#toc_1.6">用户密码的修改</a>
+<li><a href="#toc_1.7">添加记录</a>
+<li><a href="#toc_1.8">修改记录</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">红帽目录服务的基本客户端工具</h1>
+
+
+<p>
+原创作品，允许转载，转载时请务必以超链接形式标明文章 原始出处 、作者信息和本声明。否则将追究法律责任。
+<a href="http://linuxsafe.blog.51cto.com/438124/667052">http://linuxsafe.blog.51cto.com/438124/667052</a>
+</p>
+
+<p>
+2011-09-17 11:49:37
+</p>
+
+
+<h2 id="toc_1.1">客户端命令</h2>
+
+<p>
+客户端工具软件包是openldap-clients包含了几个小命令
+</p>
+
+<ol>
+<li>
+ldapsearch
+
+<li>
+ldapadd
+
+<li>
+ldapdelete
+
+<li>
+ldapmodify
+
+<li>
+ldappasswd
+
+<li>
+ldapmodrdn
+
+</ol>
+
+<h2 id="toc_1.2">配置客户端</h2>
+
+<p>
+为了便于我们的操作我们需要在客户端上设置一些默认预设的目录服务环境，好让客户端更高效的工作
+</p>
+
+<ul>
+<li>
+/etc/openldap/ldap.conf
+
+</ul>
+
+<p>
+这个配置文件帮助客户端确定访问的目录服务器和查询范围
+</p>
+
+<pre class="brush: bash">
+#
+# LDAP Defaults
+#
+
+BASE dc=server109,dc=example,dc=com  #BASE指定查询范围
+HOST server109.example.com  #HOST指定目录服务器
+
+</pre>
+
+<ul>
+<li>
+~/.ldaprc
+
+</ul>
+
+<p>
+这个配置文件是绑定以什么身份操作目录服务，redhat-ds默认允许匿名查询可以不提供密码。但涉及到记录的添加，删除等操作就需要有管理权限的用户来做了，这里就是绑定一个管理账户操纵目录服务，免得以后操作总是要输入管理身份，很麻烦。
+</p>
+
+<pre class="brush: bash">
+BINDDN cn=Directory Manager
+</pre>
+
+<h2 id="toc_1.3">查询</h2>
+
+<p>
+现在我们就试试查询的命令是否缩减一些了
+</p>
+
+<pre class="brush: bash">
+ldapsearch -x 'uid=fishcool' -LLL
+# -LLL标示输出标准的ldif文件内容
+# uid=fishcool是查询条件
+</pre>
+
+<p>
+如果不设置刚才的客户端预设值呢会有什么后果
+</p>
+
+<pre class="brush: bash">
+ldapsearch -x -b ou=People,dc=server109,dc=example,dc=com -D 'cn=Directory Manager' -h server109.example.com 'uid=fishcool' -LLL
+
+# -x 简单认证
+# -b 指定搜索范围
+# -D 指定用什么身份来做查询
+# -h 指定在哪台目录服务做查询
+# -b和-h 在/etc/openldap/ldap.conf预充了
+# -D 参数在~/.ldaprc预设了
+</pre>
+
+<p>
+还有一些其他的参数我们来认识一下
+</p>
+
+<pre class="brush: bash">
+-W: BINDDN账户的密码，当做添加，删除这些需要身份验证的操作时目录服务就去找.ldaprc下得BINDDN账户并要求输入密码。
+-Z: 尝试使用tls加密，如果没有就继续
+-ZZ: 强制使用tls加密，那么目录服务器的地址就必须改成 – H ldaps://server109.example.com
+</pre>
+
+<p>
+如果你在搜索出结果后只想得到所有用户的cn全名如何做呢
+</p>
+<pre class="brush: bash">
+ldapsearch -x -LLL cn  # 在结果中过滤掉什么属性
+</pre>
+ 
+<p>
+现在我们来看看搜索条件
+</p>
+
+<pre class="brush: bash">
+=
+&gt;=
+&lt;=
+~=
+(!(age&gt;21))
+(&amp;(sn=jones)(o=IBM))  (&amp;(sn=jones)(|(givenName=bridget)(givenName=tom)))
+(|(sn=fish)(sn=shark))
+*
+</pre>
+
+<h2 id="toc_1.4">记录的删除</h2>
+
+<p>
+ldapdelete [-r] [-f]
+</p>
+
+<pre class="brush: bash">
+ldapdelete -x -W uid=dogsmart,ou=People,dc=server109,dc=example,dc=com
+</pre>
+
+<h2 id="toc_1.5">RDN的修改</h2>
+
+<p>
+ldapmodrdn  [-r]
+</p>
+
+<h2 id="toc_1.6">用户密码的修改</h2>
+
+<p>
+只能在一个安全连接下进行比如证书或者kerberos
+</p>
+
+<p>
+ldappasswd [-s]
+</p>
+
+<h2 id="toc_1.7">添加记录</h2>
+
+<p>
+ldapadd [-f]
+</p>
+
+<p>
+这里给你一个真实的用户信息，让你能够写成ldif文件，我们现在来编辑这个ldif文件(adduser.ldif):
+</p>
+
+<pre class="brush: bash">
+dn: uid=eblues,ou=People,dc=server109,dc=example,dc=com
+objectclass: top
+objectclass: person
+objectclass: organizationalPerson
+objectclass: inetorgperson
+uid: eblues
+sn: Blues
+giveName: Elwood
+cn: Elwood Blues
+street: 1060 West Addison
+l: Chicago
+st: IL
+postalCode: 60613
+</pre>
+
+<p>
+看看是否有这个记录
+</p>
+
+<pre class="brush: bash">
+ldapadd -x -W -f adduser.ldif
+</pre>
+
+
+<h2 id="toc_1.8">修改记录</h2>
+
+<p>
+ldapmodify [-f]
+</p>
+
+<pre class="brush: bash">
+ldapsearch -x 'uid=fishcool' -LLL
+
+dn: uid=fishcool,ou=People,dc=server109,dc=example,dc=com
+uid: fishcool  #我想为fishcool添加一个电话号码属性
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetorgerson
+GiveName: fish
+sn: cool
+cn: fish cool
+mail: fishcool@server109.example.com #我想修改邮箱为fishcool@redhat.com
+postalCode: 665504 #我想删除这个邮编
+postalCode: 778095
+</pre>
+
+<p>
+我编写了一个文件
+</p>
+
+<pre class="brush: bash">
+dn: uid=fishcool,ou=People,dc=server109,dc=example,dc=com
+changetype: modify             # 修改类型为"modify"
+add: telephoneNumber           # 添加"telephoneNumber"属性
+telephoneNumber: +190 22557799 # telephoneNumber值
+
+dn: uid=fishcool,ou=People,dc=server109,dc=example,dc=com
+changetype: modify   # 修改类型为"modify"
+delete: postalCode   # 删除属性postalCode
+postalCode: 665504   # postalCode值为665504,因为postCode有多个属性值，所以需指定一个值删除
+</pre>
+
+<p>
+开始执行修改
+</p>
+
+<pre class="brush: bash">
+ldapmodify -x -f modify.ldif -W
+
+# -f 指定一个ldif文件
+</pre>
+
+
+<p>
+查看一下结果
+</p>
+
+<pre class="brush: bash">
+ldapsearch -x 'uid=fishcool' -LLL
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

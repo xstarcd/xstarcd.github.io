@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>Ubuntu跨版本升级</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Ubuntu跨版本升级</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_1">如何比较稳妥的升级到13.04</a>
+<ul>
+<li><a href="#toc_1.1">修改源</a>
+<li><a href="#toc_1.2">更新源列表</a>
+<li><a href="#toc_1.3">下载更新包</a>
+<li><a href="#toc_1.4">跨版本升级</a>
+<li><a href="#toc_1.5">清除缓存</a>
+</ul>
+</ul>
+</div>
+
+
+<h1 id="toc_1">如何比较稳妥的升级到13.04</h1>
+
+<p>
+原文：<a href="http://forum.ubuntu.org.cn/viewtopic.php?f=86&amp;t=385003">http://forum.ubuntu.org.cn/viewtopic.php?f=86&amp;t=385003</a>
+</p>
+
+<p>
+帖子发表于 : 2012-08-23 8:58 
+</p>
+
+<p>
+<strong>提示：升级有风险！！</strong>
+</p>
+
+<p>
+本方案在11.10、12.04、12.10、13.04中都已经经过测试。
+</p>
+
+<p>
+本方案使用update-manager来跨版本升级，请确保已经安装update-manager再执行下面的步骤。
+</p>
+
+<p>
+升级前，请卸载和删除不太必要的软件包，使系统变得相对简单干净，再升级，以减少升级耗时，和减少出错的几率。删除的包可以升级后再重新安装上。
+</p>
+
+<h2 id="toc_1.1">修改源</h2>
+
+<ol>
+<li>
+在“软件源”中取消第三方源，以减少更新量，等升级完成后再重新打开。
+
+<li>
+修改源指向13.04版本。
+
+</ol>
+
+<pre class="brush:bash">
+cp /etc/apt/sources.list{,.precise}
+sudo sed -i 's/precise/raring/' /etc/apt/sources.list
+</pre>
+
+<h2 id="toc_1.2">更新源列表</h2>
+
+<p>
+必须执行，如果发现速度慢则换别的源。
+</p>
+
+<pre class="brush:bash">
+sudo apt-get update
+
+# 若遇GPG公锁错误，用下面的命令添加key:
+# apt-key adv –recv-keys –keyserver keyserver.ubuntu.com 16126D3A3E5C1192
+</pre>
+
+<h2 id="toc_1.3">下载更新包</h2>
+
+<p>
+"-d" 表示只下载文件，先把文件下载下来，防止因网络慢或不稳定造成问题。如果速度慢则换源再继续。
+</p>
+
+<p>
+<strong>如果这一步都报错，就不要继续了！切记！</strong>
+</p>
+
+<pre class="brush:bash">
+sudo apt-get -d dist-upgrade
+</pre>
+
+<h2 id="toc_1.4">跨版本升级</h2>
+
+<pre class="brush:bash">
+sudo update-manager -d
+</pre>
+
+<p>
+跨版本升级，按照跳出的提示，选择“部分更新”。
+</p>
+
+<p>
+-d, --devel-release   验证是否能够升级到最新版本。
+</p>
+
+<p>
+<strong>升级完成之后，系统会要求你重启。不急，选择不重启。</strong> 
+</p>
+
+<p>
+为了系统下次能够正常启动，还需要进行进一步软件包检查。关闭升级窗口之后，再重复使用：
+</p>
+
+<pre class="brush:bash">
+sudo apt-get update
+sudo apt-get upgrade
+</pre>
+
+<p>
+如果有软件包可以升级。将它们全部升级完毕。直到没的升为止。
+</p>
+
+<p>
+在这里，如果升级过程中出现过“依赖关系损坏的包”，尽量先修复，或者删除，然后检查图形界面的包还在不在（ubuntu-desktop、kubuntu-desktop、kde-workspace、gnome-shell、unity这些），如果没有了，尝试安装他们，总之在不要“带病”重启，以防重启以后是个黑屏进不了图形界面。
+</p>
+
+<h2 id="toc_1.5">清除缓存</h2>
+
+<p>
+OK，现在可以重启了。升级过程完成。
+</p>
+
+<p>
+如果升级一切顺利，则可以运行下面命令来清除旧有的文件，节约硬盘空间。
+</p>
+<pre class="brush:bash">
+sudo apt-get autoremove
+sudo apt-get autoclean
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

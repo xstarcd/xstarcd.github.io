@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>LXC</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>LXC</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Docker</a>
+</ul>
+</ul>
+</div>
+
+
+<p>
+LXC是Linux containers的简称，是一种基于容器的操作系统层级的虚拟化技术。
+</p>
+
+<p>
+LXC可以在操作系统层次上为进程提供的虚拟的执行环境，一个虚拟的执行环境就是一个容器。可以为容器绑定特定的cpu和memory节点，分配特定比例的cpu时间、IO时间，限制可以使用的内存大小（包括内存和是swap空间），提供device访问控制，提供独立的namespace（网络、pid、ipc、mnt、uts）。
+</p>
+
+<p>
+Sourceforge上有LXC这个开源项目，但是LXC项目本身只是一个为用户提供一个用户空间的工具集，用来使用和管理LXC容器。LXC真正的实现则是靠Linux内核的相关特性，LXC项目只是对此做了整合。基于容器的虚拟化技术起源于所谓的资源容器和安全容器。
+</p>
+
+<p>
+LXC在资源管理方面依赖与Linux内核的cgroups子系统，cgroups子系统是Linux内核提供的一个基于进程组的资源管理的框架，可以为特定的进程组限定可以使用的资源。LXC在隔离控制方面依赖于Linux内核的namespace特性，具体而言就是在clone时加入相应的flag（NEWNS NEWPID等等）。
+</p>
+
+<p>
+LXC是所谓的操作系统层次的虚拟化技术，与传统的HAL（硬件抽象层）层次的虚拟化技术相比有以下优势：
+</p>
+<ul>
+<li>
+更小的虚拟化开销（LXC的诸多特性基本由内核特供，而内核实现这些特性只有极少的花费）
+
+<li>
+快速部署。利用LXC来隔离特定应用，只需要安装LXC，即可使用LXC相关命令来创建并启动容器来为应用提供虚拟执行环境。传统的虚拟化技术则需要先创建虚拟机，然后安装系统，再部署应用。
+
+<li>
+LXC跟其他操作系统层次的虚拟化技术相比，最大的优势在于LXC被整合进内核，不用单独为内核打补丁。
+
+</ul>
+
+<ul>
+<li>
+cgroup和LXC的安装: <a href="http://www.cnblogs.com/lisperl/archive/2012/02/27/2369668.html">http://www.cnblogs.com/lisperl/archive/2012/02/27/2369668.html</a>
+
+<li>
+LXC常用命令介绍: <a href="http://www.cnblogs.com/lisperl/archive/2012/04/13/2446179.html">http://www.cnblogs.com/lisperl/archive/2012/04/13/2446179.html</a>
+
+<li>
+LXC配置文件简介: <a href="http://www.cnblogs.com/lisperl/archive/2012/04/16/2451215.html">http://www.cnblogs.com/lisperl/archive/2012/04/16/2451215.html</a>
+
+<li>
+LXC网络配置实例: <a href="http://www.cnblogs.com/lisperl/archive/2012/04/19/2456797.html">http://www.cnblogs.com/lisperl/archive/2012/04/19/2456797.html</a>
+
+<li>
+LXC：Linux 容器工具: <a href="http://www.ibm.com/developerworks/cn/linux/l-lxc-containers/">http://www.ibm.com/developerworks/cn/linux/l-lxc-containers/</a>
+
+</ul>
+
+<h2 id="toc_0.1">Docker</h2>
+
+<ul>
+<li>
+<a href="http://www.docker.io/">http://www.docker.io/</a>
+
+<li>
+使用 Docker/LXC 迅速启动一个桌面系统: <a href="http://www.vpsee.com/2013/07/use-docker-and-lxc-to-build-a-desktop/">http://www.vpsee.com/2013/07/use-docker-and-lxc-to-build-a-desktop/</a>
+
+</ul>
+
+<p>
+Docker 是 dotCloud 最近2013年宣布的开源引擎，旨在提供一种应用程序的自动化部署解决方案，简单的说就是，在 Linux 系统上迅速创建一个容器（类似虚拟机）并在容器上部署和运行应用程序，并通过配置文件可以轻松实现应用程序的自动化安装、部署和升级，非常方便。因为使用了容器，所以可以很方便的把生产环境和开发环境分开，互不影响，这是 docker 最普遍的一个玩法。更多的玩法还有大规模 web 应用、数据库部署、持续部署、集群、测试环境、面向服务的云计算、虚拟桌面 VDI 等等。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

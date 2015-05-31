@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>OpenLDAP配置记录</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">OpenLDAP配置记录</a>
+<ul>
+<li><a href="#toc_1.1">概述</a>
+<li><a href="#toc_1.2">OpenLDAP Server</a>
+<ul>
+<li><a href="#toc_1.2.1">安装所需软件包</a>
+<li><a href="#toc_1.2.2">生成管理员密码串</a>
+<li><a href="#toc_1.2.3">配置文件</a>
+<li><a href="#toc_1.2.4">非配置文件</a>
+<li><a href="#toc_1.2.5">数据库缓存</a>
+<li><a href="#toc_1.2.6">测试配置</a>
+<li><a href="#toc_1.2.7">配置文件转为目录</a>
+<li><a href="#toc_1.2.8">配置加密(LDAPS)</a>
+<li><a href="#toc_1.2.9">启动LDAP服务</a>
+<li><a href="#toc_1.2.10">配置base domain</a>
+<li><a href="#toc_1.2.11">迁移本地用户和组</a>
+<li><a href="#toc_1.2.12">添加用户和组</a>
+</ul>
+<li><a href="#toc_1.3">客户端配置</a>
+<ul>
+<li><a href="#toc_1.3.1">认证配置</a>
+<li><a href="#toc_1.3.2">客户快速配置</a>
+<li><a href="#toc_1.3.3">自动创建HOME</a>
+<li><a href="#toc_1.3.4">开启日志</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">OpenLDAP配置记录</h1>
+
+<ul>
+<li>
+Create: 2012-12-24
+
+<li>
+Update: 2012-12-27
+
+<li>
+参考: <a href="http://blog.christophersmart.com/articles/openldap-how-to-fedora/">http://blog.christophersmart.com/articles/openldap-how-to-fedora/</a>
+
+</ul>
+
+
+<h2 id="toc_1.1">概述</h2>
+
+<ul>
+<li>
+测试环境
+
+<ul>
+<li>
+CentOS 6.3
+
+<li>
+domain: gdu.me
+
+<li>
+LDAP server: ldap.gdu.me
+
+</ul>
+</ul>
+
+<pre>
+DEVICE="eth1"
+BOOTPROTO="static"
+HWADDR="08:00:27:EF:6C:2B"
+NM_CONTROLLED="no"
+ONBOOT="yes"
+TYPE="Ethernet"
+IPADDR=192.168.56.2
+NETMASK=255.255.255.0
+</pre>
+
+<ul>
+<li>
+配置步骤
+
+</ul>
+
+<ol>
+<li>
+安装软件包
+
+<li>
+配置LDAP Server域信息
+
+<li>
+配置LDAP Server加密(TLS)认证
+
+<li>
+启动LDAP Server、测试
+
+<li>
+通过迁移工具导入本地用户
+
+<li>
+增加用户和组(ldif文件)
+
+<li>
+客户端LDAP认证配置
+
+</ol>
+
+
+<h2 id="toc_1.2">OpenLDAP Server</h2>
+
+<p>
+OpenLDAP 2.3以后版本有两种配置方式：
+</p>
+<ol>
+<li>
+配置文件：旧方式，通过/etc/openldap/slapd.conf配置。
+
+<li>
+非配置文件：配置存储在LDAP server中，可动态更新。在/etc/openldap/sladp.d目录中配置。
+
+</ol>
+
+<h3 id="toc_1.2.1">安装所需软件包</h3>
+<pre class="brush: bash">
+yum install openldap-servers migrationtools 
+#openssl
+</pre>
+<pre>
+==========================================================================================
+ Package                          Arch        Version                Repository      Size
+==========================================================================================
+Installing:
+ migrationtools                   noarch      47-7.el6               base            25 k
+ openldap-servers                 i686        2.4.23-26.el6_3.2      updates        2.0 M
+Installing for dependencies:
+ openldap-clients                 i686        2.4.23-26.el6_3.2      updates        158 k
+ portreserve                      i686        0.0.4-9.el6            base            22 k
+
+Transaction Summary
+==========================================================================================
+Install       4 Package(s)
+</pre>
+
+<h3 id="toc_1.2.2">生成管理员密码串</h3>
+<pre class="brush: bash">
+slappasswd -s 123456
+#{SSHA}IYj/KpP3SS4Ka3Qcn55hfvMb8Ionc/h8
+</pre>
+
+<h3 id="toc_1.2.3">配置文件</h3>
+
+<ul>
+<li>
+删除配置目录
+
+</ul>
+
+<p>
+如果使用配置文件，需删除或改名配置目录(启动脚本优先使用目录下的配置)。
+</p>
+<pre class="brush: bash">
+rm -rf /etc/openldap/slapd.d/
+</pre>
+
+
+<ul>
+<li>
+创建配置文件
+
+</ul>
+
+<pre class="brush: bash">
+cp -a /usr/share/openldap-servers/slapd.conf.obsolete /etc/openldap/slapd.conf
+</pre>
+
+
+<ul>
+<li>
+修改配置
+
+</ul>
+<p>
+设置domain(dc=gdu,dc=me)、admin密码、密钥文件路径信息(注意：有的站点说配置项与配置内容间必须用TAB分隔，我没测试过)。
+</p>
+<ol>
+<li>
+domain修改修改
+
+<ul>
+<li>
+直接替换
+<pre class="brush: bash">
+sed -i.bak 's/dc=my-domain,dc=com/dc=gdu,dc=com/g' /etc/openldap/slapd.conf
+</pre>
+
+<li>
+手工修改
+<pre>
+suffix "dc=gdu,dc=me"
+rootdn "cn=Manager,dc=gdu,dc=me"
+...
+# allow only rootdn to read the monitor
+# enable server status monitoring (cn=monitor)
+database monitor
+access to *
+    by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" read
+    by dn.exact="cn=Manager,dc=gdu,dc=me" read
+    by * none
+</pre>
+
+</ul>
+<li>
+设置admin密码、密钥文件路径(后续生成)
+<pre class="brush: bash">
+cat &gt;&gt; /etc/openldap/slapd.conf &lt;&lt;EOF
+rootpw  {SSHA}IYj/KpP3SS4Ka3Qcn55hfvMb8Ionc/h8
+TLSCertificateFile  /etc/openldap/ssl/slapdcert.pem
+TLSCertificateKeyFile   /etc/openldap/ssl/slapdkey.pem
+EOF
+</pre>
+
+</ol>
+
+<h3 id="toc_1.2.4">非配置文件</h3>
+
+<p>
+通过修改slapd.d目录下的文件(.ldif)，将配置存入LDAP server中(cn=config)。
+</p>
+
+<p>
+首先配置的两个是基础数据库文件。
+</p>
+
+<ul>
+<li>
+bdb.ldif
+
+<ul>
+<li>
+domain修改
+<pre class="brush: bash">
+sed -i.bak 's/dc=my-domain,dc=com/dc=gdu,dc=me/g' /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}bdb.ldif
+</pre>
+
+<ul>
+<li>
+手工修改
+<pre>
+olcRootDN: dc=gdu,dc=me
+</pre>
+
+</ul>
+<li>
+admin密码及密钥文件路径
+<pre class="brush: bash">
+cat &gt;&gt; /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}bdb.ldif &lt;&lt;EOF
+olcRootPW: {SSHA}IYj/KpP3SS4Ka3Qcn55hfvMb8Ionc/h8
+olcTLSCertificateFile: /etc/openldap/ssl/slapdcert.pem
+olcTLSCertificateKeyFile: /etc/openldap/ssl/slapdkey.pem
+EOF
+</pre>
+
+</ul>
+<li>
+monitor.ldif
+<pre class="brush: bash">
+sed -i.bak 's/cn=manager,dc=my-domain,dc=com/cn=Manager,dc=gdu,dc=me/g' /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{1\}monitor.ldif
+</pre>
+
+</ul>
+
+<h3 id="toc_1.2.5">数据库缓存</h3>
+
+<p>
+现在已用配置、或非配置文件方式完成了LDAP配置。复制DB_CONFIG文件，并设置使用Berkley数据库。
+</p>
+
+<pre class="brush: bash">
+cp /usr/share/openldap-servers/DB_CONFIG.example /var/lib/ldap/DB_CONFIG
+chown -Rf ldap:ldap /var/lib/ldap/
+</pre>
+
+<h3 id="toc_1.2.6">测试配置</h3>
+<pre class="brush: bash">
+slaptest -u 
+#config file testing succeeded
+</pre>
+
+<h3 id="toc_1.2.7">配置文件转为目录</h3>
+<pre class="brush: bash">
+service slapd stop
+mkdir -p /etc/openldap/slapd.d/
+rm -rf /etc/openldap/slapd.d/*
+slaptest -f /etc/openldap/slapd.conf -F /etc/openldap/slapd.d/
+chown ldap.ldap /etc/openldap/slapd.d/ -R
+</pre>
+
+
+<h3 id="toc_1.2.8">配置加密(LDAPS)</h3>
+
+<p>
+为提高使用LDAP认证的安全性，配置同时运行LDAP(TLS,tcp:389)和TLS或LDAPS(TLS,tcp:636)。
+</p>
+<ul>
+<li>
+设置ldap启动参数
+<pre class="brush: bash">
+sed -i.bak 's/\(SLAPD_LDAPS=\).*$/\1yes/g' /etc/sysconfig/ldap
+</pre>
+
+<li>
+生成SSL密钥
+
+</ul>
+<p>
+注意替换按提示输入的ldap server信息。
+</p>
+<pre class="brush: bash">
+mkdir /etc/openldap/ssl/
+openssl req -new -x509 -nodes -out /etc/openldap/ssl/slapdcert.pem -keyout /etc/openldap/ssl/slapdkey.pem -days 365
+
+# 设置生成的两个文件(公钥、私钥)ldap用户可读
+chown -Rf root:ldap /etc/openldap/ssl
+chmod -Rf 750 /etc/openldap/ssl
+chmod -Rf 640 /etc/openldap/ssl/*
+</pre>
+<pre>
+Generating a 2048 bit RSA private key
+ ....................................................+++
+ writing new private key to '/etc/openldap/ssl/slapdkey.pem'
+ -----
+ You are about to be asked to enter information that will be incorporated
+ into your certificate request.
+ What you are about to enter is what is called a Distinguished Name or a DN.
+ There are quite a few fields but you can leave some blank
+ For some fields there will be a default value,
+ If you enter '.', the field will be left blank.
+ -----
+ Country Name (2 letter code) [XX]: CN
+ State or Province Name (full name) []: SC
+ Locality Name (eg, city) [Default City]: Chengdu
+ Organization Name (eg, company) [Default Company Ltd]: GDU
+ Organizational Unit Name (eg, section) []: IT
+ Common Name (eg, your name or your server's hostname) []: ldap.gdu.me 
+ Email Address []: admin@gdu.me
+</pre>
+
+
+<h3 id="toc_1.2.9">启动LDAP服务</h3>
+
+<ul>
+<li>
+启动LDAP服务
+<pre class="brush: bash">
+# 启动服务
+service slapd start
+
+# 检查服务侦听
+netstat -lt |grep ldap
+#tcp  0  0 *:ldap   *:*  LISTEN
+#tcp  0  0 *:ldaps  *:*  LISTEN
+
+# 设置自启动
+chkconfig slapd on
+
+# 测试配置
+ldapsearch -x -b '' -s base '(objectclass=*)' namingContexts
+</pre>
+
+</ul>
+
+<pre>
+# extended LDIF
+#
+# LDAPv3
+# base &lt;&gt; with scope baseObject
+# filter: (objectclass=*)
+# requesting: namingContexts
+#
+
+#
+dn:
+namingContexts: dc=gdu,dc=me
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+</pre>
+
+<p>
+LDAP基本服务配置完成，后面需构建用户和组。
+</p>
+
+<h3 id="toc_1.2.10">配置base domain</h3>
+
+<p>
+LDAP已经运行起来，但还没有任何用户(People)、组(Group)，我们将在后续添加，现在我们需要设置base、证书和组文件。
+</p>
+
+<p>
+这是使用迁移本地用户的方式来完成：转换成LDIF文件用于导入LDAP。
+</p>
+
+<p>
+我们面要建立base.ldif模板，给我们的目录(gdu.me)定义基本结构。
+</p>
+
+<ul>
+<li>
+建立base.ldif
+<pre class="brush: bash">
+cat &gt; base.ldif &lt;&lt;EOF
+dn: dc=gdu,dc=me
+dc: gdu
+objectClass: top
+objectClass: domain
+
+dn: ou=People,dc=gdu,dc=me
+ou: People
+objectClass: top
+objectClass: organizationalUnit
+
+dn: ou=Group,dc=gdu,dc=me
+ou: Group
+objectClass: top
+objectClass: organizationalUnit
+EOF
+</pre>
+
+</ul>
+<p>
+注意：换行符差别可能造成导入失败(从网页复制，换行符会出错)。与<code>migrate_base.pl &gt; base.ldif</code>生成的比较，只有一些换行符差别。
+</p>
+<pre>
+ldapadd: attributeDescription "dn": (possible missing newline after line 8, entry "dc=gdu,dc=m                e"?)
+</pre>
+<ul>
+<li>
+导入base.ldif
+<pre class="brush: bash">
+ldapadd -x -W -D "cn=Manager,dc=gdu,dc=me" -f ./base.ldif
+# Enter LDAP Password:
+# adding new entry "dc=gdu,dc=me"
+# adding new entry "ou=People,dc=gdu,dc=me"
+# adding new entry "ou=Group,dc=gdu,dc=me"
+</pre>
+
+</ul>
+
+<p>
+If you saw the above, then it worked! If you get an error about authentication issues connecting to my-domain.com then it’s not reading your configuration properly, and is using the default. Stop the service and start again.
+</p>
+
+<h3 id="toc_1.2.11">迁移本地用户和组</h3>
+
+<p>
+下面使用迁移工具根据本地已有用户和组创建ldif文件，用于导入LDAP。
+</p>
+
+<ul>
+<li>
+配置migrate工具
+<pre class="brush: bash">
+vim /usr/share/migrationtools/migrate_common.ph
+</pre>
+
+</ul>
+<p>
+修改以下内容：
+</p>
+<pre>
+# Default DNS domain
+$DEFAULT_MAIL_DOMAIN = "gdu.me";
+ 
+# Default base 
+$DEFAULT_BASE = "dc=gdu,dc=me";
+</pre>
+<ul>
+<li>
+Users (People)
+
+</ul>
+<p>
+生成已有用户ldif文件。
+</p>
+<pre class="brush: bash">
+/usr/share/migrationtools/migrate_passwd.pl /etc/passwd people.ldif
+</pre>
+<p>
+编辑people.ldif文件，删除不需要导入的用户信息（如：mysql,nobody等等）。
+</p>
+<ul>
+<li>
+Groups (Group)
+
+</ul>
+<p>
+生成已有组ldif文件。
+</p>
+<pre class="brush: bash">
+/usr/share/migrationtools/migrate_group.pl /etc/group group.ldif
+</pre>
+<p>
+编辑group.ldif文件，删除不需导入的组信息（似乎保留root,wheel,users就可了）。
+</p>
+<ul>
+<li>
+导入ldif文件
+<pre class="brush: bash">
+ldapadd -x -W -D "cn=Manager,dc=gdu,dc=me" -f group.ldif
+ldapadd -x -W -D "cn=Manager,dc=gdu,dc=me" -f people.ldif
+</pre>
+
+<li>
+测试连接LDAP数据库
+<pre class="brush: bash">
+ldapsearch -xWD "cn=Manager,dc=gdu,dc=me" -b "dc=gdu,dc=me" "cn=root"
+ldapsearch -x -b 'dc=gdu,dc=me' 'cn=yuanxing'
+</pre>
+<pre>
+Enter LDAP Password:
+# extended LDIF
+#
+# LDAPv3
+# base &lt;dc=gdu,dc=me&gt; with scope subtree
+# filter: cn=root
+# requesting: ALL
+#
+
+# root, People, gdu.me
+dn: uid=root,ou=People,dc=gdu,dc=me
+uid: root
+cn: root
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+userPassword:: e2NyeXB0fSQ2JFdjN.....
+shadowLastChange: 15663
+shadowMin: 0
+shadowMax: 99999
+shadowWarning: 7
+loginShell: /bin/bash
+uidNumber: 0
+gidNumber: 0
+homeDirectory: /root
+gecos: root
+
+# root, Group, gdu.me
+dn: cn=root,ou=Group,dc=gdu,dc=me
+objectClass: posixGroup
+objectClass: top
+cn: root
+userPassword:: e2NyeXB0fXg=
+gidNumber: 0
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 3
+# numEntries: 2
+</pre>
+
+</ul>
+
+
+<h3 id="toc_1.2.12">添加用户和组</h3>
+
+<p>
+创建用户、组ldif文件，导入LDAP。
+</p>
+
+<ul>
+<li>
+User
+
+</ul>
+<p>
+创建username.ldif文件(如yuanxing.ldif)：
+</p>
+<pre class="brush: bash">
+cat &gt; yuanxing.ldif &lt;&lt;EOF
+dn: uid=yuanxing,ou=People,dc=gdu,dc=me
+uid: yuanxing
+cn: YuanXing
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+userPassword: {CRYPT}cr7JQsCc2EcXg
+shadowLastChange: 14846
+shadowMax: 99999
+shadowWarning: 7
+loginShell: /bin/bash
+uidNumber: 501
+gidNumber: 501
+homeDirectory: /home/yuanxing
+gecos: YuanXing
+EOF
+</pre>
+<p>
+UserPassword可用下面的命令生成加密串：
+</p>
+<pre class="brush: bash">
+slappasswd -c crypt -s 111111
+{CRYPT}cr7JQsCc2EcXg
+</pre>
+<ul>
+<li>
+Group
+
+</ul>
+<p>
+创建username.ldif文件(如yuanxing-group.ldif):
+</p>
+<pre class="brush: bash">
+cat &gt; yuanxing-group.ldif &lt;&lt;EOF
+dn: cn=yuanxing,ou=Group,dc=gdu,dc=me
+objectClass: posixGroup
+objectClass: top
+cn: yuanxing
+userPassword: {crypt}x
+gidNumber: 501
+EOF
+</pre>
+<ul>
+<li>
+导入LDAP
+<pre class="brush: bash">
+ldapadd -x -W -D "cn=Manager,dc=gdu,dc=me" -f yuanxing-group.ldif
+#Enter LDAP Password:
+#adding new entry "cn=yuanxing,ou=Group,dc=gdu,dc=me"
+
+ldapadd -x -W -D "cn=Manager,dc=gdu,dc=me" -f yuanxing.ldif
+#Enter LDAP Password:
+#adding new entry "uid=yuanxing,ou=People,dc=gdu,dc=me"
+</pre>
+
+</ul>
+
+
+<h2 id="toc_1.3">客户端配置</h2>
+
+<h3 id="toc_1.3.1">认证配置</h3>
+
+<p>
+LDAP服务端运行正常，现在可以配置客户机通过LDAP进行认证。
+</p>
+<ul>
+<li>
+设置DNS或host
+<pre>
+192.168.56.101 ldap.gdu.me
+</pre>
+
+<li>
+安装软件包
+<pre class="brush: bash">
+yum install openldap-clients nss-pam-ldapd pam_ldap
+</pre>
+
+</ul>
+<p>
+CentOS/Fedora主机，使用authconfig-gtk或authconfig-tui(authconfig好像可以通过命令行参数完成？)，并做如下设置：
+</p>
+<ul>
+<li>
+证书文件
+
+</ul>
+<p>
+将slapdcert.pem文件上传到/etc/openldap/cacerts目录。
+</p>
+<ul>
+<li>
+设置认证方式
+<pre>
+   ┌────────────────┤ Authentication Configuration ├─────────────────┐
+   │                                                                 │
+   │  User Information        Authentication                         │
+   │  [ ] Cache Information   [*] Use MD5 Passwords                  │
+   │  [*] Use LDAP            [*] Use Shadow Passwords               │
+   │  [ ] Use NIS             [*] Use LDAP Authentication            │
+   │  [ ] Use IPAv2           [ ] Use Kerberos                       │
+   │  [ ] Use Winbind         [ ] Use Fingerprint reader             │
+   │                          [ ] Use Winbind Authentication         │
+   │                          [*] Local authorization is sufficient  │
+   └─────────────────────────────────────────────────────────────────┘
+</pre>
+<pre class="brush: bash">
+yum install nss-pam-ldapd pam_ldap
+</pre>
+
+<li>
+设置LDAP Server信息
+<pre>
+   ┌─────────────────┤ LDAP Settings ├─────────────────┐
+   │                                                   │
+   │          [*] Use TLS                              │
+   │  Server: ldaps://ldap.gdu.me/____________________ │
+   │ Base DN: dc=gdu,dc=me____________________________ │
+   │                                                   │
+   └───────────────────────────────────────────────────┘
+</pre>
+
+</ul>
+<p>
+配置完成后，会启动nslcd服务进程(nslcd - local LDAP name service daemon)。
+</p>
+<ul>
+<li>
+测试ldap查询
+<pre class="brush: bash">
+ldapsearch -xWD "cn=Manager,dc=gdu,dc=me" -b "dc=gdu,dc=me" "cn=root"
+ldapsearch -x -b 'dc=gdu,dc=me' 'cn=yuanxing'
+getent passwd|grep yuanxing
+</pre>
+
+</ul>
+<p>
+如果没有返回信息，或返回错误，请检查配置，重新进行测试。如果检查配置没有错误，可以做如下修改，重新进行测试。
+将/etc/sssd/sssd.conf文件中的#enumerate=false，修改为：enumerate=true，这样修改完后，getent就会从LDAP查找账户信息。
+并重新执行如下命令：
+<code>service sssd restart</code>
+</p>
+<ul>
+<li>
+测试登录
+
+</ul>
+<p>
+成功登录后提示无home目录，需后续设置登录时自动创建目录、或通过autofs自动mountNFS目录。
+</p>
+<pre>
+No directory /home/yuanxing!
+Logging in with home = "/".
+</pre>
+<ul>
+<li>
+TLS方式失败，原因待查
+
+</ul>
+<p>
+LDAP以TLS方式运行时，执行登录后，LDAP服务端slapd进程CPU占用达90%以上，日志中无相应信息，原因待查。
+</p>
+
+
+<h3 id="toc_1.3.2">客户快速配置</h3>
+<p>
+参考： <a href="http://myhat.blog.51cto.com/391263/972870">http://myhat.blog.51cto.com/391263/972870</a>
+</p>
+<pre class="brush: bash">
+#!/bin/bash 
+chmod 755 /var/log/audit 
+grep "192.168.56.101" /etc/hosts || echo "192.168.56.101   ldap.gdu.me"  &gt;&gt; /etc/hosts
+grep "192.168.56.102" /etc/hosts || echo "192.168.56.102   ldap.gdu.me"  &gt;&gt; /etc/hosts
+
+grep SUDOERS /etc/openldap/ldap.conf || echo "SUDOERS_BASE ou=SUDOers,dc=gdu,dc=me"  &gt;&gt; /etc/openldap/ldap.conf
+grep sudoers /etc/nsswitch.conf || echo "sudoers:    ldap"  &gt;&gt; /etc/nsswitch.conf
+
+test -e /etc/openldap/cacerts/ca.pem || wget http://192.168.56.101/config/ca.pem -P /etc/openldap/cacerts/
+
+authconfig --useshadow --usemd5 --enableldap --enableldapauth --enableldaptls --ldapserver=ldap.gdu.me \
+--ldapbasedn="dc=gdu,dc=me" --ldaploadcacert=file:///etc/openldap/cacerts/ca.pem --enablemkhomedir --updateall
+
+grep "sbin" /etc/skel/.bashrc || echo -e 'PATH=$PATH:/sbin:/usr/local/sbin:/usr/kerberos/sbin;\nexport PATH' &gt;&gt; /etc/skel/.bashrc
+</pre>
+
+<h3 id="toc_1.3.3">自动创建HOME</h3>
+<p>
+对于ldap认证的用户，通常需要自动创建他们的HOME目录，好在pam模块pam_mkhomedir.so解决了这一问题，只要把下面内容添加到/etc/pam.d/system-auth的session部分的第一行即可：
+</p>
+<pre>
+session required pam_mkhomedir.so skel=/etc/skel/ umask=0066
+</pre>
+<p>
+但如果没在sshd_config里启用pam，则通过ssh登录的用户没机会运行这个模块。因此，需要如下设置sshd_config：
+</p>
+<pre>
+UsePAM yes
+</pre>
+
+<h3 id="toc_1.3.4">开启日志</h3>
+
+<p>
+LDAP服务器需要手动添加日志功能。/etc/openldap/slapd.conf中末行添加
+</p>
+<pre>
+loglevel 296
+</pre>
+
+<p>
+local4.* /var/log/ldap.log (說明：local0-7为syslog的facilities，具体的程序应用的facility不一样，每一个facility都有它的数字代码，由这些代码加上错误信息的程度syslog可以判断出信息的优先权。就上例来说，local7的代码为23，notice的代码为5，那么local7.notice的信息优先权为：23*8+5=189。这是/var/adm/messages.T3是信息的优先仅。具体可以查RFC3164。我自己认为设定local7而不用local5是由应用程序决定的。)
+</p>
+
+<p>
+这是一个比较详细的日志级别。同时在/etc/syslog.conf中添加local4.* /var/log/ldap.log 确定LDAP服务器的日志位置。
+</p>
+
+<p>
+用如下命令使日志功能生效：
+</p>
+
+<p>
+service syslog restart 
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

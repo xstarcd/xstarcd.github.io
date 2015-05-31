@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>vim复制粘贴</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">vim粘贴模式快捷方式</a>
+<li><a href="#toc_2">vim复制粘贴</a>
+<ul>
+<li><a href="#toc_2.1">复制粘贴基本命令</a>
+<li><a href="#toc_2.2">复制到系统剪贴板</a>
+<li><a href="#toc_2.3">Cygwin支持系统剪贴板</a>
+<li><a href="#toc_2.4">vim寄存器</a>
+<li><a href="#toc_2.5">Ubuntu下使用系统剪贴板</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1"><a href="vim-copy-paste.html">vim粘贴模式快捷方式</a></h1>
+
+<h1 id="toc_2">vim复制粘贴</h1>
+
+<p>
+原文：<a href="http://dpinglee.blog.163.com/blog/static/1440977532010579355724/">http://dpinglee.blog.163.com/blog/static/1440977532010579355724/</a>
+</p>
+
+<h2 id="toc_2.1">复制粘贴基本命令</h2>
+<table>
+<tr>
+<td>
+yy
+</td>
+<td>
+复制游标所在行整行。或大写一个Y。
+</td>
+</tr>
+<tr>
+<td>
+2yy或y2y
+</td>
+<td>
+复制两行。请举一反三好不好！:-)
+</td>
+</tr>
+<tr>
+<td>
+y^
+</td>
+<td>
+复制至行首，或y0。不含游标所在处字元。
+</td>
+</tr>
+<tr>
+<td>
+y$
+</td>
+<td>
+复制至行尾。含游标所在处字元。
+</td>
+</tr>
+<tr>
+<td>
+yw
+</td>
+<td>
+复制一个word。
+</td>
+</tr>
+<tr>
+<td>
+y2w
+</td>
+<td>
+复制两个字（单词）。
+</td>
+</tr>
+<tr>
+<td>
+yG
+</td>
+<td>
+复制至档尾。
+</td>
+</tr>
+<tr>
+<td>
+y1G
+</td>
+<td>
+复制至档首。
+</td>
+</tr>
+<tr>
+<td>
+p
+</td>
+<td>
+小写p代表贴至游标后（下）。
+</td>
+</tr>
+<tr>
+<td>
+P
+</td>
+<td>
+大写P代表贴至游标前（上）。
+</td>
+</tr>
+</table>
+
+<h2 id="toc_2.2">复制到系统剪贴板</h2>
+<ul>
+<li>
+选择全文
+<pre>
+gg shift+V shift + G 
+</pre>
+
+<li>
+复制到系统剪贴板 
+<pre>
+"+y 复制到系统剪切板
+"+p 把系统粘贴板里的内容粘贴到vim
+
+    解释："+y是把选中内容复制到系统剪切板。
+</pre>
+    要将vim某个粘贴板里的内容粘贴进来，需要退出编辑模式，在正常模式按"Np，其中N为粘贴板号，如上所述，可以按"5p将5号粘贴板里的内容粘贴进来，也可以按"+p将系统全局粘贴板里的内容粘贴进来。
+
+</ul>
+
+<ul>
+<li>
+查看剪贴板
+
+</ul>
+<p>
+VIM具有多个剪切板，":reg"命令查看各剪切板。系统剪切板的编号就是"+
+</p>
+
+<ul>
+<li>
+将Vim默认剪贴板设为系统剪贴板
+<pre>
+set clipboard=unnamedplus
+</pre>
+
+</ul>
+
+<h2 id="toc_2.3">Cygwin支持系统剪贴板</h2>
+<p>
+只有vim.gtk或vim.gnome才能使用系统全局粘贴板，默认的vim.basic看不到+号寄存器。安装vim.gnome使用apt-get install vim-gnome，然后vim自动会链接到vim.gnome。
+</p>
+<ul>
+<li>
+<a href="http://www.oschina.net/question/132822_33175">http://www.oschina.net/question/132822_33175</a> 
+
+<li>
+<a href="http://kana.github.com/config/vim/fakeclip.html">http://kana.github.com/config/vim/fakeclip.html</a>
+
+</ul>
+
+<ol>
+<li>
+打开Cygwin，在主目录下创建目录 .vim 、.vim/autoload、.vim/plugin
+
+<li>
+下载fakeclip插件，下载地址：<a href="http://www.vim.org/scripts/script.php?script_id=2098">http://www.vim.org/scripts/script.php?script_id=2098</a>
+
+<li>
+解压，然后将解压出来的目录下的autoload文件夹中的 fakeclip.vim 复制到第一步创建的 .vim/autoload 文件夹下；plugin文件夹下的 fakeclip.vim 复制到 .vim/plugin 文件夹下。 两个文件的名字都叫fakeclip，但是不一样，不要弄混。
+
+<li>
+重新启动vim，这时就可以用 "+y 和 "+p 在vim和系统粘贴板之间进行复制了。
+
+<li>
+注意：按"+y时，动作要连续，停顿会造成操作无效。
+
+</ol>
+
+<h2 id="toc_2.4">vim寄存器</h2>
+
+<p>
+无论是vim内部抑或外部的复制（[y]ank）、删除（[d]elete）、粘贴（[p]ut），在vim中都是借助registers（寄存器）实现的，vim共有9类寄存器：
+</p>
+
+<table>
+<tr>
+<td>
+名称
+</td>
+<td>
+标识
+</td>
+<td>
+说明
+</td>
+</tr>
+<tr>
+<td>
+无名（unnamed）寄存器
+</td>
+<td>
+""
+</td>
+<td>
+缓存最后一次操作内容；
+</td>
+</tr>
+<tr>
+<td>
+数字（numbered）寄存器
+</td>
+<td>
+"0 - "9
+</td>
+<td>
+缓存最近操作内容，复制与删除有别；
+</td>
+</tr>
+<tr>
+<td>
+行内删除（small delete）寄存器
+</td>
+<td>
+"-
+</td>
+<td>
+缓存行内删除内容；
+</td>
+</tr>
+<tr>
+<td>
+具名（named）寄存器
+</td>
+<td>
+"a - "z或"A - "Z
+</td>
+<td>
+指定时可用；
+</td>
+</tr>
+<tr>
+<td>
+只读（read-only）寄存器
+</td>
+<td>
+":, "., "%, "#
+</td>
+<td>
+分别缓存最近命令、最近插入文本、当前文件名、当前交替文件名；
+</td>
+</tr>
+<tr>
+<td>
+表达式（expression）寄存器
+</td>
+<td>
+"=
+</td>
+<td>
+只读，用于执行表达式命令；
+</td>
+</tr>
+<tr>
+<td>
+选择及拖拽（selection and drop）寄存器
+</td>
+<td>
+"*, "+, "~
+</td>
+<td>
+存取GUI选择文本，可用于与外部应用交互，使用前提为系统剪切板（clipboard）可用；
+</td>
+</tr>
+<tr>
+<td>
+黑洞（black hole）寄存器
+</td>
+<td>
+"_
+</td>
+<td>
+不缓存操作内容（干净删除）；
+</td>
+</tr>
+<tr>
+<td>
+模式寄存器（last search pattern）
+</td>
+<td>
+"/
+</td>
+<td>
+缓存最近的搜索模式。
+</td>
+</tr>
+</table>
+
+<p>
+上面的说明为简要概述，并不完全准确，详细说明须参考手册：:help copy-move
+</p>
+
+<h2 id="toc_2.5">Ubuntu下使用系统剪贴板</h2>
+
+<p>
+无图形界面的vi或vim下可用的寄存器只包括{a-zA-Z0-9.%#:-"}，显然，这里面没有包含上面提到的"*或者"+等选择及拖拽存器。
+</p>
+
+<p>
+由此可见，实现vim与外部应用相互复制、粘贴的关键在于系统剪切板对于vim是否可用。查看vim剪切板是否可用的命令为vim --version，
+</p>
+
+<p>
+对于非GUI版本的vim，剪切板是不可用的，解决方案很简单，安装一下就是了：
+</p>
+<pre>
+sudo apt-get install gvim
+</pre>
+
+<p>
+ubuntu 和mint默认安装的vim是不支持系统剪切、粘贴版的，需要执行以下安装：
+</p>
+<pre class="brush: bash">
+sudo apt-get install vim-gnome 
+# 查看链接到的版本
+update-alternatives --display vim
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

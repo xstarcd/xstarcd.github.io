@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Sublime_Text使用</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Sublime_Text使用</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">配置</a>
+<li><a href="#toc_0.2">解决GBK中文乱码</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">配置</h2>
+<ul>
+<li>
+Sublime_Text:Preferences.sublime-settings-User
+<pre class="brush:c">
+// Settings in here override those in "Default/Preferences.sublime-settings", and
+// are overridden in turn by file type specific settings.
+{
+    //"font_face": "Consolas",
+    "font_face": "YaHei Consolas hybrid",
+    "font_size": 11,
+     "tab_size": 4,
+     "translate_tabs_to_spaces": true,
+     "ignored_packages": [],
+     "word_wrap": "false"
+}
+</pre>
+
+</ul>
+
+<ul>
+<li>
+添加到右键菜单
+<pre class="brush:bash">
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\*\shell\Open With Sublime Text 2]
+"Icon"="D:\\tools\\Sublime_Text\\sublime_text.exe,0"
+@="Open With Sublime Text 2"
+
+[HKEY_CLASSES_ROOT\*\shell\Open With Sublime Text 2\command]
+@="D:\\tools\\Sublime_Text\\sublime_text.exe %1"
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">解决GBK中文乱码</h2>
+
+<ul>
+<li>
+安装Package Control
+
+</ul>
+<p>
+按<code>Ctrl+~</code>打开命令行，粘贴如下命令：
+</p>
+<ul>
+<li>
+官方提供的安装代码：　<a href="https://sublime.wbond.net/installation">https://sublime.wbond.net/installation</a>
+
+<li>
+Subline Text 2
+<pre>
+import urllib2,os,hashlib; h = '7183a2d3e96f11eeadd761d777e62404' + 'e330c659d4bb41d3bdf022e94cab3cd0'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); os.makedirs( ipp ) if not os.path.exists(ipp) else None; urllib2.install_opener( urllib2.build_opener( urllib2.ProxyHandler()) ); by = urllib2.urlopen( 'http://sublime.wbond.net/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); open( os.path.join( ipp, pf), 'wb' ).write(by) if dh == h else None; print('Error validating download (got %s instead of %s), please try manual install' % (dh, h) if dh != h else 'Please restart Sublime Text to finish installation') 
+</pre>
+
+<li>
+Sublime Text 3
+<pre>
+import urllib.request,os,hashlib; h = '7183a2d3e96f11eeadd761d777e62404' + 'e330c659d4bb41d3bdf022e94cab3cd0'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://sublime.wbond.net/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by) 
+</pre>
+
+</ul>
+<li>
+安装完成后，重启动Sublime Text。
+
+<li>
+然后使用Ctrl+Shift+P打开命令行模式，在里面输入Install Package即可搜索需要的Package。
+
+<li>
+一般使用“ConvertToUTF8”和“GBK Encoding Support”即可正常读取和写入CJK格式的文件了。
+
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Naigos设置smtp方式告警</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Nagios设置smtp方式告警</h1>
+
+<ul>
+<li>
+参考: <a href="http://www.cnblogs.com/xiaoshi1991/archive/2012/09/19/2694465.html">http://www.cnblogs.com/xiaoshi1991/archive/2012/09/19/2694465.html</a>
+
+</ul>
+
+<ul>
+<li>
+关闭本机的sendmail服务或者postfix服务
+<pre class="brush:bash">
+#sendmial
+service sendmail stop
+chkconfig sendmail off
+#postfix
+service postfix stop
+chkconfig postfix off
+
+#再狠一点就直接卸载吧..
+yum remove sendmail
+yum remove postfix
+</pre>
+
+</ul>
+
+<ul>
+<li>
+检查mailx版本
+<pre class="brush:bash">
+rpm -qa|grep mailx 
+mailx-12.4-6.el6.x86_64
+
+mailx -V
+12.4 7/29/08
+</pre>
+
+</ul>
+
+<ul>
+<li>
+配置mailx:/etc/mail.rc，添加如下行：
+<pre class="brush:bash">
+set from=youemail@163.com
+set smtp=smtp.163.com
+set smtp-auth-user=timamon
+set smtp-auth-password=111111
+set smtp-auth=login
+</pre>
+
+</ul>
+
+<ul>
+<li>
+测试发送邮件
+<pre class="brush:bash">
+echo "hello word" | mail -v -s " mailx test" youemail@163.com 
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

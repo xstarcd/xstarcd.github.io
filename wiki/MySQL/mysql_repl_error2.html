@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>mysql主从同步错误解决和Slave_IO_Running:NO</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">mysql主从同步错误解决和Slave_IO_Running:NO</a>
+<ul>
+<li><a href="#toc_1.1">error connecting</a>
+<li><a href="#toc_1.2">Error reading</a>
+<li><a href="#toc_1.3">Table doesn't exist</a>
+<li><a href="#toc_1.4">Duplicate entry</a>
+<li><a href="#toc_1.5">Relay log read failure</a>
+<li><a href="#toc_1.6">Unknown column</a>
+<li><a href="#toc_1.7">Slave_IO_Running: NO</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">mysql主从同步错误解决和Slave_IO_Running:NO</h1>
+
+<p>
+原文：<a href="http://hzcsky.blog.51cto.com/1560073/479476">http://hzcsky.blog.51cto.com/1560073/479476</a>
+</p>
+
+<p>
+houzaicunsky 2011-01-16
+</p>
+
+<h2 id="toc_1.1">error connecting</h2>
+
+<p>
+出现错误提示
+</p>
+
+<p>
+Slave I/O: error connecting to master 'backup@192.168.1.x:3306' - retry-time: 60  retries: 86400, Error_code: 1045
+</p>
+
+<p>
+解决方法
+</p>
+
+<p>
+从服务器上删除掉所有的二进制日志文件，包括一个数据目录下的master.info文件和hostname-relay-bin开头的文件。
+</p>
+
+<p>
+master.info:：记录了Mysql主服务器上的日志文件和记录位置、连接的密码。
+</p>
+
+<h2 id="toc_1.2">Error reading</h2>
+
+<p>
+出现错误提示
+</p>
+
+<p>
+Error reading packet from server: File '/home/mysql/mysqlLog/log.000001' not found (Errcode: 2) ( server_errno=29)
+</p>
+
+<p>
+解决方案：
+</p>
+
+<p>
+由于主服务器运行了一段时间，产生了二进制文件，而slave是从log.000001开始读取的，删除主机二进制文件，包括log.index文件。
+</p>
+
+
+<h2 id="toc_1.3">Table doesn't exist</h2>
+
+<p>
+错误提示如下
+</p>
+
+<p>
+Slave SQL: Error 'Table 'xxxx' doesn't exist' on query. Default database: 't591'. Query: 'INSERT INTO <code>xxxx</code>(type,post_id,browsenum) SELECT type,post_id,browsenum FROM xxxx WHERE hitdate='20090209'', Error_code: 1146
+</p>
+
+<p>
+解决方法
+</p>
+
+<p>
+由于slave没有此table表，添加这个表，使用slave start 就可以继续同步。
+</p>
+
+<h2 id="toc_1.4">Duplicate entry</h2>
+
+<p>
+错误提示如下
+</p>
+
+<p>
+Error 'Duplicate entry '1' for key 1' on query. Default database: 'movivi1'. Query: 'INSERT INTO <code>v1vid0_user_samename</code> VALUES(null,1,'123','11','4545','123')'
+</p>
+
+<p>
+Error 'You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1' on query. Default database: 'club'. Query: 'INSERT INTO club.point_process ( GIVEID, GETID, POINT, CREATETIME, DEMO ) VALUES ( 0, 4971112, 5, '2010-12-19 16:29:28','
+</p>
+
+<p>
+1 row in set (0.00 sec)
+</p>
+
+<p>
+Mysql &gt; Slave status\G;
+</p>
+
+<p>
+显示：Slave_SQL_Running 为 NO
+</p>
+
+<p>
+解决方法：
+</p>
+
+<p>
+Mysql &gt; stop slave;
+</p>
+
+<p>
+Mysql &gt; set global sql_slave_skip_counter =1;
+</p>
+
+<p>
+Mysql &gt; start slave;
+</p>
+
+<h2 id="toc_1.5">Relay log read failure</h2>
+
+<p>
+错误提示如下
+</p>
+
+<p>
+show slave status\G;
+</p>
+<pre>
+Master_Log_File: mysql-bin.000029
+Read_Master_Log_Pos: 3154083
+Relay_Log_File: c7-relay-bin.000178
+Relay_Log_Pos: 633
+Relay_Master_Log_File: mysql-bin.000025
+Slave_IO_Running: Yes
+Slave_SQL_Running: No
+Replicate_Do_DB: club
+Replicate_Ignore_DB: 
+Replicate_Do_Table: 
+Replicate_Ignore_Table: 
+Replicate_Wild_Do_Table: 
+Replicate_Wild_Ignore_Table: 
+
+Last_Errno: 1594
+Last_Error: Relay log read failure: Could not parse relay log event entry. 
+The possible reasons are: the master's binary log is corrupted (you can check this by running 'mysqlbinlog' on the binary log), 
+the slave's relay log is corrupted (you can check this by running 'mysqlbinlog' on the relay log), a network problem, or a bug 
+in the master's or slave's MySQL code. 
+
+If you want to check the master's binary log or slave's relay log, you will be able to know their names by issuing 
+'SHOW SLAVE STATUS' on this slave.
+
+Skip_Counter: 0
+
+Exec_Master_Log_Pos: 1010663436
+</pre>
+
+<p>
+这个问题原因是，主数据库突然停止或问题终止，更改了mysql-bin.xxx日志，slave服务器找不到这个文件，需要找到同步的点和日志文件，然后chage master即可。
+</p>
+
+<p>
+解决方法：
+</p>
+<pre>
+change master to 
+master_host='211.103.156.198',
+master_user='同步帐号', 
+master_password='同步密码', 
+master_port=3306, 
+master_log_file='mysql-bin.000025', 
+master_log_pos=1010663436;
+</pre>
+
+<h2 id="toc_1.6">Unknown column</h2>
+
+<p>
+错误提示如下
+</p>
+
+<p>
+Error 'Unknown column 'qdir' in 'field list'' on query. Default database: 'club'. Query: 'insert into club.question_del (id, pid, ques_name, givepoint, title, subject, subject_pid, createtime, approve, did, status, intime, order_d, endtime,banzhu_uid,banzhu_uname,del_cause,qdir) select id, pid, ques_name, givepoint, title, subject, subject_pid, createtime, approve, did, status, intime, order_d, endtime,'1521859','admin0523','无意义回复',qdir from club.question where id=7330212'
+</p>
+
+<p>
+这个错误就说club.question_del 表里面没有qdir这个字段造成的加上就可以了~！
+</p>
+
+<p>
+在主的mysql ： 里面查询 Desc club.question_del;
+</p>
+
+<p>
+在错误的从服务器上执行 ： alter table question_del add qdir varchar(30) not null;
+</p>
+
+
+
+<h2 id="toc_1.7">Slave_IO_Running: NO</h2>
+
+<p>
+错误提示如下
+</p>
+
+<p>
+Slave_IO_Running: NO
+</p>
+
+<p>
+这个错误就是IO进程没连接上，想办法连接上把 把与主的POS 号和文件一定要对，然后重新加载下数据。具体步骤：
+</p>
+<pre>
+slave stop;
+change master to 
+master_host='IP地址',
+master_user='club',
+master_password='mima ',
+master_log_file='mysqld-bin.000048',
+MASTER_LOG_POS=396549485;
+</pre>
+<p>
+注：master_log_file='mysqld-bin.000048',MASTER_LOG_POS=396549485;是从主的上面查出来的：show master status\G;
+</p>
+<pre>
+LOAD DATA FROM MASTER;
+slave start;
+</pre>
+<p>
+问题解决！
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

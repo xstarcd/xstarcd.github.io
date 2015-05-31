@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>iostat - CPU平均负载，硬盘活动</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>iostat - CPU平均负载，硬盘活动</h1>
+
+<p>
+iostat命令可报告中央处理器（CPU）的统计信息，各种设备、分区及网络文件系统输入/输出的统计信息。
+</p>
+<pre>
+# iostat
+
+输出样例：
+Linux 2.6.18-128.1.14.el5 (www03.nixcraft.in)  06/26/2009
+avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+           3.50    0.09    0.51    0.03    0.00   95.86
+
+Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn
+sda              22.04        31.88       512.03   16193351  260102868
+sda1              0.00         0.00         0.00       2166        180
+sda2             22.04        31.87       512.03   16189010  260102688
+sda3              0.00         0.00         0.00       1615          0
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

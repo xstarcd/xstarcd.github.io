@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>三种shell脚本调用方法(fork, exec, source)</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">三种shell脚本调用方法(fork, exec, source)</a>
+<ul>
+<li><a href="#toc_1.1">fork(/path/to/script.sh)</a>
+<li><a href="#toc_1.2">exec (exec /path/to/script.sh)</a>
+<li><a href="#toc_1.3">source (source /directory/script.sh)</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">三种shell脚本调用方法(fork, exec, source)</h1>
+
+<p>
+原文: <a href="http://mindream.wang.blog.163.com/blog/static/2325122220084624318692/">http://mindream.wang.blog.163.com/blog/static/2325122220084624318692/</a>
+</p>
+
+<h2 id="toc_1.1">fork(/path/to/script.sh)</h2>
+
+<p>
+fork是最普通的, 就是直接在脚本里面用/directory/script.sh来调用script.sh这个脚本。
+</p>
+
+<p>
+运行的时候开一个sub-shell执行调用的脚本，sub-shell执行的时候, parent-shell还在。
+</p>
+
+<p>
+sub-shell执行完毕后返回parent-shell。sub-shell从parent-shell继承环境变量，但是sub-shell中的环境变量不会带回parent-shell。
+</p>
+
+<h2 id="toc_1.2">exec (exec /path/to/script.sh)</h2>
+
+<p>
+exec与fork不同，不需要新开一个sub-shell来执行被调用的脚本。被调用的脚本与父脚本在同一个shell内执行。但是使用exec调用一个新脚本以后, 父脚本中exec行之后的内容就不会再执行了。这是exec和source的区别。
+</p>
+
+
+<h2 id="toc_1.3">source (source /directory/script.sh)</h2>
+
+<p>
+与fork的区别是不新开一个sub-shell来执行被调用的脚本，而是在同一个shell中执行。所以被调用的脚本中声明的变量和环境变量。都可以在主脚本中得到和使用。
+</p>
+
+<p>
+可以通过下面这两个脚本来体会三种调用方式的不同:
+</p>
+
+<ul>
+<li>
+1.sh
+<pre class="brush:bash">
+#!/bin/bash
+A=B
+echo "PID for 1.sh before exec/source/fork:$$"
+export A
+echo "1.sh: $A is $A"
+case in
+    exec)
+        echo "using exec…"
+        exec ./2.sh ;;
+    source)
+        echo "using source…"
+        . ./2.sh ;;
+    *)
+        echo "using fork by default…"
+        ./2.sh ;;
+esac
+echo "PID for 1.sh after exec/source/fork:$$"
+echo "1.sh: $A is $A"
+</pre>
+
+<li>
+2.sh
+<pre class="brush:bash">
+#!/bin/bash
+echo "PID for 2.sh: $$"
+echo "2.sh get $A=$A from 1.sh"
+A=C
+export A
+echo "2.sh: $A is $A"
+</pre>
+
+<li>
+执行情况：
+<pre>
+$ ./1.sh    
+PID for 1.sh before exec/source/fork:5845364
+1.sh: $A is B
+using fork by default…
+PID for 2.sh: 5242940
+2.sh get $A=B from 1.sh
+2.sh: $A is C
+PID for 1.sh after exec/source/fork:5845364
+1.sh: $A is B
+$ ./1.sh exec
+PID for 1.sh before exec/source/fork:5562668
+1.sh: $A is B
+using exec…
+PID for 2.sh: 5562668
+2.sh get $A=B from 1.sh
+2.sh: $A is C
+$ ./1.sh source
+PID for 1.sh before exec/source/fork:5156894
+1.sh: $A is B
+using source…
+PID for 2.sh: 5156894
+2.sh get $A=B from 1.sh
+2.sh: $A is C
+PID for 1.sh after exec/source/fork:5156894
+1.sh: $A is C
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

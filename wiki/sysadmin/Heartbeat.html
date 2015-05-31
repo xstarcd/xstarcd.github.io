@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Heartbeat</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">说明</a>
+<li><a href="#toc_2">Heartbeat编译安装</a>
+<ul>
+<li><a href="#toc_2.1">参考</a>
+<li><a href="#toc_2.2">测试环境</a>
+<li><a href="#toc_2.3">yum安装编译环境支持包及ipvsadm</a>
+<li><a href="#toc_2.4">下载源码相应包</a>
+<li><a href="#toc_2.5">编译glue</a>
+<li><a href="#toc_2.6">resource-agents</a>
+<li><a href="#toc_2.7">编译Heartbeat 3</a>
+<li><a href="#toc_2.8">下载第三方包方式安装ldirectord</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">说明</h1>
+
+<ul>
+<li>
+只完成了在CentOS上编辑安装的部份，针对需求LVS调度、健康检查的需求heartbeat配置过于繁杂、而且没看出优势，用Keepalived+LVS显得直接、有效。
+
+<li>
+heartbeat 3拆分为几个组件，其中resource-agents分至另外项目，结构变化较大，网上找到的大多相关文章均显得过时。
+
+<li>
+RedHat 6取消了heartbeat，Redhat/CentOS都无法通过yum直接安装。
+
+<li>
+RedHat 6中增加Pacemaker包，未研究其使用方法。
+
+</ul>
+
+<h1 id="toc_2">Heartbeat编译安装</h1>
+
+<p>
+Update: 2012-11-29
+</p>
+
+<h2 id="toc_2.1">参考</h2>
+<ul>
+<li>
+CentOS 6.2（RHEL6）高可用服务器环境搭建: <a href="http://www.linuxidc.com/Linux/2012-06/62047.htm">http://www.linuxidc.com/Linux/2012-06/62047.htm</a>
+
+<li>
+LVS双机热备和负载均衡一体化安装方法: <a href="http://www.tuicool.com/articles/vaAjQf">http://www.tuicool.com/articles/vaAjQf</a>
+
+</ul>
+
+
+<h2 id="toc_2.2">测试环境</h2>
+
+<ul>
+<li>
+CentOS 6.3 2.6.32-279.el6.i686
+
+<li>
+Red Hat Enterprise Linux Server release 6.0 (Santiago),2.6.32-71.el6.x86_64
+
+</ul>
+
+<p>
+Red Hat通过CentOS源来安装一些支持包。
+</p>
+
+
+<h2 id="toc_2.3">yum安装编译环境支持包及ipvsadm</h2>
+<pre class="brush: bash">
+yum -y install unzip wget gcc autoconf automake make libtool pkgconfig glib2-devel \
+    libxml2 libxml2-devel bzip2-devel libtool-ltdl-devel libuuid-devel libxslt-devel;
+yum -y install ipvsadm kernel-devel;
+yum -y install perl-Socket6 perl-libwww-perl perl-IO-Socket-INET6 perl-MailTools;
+yum -y install docbook-*;
+</pre>
+
+<h2 id="toc_2.4">下载源码相应包</h2>
+<pre class="brush: bash">
+mkdir -p ~/down &amp;&amp; cd ~/down
+wget http://hg.linux-ha.org/glue/archive/glue-1.0.9.tar.bz2
+wget https://github.com/ClusterLabs/resource-agents/zipball/master -O ClusterLabs-resource-agents.zip --no-check-certificate
+wget -O heartbeat-STABLE_3_0_5.tar.bz2 http://hg.linux-ha.org/heartbeat-STABLE_3_0/archive/7e3a82377fa8.tar.bz2
+</pre>
+
+<h2 id="toc_2.5">编译glue</h2>
+
+<ul>
+<li>
+<a href="http://www.linux-ha.org/wiki/Downloads">http://www.linux-ha.org/wiki/Downloads</a>
+
+</ul>
+
+<pre class="brush: bash">
+groupadd haclient
+useradd -g haclient -M -s /sbin/nologin hacluster
+
+cd ~/down \
+&amp;&amp; tar jxvf glue-1.0.9.tar.bz2 \
+&amp;&amp; cd Reusable-Cluster-Components-glue--glue-1.0.9 \
+&amp;&amp; ./autogen.sh \
+&amp;&amp; ./configure \
+&amp;&amp; make \
+&amp;&amp; make install \
+&amp;&amp; cd -
+</pre>
+
+
+<h2 id="toc_2.6">resource-agents</h2>
+<ul>
+<li>
+<a href="http://hg.linux-ha.org/agents/">http://hg.linux-ha.org/agents/</a>
+
+<li>
+<a href="https://github.com/ClusterLabs/resource-agents">https://github.com/ClusterLabs/resource-agents</a> 
+
+</ul>
+
+<pre class="brush: bash">
+# yum install perl-Socket6 perl-libwww-perl perl-IO-Socket-INET6 perl-MailTools;
+# yum install docbook-*;
+
+cd ~/down \
+&amp;&amp; unzip ClusterLabs-resource-agents.zip \
+&amp;&amp; cd ClusterLabs-resource-agents-3c93e36/ \
+&amp;&amp; ./autogen.sh \
+&amp;&amp; ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var \
+&amp;&amp; make &amp;&amp; make install \
+&amp;&amp; cp ldirectord/ldirectord.cf /etc/ha.d/ \
+&amp;&amp; cd -
+
+# 以下复制操作在make install中已完成
+# cp ldirectord/ldirectord /usr/sbin/
+# cp ldirectord/init.d/ldirectord /etc/init.d/
+# chmod 755 /usr/sbin/ldirectord
+# chmod 755 /etc/init.d/ldirectord
+# cp ldirectord/ldirectord.cf /etc/ha.d/
+# vi /etc/ha.d/ldirectord.cf; 
+
+</pre>
+
+<h2 id="toc_2.7">编译Heartbeat 3</h2>
+
+<ul>
+<li>
+<a href="http://linux-ha.org/wiki/Download">http://linux-ha.org/wiki/Download</a>
+
+</ul>
+
+<pre class="brush: bash">
+# yum install perl-Socket6 perl-libwww-perl perl-IO-Socket-INET6 perl-MailTools;
+cd ~/down \
+&amp;&amp; tar jxvf heartbeat-STABLE_3_0_5.tar.bz2 \
+&amp;&amp; cd Heartbeat-3-0-7e3a82377fa8 \
+&amp;&amp; ./bootstrap \
+&amp;&amp; ./ConfigureMe configure \
+&amp;&amp; make &amp;&amp; make install \
+&amp;&amp; cd -
+
+cp /usr/share/doc/heartbeat/authkeys /etc/ha.d/
+cp /usr/share/doc/heartbeat/haresources /etc/ha.d/
+cp /usr/share/doc/heartbeat/ha.cf /etc/ha.d/
+chmod 600 /etc/ha.d/authkeys
+ln -sfT /etc/ha.d /usr/etc/ha.d
+</pre>
+
+<h2 id="toc_2.8">下载第三方包方式安装ldirectord</h2>
+
+<p>
+<em>未测试，建议编译安装方式</em>
+</p>
+
+<pre class="brush: bash">
+wget  http://dl.fedoraproject.org/pub/fedora/linux/releases/17/Everything/x86_64/os/Packages/l/ldirectord-3.9.2-2.fc17.1.x86_64.rpm
+yum install ipvsadm perl-MailTools perl-Net-SSLeay -y
+
+rpm -ivh ldirectord-3.9.2-2.fc17.1.x86_64.rpm 
+
+rpm -ql ldirectord
+    /etc/ha.d
+    /etc/ha.d/resource.d
+    /etc/ha.d/resource.d/ldirectord
+    /etc/init.d/ldirectord
+    /etc/logrotate.d/ldirectord
+    /usr/lib/ocf/resource.d/heartbeat/ldirectord
+    /usr/sbin/ldirectord
+    /usr/share/doc/ldirectord-3.9.2
+    /usr/share/doc/ldirectord-3.9.2/COPYING
+    /usr/share/doc/ldirectord-3.9.2/ldirectord.cf
+    /usr/share/man/man8/ldirectord.8.gz
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

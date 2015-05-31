@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>调整Nagios监控灵敏度</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>调整Nagios监控灵敏度</h1>
+
+<ul>
+<li>
+参考: <a href="http://www.toxingwang.com/management/monitor/1821.html">http://www.toxingwang.com/management/monitor/1821.html</a>
+
+</ul>
+
+<p>
+在Nagios的配置文件中，有个interval_length参数，定义了以后其他地方需要用到的间隔时间单位长度，该值默认为60s：
+</p>
+<pre>
+# INTERVAL LENGTH
+# This is the seconds per unit interval as used in the
+# host/contact/service configuration files.  Setting this to 60 means
+# that each interval is one minute long (60 seconds).  Other settings
+# have not been tested much, so your mileage is likely to vary...
+
+interval_length=60
+</pre>
+
+<p>
+在定义主机和服务时，都是以该值为基础的，如服务中定义如下：
+</p>
+<pre>
+check_interval    6
+retry_interval    2
+</pre>
+<p>
+则表示检查间隔为6*60s，即每6分钟才检查一次，而重试时间为2分钟。对于一些敏感度要求高的服务，这明显不能满足我们的要求，因此可以将其调小，如调整为10秒：
+</p>
+<pre>
+interval_length=10
+</pre>
+
+<p>
+这样就提高了检查的灵敏度，但有些服务又不需要如此高的灵敏度，如磁盘空间（不会一下就增加很多），则可以在定义check_interval是增大其数值。
+</p>
+
+<p>
+还可以调整如下时间，定义主机和服务检测超时时长的，如下为默认值，单位为s：
+</p>
+<pre>
+service_check_timeout=120
+host_check_timeout=60
+event_handler_timeout=60
+notification_timeout=60
+ocsp_timeout=10
+perfdata_timeout=10
+</pre>
+
+<p>
+注意：灵敏度和误报率是成正比的，检查间隔越小，月可能出现误报。需根据实际情况调整到合适的值。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

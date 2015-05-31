@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>tomcat集群负载均衡配置</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>tomcat集群负载均衡配置</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">系统环境设置</a>
+<li><a href="#toc_0.2">Tomcat发布器的安装</a>
+<ul>
+<li><a href="#toc_0.2.1">JDK安装</a>
+<li><a href="#toc_0.2.2">Tomcat安装</a>
+</ul>
+<li><a href="#toc_0.3">Apache Proxy负载均衡</a>
+<li><a href="#toc_0.4">Nginx负载均衡</a>
+<ul>
+<li><a href="#toc_0.4.1">nginx安装</a>
+<li><a href="#toc_0.4.2">nginx负载配置</a>
+</ul>
+</ul>
+<li><a href="#toc_1">Tomcat与Apache或Nginx连接和集群配置</a>
+<ul>
+<li><a href="#toc_1.1">Tomcat的连接方式</a>
+<li><a href="#toc_1.2">Tomcat 与 Apache HTTP Server2.4连接</a>
+<ul>
+<li><a href="#toc_1.2.1">HTTP连接</a>
+<li><a href="#toc_1.2.2">AJP连接</a>
+<li><a href="#toc_1.2.3">Apache HTTP Server2.4集群配置</a>
+</ul>
+<li><a href="#toc_1.3">Tomcat 与 Nginx连接</a>
+<ul>
+<li><a href="#toc_1.3.1">HTTP连接</a>
+<li><a href="#toc_1.3.2">AJP连接</a>
+<li><a href="#toc_1.3.3">Nginx集群配置</a>
+<ul>
+<li><a href="#toc_1.3.3.1">HTTP</a>
+</ul>
+<li><a href="#toc_1.3.4">AJP</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+参考:
+
+<ul>
+<li>
+ Tomcat与Apache或Nginx的集群负载均衡设置: <a href="http://huangrs.blog.51cto.com/2677571/1058579">http://huangrs.blog.51cto.com/2677571/1058579</a>
+
+<li>
+Tomcat与Apache或Nginx连接和集群配置: <a href="http://toplchx.iteye.com/blog/1928390">http://toplchx.iteye.com/blog/1928390</a>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.1">系统环境设置</h2>
+
+<ul>
+<li>
+准备三台redhat linux 5或 centos服务器：
+
+<ul>
+<li>
+负载均衡服务器：Apache安装自带的web发布服务（httpd服务） IP地址：192.168.0.100
+
+<li>
+Tomcat发布服务器1：安装有两个发布服务tomcat1和tomcat2    IP地址：192.168.0.101
+
+<li>
+Tomcat发布服务器2：安装有两个发布服务tomcat3和tomcat4    IP地址：192.168.0.102
+
+</ul>
+<li>
+统一对外部发布的地址是：<a href="http://192.168.0.100">http://192.168.0.100</a> （即负载均衡地址）
+
+<li>
+在设定完成IP以后，最好先设置主机名和IP的对应关系：
+<pre class="brush:bash">
+cat /etc/hosts
+192.168.0.100    web.example.com           web       #add
+127.0.0.1        localhost.localdomain     localhost
+::1              localhost6.localdomain6   localhost6
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">Tomcat发布器的安装</h2>
+
+<h3 id="toc_0.2.1">JDK安装</h3>
+
+<ul>
+<li>
+JDK软件最新版下载：<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">http://www.oracle.com/technetwork/java/javase/downloads/index.html</a>
+
+<ul>
+<li>
+点击排列的最左边一个大图标的“JDK”进入，
+
+<li>
+接下来选择服务器的版本(如linux)，在“I agree”前面方框中打勾选中，再按“continue”下一步
+
+<li>
+选择下面一个版本进行下载，如jdk-6u24-linux-i586.bin
+
+<li>
+下载完成后上传到web服务器上的“/tools”目录下（自己建的目录）
+
+</ul>
+<li>
+JDK软件的安装
+<pre class="brush:bash">
+# 先查看当前JDK的版本是多少
+java –version
+
+# 进入下载目录，授权JDK文件的可执行权限
+cd /tools/
+chmod a+x jdk-6u24-linux-i586.bin
+
+# 执行JDK的安装解压缩，完成后按回车结束
+./jdk-6u24-linux-i586.bin
+
+# 把解压出来的目录移动到/usr/local下面
+mv jdk1.6.0_24 /usr/local/
+</pre>
+
+<li>
+配置JAVA的环境变量
+
+<ul>
+<li>
+新建环境变量文件java.sh
+<pre class="brush:bash">
+cat &gt; /etc/profile.d/java.sh &lt;&lt;EOF
+# set java environment
+export JAVA_HOME=/usr/local/jdk1.6.0_24
+export CLASSPATH=.:\$JAVA_HOME/lib/dt.jar:\$JAVA_HOME/lib/tools.jar
+export PATH=\$JAVA_HOME/bin:\$PATH
+EOF
+chmod a+x /etc/profile.d/java.sh
+</pre>
+
+<li>
+重新登录终端，再次查询java的版本号是否升级了：<code>java -version</code>
+
+</ul>
+<li>
+Tomcat软件最新版下载：<a href="http://tomcat.apache.org/">http://tomcat.apache.org/</a>
+
+</ul>
+<p>
+（1）先选择Download下面的tomcat版本（如tomcat 7.0）
+（2）再点击“Core”下面的“tar.gz”进行下载，如apache-tomcat-7.0.12.tar.gz
+（3）下载完成后上传到web服务器上的“/tools”目录下（自己建的目录）
+</p>
+
+<h3 id="toc_0.2.2">Tomcat安装</h3>
+
+<ul>
+<li>
+安装tomcat
+<pre class="brush:bash">
+# 进入下载目录，进行解压缩：
+cd /tools
+tar zxvf  apache-tomcat-7.0.12.tar.gz
+
+# 复制并重命名目录到/usr/lcoal下面
+ls -l
+cp apache-tomcat-7.0.12 /usr/local/tomcat1     #(web1服务器)
+cp apache-tomcat-7.0.12 /usr/local/tomcat2     #(web1服务器)
+cp apache-tomcat-7.0.12 /usr/local/tomcat3     #(web2服务器)
+cp apache-tomcat-7.0.12 /usr/local/tomcat4     #(web2服务器)
+</pre>
+
+<li>
+配置tomcat发布器的端口
+
+<ul>
+<li>
+web1服务器tomcat1:vi tomcat1/conf/server.xml(修改如下四个地方:）
+<pre class="brush:xml">
+&lt;Server port="8005" shutdown="SHUTDOWN"&gt;         &lt;!--'8005'改为'8001'端口--&gt;
+    &lt;Connector port="8080" protocol="HTTP/1.1"&gt;  &lt;!--'8080'发布端口改为'81'端口--&gt;
+    &lt;Connector port="8009" protocol="AJP/1.3" redirectPort="8443" /&gt; &lt;!--改为'8011'端口--&gt;
+    &lt;!--Engine name="Catalina" defaultHost="localhost"--&gt;
+    &lt;Engine name="Catalina" defaultHost="localhost" jvmRoute="tomcat1"&gt;
+</pre>
+
+<li>
+web1服务器tomcat2:port:8002, http:82, ajp:8012, jvmRote:tomcat2
+
+<li>
+web1服务器tomcat3:port:8003, http:83, ajp:8013, jvmRote:tomcat3
+
+<li>
+web1服务器tomcat4:port:8004, http:84, ajp:8014, jvmRote:tomcat4
+
+</ul>
+<li>
+在tomcat的server.xml配置参数据中增加session同步复制的设置
+
+<ul>
+<li>
+ vi server.xml  （增加下列代码，增加Engine后面的cluster中去）
+<pre class="brush:xml">
+&lt;!--
+&lt;Cluster className="org.apache.catalina.ha.tcp.SimpleTcpCluster"/&gt;
+--&gt;
+&lt;!--下面的代码是实现session复制功能--&gt;
+&lt;Cluster className="org.apache.catalina.ha.tcp.SimpleTcpCluster" channelSendOptions="6"&gt;
+      &lt;Manager className="org.apache.catalina.ha.session.BackupManager"
+               expireSessionsOnShutdown="false"
+               notifyListenersOnReplication="true"
+               mapSendOptions="6"/&gt;
+      &lt;Channel className="org.apache.catalina.tribes.group.GroupChannel"&gt;
+        &lt;Membership className="org.apache.catalina.tribes.membership.McastService"
+                    address="228.0.0.4"
+                    port="45564"
+                    frequency="500"
+                    dropTime="3000"/&gt;
+        &lt;Receiver className="org.apache.catalina.tribes.transport.nio.NioReceiver"
+                  address="192.168.100.63"    &lt;!—这里填写本机IP地址--&gt;
+                  port="5000"
+                  selectorTimeout="100" /&gt;
+        &lt;Sender className="org.apache.catalina.tribes.transport.ReplicationTransmitter"&gt;
+          &lt;Transport className="org.apache.catalina.tribes.transport.nio.PooledParallelSender"/&gt;
+        &lt;/Sender&gt;
+        &lt;Interceptor className="org.apache.catalina.tribes.group.interceptors.TcpFailureDetector"/&gt;
+        &lt;Interceptor className="org.apache.catalina.tribes.group.interceptors.MessageDispatch15Interceptor"/&gt;
+        &lt;Interceptor className="org.apache.catalina.tribes.group.interceptors.ThroughputInterceptor"/&gt;
+      &lt;/Channel&gt;
+
+      &lt;Valve className="org.apache.catalina.ha.tcp.ReplicationValve"
+             filter=".*\.gif;.*\.js;.*\.jpg;.*\.png;.*\.htm;.*\.html;.*\.css;.*\.txt;"/&gt;
+      &lt;Valve className="org.apache.catalina.ha.session.JvmRouteBinderValve"/&gt;
+      &lt;Deployer className="org.apache.catalina.ha.deploy.FarmWarDeployer"
+                tempDir="/tmp/war-temp/"
+                deployDir="/tmp/war-deploy/"
+                watchDir="/tmp/war-listen/"
+                watchEnabled="false"/&gt;
+      &lt;ClusterListener className="org.apache.catalina.ha.session.JvmRouteSessionIDBinderListener"/&gt;
+      &lt;ClusterListener className="org.apache.catalina.ha.session.ClusterSessionListener"/&gt;
+&lt;/Cluster&gt;
+</pre>
+
+</ul>
+<li>
+同时需要修改tomcat的web.xml配置参数才能真正实现session同步复制的设置
+
+<ul>
+<li>
+web.xml
+<pre class="brush:xml">
+&lt;!--....--!&gt;
+    &lt;welcome-file-list&gt;
+        &lt;welcome-file&gt;index.html&lt;/welcome-file&gt;
+        &lt;welcome-file&gt;index.htm&lt;/welcome-file&gt;
+        &lt;welcome-file&gt;index.jsp&lt;/welcome-file&gt;
+    &lt;/welcome-file-list&gt;
+&lt;distributable /&gt;   &lt;!--在倒数第二行增加这个代码才能实现session同步复制功能--&gt;
+&lt;/web-app&gt;
+</pre>
+
+</ul>
+<li>
+设置Tomcat发布服务开机自启动
+
+<ul>
+<li>
+复制tomcat启动文件到开机目录下：<code>cp tomcat1/bin/catalina.sh  /etc/rc.d/init.d/tomcat1</code>
+
+<li>
+修改上面的tomcat1启动文件：vim /etc/rc.d/init.d/tomcat1（在文件的最顶上添加下列几行）
+<pre>
+#chkconfig:35 85 15
+#description:tomcat1 server
+CATALINA_HOME=/usr/local/tomcat1
+JRE_HOME=/usr/local/jdk1.6.0_24
+</pre>
+
+<li>
+添加tomcat1到开机启动服务
+<pre class="bursh:bash">
+chkconfig --add  tomcat1
+chkconfig --list tomcat1
+chkconfig tomcat1 on
+service tomcat1 start
+</pre>
+
+</ul>
+<li>
+其它三个tomcat2 、tomcat3 、tomcat4 也都按上面三步来做
+
+<li>
+如何查看tomcat的启动过程
+
+<ul>
+<li>
+方法一：用catalina.sh来启动:<code>./catalina.sh run</code>
+
+<li>
+方法二：如果用<code>./startup.sh</code>启动的话，查看启动日志<code>tail –f /usr/local/tomcat4/logs/catalina.out</code>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.3">Apache Proxy负载均衡</h2>
+
+<ul>
+<li>
+Apache发布器使用系统自带的httpd服务，在安装操作系统的时候先选择好服务器下面的web服务器组件。
+
+<li>
+修改配置web发布服务的参数文件:
+
+<ul>
+<li>
+vim /etc/httpd/conf/httpd.conf （在最底下添加如下内容）
+<pre class="brush:bash">
+ServerName localhost:80      #发布的端口说明
+&lt;VirtualHost *:80&gt;
+    ServerAdmin admin@china1168.com
+    ServerName localhost
+    ServerAlias localhost
+    &lt;proxy balancer://testcluster&gt;  #testcluster可自己命名，没什么特别的意义
+        BalancerMember ajp://192.168.0.101:8011 loadfactor=1 route=tomcat1 #要与tomcat中的ajp对应
+        BalancerMember ajp://192.168.0.101:8012 loadfactor=1 route=tomcat2
+        BalancerMember ajp://192.168.0.102:8013 loadfactor=1 route=tomcat3
+        BalancerMember ajp://192.168.0.104:8014 loadfactor=1 route=tomcat4
+    &lt;/proxy&gt;
+    ProxyRequests Off
+    ProxyPass /server-status !
+    ProxyPass /balancer-manager !
+    ProxyPass / balancer://testcluster/ stickysession=JSESSIONID #注意balancer前面有空格
+    ProxyPassReverse / balancer://testcluster/    #注意balancer前面有空格
+&lt;/VirtualHost&gt;
+&lt;Location /server-status&gt;   #负载均衡服务器的状态查询，http://192.168.0.100/server-status
+    SetHandler server-status
+&lt;/Location&gt;
+&lt;Location /balancer-manager&gt; #负载均衡服务器的管理查看，http://192.168.0.100/balancer-manager
+    SetHandler balancer-manager
+&lt;/Location&gt;
+</pre>
+
+</ul>
+<li>
+负载均衡集群测试实例
+
+<ul>
+<li>
+在tomcat目录下面的webapps文件夹中新建test测试文件:
+
+<li>
+mkdir webapps/test
+
+<li>
+vi test/index.jsp（文件内容如下）
+<pre>
+&lt;%@ page contentType="text/html; charset=UTF-8" %&gt;
+&lt;%@ page import="java.util.*" %&gt;
+&lt;html&gt;&lt;head&gt;&lt;title&gt;Cluster App Test&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+Server Info:
+&lt;%
+request.setCharacterEncoding("UTF-8");
+out.println(request.getLocalAddr() + " : " + request.getLocalPort()+"&lt;br&gt;");%&gt;
+&lt;%
+  out.println("&lt;br&gt; ID " + session.getId()+"&lt;br&gt;");  // 如果有新的 Session 属性设置
+  String dataName = request.getParameter("dataName");
+  if (dataName != null &amp;&amp; dataName.length() &gt; 0) {
+     String dataValue = request.getParameter("dataValue");
+     session.setAttribute(dataName, dataValue);
+  }  out.print("&lt;b&gt;Session 列表&lt;/b&gt;");  Enumeration e = session.getAttributeNames();
+  while (e.hasMoreElements()) {
+     String name = (String)e.nextElement();
+     String value = session.getAttribute(name).toString();
+     out.println( name + " = " + value+"&lt;br&gt;");
+         System.out.println( name + " = " + value);
+   }
+%&gt;
+  &lt;form action="index.jsp" method="POST"&gt;
+    名称:&lt;input type=text size=20 name="dataName"&gt;&lt;br&gt;
+    值:&lt;input type=text size=20 name="dataValue"&gt;&lt;br&gt;
+    &lt;input type=submit&gt;
+   &lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+
+<li>
+对Apache负载均衡进行测试:
+
+<ul>
+<li>
+登录测试首页： <a href="http://192.168.0.100/test/index.jsp">http://192.168.0.100/test/index.jsp</a>
+
+<li>
+登录管理界面：<a href="http://192.168.0.100/balancer-manager">http://192.168.0.100/balancer-manager</a> 可查看“Elected”的选中状态
+
+<li>
+登录状态界面：<a href="http://192.168.0.100/server-status">http://192.168.0.100/server-status</a>
+
+<li>
+同时查看各个tomcat的日志文件，看看上面提交的测试内容是在哪个tomcat中显示出来
+<pre>
+tail -f /usr/local/tomcat1/logs/catalina.out
+tail -f /usr/local/tomcat2/logs/catalina.out
+tail -f /usr/local/tomcat3/logs/catalina.out
+tail -f /usr/local/tomcat4/logs/catalina.out
+</pre>
+
+</ul>
+<li>
+正常情况下，提交的测试内容会在四个tomcat之间轮循显示，实现负载均衡。
+
+</ul>
+<li>
+设置Apache发布服务开机自启动:<code>chkconfig httpd on</code>
+
+</ul>
+
+<h2 id="toc_0.4">Nginx负载均衡</h2>
+<h3 id="toc_0.4.1">nginx安装</h3>
+<ul>
+<li>
+安装前必须要先下载相关联的配套软件包：
+
+<ul>
+<li>
+pcre套件包下载：   <a href="ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/">ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/</a>   (一定要先安装)
+
+<li>
+nginx最新版下载：  <a href="http://www.nginx.org/en/download.html">http://www.nginx.org/en/download.html</a>  (一定要安装)
+
+<li>
+openssl套件包下载：<a href="http://www.openssl.org/source/">http://www.openssl.org/source/</a>       （可选安装）
+
+</ul>
+<li>
+相关联软件的安装
+
+<ul>
+<li>
+pcre套件的安装，进入下载目录，进行解压缩：
+<pre class="brush:bash">
+cd /tools
+tar zxvf  pcre-8.12.tar.gz
+cd pcre-8.12
+./configure   #默认是安装在/usr/local/目录下面，也可指定目录加参数 --prefix=/usr/local/
+make &amp;&amp; make install
+</pre>
+
+</ul>
+<li>
+openssl套件的安装，进入下载目录，进行解压缩（可选）
+<pre class="brush:bash">
+cd /tools
+tar zxvf openssl-1.0.0d.tar.gz
+cd openssl-1.0.0d
+./configure   # 默认是安装在/usr/local/目录下面，也可指定目录加参数 --prefix=/usr/local/
+make &amp;&amp; make install
+</pre>
+
+<li>
+Nginx软件的安装和配置
+<pre class="brush:bash">
+cd /tools
+tar zxvf  nginx-1.0.0.tar.gz
+cd nginx-1.0.0
+./configure   #默认是安装在/usr/local/目录下面，也可指定目录加参数 --prefix=/usr/local/
+make &amp;&amp; make install
+</pre>
+
+<li>
+测试安装是否成功
+<pre class="brush:bash">
+cd /usr/local/nginx/sbin/
+./nginx -t
+
+nginx: the configuration file /usr/local/nginx/conf/nginx.conf syntax is ok
+nginx: configuration file /usr/local/nginx/conf/nginx.conf test is successful
+</pre>
+
+</ul>
+
+<h3 id="toc_0.4.2">nginx负载配置</h3>
+
+<ul>
+<li>
+vim /usr/local/nginx/conf/nginx.conf   （修改增加下面的内容）
+<pre class="brush:bash">
+pid        logs/nginx.pid;
+upstream tomcat {                      # 负载均衡站点的名称为tomcat，可以自己取
+    ip_hash;                           # 可选，根据来源IP方式选择web服务器，省略的话按默认的轮循方式选择web服务器
+        server 192.168.0.101:81;       # web服务器的IP地址及tomcat发布端口
+        server 192.168.0.101:82;
+        server 192.168.0.102:83;
+        server 192.168.0.102:84;
+}
+server {
+    listen       80;                   # 站点侦听端口80
+    server_name  localhost;            # 站点名称
+
+    location / {
+        root   html;
+        index  index.html index.htm;
+        proxy_pass http://tomcat;      # 负载均衡指向的发布服务tomcat
+    }
+</pre>
+
+<li>
+注意：
+
+<ul>
+<li>
+<code>upstream</code>部分要放在<code>server { listen  80</code>这部分的前面，不能放到下面去，不然会出错
+
+<li>
+<code>proxy_pass</code>部分要放在localtion这部分的括号里面，且<code>http://</code>后面跟的名称要与上面<code>upstream</code>中一样
+
+</ul>
+<li>
+启动负载均衡服务
+<pre class="brush:bash">
+cd /usr/local/nginx/sbin/
+./nginx -t # 测试配置有无错误
+./nginx    # 启动服务
+netstat -tlnp | grep :80  #查看nginx端口的进程号
+kill -9 11274             #杀死nginx的主进程，11274是上面查询出来的主进程号，实际环境中不一定一样
+
+# 在线修改配置参数（在nginx启动的情况），并让它重新加载，其间nginx不用停止服务。
+vi nginx.conf
+kill -HUP `cat /usr/local/nginx/logs/nginx.pid`
+
+# 设置Nginx开机自动启动
+vim /etc/rc.d/init.d/nginx,增加内容
+#chkconfig:35 80 10
+#description:Nginx server
+/usr/local/nginx/sbin/nginx
+
+chmod a+x nginx
+chkconfig --add nginx
+chkconfig nginx on
+</pre>
+
+</ul>
+
+<h1 id="toc_1">Tomcat与Apache或Nginx连接和集群配置</h1>
+
+
+<h2 id="toc_1.1">Tomcat的连接方式</h2>
+
+<ul>
+<li>
+官方文档参考：<a href="http://tomcat.apache.org/tomcat-7.0-doc/connectors.html">http://tomcat.apache.org/tomcat-7.0-doc/connectors.html</a>
+
+<li>
+Tomcat与Web服务器的连接方式有两种：
+
+<ul>
+<li>
+HTTP: HTTP连接器是Tomcat默认的方式，并且已经被使用。这种方式具有最低的延迟和最佳的整体性能。对于集群，需要一个支持粘性会话的web服务器在Tomcat前端。Tomcat支持mod_porxy(被默认包含在Apache HTTP Server 2.2)作为负载平衡器。值得注意的是，通常情况下HTTP proxy的性能低于AJP的性能，所以集群时AJP是优选。
+
+<li>
+AJP: 单个服务器，一个本地WEB服务器和一个Tomcat实例连接的效率通常低于单个Tomcat使用其默认的HTTP连接的方式，即使web应用大部分都是静态内容。如果为了某种原因，你需要整合一个本地WEB服务器，那么AJP连接将提供更好的效率。对于Tomcat集群，AJP连接是最有效的，其他功能和HTTP集群一样。
+
+</ul>
+</ul>
+
+<p>
+Tomcat7所支持的本地连接：
+</p>
+<ol>
+<li>
+JK 1.2 .x
+
+<li>
+mod_proxy (Apache HTTP Server 2.2默认包含)
+
+</ol>
+
+<p>
+其他AJP连接器可能可以工作，但不再维护。
+</p>
+
+<h2 id="toc_1.2">Tomcat 与 Apache HTTP Server2.4连接</h2>
+
+<h3 id="toc_1.2.1">HTTP连接</h3>
+
+<p>
+从上面的说明可以看出，如果你只需要一个Tomcat，那就直接用就好了，不用和Apache HTTP Server连接。如果需要多个Tomcat集群，就是AJP连接。所以用HTTP连接Apache和Tomcat这种情况应该不多，简单说明一下怎么连接：
+取消两个module的注释：
+</p>
+<pre>
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_http_module modules/mod_proxy_http.so
+</pre>
+<p>
+在httpd.conf文件中添加以下两行：
+</p>
+<pre>
+ProxyPass /webappname http://ip:8080/webappname
+ProxyPassReverse /webappname http://ip:8080/webappname
+</pre>
+<p>
+ip、端口号和webappname根据实际情况修改
+</p>
+
+<p>
+说明：上述写法可能有安全隐患。不要使用ProxyRequests启用代理，除非对代理做了权限控制。否则对你的网络和互联网都是很大的危险。默认ProxyRequests为off。
+</p>
+
+<p>
+参考：<a href="http://httpd.apache.org/docs/2.4/mod/mod_proxy.html#access">http://httpd.apache.org/docs/2.4/mod/mod_proxy.html#access</a>
+</p>
+
+
+<h3 id="toc_1.2.2">AJP连接</h3>
+
+<p>
+AJP连接官方支持两种方式JK 1.2.x和mod_proxy。
+</p>
+
+<p>
+JK是老牌连接器，被广泛使用和验证，值得信任，但是配置比较复杂。
+</p>
+
+<p>
+mod_proxy是Apache2.2以后的默认设置，配置简单，但是因为比较新，所以没有经过大范围的验证。
+</p>
+
+<p>
+网上JK的文档比较多，这里我们介绍一下mod_proxy的写法。其实跟HTTP的方式一样，只是把<code>http://</code>修改为<code>ajp://</code>就可以了。
+</p>
+
+<p>
+取消两个module的注释
+</p>
+<pre>
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_ajp_module modules/mod_proxy_ajp.so
+</pre>
+<p>
+在httpd.conf文件中添加以下行：
+</p>
+<pre>
+ProxyPass /webappname ajp://ip:8009/webappname
+</pre>
+<p>
+ip、端口号和webappname根据实际情况修改
+</p>
+
+<p>
+AJP连接通常不需要设置ProxyPassReverse。
+</p>
+
+<p>
+参考：<a href="http://httpd.apache.org/docs/2.4/mod/mod_proxy_ajp.html">http://httpd.apache.org/docs/2.4/mod/mod_proxy_ajp.html</a>
+</p>
+
+<h3 id="toc_1.2.3">Apache HTTP Server2.4集群配置</h3>
+
+<p>
+如文章开始所述，Apache Http Server和Tomcat集群要用AJP方式连接
+</p>
+
+<ul>
+<li>
+modules
+
+</ul>
+<p>
+同样集群可以用JK和mod_proxy两种方式，这里介绍mod_proxy的方式：
+</p>
+
+<p>
+取消五个module的注释
+</p>
+<pre>
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_ajp_module modules/mod_proxy_ajp.so
+LoadModule proxy_balancer_module modules/mod_proxy_balancer.so
+LoadModule slotmem_shm_module modules/mod_slotmem_shm.so
+LoadModule lbmethod_heartbeat_module modules/mod_lbmethod_heartbeat.so
+</pre>
+<p>
+根据负载均衡调度策略的不同，取消如下module的注释
+</p>
+<pre>
+LoadModule lbmethod_byrequests_module modules/mod_lbmethod_byrequests.so
+LoadModule lbmethod_bytraffic_module modules/mod_lbmethod_bytraffic.so
+LoadModule lbmethod_bybusyness_module modules/mod_lbmethod_bybusyness.so
+</pre>
+<ul>
+<li>
+示例配置:
+<pre class="brush:bash">
+    &lt;Proxy balancer://mycluster&gt;   #定义一个集群，起个名字
+        #定义集群成员。loadfactor是权重，数值越大权重越大被分配的请求约多。route和Tomcat中配置的jvmRoute一至。
+        #还有一些参数可以添加，比如：max=20 ttl=120 retry=300 timeout=15，详细参考：http://httpd.apache.org/docs/2.4/mod/mod_proxy.html#proxypass
+        BalancerMember ajp://ip:8019 loadfactor=1 route=tomcat7_a
+        BalancerMember ajp://ip:8029 loadfactor=2 route=tomcat7_b
+        #热备服务器，只有在上面的BalancerMember都坏掉之后才会被启用。
+        BalancerMember ajp://ip:8009 status=+H
+        #现有3种负载均衡调度策略
+        #byrequests：请求计数（Request Counting）
+        #bytraffic：流量加权计数（Weighted Traffic Counting）
+        #bybusyness：挂起请求计数（Pending Request Counting）
+        #默认是byrequests
+        ProxySet lbmethod=bytraffic
+    &lt;/Proxy&gt;
+    ProxyPass /examples  balancer://mycluster/examples  #设置代理连接
+</pre>
+
+<li>
+负载均衡器的粘性
+
+</ul>
+<p>
+当一个请求被代理到某个节点，接下来同一个用户的请求都将被代理到相同的节点。很多均衡器通过一张记录客户端ip和节点的关系表来实现这个特性。这种方式对客户端和节点都是透明的，但是存在一些问题：如果客户端藏在某些代理之后将导致负载分布不均，当客户端使用动态IP地址，并在请求间变更，将失去粘性，关系表溢出将导致错误等问题。
+</p>
+
+<p>
+mod_proxy_balancer通过两种方式实现粘性：cookies和URL encoding。cookie可以被Apache服务器和节点使用，URL encoding通常在节点中使用。
+</p>
+
+<p>
+下面的例子使用mod_headers提供负载均衡粘性，即使节点服务器没有设置合适的session cookie。
+</p>
+<pre>
+Header add Set-Cookie "ROUTEID=.%{BALANCER_WORKER_ROUTE}e; path=/" env=BALANCER_ROUTE_CHANGED
+&lt;Proxy balancer://mycluster&gt;
+ ......
+&lt;/Proxy&gt;
+ProxyPass /test balancer://mycluster
+</pre>
+<p>
+env变量有6种，参考：<a href="http://httpd.apache.org/docs/2.4/mod/mod_proxy_balancer.html#environment">http://httpd.apache.org/docs/2.4/mod/mod_proxy_balancer.html#environment</a>
+</p>
+
+<p>
+以下配置同时支持cookies和URL encoding
+</p>
+<pre>
+ProxyPass /test balacer://mycluuster stickysession=JSESSIONID|jsessionid scolonpathdelim=On
+&lt;Proxy balancer://mycluster&gt;
+    BlancerMember http://192.168.1.50:80 route=node1
+    BlancerMember http://192.168.1.51:80 route=node2
+&lt;/Proxy&gt;
+</pre>
+
+<ul>
+<li>
+Log
+<pre>
+LogFormat "%v %h %l %u %t \"%r\" %{Set-Cookie}o %{BALANCER_SESSION_STICKY}e %{BALANCER_SESSION_ROUTE}e %{BALANCER_WORKER_ROUTE}e %&gt;s %b" balance_common
+CustomLog logs/balance_log balance_common
+</pre>
+
+</ul>
+<p>
+将集群的日志写到Apache服务器目录下的logs/balance_log文件中。
+</p>
+
+<p>
+参考：<a href="http://httpd.apache.org/docs/2.4/mod/mod_proxy_balancer.html#stickyness_troubleshooting">http://httpd.apache.org/docs/2.4/mod/mod_proxy_balancer.html#stickyness_troubleshooting</a>
+</p>
+
+<ul>
+<li>
+均衡器管理界面
+
+</ul>
+<p>
+需要mod_status。管理页面可以动态更新集群成员，修改平衡器的属性和特定成员或使之离线。
+</p>
+<pre>
+&lt;Location /balancer-manager&gt;
+    SetHandler balancer-manager
+    Require ip 192.168
+&lt;/Location&gt;
+</pre>
+<p>
+你可以通过<code>http://your.server.name/balancer-manager</code>访问管理页面。
+</p>
+
+<p>
+注意，只有balancers在&lt;Location ...&gt;之外定义，才能使用管理页面。
+</p>
+
+<h2 id="toc_1.3">Tomcat 与 Nginx连接</h2>
+
+<h3 id="toc_1.3.1">HTTP连接</h3>
+
+<pre class="brush:bash">
+server {                     #添加一个站点
+    listen       82;         #设置端口
+    server_name  localhost;  #站点名称/域名
+
+    location / {             #设置路径
+        proxy_pass http://ip:8080;  #http代理，指向tomcat http地址
+    }
+}
+</pre>
+<p>
+在nginx.conf文件中添加一个server{}，listen设置端口，server_name设置域名，location设置目录。
+</p>
+
+<p>
+proxy_pass是http代理，指向tomcat地址。
+</p>
+
+<p>
+修改后conf后，nginx -s reload就可以热更新了，很方便。
+</p>
+
+<h3 id="toc_1.3.2">AJP连接</h3>
+
+<p>
+关于AJP连接，有一种说法是Nginx采用连接池，所以HTTP方式的连接不比AJP方式差。
+</p>
+
+<p>
+有人的测试结果是Nginx通过HTTP连接Tomcat 性能略强于Apache通过AJP连接Tomcat。
+</p>
+
+<p>
+参见：<a href="http://nginx.2469901.n2.nabble.com/AJP-td7582236.html">http://nginx.2469901.n2.nabble.com/AJP-td7582236.html</a>
+</p>
+
+<p>
+Nginx本身并不支持AJP连接，但有人写了一个nginx_ajp_module来支持ajp。由于是第三方控件，所以请在充分测试后使用。
+</p>
+
+<ul>
+<li>
+下载地址：<a href="https://github.com/yaoweibin/nginx_ajp_module">https://github.com/yaoweibin/nginx_ajp_module</a>
+
+<li>
+安装
+<pre>
+cd nginx_dir/
+patch -p1 &lt; /tools/nginx_ajp_module/ajp.patch
+./configure --prefix=/usr/nginx1.5.3 --add-module=/tools/nginx_ajp_module
+make
+make install
+</pre>
+
+</ul>
+<p>
+先到nginx安装文件的目录下，打ajp补丁，重新配置configure，编辑，安装。
+</p>
+<ul>
+<li>
+配置nginx.conf文件
+<pre class="brush:bash">
+server {
+    listen       82;
+    server_name  localhost;
+
+    location / {
+        ajp_keep_conn on;       #设置是否保持连接 
+        ajp_pass ajp://ip:8009; #Tomcat ajp连接地址和端口
+    }
+}
+</pre>
+
+</ul>
+<p>
+其他配置详情参考：<a href="https://github.com/yaoweibin/nginx_ajp_module">https://github.com/yaoweibin/nginx_ajp_module</a>
+</p>
+
+<h3 id="toc_1.3.3">Nginx集群配置</h3>
+
+<h4 id="toc_1.3.3.1">HTTP</h4>
+
+<pre class="brush:bash">
+upstream tomcat_http {       #用upstream定义一组服务器
+    #ip_hash通过记录客户端ip实现粘性session。有一个第三方的module可以用cookie实现粘性：https://code.google.com/p/nginx-sticky-module/
+    ip_hash; 
+    #通过server定义多个服务器
+    #weight是权重，默认为1。
+    #max_fails和fail_timeout配合使用，在fail_timeout时间内通信失败达到max_fails的次数后，此服务器在fail_timeout时间内被认为不可用。
+    server 192.168.50.65:8090 weight=2;
+    server 192.168.50.65:8091 max_fails=3 fail_timeout=30s;
+
+    #keepalive为连接开启缓存，并设置缓存连接的最大数量。
+    keepalive 10;
+ }
+
+ server {
+    listen       82;
+    server_name  localhost;
+
+    location / {
+        #将proxy_pass后的服务器地址，变为upstream的名字
+        proxy_pass http://tomcat_http;
+    }
+}
+</pre>
+<p>
+更多参数说明参考：<a href="http://nginx.org/en/docs/http/ngx_http_upstream_module.html">http://nginx.org/en/docs/http/ngx_http_upstream_module.html</a>
+</p>
+
+<h3 id="toc_1.3.4">AJP</h3>
+
+<pre class="brush:bash">
+upstream tomcat_ajp {    # upstream定义一组服务器
+    #srun_id同Tomcat配置中Engine的jvmRoute。
+    server 192.168.50.65:8019 srun_id=tomcat7_a weight=2;
+    server 192.168.50.65:8029 srun_id=tomcat7_b;
+
+    #用cookie方式实现粘性session
+    jvm_route $cookie_JSESSIONID reverse;
+    keepalive 10;
+}
+
+server {
+    listen       82;
+    server_name  localhost;
+
+    location / {
+        ajp_keep_conn on;
+        ajp_pass tomcat_ajp;  #指定连接到哪个upstream上
+    }
+}
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

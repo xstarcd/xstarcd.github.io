@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>vimwiki语法</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+
+<ul>
+<li>
+<a href="http://augix.com/wiki/Vimwiki.html">http://augix.com/wiki/Vimwiki.html</a>
+
+</ul>
+
+<h3 id="toc_0.0.1">基本的 Wiki 语法</h3>
+
+<pre>
+= 一级标题 =  
+== 二级标题 ==
+=== 三级标题 ===
+此次类推。
+
+当标题前面有空白时，标题文本居中对齐。
+       = 我是居中的标题 =
+
+*&lt;b&gt;粗体&lt;/b&gt;*  _&lt;i&gt;斜体&lt;/i&gt;_  ~~&lt;del&gt;删除线&lt;/del&gt;~~   `&lt;code&gt;Some Code 代码&lt;/code&gt;` 
+
+&lt;b&gt;注意&lt;/b&gt; 这几个针对文本格式的标签，都要求左右留有空白。
+请注意你的代码高亮，一般来说，有了相应的高亮，你用的wiki标签才生效。
+
+^&lt;sup&gt;上&lt;/sup&gt;^标  ,,&lt;sub&gt;下&lt;/sub&gt;,,标
+
+    四个空格缩进的内容会被转成blockquote
+    
+{{{class="brush:php"
+这中间的内容会被放到一个 pre 里，适合贴代码。
+上面的 class 是可选的，一般用来安排代码高亮。
+事实上，这一块代码展示就是放在了一个 pre 里。
+请无视下面一行的反斜杠
+}}\}
+
+
+WikiItem  大写开头的驼峰英文会被自动当作一个维基词条，并添加链接
+[[Wiki Item]]  这是手动建立维基词条的方式
+[[wiki item|description]]  输出HTML时显示description，链到 wiki item
+http://ktmud.com/  外部URL会被自动转换成链接
+[http://ktmud.com Ktmud]  带文字的外链
+[images/hello.jpg] 输出 &lt;img src="images/hello.jpg" /&gt;
+[[images/hello.jpg]] 输出图片，并链向图片地址
+
+* 无序列表 条目一
+* 无序列表 条目二 
+  - 子列表 条目一
+  - 自列表 条目二
+
+# 有序列表 条目一
+# 有序列表 条目二
+
+* 和 - 是等价的，后面必须跟一个空格
+
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

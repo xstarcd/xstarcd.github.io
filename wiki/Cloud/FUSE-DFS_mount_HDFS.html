@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>使用FUSE-DFS mount HDFS</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>使用FUSE-DFS mount HDFS</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">编译环境</a>
+<li><a href="#toc_0.2">编译libhdfs</a>
+<li><a href="#toc_0.3">编译fuse-dfs</a>
+<li><a href="#toc_0.4">使用fuse_dfs</a>
+<ul>
+<li><a href="#toc_0.4.1">主机环境</a>
+<li><a href="#toc_0.4.2">其它</a>
+<li><a href="#toc_0.4.3">挂载hdfs</a>
+</ul>
+<li><a href="#toc_0.5">其它</a>
+<ul>
+<li><a href="#toc_0.5.1">路径及权限</a>
+<li><a href="#toc_0.5.2">读写测试</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+原文:<a href="http://jiangbo.me/blog/2012/10/23/mount-hdfs-with-fuse-dfs/">http://jiangbo.me/blog/2012/10/23/mount-hdfs-with-fuse-dfs/</a>
+
+</ul>
+
+<p>
+23 October 2012
+</p>
+
+<p>
+Hadooop源码中自带了contrib/fuse-dfs模块，用于实现通过libhdfs和fuse将HDFS mount到*nux的本地。
+</p>
+
+<h2 id="toc_0.1">编译环境</h2>
+
+<ul>
+<li>
+Linux: 2.6.18-164.el5 x86_64
+
+<li>
+JDK: 1.6.0_23 64bit
+
+<li>
+Hadoop: 0.19.1 下面假设源码目录为$HADOOP_SRC_HOME
+
+<li>
+Ant: 1.8.4
+
+<li>
+GCC: 4.1.2(系统默认)
+
+</ul>
+
+<ul>
+<li>
+实验环境:
+
+<ul>
+<li>
+OS    : CentOS 6.5
+
+<li>
+Kernel: 2.6.32-358.23.2.el6.x86_64
+
+<li>
+JDK   : build 1.6.0_39-b04
+
+<li>
+Hadoop: 1.0.4
+
+<li>
+GCC   : gcc-4.4.7-3.el6.x86_64
+
+<li>
+Ant   : ant-1.7.1-13.el6.x86_64
+
+</ul>
+</ul>
+
+<ul>
+<li>
+安装所需支持包
+<pre class="brush:bash">
+yum -y install ant libtool libsysfs libsysfs-devel openssl-devel
+yum -y install subversion #更新源代码使用
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">编译libhdfs</h2>
+
+<ul>
+<li>
+修改configure执行权限
+
+</ul>
+
+<pre class="brush:bash">
+chmod +x $HADOOP_SRC_HOME/src/c++/pipes/configure
+chmod +x $HADOOP_SRC_HOME/src/c++/utils/configure
+</pre>
+
+<ul>
+<li>
+修改Makefile，调整编译模式(Hadoop 1.0.4已不用修改)
+
+</ul>
+
+<p>
+64位机中，需要修改libhdfs的Makefile，将GCC编译的输出模式由32(-m32)位改为64(-m64)位
+</p>
+<pre>
+CC = gcc
+LD = gcc
+CFLAGS =  -g -Wall -O2 -fPIC
+LDFLAGS = -L$(JAVA_HOME)/jre/lib/$(OS_ARCH)/server -ljvm -shared -m64(这里) -Wl,-x
+PLATFORM = $(shell echo $$OS_NAME | tr [A-Z] [a-z])
+CPPFLAGS = -m64(还有这里) -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/$(PLATFORM)
+</pre>
+
+<ul>
+<li>
+编译
+
+</ul>
+
+<p>
+在$HADOOP_HOME目录下执行
+</p>
+
+<pre class="brush:bash">
+ant compile -Dcompile.c++=true -Dlibhdfs=true
+</pre>
+
+<p>
+Hadoop 1.0.0-1.0.4编择如下报错，网上搜索到bug和patch信息:<a href="https://issues.apache.org/jira/browse/MAPREDUCE-2127">https://issues.apache.org/jira/browse/MAPREDUCE-2127</a> ,但hadoop 1.0.4实际为缺少openssl-devel包。
+</p>
+<pre>
+     [exec] checking for pthread_create in -lpthread... yes
+     [exec] configure: error: Cannot find libssl.so
+     [exec] checking for HMAC_Init in -lssl... no
+     [exec] /home/admin/tmp/hadoop-1.0.4/src/c++/pipes/configure: line 5234: exit: please: numeric argument required
+     [exec] /home/admin/tmp/hadoop-1.0.4/src/c++/pipes/configure: line 5234: exit: please: numeric argument required
+
+BUILD FAILED
+/home/admin/tmp/hadoop-1.0.4/build.xml:2141: exec returned: 255
+</pre>
+
+<ul>
+<li>
+编译结果将生成libhdfs库，位于$HADOOP_SRC_HOME/build/c++目录下:
+<pre class="brush:bash">
+build/c++
+└── Linux-amd64-64
+    ├── include
+    │   └── hadoop
+    │       ├── Pipes.hh
+    │       ├── SerialUtils.hh
+    │       ├── StringUtils.hh
+    │       └── TemplateFactory.hh
+    └── lib
+        ├── libhadooppipes.a
+        ├── libhadooputils.a
+        ├── libhdfs.la
+        ├── libhdfs.so -&gt; libhdfs.so.0.0.0
+        ├── libhdfs.so.0 -&gt; libhdfs.so.0.0.0
+        └── libhdfs.so.0.0.0
+</pre>
+
+</ul>
+
+<ul>
+<li>
+在下载的hadoop 1.0.4压缩包c++目录中，已包括了Linux amd64/i386的编译包，也可直接使用该路径的libhdfs.so：
+<pre class="brush:bash">
+hadoop-1.0.4/c++/
+├── Linux-amd64-64
+│   ├── include
+│   └── lib
+└── Linux-i386-32
+    ├── include
+    └── lib
+</pre>
+
+</ul>
+
+<ul>
+<li>
+将libhdfs*复制到系统目录:/usr/local/lib/
+<pre class="brush:bash">
+cp build/c++/Linux-amd64-64/lib/libhdfs.so.0.0.0 /usr/local/lib/
+cd /usr/local/lib/
+ln -sfT libhdfs.so.0.0.0 libhdfs.so 
+ln -sfT libhdfs.so.0.0.0 libhdfs.so.0
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">编译fuse-dfs</h2>
+
+<ul>
+<li>
+安装fuse库:fuse-dfs依赖fuse库，可通过<code>lsmod|grep fuse</code>检查是否已经安装，如没有则安装相关依赖库。
+<pre class="brush:bash">
+yum -y install fuse fuse-devel fuse-libs
+</pre>
+
+</ul>
+
+<ul>
+<li>
+编译contrib/fuse-dfs模块：
+<pre class="brush:bash">
+ant compile-contrib -Dlibhdfs=1 -Dfusedfs=1
+</pre>
+
+</ul>
+
+<ul>
+<li>
+编译完成将会生成$HADOOP_HOME/build/contrib/fuse-dfs/目录，内有：
+<pre class="brush:bash">
+build/contrib/fuse-dfs/
+├── fuse_dfs             # 可执行程序
+├── fuse_dfs_wrapper.sh  # 包含一些环境变量设置的脚本(通过export环境变量来指定参数即可)
+└── test
+</pre>
+
+</ul>
+
+<ul>
+<li>
+在fuse_dfs_wrapper.sh中添加基本的环境参数和路径
+<pre class="brush:bash">
+export HADOOP_HOME=/opt/hadoop  #Hadoop work dir
+export JAVA_HOME=/opt/java/jdk
+
+if [ "$HADOOP_HOME" = "" ]; then
+export HADOOP_HOME=/usr/local/share/hadoop
+fi
+
+export PATH=$HADOOP_HOME/contrib/fuse_dfs:$PATH
+
+for f in ls $HADOOP_HOME/lib/*.jar $HADOOP_HOME/*.jar ; do
+export  CLASSPATH=$CLASSPATH:$f
+done
+
+if [ "$OS_ARCH" = "" ]; then
+export OS_ARCH=amd64
+fi
+
+if [ "$JAVA_HOME" = "" ]; then
+export  JAVA_HOME=/usr/local/java
+fi
+
+# add local lib dir
+if [ "$LD_LIBRARY_PATH" = "" ]; then
+export LD_LIBRARY_PATH=$(dirname $0)/lib:$JAVA_HOME/jre/lib/$OS_ARCH/server:/usr/local/share/hdfs/libhdfs/:/usr/local/lib:
+fi
+
+# full path of fuse_dfs 
+$(dirname $0)/fuse_dfs $@
+</pre>
+
+</ul>
+
+<h2 id="toc_0.4">使用fuse_dfs</h2>
+
+<h3 id="toc_0.4.1">主机环境</h3>
+
+<ul>
+<li>
+在使用fuse_dfs的主机安装支持包
+<pre class="brush:bash">
+yum -y install fuse fuse-libs
+</pre>
+
+</ul>
+
+<ul>
+<li>
+放置hadoop文件:将hadoop-1.0.4解压缩到/opt/hadoop目录中。
+
+</ul>
+
+<ul>
+<li>
+把fuse_dfs复制到指定目录(<a href="../files/fuse_dfs_amd64_0.1.0.tar.gz">下载fuse_dfs for Linux amd64</a>)：
+<pre class="brush:bash">
+/usr/local/fuse_dfs/
+├── fuse_dfs
+├── fuse_dfs_wrapper.sh
+└── lib
+    ├── libhdfs.so -&gt; libhdfs.so.0.0.0
+    ├── libhdfs.so.0 -&gt; libhdfs.so.0.0.0
+    └── libhdfs.so.0.0.0
+</pre>
+
+</ul>
+
+<h3 id="toc_0.4.2">其它</h3>
+
+<ul>
+<li>
+因为需要与DataNode通信，使用fuse_dfs的主机需要能够解析、并可访问所有NameNode、DataNode主机的名称和IP地址。
+
+<li>
+fuse_dfs版本
+<pre>
+/usr/local/fuse_dfs/fuse_dfs_wrapper.sh --version
+/usr/local/fuse_dfs/fuse_dfs 0.1.0
+</pre>
+
+</ul>
+
+<ul>
+<li>
+命令参数
+<pre>
+/usr/local/fuse_dfs/fuse_dfs_wrapper.sh --help
+
+USAGE: ./fuse_dfs [debug] [--help] [--version] [-oprotected=&lt;colon_seped_list_of_paths] [rw] [-onotrash] [-ousetrash] [-obig_writes] [-oprivate (single user)] [ro] [-oserver=&lt;hadoop_servername&gt;] [-oport=&lt;hadoop_port&gt;] [-oentry_timeout=&lt;secs&gt;] [-oattribute_timeout=&lt;secs&gt;] [-odirect_io] [-onopoermissions] [-o&lt;other fuse option&gt;] &lt;mntpoint&gt; [fuse options]
+NOTE: debugging option for fuse is -debug
+</pre>
+
+</ul>
+
+<h3 id="toc_0.4.3">挂载hdfs</h3>
+
+<ul>
+<li>
+测试mount
+
+</ul>
+
+<pre class="brush:bash">
+mkdir /tmp/dfs  #新建一个空目录
+# 挂载dfs
+# -d表示debug模式，如果正常，将-d参数去掉
+# 需要root权限才能执行，fuse: failed to exec fusermount: Permission denied
+# 172.16.33.151:9000为NameNode的IP和端口
+/usr/local/fuse_dfs/fuse_dfs_wrapper.sh dfs://172.16.33.151:9000 /tmp/dfs/ -d
+</pre>
+<pre>
+port=9000,server=172.16.33.151
+fuse-dfs didn't recognize /tmp/dfs/,-2
+fuse-dfs ignoring option -d
+FUSE library version: 2.8.3
+nullpath_ok: 0
+unique: 1, opcode: INIT (26), nodeid: 0, insize: 56
+INIT: 7.13
+flags=0x0000307b
+max_readahead=0x00020000   
+   INIT: 7.12
+   flags=0x00000011
+   max_readahead=0x00020000
+   max_write=0x00020000
+   unique: 1, success, outsize: 40
+
+unique: 2, opcode: GETATTR (3), nodeid: 1, insize: 56
+getattr /
+   unique: 2, success, outsize: 120
+...
+</pre>
+
+
+<ul>
+<li>
+unmount
+<pre class="brush:bash">
+# 卸载dfs
+fusermount -u /tmp/dfs
+</pre>
+
+</ul>
+
+
+<ul>
+<li>
+正常mount
+<pre class="brush:bash">
+/usr/local/fuse_dfs/fuse_dfs_wrapper.sh dfs://172.16.33.151:9000 /tmp/dfs
+mount
+</pre>
+<pre>
+port=9000,server=172.16.33.151
+fuse-dfs didn't recognize /tmp/dfs,-2
+
+# mount信息
+fuse_dfs on /tmp/dfs type fuse.fuse_dfs (rw,nosuid,nodev,allow_other,default_permissions)
+</pre>
+
+</ul>
+
+<h2 id="toc_0.5">其它</h2>
+
+<h3 id="toc_0.5.1">路径及权限</h3>
+
+<p>
+现在的版本还不支持直接mount hadoop subdir，说是以后会考虑支持。
+</p>
+
+<p>
+可以通过有些参数对某些路径实行保护
+</p>
+<pre>
+Fuse DFS takes the following mount options (i.e., on the command line or the comma separated list of options in /etc/fstab (in which case, drop the -o prefixes):
+
+-oserver=%s  (optional place to specify the server but in fstab use the format above)
+-oport=%d (optional port see comment on server option)
+-oentry_timeout=%d (how long directory entries are cached by fuse in seconds - see fuse docs)
+-oattribute_timeout=%d (how long attributes are cached by fuse in seconds - see fuse docs)
+-oprotected=%s (a colon separated list of directories that fuse-dfs should not allow to be deleted or moved - e.g., /user:/tmp)
+-oprivate (not often used but means only the person who does the mount can use the filesystem - aka ! allow_others in fuse speak)
+-ordbuffer=%d (in KBs how large a buffer should fuse-dfs use when doing hdfs reads)
+ro
+rw
+-ousetrash (should fuse dfs throw things in /Trash when deleting them)
+-onotrash (opposite of usetrash)
+-odebug (do not daemonize - aka -d in fuse speak)
+-obig_writes (use fuse big_writes option so as to allow better performance of writes on kernels &gt;= 2.6.26)
+</pre>
+<p>
+The defaults are:
+</p>
+<pre>
+entry,attribute_timeouts = 60 seconds
+rdbuffer = 10 MB
+protected = null
+debug = 0
+notrash
+private = 0
+</pre>
+
+<h3 id="toc_0.5.2">读写测试</h3>
+
+<ul>
+<li>
+在5台物理服务器构造成的Hadoop集群(3台DataNode，千兆网口)上进行简单的读、写速度测试，操作在master主机上发起。
+
+<ul>
+<li>
+写入1GB文件，fuse_dfs进程CPU占用达到92-104%，速度22-23.7MB/s。
+
+<li>
+读取1GB文件，fuse_dfs进程CPU占用约在60-90%，速度79.4-96.0MB/s(达到测试点主机千兆网口限制)。
+
+</ul>
+<li>
+参考:2TB SATA硬盘读写速度：10GB文件写入平均速度179-195MB/s，读取平均速度：444MB/s。
+
+<li>
+在有一套ceph的环境(三台桌面机搭建)，100Mbps互联，初步测试写入18MB/s，读取22MB/s(可能受100Mbps网口带宽限制)，ceph客户端的CPU占用要低很多，大约在20%左右，并且测试用的客户端是虚拟服务器。
+
+</ul>
+
+<pre class="brush:bash">
+# HDFS挂载点：/tmp/dfs/tmp/
+rm -f /tmp/dfs/tmp/1Gb.file;dd if=/dev/zero bs=1024 count=1000000 of=/tmp/dfs/tmp/1Gb.file
+dd if=/tmp/dfs/tmp/1Gb.file bs=64k of=/dev/null
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

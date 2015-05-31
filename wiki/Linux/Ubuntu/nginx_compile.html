@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../../styles/style.css" />
+    <title>nginx_uwsgi编译安装(Ubuntu)</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>nginx_uwsgi编译安装(Ubuntu)</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">在新系统上安装</a>
+<li><a href="#toc_0.2">安装</a>
+<ul>
+<li><a href="#toc_0.2.1">编译安装(nginx 1.0.25)</a>
+<li><a href="#toc_0.2.2">执行文件链接、启动脚本</a>
+<li><a href="#toc_0.2.3">放置初始配置</a>
+<li><a href="#toc_0.2.4">版本及进程检查</a>
+<li><a href="#toc_0.2.5">设置自启动(仅Web服务器执行)</a>
+</ul>
+<li><a href="#toc_0.3">编译相关说明</a>
+<li><a href="#toc_0.4">nginx平滑版本升级说明</a>
+<ul>
+<li><a href="#toc_0.4.1">进程信号说明</a>
+<li><a href="#toc_0.4.2">详细步骤说明</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<p>
+UPDATE: 2012-10-03
+</p>
+
+<h2 id="toc_0.1">在新系统上安装</h2>
+<ul>
+<li>
+安装编辑环境
+<pre class="brush: bash">
+apt-get install libxml2-dev build-essential libpcre3 libpcre3-dev zlib1g zlib1g-dev libssl-dev
+</pre>
+
+</ul>
+
+<ul>
+<li>
+创建工作目录、日志目录
+<pre class="brush: bash">
+install -m 755 -o root -g root -d /var/lib/nginx
+install -m 755 -o www-data -g root -d /var/log/nginx
+
+install -m 755 -o www-data -g root -d /var/lib/nginx/proxy
+install -m 755 -o www-data -g root -d /var/lib/nginx/body
+install -m 755 -o www-data -g root -d /var/lib/nginx/fastcgi
+
+install -m 755 -o www-data -g root -d /var/lib/nginx/body
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">安装</h2>
+<h3 id="toc_0.2.1">编译安装(nginx 1.0.25)</h3>
+<pre class="brush: bash">
+NGINX="nginx-1.2.5" \
+&amp;&amp; mkdir -p /data/packages &amp;&amp; cd /data/packages \
+&amp;&amp; rm -rf nginx-* \
+&amp;&amp; wget http://www.nginx.org/download/${NGINX}.tar.gz \
+&amp;&amp; tar zxf ${NGINX}.tar.gz \
+&amp;&amp; cd ${NGINX} &amp;&amp; sed -i.bak 's/^CFLAGS="$CFLAGS -g"/#&amp;/' auto/cc/gcc \
+&amp;&amp; ./configure --user=www-data --group=www-data \
+--prefix=/usr/local/nginx \
+--http-log-path=/var/log/nginx \
+--http-client-body-temp-path=/var/lib/nginx/body \
+--http-proxy-temp-path=/var/lib/nginx/proxy \
+--http-fastcgi-temp-path=/var/lib/nginx/fastcgi \
+--pid-path=/var/run/nginx.pid \
+--http-log-path=/var/log/nginx/access.log \
+--error-log-path=/var/log/nginx/error.log \
+--with-http_stub_status_module \
+--with-http_gzip_static_module \
+&amp;&amp; make &amp;&amp; make install
+</pre>
+
+
+<h3 id="toc_0.2.2">执行文件链接、启动脚本</h3>
+<pre class="brush: bash">
+ln -sfT /usr/local/nginx/sbin/nginx /usr/sbin/nginx
+install -m 755 -o root -g root "/data/rsync/tools/scripts/init.d/nginx" /etc/init.d/
+</pre>
+
+<p>
+nginx启动脚本
+</p>
+
+<pre class="brush: bash">
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:          nginx
+# Required-Start:    $all
+# Required-Stop:     $all
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: starts the nginx web server
+# Description:       starts nginx using start-stop-daemon
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+#DAEMON=/usr/sbin/nginx
+DAEMON=/usr/local/nginx/sbin/nginx
+NAME=nginx
+DESC=nginx
+
+test -x $DAEMON || exit 0
+
+# Include nginx defaults if available
+if [ -f /etc/default/nginx ] ; then
+    . /etc/default/nginx
+fi
+
+set -e
+
+. /lib/lsb/init-functions
+
+test_nginx_config() {
+  if $DAEMON -t
+  then
+    return 0
+  else
+    return $?
+  fi
+}
+
+case "$1" in
+  start)
+    echo -n "Starting $DESC: "
+        test_nginx_config
+    start-stop-daemon --start --quiet --pidfile /var/run/$NAME.pid \
+        --exec $DAEMON -- $DAEMON_OPTS || true
+    echo "$NAME."
+    ;;
+  stop)
+    echo -n "Stopping $DESC: "
+    start-stop-daemon --stop --quiet --pidfile /var/run/$NAME.pid \
+        --exec $DAEMON || true
+    echo "$NAME."
+    ;;
+  restart|force-reload)
+    echo -n "Restarting $DESC: "
+    start-stop-daemon --stop --quiet --pidfile \
+        /var/run/$NAME.pid --exec $DAEMON || true
+    sleep 1
+        test_nginx_config
+    start-stop-daemon --start --quiet --pidfile \
+        /var/run/$NAME.pid --exec $DAEMON -- $DAEMON_OPTS || true
+    echo "$NAME."
+    ;;
+  reload)
+        echo -n "Reloading $DESC configuration: "
+        test_nginx_config
+        start-stop-daemon --stop --signal HUP --quiet --pidfile /var/run/$NAME.pid \
+            --exec $DAEMON || true
+        echo "$NAME."
+        ;;
+  configtest)
+        echo -n "Testing $DESC configuration: "
+        if test_nginx_config
+        then
+          echo "$NAME."
+        else
+          exit $?
+        fi
+        ;;
+  status)
+    status_of_proc -p /var/run/$NAME.pid "$DAEMON" nginx &amp;&amp; exit 0 || exit $?
+    ;;
+  *)
+    echo "Usage: $NAME {start|stop|restart|reload|force-reload|status|configtest}" &gt;&amp;2
+    exit 1
+    ;;
+esac
+
+exit 0
+</pre>
+
+
+<h3 id="toc_0.2.3">放置初始配置</h3>
+<pre class="brush: bash">
+nginxconfdir="/usr/local/nginx/conf"
+pkgsDir="/data/rsync/tools"
+install -m 644 -o root -g root "$pkgsDir/conf/nginx/nginx.conf" "$nginxconfdir/nginx.conf"
+install -m 755 -o root -g root -d "$nginxconfdir/sites-available"
+install -m 755 -o root -g root -d "$nginxconfdir/sites-enabled"
+install -m 755 -o root -g root -d "$nginxconfdir/inc"
+install -m 644 -o root -g root "$pkgsDir/conf/nginx/unknowsite.conf" "$nginxconfdir/sites-available/unknowsite.conf"
+cd "$nginxconfdir/sites-enabled"
+ln -sf "../sites-available/unknowsite.conf" .
+cd -
+</pre>
+
+<h3 id="toc_0.2.4">版本及进程检查</h3>
+<pre class="brush: bash">
+nginx -v &amp;&amp; ps aux|grep nginx
+</pre>
+
+<h3 id="toc_0.2.5">设置自启动(仅Web服务器执行)</h3>
+<pre class="brush: bash">
+update-rc.d nginx defaults # 设置自启动
+#update-rc.d -f nginx remove # 取消自启动
+</pre>
+
+<h2 id="toc_0.3">编译相关说明</h2>
+<ul>
+<li>
+uwsgi相关链接
+
+<ol>
+<li>
+<a href="http://projects.unbit.it/uwsgi/">http://projects.unbit.it/uwsgi/</a>
+
+<li>
+<a href="http://projects.unbit.it/uwsgi/wiki/Doc">http://projects.unbit.it/uwsgi/wiki/Doc</a>
+
+</ol>
+</ul>
+
+
+<ul>
+<li>
+早期uwsgi版编译参数修改
+<pre class="brush: bash">
+    vim makefile.Py26
+    PYTHON_CFLAGS=`python2.6-config --cflags| sed 's/-g //'`
+    编译、安装
+    make -f Makefile.Py26
+</pre>
+
+</ul>
+
+<ul>
+<li>
+nginx 0.7.66后版本make时的警告信息官网回复为正常现象
+<pre>
+http://nginx.org/en/docs/sys_errlist.html
+While building nginx version 0.7.66, 0.8.35 or higher on Linux the following warning messages are issued:
+warning: `sys_errlist' is deprecated;
+    use `strerror' or `strerror_r' instead
+#warning: `sys_nerr' is deprecated;
+    use `strerror' or `strerror_r' instead
+#This is normal: nginx has to use the deprecated sys_errlist[] and sys_nerr in signal handlers because strerror() and strerror_r() functions are not Async-Signal-Safe.
+</pre>
+
+</ul>
+
+
+<h2 id="toc_0.4">nginx平滑版本升级说明</h2>
+<p>
+可以在不中断服务的情况下 - 新的请求也不会丢失，使用新的 nginx 可执行程序替换旧的（当升级新版本或添加/删除服务器模块时）。
+</p>
+
+<p>
+参考:<a href="http://wiki.nginx.org/NginxChsCommandLine">http://wiki.nginx.org/NginxChsCommandLine</a>
+</p>
+
+<h3 id="toc_0.4.1">进程信号说明</h3>
+ 
+<ul>
+<li>
+主进程可以处理以下的信号
+
+</ul>
+<table>
+<tr>
+<td>
+TERM,INT
+</td>
+<td>
+快速关闭
+</td>
+</tr>
+<tr>
+<td>
+QUIT
+</td>
+<td>
+从容关闭
+</td>
+</tr>
+<tr>
+<td>
+HUP
+</td>
+<td>
+重载配置,用新的配置开始新的工作进程,从容关闭旧的工作进程
+</td>
+</tr>
+<tr>
+<td>
+USR1
+</td>
+<td>
+重新打开日志文件
+</td>
+</tr>
+<tr>
+<td>
+USR2
+</td>
+<td>
+平滑升级可执行程序。
+</td>
+</tr>
+<tr>
+<td>
+WINCH
+</td>
+<td>
+从容关闭工作进程
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+工作进程，但是，它们也支持一些信号，尽管你不必自己操作工作进程，但是，它们也支持一些信号：
+
+</ul>
+<table>
+<tr>
+<td>
+TERM,INT
+</td>
+<td>
+快速关闭
+</td>
+</tr>
+<tr>
+<td>
+QUIT
+</td>
+<td>
+从容关闭
+</td>
+</tr>
+<tr>
+<td>
+USR1
+</td>
+<td>
+重新打开日志文件
+</td>
+</tr>
+</table>
+
+
+<h3 id="toc_0.4.2">详细步骤说明</h3>
+
+<ol>
+<li>
+使用新的可执行程序替换旧的（最好做好备份）－－完成编译安装。
+
+<li>
+发送 USR2 (kill -USR2 pid)信号给主进程(主进程将重命名nginx.pid为nginx.pid.oldbin)。执行新的可执行程序，
+
+<ol>
+<li>
+依次启动新的主进程和新的工作进程。此时两个 nginx 实例会同时运行，一起处理输入的请求。
+<pre class="brush: bash">
+kill -USR2 `cat /var/run/nginx.pid` &amp;&amp; ps axu|grep nginx
+</pre>
+
+</ol>
+</ol>
+
+<ol>
+<li>
+发送 WINCH ( kill -WINCH oldpid)信号给旧的主进程，它的工作进程就将开始从容关闭。
+
+<ol>
+<li>
+当旧的工作进程处理完所有已连接请求后将全部退出，仅由新工作进程处理请求。
+<pre class="brush: bash">
+kill -WINCH `cat /var/run/nginx.pid.oldbin` &amp;&amp; ps axu|grep nginx
+</pre>
+
+</ol>
+</ol>
+
+<ol>
+<li>
+升级失败,恢复为旧版本
+<pre>
+   a) 发送HUP信号给旧的主进程，它将启动它的工作进程。
+   kill -HUP `cat /var/run/nginx.pid.oldbin`
+   b) 发送QUIT信号给新的主进程，要求其从容关闭主进程。
+   kill -QUIT `cat /var/run/nginx.pid`
+   c) 发送TERM信号给新的主进程，使用其退出，若失败则发KILL信号。
+   新的主进程退出后，旧的主进程会移除.oldbin前缀，恢复为它的.pid文件。
+   kill -TERM `cat /var/run/nginx.pid`
+</pre>
+
+</ol>
+
+<ol>
+<li>
+升级成功，保留新服务器:
+
+<ul>
+<li>
+发送QUIT信号给旧的主进程使其退出(kill -QUIT oldpid)。
+<pre class="brush: bash">
+kill -QUIT `cat /var/run/nginx.pid.oldbin` &amp;&amp; ps axu|grep nginx
+</pre>
+
+</ul>
+</ol>
+
+<ol>
+<li>
+简单执行步骤
+<pre class="brush: bash">
+kill -USR2 `cat /var/run/nginx.pid` &amp;&amp; ps axu|grep nginx
+kill -WINCH `cat /var/run/nginx.pid.oldbin` &amp;&amp; ps axu|grep nginx
+kill -QUIT `cat /var/run/nginx.pid.oldbin` &amp;&amp; ps axu|grep nginx
+</pre>
+
+</ol>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../../";</script>
+<script type="text/javascript" src="../../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../../scripts/vimwiki.js"></script>
+</body>
+</html>
+

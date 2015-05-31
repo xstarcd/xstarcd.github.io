@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>SVN dump/load迁移</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">SVN dump/load迁移</a>
+<ul>
+<li><a href="#toc_1.1">业务需求</a>
+<li><a href="#toc_1.2">基本思路</a>
+<li><a href="#toc_1.3">相关命令</a>
+<ul>
+<li><a href="#toc_1.3.1">svnadmin dump</a>
+<li><a href="#toc_1.3.2">svnadmin load</a>
+<li><a href="#toc_1.3.3">输出/入重定向</a>
+<li><a href="#toc_1.3.4">svn switch</a>
+</ul>
+<li><a href="#toc_1.4">示例操作</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">SVN dump/load迁移</h1>
+
+<h2 id="toc_1.1">业务需求</h2>
+
+<p>
+经过前面的SVN搭建，权限配置和强制写日志的工作之后，今天的任务是把原来其它分散的各个版本库统一迁移到新的版本库，集中统一管理。要求不改变原有的版本库的内容和版本号。
+</p>
+
+<h2 id="toc_1.2">基本思路</h2>
+
+<p>
+要实现版本库的无缝迁移，必须通过以下3个步骤：
+</p>
+
+<ol>
+<li>
+导出旧的版本库
+
+<li>
+导入新的版本库
+
+<li>
+通知客户端切换版本库分支
+
+</ol>
+
+<ul>
+<li>
+导出导入工具
+
+</ul>
+
+<p>
+首先来看第一步：导出旧的版本库。我们知道SVN提供了check out命令和export命令签出，导出版本库中的内容。对于版本库内容比较少的情况这种方法可以采用。但是如果版本库中内容比较多，那么这种方法就显得很笨重了，而且还涉及到版本号改变的问题。所以首先摈弃这种做法。
+</p>
+
+<p>
+我们知道Oracle提供了export/import命令来将数据库导出成一个二进制文件，然后导入。同样的SVN也提供了一对命令：dump和 load。不同的是这两个命令导出的是文本内容(肉眼可以读懂)。而且还有一次性导出和增量导出，单版本导出与多版本导出等多种选择操作，就是这个了。
+</p>
+
+<ul>
+<li>
+切换版本库
+
+</ul>
+
+<p>
+其次我们来看“通知客户端切换版本库分支”。在我们完成服务器端的版本迁移之后，必须通知客户端运行切换分支的命令，否则客户端的提交还是提交到旧的版本库去。SVN也为我们准备了这样的命令：svn switch。
+</p>
+
+<h2 id="toc_1.3">相关命令</h2>
+
+<p>
+首先我们来看一下SVN的dump和load命令：
+</p>
+
+<h3 id="toc_1.3.1">svnadmin dump</h3>
+
+<pre>
+svnadmin dump REPOS_PATH [-r LOWER[:UPPER]] [--incremental]
+</pre>
+
+<p>
+svnadmin dump命令用于导出整个Repository或Repository下的某个范围的修订版本。
+</p>
+
+<p>
+REPOS_PATH是版本库的路径，[-r LOWER[:UPPER]]用于指定导出的修订版本范围，由参数-r和两个用:号隔开阿拉伯数字组成。例如：-r 0:50表示导出版本0到版本50之间的所有修订版，-r是revision的缩写。
+</p>
+
+<p>
+而另一个关键参数是--incremental。它使用增量方式来导出版本，即每次都只导出自上一个版本以来的修改。这样的好处是：
+</p>
+
+<p>
+第一：可以把一个大的文 件切分成若干个小的文件。
+</p>
+
+<p>
+第二：在版本库已经存在的情况下，我们只需要每次导出修改的部分，不需要每次都导出整个版本库的内容。甚至可以通过hook脚本每天晚上自动将当天的修改dump出来做备份用。
+</p>
+
+<h3 id="toc_1.3.2">svnadmin load</h3>
+
+<pre>
+svnadmin load REPOS_PATH
+</pre>
+
+<p>
+svnadmin load命令用于从标准输入流/其它流中导入版本库，REPOS_PATH是要导入的目标版本库。
+</p>
+
+<h3 id="toc_1.3.3">输出/入重定向</h3>
+
+<pre>
+svnadmin dump myrepos &gt; dumpfile
+svnadmin load newrepos &lt; dumpfile
+</pre>
+
+<p>
+默认情况下dump和load命令分别输出到默认输出设备(屏幕)和从默认输入设备(键盘)导入。但我们也可以把输出流/输入流重定向。例如上面的第一个 命令，使用重定向符&gt;把屏幕的输出定向当前目录下的dumpfile，而第二个命令从当前目录下的dumpfile文件导入。
+</p>
+
+<p>
+上面的命令使用起来已经很方便了，那么还有没有更加方便的用法呢？当然有！就是使用管道命令把两个命令合二为一。
+</p>
+
+<pre>
+svnadmin dump myrepos | svnadmin load newrepos
+</pre>
+
+<h3 id="toc_1.3.4">svn switch</h3>
+
+<pre>
+svn switch URL [PATH]
+switch --relocate FROM TO [PATH]
+</pre>
+
+<p>
+svn switch命令用于更新工作副本的URL。意即指向新的版本库位置。首先要注意的一点是我们即可以将整个工作副本指向新的URL，也可将工作副本下的某个目录指向新的URL。
+</p>
+
+<p>
+另外一个重要的参数就是--relocate。这个参数是否使用对于结果如何有很大影响，使用不当甚至可能会造成版本库不可用。其中有两条重要的规则：
+</p>
+<ol>
+<li>
+假如工作副本只是映射到同一个版本库内的不同位置，那么使用svn switch即可
+
+<li>
+假如工作副本已是映射到不同的版本库，那么必须使用svn switch --relocate
+
+</ol>
+
+<p>
+上面第二条规则通常发生在我们需要将整个版本库迁移到另外一台机，或者同一台机的不同版本库时。这个时候使用--relocate会刷新原有工作副本中每个文件的URL头部。
+</p>
+
+<h2 id="toc_1.4">示例操作</h2>
+
+<p>
+好了，下面我们来看如何执行版本库的迁移工作。
+</p>
+
+<ul>
+<li>
+查看当前旧版本库最新的版本号是多少
+
+</ul>
+
+<pre>
+svnlook youngest newRepo
+161
+</pre>
+
+<ul>
+<li>
+分批增量导出版本库内容
+
+</ul>
+
+<pre>
+svnadmin dump newRepo -r 0:50 &gt; dumpfile1
+* Dumped revision 0.
+* Dumped revision 1.
+* Dumped revision 2.
+* Dumped revision 3.
+</pre>
+
+<ul>
+<li>
+导出第一个文件，版本号从0到50的修订版本
+
+</ul>
+
+<pre>
+svnadmin dump newRepo -r 51:100 --incremental &gt; dumpfile2
+* Dumped revision 51.
+* Dumped revision 52.
+* Dumped revision 53.
+* Dumped revision 54.
+* Dumped revision 55.
+</pre>
+
+<ul>
+<li>
+* * * * * * * 导出第二个文件，版本号从51到100的修订版本
+
+</ul>
+
+<pre>
+svnadmin dump newRepo -r 101:161 --incremental &gt; dumpfile3
+* Dumped revision 101.
+* Dumped revision 102.
+* Dumped revision 103.
+* Dumped revision 104.
+* Dumped revision 105.
+</pre>
+
+<p>
+请注意我们上面三个命令中第2，3个命令多了一个--incremental的参数，这就是采用了增量的方式导出，下面我们一次按照顺序导入
+</p>
+
+<ul>
+<li>
+分批导入版本库文件
+
+</ul>
+
+<pre>
+svnadmin load newRepo2 &lt; dumpfile1
+
+&lt;&lt;&lt; 开始新的事务，基于最初的修订版 1
+     * 正在添加路径：a  done.
+
+------- 提交后的修订版 1 &gt;&gt;&gt;
+
+&lt;&lt;&lt; 开始新的事务，基于最初的修订版 2
+     * 正在删除路径：a  done.
+</pre>
+
+<p>
+首先导入dumpfile1，然后是dumpfile2，dumpfile3
+</p>
+
+<pre>
+svnadmin load newRepo2 &lt; dumpfile2
+
+&lt;&lt;&lt; 开始新的事务，基于最初的修订版 50
+     * 正在添加路径：branches  done.
+
+------- 提交新修订版 12 (从原始修订版 50 装载) &gt;&gt;&gt;
+
+&lt;&lt;&lt; 开始新的事务，基于最初的修订版 51
+     * 正在删除路径：branches  done.
+
+------- 提交新修订版 13 (从原始修订版 51 装载) &gt;&gt;&gt;
+</pre>
+
+<p>
+导入文件dumpfile2。依次类推dumpfile3。
+</p>
+
+<p>
+如果我们前面不使用--incremental方式导出，此处分批导入三个dump文件，则会提示错误：版本库文件已经存在。
+</p>
+
+<ul>
+<li>
+客户端切换工作副本URL
+
+</ul>
+
+<p>
+首先我们把SVN服务的根目录指向c:\peng\other目录，在这个目录下有两个repository，其中一个名为newRepo，另外一个名为呢wRepo2。
+</p>
+
+<pre>
+svnserve -d -r c:\peng\other
+</pre>
+
+<pre>
+dir C:\peng\Other
+
+ Volume in drive C is ESOE_W2K
+ Volume Serial Number is BC1B-22E6
+
+ Directory of C:\peng\Other
+
+2008-12-26  15:10       &lt;DIR&gt;          .
+2008-12-26  15:10       &lt;DIR&gt;          ..
+2008-12-23  10:04       &lt;DIR&gt;          Backup
+2008-12-26  14:21               45,578 dumpfile1
+2008-12-26  14:22               39,567 dumpfile2
+2008-12-26  14:23               55,740 dumpfile3
+2008-12-15  09:08       &lt;DIR&gt;          newRepo
+2008-12-26  14:20       &lt;DIR&gt;          newRepo2
+2008-12-26  15:25       &lt;DIR&gt;          ps
+2008-12-24  15:11       &lt;DIR&gt;          Toolbar
+               3 File(s)        140,885 bytes
+               7 Dir(s)   2,668,414,976 bytes free
+</pre>
+
+<p>
+首先我们从newRepo这个版本库中check out出一个子目录ps
+</p>
+
+<pre>
+svn checkout svn://localhost/newRepo/ps c:/peng/other/ps
+A    C:\peng\Other\ps\ps.txt
+取出修订版 170。
+</pre>
+
+<p>
+现在该工作副本已经和:<code>svn://localhost/newRepo/ps</code>发生了映射关系。我们可以使用svnlook info来显示这个工作副本的一般信息
+</p>
+
+<pre>
+C:\peng\Other\ps&gt;svn info
+路径：.
+地址(URL)：svn://localhost/newRepo/ps
+Repository Root: svn://localhost/newRepo
+档案库 UUID：6fbeb35b-c7e4-984d-b2ac-32812dcf3078
+修订版：170
+节点种类：目录
+调度：正常
+最后修改的作者：admin
+最后修改的修订版：170
+最后修改的时间: 2008-12-26 14:52:32 +0800 (星期五, 26 十二月 2008)
+</pre>
+
+<p>
+输出信息中明确地指出ps目录指向了<code>svn://localhost/newRepo/ps</code>。
+</p>
+
+<p>
+下面我们来把它指向另一个repository下的同名位置：<a href="svn://localhost/newRepo2/ps。">svn://localhost/newRepo2/ps。</a>
+</p>
+
+<pre>
+C:\peng\Other\ps&gt;svn switch --relocate svn://localhost/newRepo/ps svn://localhost/newRepo2/ps
+</pre>
+
+<p>
+经过上面的切换后，再次使用svnlook info输出一般信息，发现URL已经被成功切换过来了
+</p>
+
+<pre>
+C:\peng\Other\ps&gt;svn info
+路径：.
+地址(URL)：svn://localhost/newRepo2/ps
+Repository Root: svn://localhost/newRepo2
+档案库 UUID：6fbeb35b-c7e4-984d-b2ac-32812dcf3078
+修订版：170
+节点种类：目录
+调度：正常
+最后修改的作者：admin
+最后修改的修订版：170
+最后修改的时间: 2008-12-26 14:52:32 +0800 (星期五, 26 十二月 2008)
+</pre>
+
+<p>
+我们尝试着在ps目录下修改文件ps.txt为ps.doc，然后提交看看会提交到那个repos去？
+</p>
+
+<pre>
+C:\peng\Other\ps&gt;svn list svn://localhost/newRepo/ps
+ps.txt
+
+C:\peng\Other\ps&gt;svn list svn://localhost/newRepo2/ps
+ps.doc
+
+C:\peng\Other\ps&gt;
+</pre>
+
+<p>
+很明显现在的提交全部都去到新的位置了！切换成功。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

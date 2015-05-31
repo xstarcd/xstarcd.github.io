@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>proxy_redirect</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">proxy_recirect</a>
+<ul>
+<li><a href="#toc_1.1">修改URI</a>
+<li><a href="#toc_1.2">修改端口</a>
+<li><a href="#toc_1.3">proxy_redirect说明</a>
+<li><a href="#toc_1.4">Nginx像Apache一样做反向代理</a>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">proxy_recirect</h1>
+
+<h2 id="toc_1.1">修改URI</h2>
+
+<p>
+原文：<a href="http://www.aslibra.com/blog/post/nginx_proxy_redirect.php">http://www.aslibra.com/blog/post/nginx_proxy_redirect.php</a>
+</p>
+
+<p>
+Nginx的代理功能太完善了，我们看看proxy_redirect参数的作用。
+</p>
+
+<p>
+案例说明
+</p>
+
+<p>
+要做一个html.aslibra.com的域名处理很多网站的html内容，当然是后端的服务器了，目录区分：
+</p>
+
+<pre>
+html.zcom.com/img.aslibra.com/
+html.zcom.com/css.aslibra.com/
+</pre>
+
+<p>
+访问的域名是该目录下的域名，那前端nginx的配置应该类似这样：
+</p>
+
+<pre>
+server {
+  server_name img.aslibra.com;
+  location / {
+    rewrite ^(.*) /$http_host$1 break;
+    proxy_set_header Host html.aslibra.com;
+    proxy_pass http://cache-89;
+  }
+}
+</pre>
+
+<p>
+但这样访问目录时如果没有以“/”结尾，则服务器会返回301redirect：
+</p>
+
+<pre>
+curl -I http://img.aslibra.com/www
+
+HTTP/1.1 301 Moved Permanently
+Server: nginx/0.7.59
+Date: Tue, 21 Jul 2009 15:28:58 GMT
+Connection: keep-alive
+Location: http://html.aslibra.com/img.aslibra.com/www/
+</pre>
+
+<p>
+html.aslibra.com这个域名并非公布的域名，返回给客户端是会自然产生错误的Nginx可以很好的处理这个问题：
+</p>
+
+<pre>
+server {
+  server_name img.aslibra.com;
+  location / {
+    rewrite ^(.*) /$http_host$1 break;
+    proxy_set_header Host html.aslibra.com;
+    proxy_pass http://cache-89;
+    proxy_redirect http://html.aslibra.com/img.aslibra.com/ /;
+  }
+}
+</pre>
+
+<p>
+加一行proxy_redirect后，正常了：
+</p>
+
+<pre>
+curl -I http://img.aslibra.com/www
+
+HTTP/1.1 301 Moved Permanently
+Server: nginx/0.7.59
+Date: Tue, 21 Jul 2009 15:23:49 GMT
+Content-Type: text/html
+Location: http://img.aslibra.com/www/
+Connection: keep-alive
+Content-Length: 185
+Expires: Tue, 21 Jul 2009 16:23:49 GMT
+Cache-Control: max-age=3600
+</pre>
+
+<p>
+就这么样就ok啦~
+</p>
+
+<p>
+不过貌似不支持变量出现在地址里，这个就郁闷了，必须指定相应域名。
+</p>
+
+<p>
+对于多个域名匹配的server，redirect设置不能写作'/'了，否则会用第一个域名作为redirect域名
+</p>
+
+<p>
+可以写几个匹配规则：
+</p>
+<pre>
+proxy_redirect http://html.aslibra.com/img.aslibra.com/ http://img.aslibra.com/;
+proxy_redirect http://html.aslibra.com/css.aslibra.com/ http://css.aslibra.com/;
+</pre>
+
+
+<h2 id="toc_1.2">修改端口</h2>
+
+<ul>
+<li>
+原文：
+
+<ul>
+<li>
+<a href="http://bluedest.iteye.com/blog/740302">http://bluedest.iteye.com/blog/740302</a>
+
+<li>
+<a href="http://wntest.ustc.edu.cn/mine/wordpress/?p=400">http://wntest.ustc.edu.cn/mine/wordpress/?p=400</a>
+
+</ul>
+</ul>
+
+<p>
+NGINX的proxy_redirect功能比较强大,其作用是对发送给客户端的URL进行修改。以例子说明：
+</p>
+<pre>
+server {
+   listen 80;
+   server_name test.abc.com;
+   location / {
+        proxy_pass http://10.10.10.1:9080;
+   }
+}
+</pre>
+
+<p>
+这段配置一般情况下都正常,但偶尔会出错, 错误在什么地方呢? 抓包发现服务器给客户端的跳转指令里加了端口号,如 Location: <a href="http://test.abc.com:9080/abc.html">http://test.abc.com:9080/abc.html</a> 。
+</p>
+
+<p>
+因为nginx服务器侦听的是80端口，所以这样的URL给了客户端，必然会出错。
+</p>
+
+<p>
+针对这种情况, 加一条proxy_redirect指令: proxy_redirect <a href="http://test.abc.com:9080/">http://test.abc.com:9080/</a> /,把所有“<a href="http://test.abc.com:9080/”">http://test.abc.com:9080/”</a> 的内容替换成“/”再发给客户端，就解决了。
+</p>
+<pre>
+server {
+   listen       80;
+   server_name  test.abc.com;
+   proxy_redirect http://test.abc.com:9080/ /;
+   location / {
+        proxy_pass http://10.10.10.1:9080;
+   }
+}
+</pre>
+
+<h2 id="toc_1.3">proxy_redirect说明</h2>
+
+<p>
+语法：proxy_redirect [ default|off|redirect replacement ]
+</p>
+
+<p>
+默认值：proxy_redirect default
+</p>
+
+<p>
+使用字段：http, server, location
+</p>
+
+<p>
+如果需要修改从被代理服务器传来的应答头中的"Location"和"Refresh"字段，可以用这个指令设置。
+</p>
+
+<p>
+假设被代理服务器返回Location字段为： <a href="http://localhost:8000/two/some/uri/">http://localhost:8000/two/some/uri/</a>
+</p>
+
+<p>
+这个指令：
+</p>
+<pre>
+proxy_redirect http://localhost:8000/two/ http://frontend/one/;
+</pre>
+
+<p>
+将Location字段重写为<a href="http://frontend/one/some/uri/">http://frontend/one/some/uri/</a>
+</p>
+
+<p>
+在代替的字段中可以不写服务器名：
+</p>
+<pre>
+proxy_redirect http://localhost:8000/two/ /;
+</pre>
+
+<p>
+这样就使用服务器的基本名称和端口，即使它来自非80端口。
+</p>
+
+<p>
+如果使用"default"参数，将根据location和proxy_pass参数的设置来决定。例如下列两个配置等效：
+</p>
+
+<pre>
+location /one/ {
+    proxy_pass     http://upstream:port/two/;
+    proxy_redirect default;
+}
+
+location /one/ {
+    proxy_pass     http://upstream:port/two/;
+    proxy_redirect http://upstream:port/two/ /one/;
+}
+</pre>
+
+<p>
+在指令中可以使用一些变量：
+</p>
+
+<pre>
+proxy_redirect http://localhost:8000/ http://$host:$server_port/;
+</pre>
+
+<p>
+这个指令有时可以重复：
+</p>
+<pre>
+  proxy_redirect default;
+  proxy_redirect http://localhost:8000/ /;
+  proxy_redirect http://www.example.com/ /;
+</pre>
+
+<p>
+参数off将在这个字段中禁止所有的proxy_redirect指令：
+</p>
+<pre>
+proxy_redirect off;
+proxy_redirect default;
+proxy_redirect http://localhost:8000/ /;
+proxy_redirect http://www.example.com/ /;
+</pre>
+
+<p>
+利用这个指令可以为被代理服务器发出的相对重定向增加主机名：
+</p>
+
+<pre>
+proxy_redirect   /   /;
+</pre>
+
+<h2 id="toc_1.4">Nginx像Apache一样做反向代理</h2>
+
+<p>
+我们都知道Nginx是可以做反向代理的，就像Apache的ProxyPassReverse一样。
+在apache中配置反向代理，我们这样写：
+</p>
+<pre>
+&lt;VirtualHost myhost:80&gt;
+ServerName myhost
+  DocumentRoot /path/to/myapp/public
+  ProxyPass / http://myapp:8080/
+  ProxyPassReverse / http://myapp:8080/
+&lt;/VirtualHost&gt;
+</pre>
+<p>
+但是Nginx没有ProxyPassReverse，解决办法就是添加丢失的HTTP头：
+</p>
+<pre>
+server {
+  listen myhost:80;
+  server_name myhost;
+  location / {
+    root /path/to/myapp/public;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Server $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_pass http://myapp:8080;
+  }
+}
+</pre>
+<p>
+那些丢失的头信息都是什么呢？
+</p>
+<pre>
+X-Forwarded-For：客户端IP地址
+X-Forwarded-Host：客户端发起的原始主机请求头信息
+X-Forwarded-Server：代理服务器主机名
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

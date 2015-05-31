@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>深入理解 Linux 2.6 的 initramfs 機制</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>深入理解 Linux 2.6 的 initramfs 機制</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">initramfs 的原理與定位</a>
+<li><a href="#toc_0.2">實做過程</a>
+</ul>
+</ul>
+</div>
+
+<p>
+<a href="http://blog.linux.org.tw/~jserv/archives/001954.html">http://blog.linux.org.tw/~jserv/archives/001954.html</a>
+</p>
+
+<p>
+January 20, 2008
+</p>
+
+<p>
+深入理解 Linux 2.6 的 initramfs 機制 (上)
+</p>
+
+<h2 id="toc_0.1">initramfs 的原理與定位</h2>
+
+<p>
+日前結束一個消費性電子產品的開發工作，稍有心得，試著整理採取 Linux kernel 2.6 initramfs 機制以加速系統開發的經驗，同時也談論對 fast-booting 設計的重要性，順便解決某些像是「kinit/klibc 為何被提出？」等疑難雜症。
+</p>
+
+<p>
+進入主題前，先看看所謂的 booting。相傳在十八世紀，德國 Baron Münchhausen 男爵常誇大吹噓自己的英勇事蹟，其中一項是「拉著自己的頭髮，將自己從受陷的沼澤中提起」，此事後來收錄於德國《吹牛大王歷險記》，則改寫為「用拔靴帶把自己從海中拉起來」，這裡的「拔靴帶」(bootstrap) 指的是長統靴靴筒頂端後方的小環帶，是用以輔助穿長統靴。這種有違物理原理的誇大動作，卻讓不同領域的人們獲得靈感，Robert A. Heinlein 發表於 1941 年的短文〈By His Bootstraps〉收錄典故並給予多種延伸想法；滑鼠發明人 Doug Engelbart 博士甚至在 1989 年以此命名其研究機構「Bootstrap 學院」，並擔任該院主任。在商業上，bootstrapping 則被引申為一種創業模式，也就是初期投入少量的啟動資本，然後在創業過程中主要依靠從客戶得來的銷售收入，形成一個良好的正現金流。在電腦資訊領域，因為開機過程是環環相扣，先透過簡單的程式讀入記憶體，執行後又載入更多磁區、程式碼來執行，直到作業系統完全載入為止，所以開機過程也被稱為 bootstrapping，簡稱 "boot"。
+</p>
+
+<p>
+自 1991 年 Linux 問世以來，資訊技術的應用有了極大的轉變，筆者之前的文章 [探索 Linux bootloader 的佳作] 與 [kboot 初探與模擬驗證] 約略提及光是開機本身的設計來說，就有多種衝擊與需求，隨著 Linux 走出個人電腦領域，在嵌入式系統應用上，更是五花八門。本文所探討的 initramfs，衍生自 Linux kernel 的 initrd，理解其設計需求是先行的準備。initrd 字面上的意思就是 "boot loader initialized RAM disk"，換言之，這是一塊特殊的 RAM disk，在載入 Linux kernel 前，由 boot loader 予以初始化，具體動作就是從特定的儲存裝置中載入 initrd 到 RAM 中 (由啟動參數 "initrd=" 指定 image 的實體或邏輯位置)，隨後 linux kernel 被載入並執行時，會優先處理置放 initrd 的記憶體空間，而這個空間基本上也有檔案系統，通常會包含 init 等程式，故可用以掛入某些特別的驅動程式，比方說 SCSI，完成階段性目標後，kernel 會將真正的 root file system 掛載，並執行 /sbin/init 程式。
+</p>
+
+<p>
+話說回來，我們為何需要此等迂迴的開機途徑呢？原因是，root file system (由啟動參數 "root=" 所指定，以下簡稱 rootfs) 所在的儲存裝置很可能極難尋找，比方說 SCSI 裝置就需要複雜且耗時的程序，若用 RAID 系統更是需要看配置情況而定，同樣的問題也發生在 USB storage 上，因為 kernel 得花上更長的等待與配置時間，或說遠端掛載 rootfs，不僅得處理網路裝置的問題，甚至還得考慮相關的伺服器認證、通訊往返時間等議題。更重要的是，我們可在 initrd 放置某些特別的程式，一來作為掛載 rootfs 作準備，比方說硬體初始化、解密、解壓縮等等，二來提示使用者或系統管理員目前的狀態，這對於消費性電子產品來說，有很大的意義。整體來說，如果能增加開機的彈性 (比方說配合簡單的 shell script 即可達成 USB/SCSI 初始化動作，若透過 kernel code 實做，恐怕上百千行是免不掉的)，又能適度降低 kernel image 本身的設計複雜度與空間使用量，採取 initrd 是很不錯的方式，所以幾乎各大 Linux distribution 都有提供 initrd，以解決在不同硬體、不同裝置上開機的技術議題，也能確保一片 CD-ROM/DVD 可裝入多種個人電腦系統，也可支援 [bootsplash] 一類顯示開機動畫的程式。
+</p>
+
+<p>
+具體來說，initrd 提供了「兩階段開機」程序。首先，一切都還是在 kernel mode，由 kernel 完成與硬體相關的初始化工作，接著，在適當的時機點，當 kernel 讀取並掛載 initrd 所在記憶體空間的檔案系統後，kernel 首次從 kernel space 切入 user space，以執行存放於 RAM disk 中的 init 程式，當然，這需要完整的執行環境 (比方說 C runtime 或必要的 program loader 等)，另外，也得確定 rootfs 可被 kernel 所找到並正確掛載。待第一階段的 initrd 步入尾聲後，再回到 kernel mode，initrd 所在的記憶體空間也會適度被釋放 (依據組態而定)，這才進入第二階段，也就是執行真正的 rootfs 中的 init 程式。在 Linux kernel 2.4 中，initrd 大致的處理流程如下：(方括號表示主要的執行單元)
+</p>
+<ul>
+<li>
+[boot loader] Boot loader 依據預先設定的條件，將 kernel 與 initrd 這兩個 image 載入到 RAM
+
+<li>
+[boot loader -&gt; kernel] 完成必要的動作後，準備將執行權交給 Linux kernel
+
+<li>
+[kernel] 進行一系列初始化動作，initrd 所在的記憶體被 kernel 對應為 /dev/initrd 裝置設備，透過 kernel 內部的 decompressor (gzip 解壓縮) 解開該內容並複製到 /dev/ram0 裝置設備上
+
+<li>
+[kernel] Linux 以 R/W (可讀寫) 模式將 /dev/ram0 掛載為暫時性的 rootfs
+
+<li>
+[kernel-space -&gt; user-space] kernel 準備執行 /dev/ram0 上的 /linuxrc 程式，並切換執行流程
+
+<li>
+[user space] /linuxrc 與相關的程式處理特定的操作，比方說準備掛載 rootfs 等
+
+<li>
+[user-space -&gt; kernel-space] /linuxrc 執行即將完畢，執行權轉交給 kernel
+
+<li>
+[kernel] Linux 掛載真正的 rootfs 並執行 /sbin/init 程式
+
+<li>
+[user space] 依據 Linux distribution 規範的流程，執行各式系統與應用程式
+
+</ul>
+
+<p>
+值得一提的是，以上「兩階段開機」是 initrd 提出的彈性開機流程，在真實的應用中，也可能從未需要掛載真正的 rootfs，換言之，只是把系統當作都在 RAM disk 上運作，或者永遠都在 initrd 所引導執行的 /linuxrc 程序中執行 (注意：kernel 永遠保留 PID=1 作為 init process 識別，而 /linuxrc 執行的 PID 必非為 1)，在許多裝置如智慧型手機，都是行之有年的，不過這不影響我們後續的探討。
+</p>
+
+<p>
+Linux Kernel 的發展文化就是願意捨棄既有實做，大膽採用新的途徑 (在符合國際規格的前提下)，Linux 2.6 的 initramfs 之所以提出，就是要修正 initrd 的種種技術問題。問題在哪呢？首先，回顧剛剛探討的流程，initrd RAM disk 對 kernel 來說，本身是個真實的 block device，為了建構存放其中的檔案 (最起碼要有 /linuxrc)，通常我們需要 ext2 一類的檔案系統 (建議)。所以，就建構如此的 initrd image 來看，通常會透過 mkfs.ext2 與 losetup (功能："set up and control loop devices") 等工具建立 loopback device 並編修，所以自然需面對以下問題：
+</p>
+
+<ul>
+<li>
+initrd 必須綁定某個檔案系統實做，如 ext2，可是多數的情況下，我們根本不需要在此階段擁有完整的實做
+
+<li>
+/dev/initrd block device 建構時即有空間限制，維護繁瑣
+
+<li>
+運作於 initrd 階段，檔案操作實際上是不斷將 /dev/initrd (對應於某段記憶體) 對應到可存取檔案系統的記憶位址，做了不必要的資源消耗
+
+</ul>
+
+<p>
+Kernel 文件 ( Documentation/filesystems/ramfs-rootfs-initramfs.txt ) 更指出：
+</p>
+<pre>
+Another reason ramdisks are semi-obsolete is that the introduction of loopback devices offered a more flexible and convenient way to create synthetic block devices, now from files instead of from chunks of memory. 
+</pre>
+<p>
+基於上述資源使用與效能考量，原本 ramdisk 途徑就被標示為「老舊」，而 initramfs 的提出，則是基於更簡單有效率的 ramfs 與新的處理方式。
+</p>
+
+<p>
+回到 initrd ramdisk，事實上，原本的設計甚至更加浪費記憶體，因為 Linux 在設計上就會盡可能將讀入/寫入自 block device 的檔案或目錄予以 cache，所以，Linux 會自 ramdisk 中複製資料到 page cache 與 dentry cache，如此往返，徒增資源使用的浪費，這一切問題的根源就是將 initrd 以 block device 來操作的本質使然。Linus Torvalds 為此提出一個想法：
+</p>
+
+<p>
+能否將這些 cache 被掛載為檔案系統呢？就在 cache 中保持這些檔案，但不清除這些，直到實際上被刪去或者系統重啟。 
+</p>
+
+<p>
+基於這些想法，Linus Torvalds 實做了 ramfs，隨後在其他核心開發者的改進下，成為 tmpfs，支援寫入 swap 空間與限制記憶體使用量等特徵。而，initramfs 就是建構於 tmpfs 的基礎上。採取此途徑的效益就是，檔案系統可自行調整空間使用量，以符合所需資料儲存的空間，同時，也不再會有重複的 block device 與 cache 資料，因為跟本不需要，更重要的是，這樣的檔案系統實做，其實就只是 cache 機制的延伸，沒有太多新的程式碼，所以系統可保持簡單明暸。以下是對 initrd 與 initramfs 的概念性比較：
+</p>
+
+<table>
+<tr>
+<th>
+&nbsp;
+</th>
+<th>
+initrd
+</th>
+<th>
+initramfs
+</th>
+</tr>
+<tr>
+<td>
+Image
+</td>
+<td>
+壓縮過的檔案系統 (如 ext2 + gzip)
+</td>
+<td>
+封裝過的檔案 (cpio + gzip)
+</td>
+</tr>
+<tr>
+<td>
+實做途徑
+</td>
+<td>
+block device (RAM disk)
+</td>
+<td>
+tmpfs
+</td>
+</tr>
+<tr>
+<td>
+首先執行的程式
+</td>
+<td>
+/linuxrc
+</td>
+<td>
+/init
+</td>
+</tr>
+<tr>
+<td>
+掛載rootfs 方式
+</td>
+<td>
+將欲載入的 rootfs 掛載於某個目錄，再 pivot_root 切換 rootfs
+</td>
+<td>
+使用 switch_root
+</td>
+</tr>
+</table>
+
+<p>
+前面的段落已說明這兩者對於記憶體存取與檔案操作的落差，同時也提及實做途徑，接下來的重點是這兩者如何看待真正的 rootfs。如同前述所及，Linux kernel 2.4 中，initrd 可被視為起始參數 "root=" 的先前處理機制，透過一系列的程序，協助 kernel 找到最終的 rootfs，並一舉掛載進系統，不過，過去的設計其實做了一個假設：「真正的 rootfs 所在的裝置是 block device，同時 initrd 絕非是真正的 rootfs」，這也是為何要讓 kernel 在第一次準備切入 user-space 時，是執行 /linuxrc，而非 /init 或 /sbin/init，因為後者的 PID 恆為 1 且不可被 kill (終止)，但前者因為只是過度的存在，隨時仍可被 kill。
+</p>
+
+<p>
+而在 Linux 2.6 引入 initramfs 的設計後，上述彆扭的假設與處理方式就不復存在，不再區隔「真正」的 rootfs 是如何「存在」，也就是一開機，kernel 就執行位於 initramfs 中的 /init，作為 PID=1 的 init process，僅以 switch_root 作 rootfs 的重新定位罷了 (選擇性)。正因為這樣的特性，核心開發者也將 initramfs 的行為稱為 [Early User Space]，Jeff Garzik 於 2002 年十一月發表於 lkml 的文章 [initramfs merge, part 1 of N] 提到他的願景：
+</p>
+
+<pre>
+The Future.
+
+    Early userspace is going to be merged in a series of evolutionary changes, following what I call "The Al Viro model." NO KERNEL BEHAVIOR SHOULD CHANGE. [that's for the lkml listeners, not you ] "make" will continue to simply Do The Right Thing(tm) on all platforms, while the kernel image continues to get progressively smaller. 
+</pre>
+
+<p>
+核心開發者很喜歡彼此取笑，這裡提到的 [Al Viro] 是位知名的 kernel hacker，常常為了捍衛核心設計的一致性與許多開發者對立。這意思就是說，藉由 Early userspace 整合到核心設計後，原本很不容易處理的開機模式，比方說 LVM (Linux Volume Manager)、網路開機、特別儲存裝置的開機等，都可交由 user-space 的應用程式專門處理，相對來說，kernel 就不必過度涉入，長遠來說，對於發展的分工、降低系統複雜度，以及提高可性賴度，均有很大的助益。
+</p>
+
+<p>
+基於 initramfs / Early userspace 的想法，核心開發者又思考為何不將過去難以有效維護但又非得存在不可的程式碼，比方說 do_mount 這一類用以實做掛載特定裝置或邏輯儲存設備的功能，全面轉交給 user-space 的程式去執行呢？這樣 kernel 可專心提昇功能或者效能的改進。為此，以 H. Peter Anvin 為首的核心開發者引入 [klibc] 與 kinit，前者 (至少目標上) 是最小的 C library 實做，用來支持後者所需 (定位與 [dietlibc] 或 [uclibc] 一類精巧但通用性的 libc 實做不同)，而 kinit 就是將前述原本在核心實做的程式 (很難偵錯且分析的 kernel code) 拉出到 user-space 中，他於 2006 年六月提交的 patch [kinit: replacement for in-kernel do_mount, ipconfig, nfsroot] 就展現了將不同的檔案系統 (cramfs, ext2, ext3, jfs, lvm2, minixfs, reiserfs, romfs, xfs, ...) 予以掛載 (即 user-space 的 do_mount)、ipconfig (bootp, dhcp)、nfsmount 等等，整合到 kinit 程式中一併處理，kernel image 可因此大幅縮減。
+</p>
+
+<h2 id="toc_0.2">實做過程</h2>
+
+<p>
+大致理解 initramfs 的原理與定位後，我們就可以探討實做與相關的細節。筆者的測試環境是 IBM/lenovo X60 筆記型電腦 (Intel Centrino Duo 1.83GHz) 加上 Ubuntu Linux 7.10，進行下述實做過程之前，請先自 [kernel.org] 取得 stable kernel，本文採用 "linux-2.6.22.5"，所需的套件有：
+</p>
+
+<ul>
+<li>
+build-essential
+
+<li>
+qemu
+
+<li>
+ruby
+
+</ul>
+
+<p>
+假設工作目錄為 <code>$HOME/initramfs-workspace</code>，作些準備動作：
+</p>
+<pre class="brush:bash">
+cd /home/jserv/initramfs-workspace
+tar jxvf $HOME/sources/linux-2.6.22.5.tar.bz2
+mkdir -p hello-initramfs
+</pre>
+
+<p>
+首先設立的目標是，可印出 "Hello World" 的 kernel + initramfs，並透過 qemu 進行模擬驗證。首先，建立一個 init.c，具備簡單的實做：
+</p>
+<pre class="brush:bash">
+cd hello-initramfs
+cat &gt; init.c &lt;&lt;EOF
+
+#include &lt;stdio.h&gt;
+int main()
+{
+    printf("Hello World!\n");
+    sleep(99999);
+    return 0;
+}
+EOF
+
+gcc -static -o init init.c
+mkdir -p dev
+sudo mknod dev/console c 5 1
+</pre>
+
+<p>
+建議先試著執行 "./init" 看看是否正確運作，程式碼中的 "sleep(99999)" 只是讓觀察更容易，避免畫面一閃而逝。剛剛的 "Hello World" 程式就是我們預期的 Early userspace，因為執行時期需要 tty (terminal)，所以剛剛也一併建立 /dev/console 的 character device。現在我們可以來準備建構 kernel 了：
+</p>
+<pre class="brush:bash">
+cd /home/jserv/initramfs-workspace/linux-2.6.22.5
+make menuconfig
+</pre>
+
+<p>
+要注意的是，需將 "General setup" 的子項目 "Initial RAM filesystem and RAM disk (initramfs/initrd) suppot" 打開，並在下方提示 "INITRAMFS_SOURCE" 的畫面輸入我們期望的 initramfs 的來源目錄，也就是 "/home/jserv/initramfs-workspace/hello-initramfs"，參考的配置畫面如下：
+</p>
+
+<p>
+也可以參考筆者的組態檔 [.config]，當然之後就是建構核心：
+</p>
+<pre class="brush:bash">
+make bzImage
+
+...
+  LD      arch/i386/boot/compressed/vmlinux
+  OBJCOPY arch/i386/boot/vmlinux.bin
+  HOSTCC  arch/i386/boot/tools/build
+  BUILD   arch/i386/boot/bzImage
+Kernel: arch/i386/boot/bzImage is ready
+</pre>
+
+<p>
+建構成功，透過 qemu 來模擬測試：
+</p>
+<pre class="brush:bash">
+qemu -kernel arch/i386/boot/bzImage -hda /dev/zero
+</pre>
+<p>
+參考的執行畫面如下：
+</p>
+
+<p>
+所以我們可以發現，在產生出來的 kernel image 中，其實已經包含了剛剛的 initramfs，看來裡頭大有文章。回頭看看編譯的過程：
+</p>
+<pre>
+scripts/kconfig/conf -s arch/i386/Kconfig
+  CHK     include/linux/version.h
+  CHK     include/linux/utsrelease.h
+  CC      arch/i386/kernel/asm-offsets.s
+  GEN     include/asm-i386/asm-offsets.h
+...
+  CC      init/initramfs.o
+  CC      init/calibrate.o
+  LD      init/built-in.o
+  HOSTCC  usr/gen_init_cpio
+  GEN     usr/initramfs_data.cpio.gz
+  AS      usr/initramfs_data.o
+...
+</pre>
+
+<p>
+我們可注意到 "GEN usr/initramfs_data.cpio.gz" 這行，勢必 kernel 2.6 中隱含了某種機制，執行看看之前產生的工具程式：
+</p>
+<pre class="brush:bash">
+usr/gen_init_cpio
+Usage:
+    usr/gen_init_cpio &lt;cpio_list&gt;
+
+&lt;cpio_list&gt; is a file containing newline separated entries that
+describe the files to be included in the initramfs archive:
+...
+</pre>
+
+<p>
+這裡提到的 "archive" 就是透過 [cpio] 工具產生的封裝檔案，在 RedHat .rpm 或 Debian .deb 均有採用此工具。不過 Linux kernel 則提供一個整合性的工具，可一次處理目錄與檔案的封裝，依據之前的流程試試看手動建立 cpio + gzip：
+</p>
+
+<pre class="brush:bash">
+cd /home/jserv/initramfs-workspace
+sudo cp -af hello-initramfs hello2-initramfs
+cd hello2-initramfs
+
+cat &gt; init.c &lt;&lt;EOF
+#include &lt;stdio.h&gt;
+int main()
+{
+    printf("Yat Another Hello World!\n");
+    sleep(999999);
+    return 0;
+}
+EOF
+gcc -static -o init init.c
+
+cat desc_initramfs
+
+#dir /dev 0755 0 0
+#nod /dev/console 0600 0 0 c 5 1
+#file /init /home/jserv/initramfs-workspace/hello2-initramfs/init 0755 0 0
+
+../linux-2.6.22.5/usr/gen_init_cpio desc_initramfs &gt; my_initramfs.cpio
+gzip my_initramfs.cpio
+</pre>
+
+<p>
+"desc_initramfs" 是我們自己寫的描述檔，格式大抵就如上面展示，usr/gen_init_cpio 這個工具則會建構對應的 dir + device node + file 的封裝，最後我們以 gzip 壓縮起來，於是可得到 "my_initramfs.cpio.gz" 這個新的 initramfs image。同樣的，我們可用 qemu 測試驗證，這次改由 qemu 模擬 boot loader 指定 initramfs image 的模式，操作如下：
+</p>
+<pre class="brush:bash">
+cd /home/jserv/initramfs-workspace/linux-2.6.22.5
+qemu -kernel arch/i386/boot/bzImage -initrd ../hello2-initramfs/my_initramfs.cpio.gz -hda /dev/zero
+</pre>
+
+<p>
+這次應該就會在 qemu 模擬的輸出畫面最下方看到 "Yat Another Hello World!" 的字樣。
+</p>
+
+<p>
+只有 "Hello World" 一類的程式只能作切入點，還不能實際作點事情，從零到有建構 rootfs 也得花上一點功夫，還好，Ubuntu/Debian 已經提供靜態連結的 [BusyBox]，安裝方式很簡單：
+</p>
+<pre class="brush:bash">
+sudo apt-get install busybox-static
+# 隨後，系統會安裝 /bin/busybox 的執行檔，觀察一下：
+file /bin/busybox
+# /bin/busybox: ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), for GNU/Linux 2.6.8, statically linked, stripped
+</pre>
+
+<p>
+咱們就以此為基礎，建立一個小而美的 initramfs + kernel image：
+</p>
+<pre class="brush:bash">
+cd /home/jserv/initramfs-workspace
+mkdir -p busybox-initramfs/bin
+mkdir -p busybox-initramfs/proc
+cd busybox-initramfs/bin
+cp /bin/busybox .
+./busybox --help | ruby -e 'STDIN.read.split(/functions:$/m)[1].split(/,/).each{|i|`ln -s busybox #{i.strip}` unless i=~/busybox/}'
+cd ..
+echo -e '#!/bin/busybox sh\nmount -t proc proc /proc\nexec busybox sh\n' &gt; init ; chmod +x init
+find . | cpio -o -H newc | gzip &gt; ../busybox.initramfs.cpio.gz
+</pre>
+
+<p>
+可看到 $HOME/initramfs-workspace 就輸出了名為 busybox.initramfs.cpio.gz 的 initramfs image，可仿造上一個範例，透過 qemu 模擬：
+</p>
+
+<pre class="brush:bash">
+cd /home/jserv/initramfs-workspace/linux-2.6.22.5
+qemu -kernel arch/i386/boot/bzImage -initrd ../busybox.initramfs.cpio.gz -hda /dev/zero
+</pre>
+
+<p>
+參考的執行畫面如下：
+</p>
+
+<p>
+後續的篇幅，我們會探討實務上如何應用，如 Ubuntu 的 software suspend/resume image 與 fast-booting 整合，以及 kernel 的實做細節。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>shell 数组使用技巧</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>shell 数组使用技巧</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">数组定义</a>
+<li><a href="#toc_0.2">数组读取与赋值</a>
+<li><a href="#toc_0.3">特殊使用</a>
+</ul>
+</ul>
+</div>
+
+<p>
+以下在bash shell中的数组使用技巧。
+</p>
+
+<p>
+原文：<a href="http://www.cnblogs.com/chengmo/archive/2010/09/30/1839632.html">http://www.cnblogs.com/chengmo/archive/2010/09/30/1839632.html</a>
+</p>
+
+<p>
+Linux shell在编程方面比windows 批处理强大太多，无论是在循环、运算。已经数据类型方面都是不能比较的。 下面是个人在使用时候，对它在数组方面一些操作进行的总结。
+</p>
+
+<h2 id="toc_0.1">数组定义</h2>
+ 
+<pre class="brush:bash">
+a=(1 2 3 4 5)
+echo $a
+1
+</pre>
+ 
+<p>
+一对括号表示是数组，数组元素用“空格”符号分割开。
+</p>
+
+ 
+<h2 id="toc_0.2">数组读取与赋值</h2>
+
+<pre class="brush:bash">
+# 得到长度：用${#数组名[@或*]} 可以得到数组长度
+echo ${#a[@]}
+5
+
+# 读取：用${数组名[下标]} 下标是从0开始  下标是：*或者@ 得到整个数组内容
+echo ${a[2]}
+3
+echo ${a[*]}
+1 2 3 4 5   
+
+# 赋值:直接通过 数组名[下标] 就可以对其进行引用赋值，如果下标不存在，自动添加新一个数组元素
+a[1]=100
+echo ${a[*]}
+1 100 3 4 5
+
+a[5]=100    
+echo ${a[*]}
+1 100 3 4 5 100
+
+# 删除:直接通过 unset 数组[下标] 可以清除相应的元素，不带下标，清除整个数据。
+a=(1 2 3 4 5)
+unset a
+echo ${a[*]}
+
+a=(1 2 3 4 5)
+unset a[1]  
+echo ${a[*]}
+1 3 4 5
+echo ${#a[*]}
+4
+</pre>
+ 
+<h2 id="toc_0.3">特殊使用</h2>
+
+<pre class="brush:bash">
+# 分片
+# 直接通过 ${数组名[@或*]:起始位置:长度} 切片原先数组，返回是字符串，中间用“空格”分开，因此如果加上”()”，将得到切片数组，上面例子：c 就是一个新数据。
+a=(1 2 3 4 5)
+echo ${a[@]:0:3}
+1 2 3
+echo ${a[@]:1:4}
+2 3 4 5
+
+c=(${a[@]:1:4})
+echo ${#c[@]}
+4
+echo ${c[*]}
+2 3 4 5
+
+
+# 替换:调用方法是：${数组名[@或*]/查找字符/替换字符} 该操作不会改变原先数组内容，如果需要修改，可以看上面例子，重新定义数据。
+a=(1 2 3 4 5)   
+echo ${a[@]/3/100}
+1 2 100 4 5
+echo ${a[@]}
+1 2 3 4 5
+a=(${a[@]/3/100})
+echo ${a[@]}    
+1 2 100 4 5
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

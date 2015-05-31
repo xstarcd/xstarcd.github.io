@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>tee - 复制输出到控制台和文件</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>tee - 复制输出到控制台和文件</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Shell内部将输出显示在屏幕并同时写入文件</a>
+</ul>
+</ul>
+</div>
+
+
+<h2 id="toc_0.1">Shell内部将输出显示在屏幕并同时写入文件</h2>
+
+<ul>
+<li>
+原文: <a href="http://www.m690.com/archives/236">http://www.m690.com/archives/236</a>
+
+</ul>
+
+<p>
+产生这个话题的缘由：
+</p>
+
+<p>
+在编写稍微复杂的Shell脚本时，我们常常需要将标准输出和标准错误信息记录下来，以往我们通过如下形式办到：
+</p>
+<pre class="brush:bash">
+somescript.sh &gt; log 2&gt;&amp;1
+</pre>
+
+<p>
+但这对规范的shell是不太完美的，一是log文件的位置及名称，只能由着执行者来定，存在不确定性；二是执行者是否记得使用这样的句式来确保操作显示有记录，也无法保证。
+</p>
+
+<p>
+所以，我们需要在shell脚本内部指定，不受执行者影响而记录下显示输出的手段，而且，我们还不能用愚蠢的每句后面来一个<code>| tee $logfile</code>的方式。
+</p>
+
+<p>
+以下为实现方法，以Korn Shell为准(测试下来，bash也一样可以用）：
+</p>
+
+<p>
+变量： logfile – 所有信息输出的文件 fifofile – 为同时输出到屏幕和文件所建立的管道文件
+</p>
+
+<p>
+Shell内部可以支持的重定向标准输出和标准错误设备的基本方法：
+</p>
+
+<pre class="brush:bash">
+exec 1&gt;$logfile
+exec 2&gt;&amp;1
+</pre>
+
+<p>
+但是，这样就只能将所有信息输出到<code>\(logfile</code>，无法实现同时显示在屏幕的目的。不可能有<code>exec 1&gt;|tee \)logfile</code>的用法
+</p>
+
+<p>
+以往，在命令行将错误输出也导向屏幕及文件的方法是：
+</p>
+
+<pre class="brush:bash">
+somescript.sh 2&gt;&amp;1 | tee $logfile
+</pre>
+
+<p>
+这里用到管道，而exec命令并不支持管道用法，所以我们需要建立fifo文件来完成
+</p>
+
+<p>
+但是，fifo管道文件是阻塞形管道，没有随时将其内容输出的话，脚本将hang住无法继续，所以我们要用<code>cat 管道文件</code>的方式将其随时导出，为了不影响后续命令执行，cat这一句必须放到后台。因为cat管道文件内容的时候，永远不会结束，因为不会遇到EOF标记（就是控制字符Ctrl-D），除非在管道中出现了Ctrl-D，所以我们在脚本最后需要显示一个Ctrl-D，比较方便的方法是<code>printf "\015"</code>（015是8进制，换算成10进制就是13，即Ctrl-D的ASCII码）
+</p>
+
+<p>
+最后写法：
+</p>
+
+<ul>
+<li>
+test.sh
+<pre class="brush:bash">
+#!/bin/sh
+logfile=test.log
+fifofile=test.fifo
+rm -f "$fifofile"
+mkfifo $fifofile
+cat $fifofile | tee -a $logfile &amp;
+exec 3&gt;&amp;1
+exec 4&gt;&amp;2
+exec 1&gt;$fifofile
+exec 2&gt;&amp;1
+
+echo "some commands to produce normal and error output"
+badcommand to generate stderr messages
+
+printf "\015"
+exec 1&gt;&amp;3
+exec 2&gt;&amp;4
+rm -f "$fifofile"
+echo "done."
+</pre>
+
+<li>
+运行结果： 
+<pre>
+./test.sh;echo "logfile:";cat test.log
+some commands to produce normal and error output
+./test.sh: line 13: badcommand: command not found
+done.
+
+logfile:
+some commands to produce normal and error output
+./test.sh: line 13: badcommand: command not found
+</pre>
+
+</ul>
+
+<p>
+参考文献larryh. 从Shell脚本内部将所有标准输出及标准错误显示在屏幕并同时写入文件的方法. [EB/OL], 2008-10-8. [2011-05-23]. 
+<a href="http://www.loveunix.net/thread-90320-1-1.html">http://www.loveunix.net/thread-90320-1-1.html</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

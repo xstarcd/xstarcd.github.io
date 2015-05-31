@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Keepalived原理与实战精讲</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">Keepalived原理与实战精讲</a>
+<ul>
+<li><a href="#toc_1.1">VRRP协议</a>
+<li><a href="#toc_1.2">Keepalived原理</a>
+<li><a href="#toc_1.3">Keepalived配置详解</a>
+<ul>
+<li><a href="#toc_1.3.1">全局配置</a>
+<ul>
+<li><a href="#toc_1.3.1.1">全局定义</a>
+<li><a href="#toc_1.3.1.2">静态地址和路由</a>
+</ul>
+<li><a href="#toc_1.3.2">VRRPD配置</a>
+<ul>
+<li><a href="#toc_1.3.2.1">VRRP同步组(synchroization group)</a>
+<li><a href="#toc_1.3.2.2">VRRP实例(instance)</a>
+<li><a href="#toc_1.3.2.3">VRRP脚本</a>
+</ul>
+<li><a href="#toc_1.3.3">LVS配置</a>
+</ul>
+</ul>
+<li><a href="#toc_2">man keepalived.conf</a>
+</ul>
+</div>
+
+<h1 id="toc_1">Keepalived原理与实战精讲</h1>
+
+<p>
+原文：<a href="http://bbs.ywlm.net/thread-845-1-1.html">http://bbs.ywlm.net/thread-845-1-1.html</a>
+</p>
+
+<p>
+gotop&amp;FinalBSD 发表于 2011-9-7 11:21:17
+</p>
+
+<p>
+什么是Keepalived呢，keepalived观其名可知，保持存活，在网络里面就是保持在线了，也就是所谓的高可用或热备，用来防止单点故障(单点故障是指一旦某一点出现故障就会导致整个系统架构的不可用)的发生，那说到keepalived时不得不说的一个协议就是VRRP协议，可以说这个协议就是keepalived实现的基础，那么首先我们来看看VRRP协议
+</p>
+
+<p>
+注：搞运维的要有足够的耐心哦，不理解协议就很难透彻的掌握keepalived的了
+</p>
+
+<h2 id="toc_1.1">VRRP协议</h2>
+
+<p>
+学过网络的朋友都知道，网络在设计的时候必须考虑到冗余容灾，包括线路冗余，设备冗余等，防止网络存在单点故障，那在路由器或三层交换机处实现冗余就显得尤为重要，在网络里面有个协议就是来做这事的，这个协议就是VRRP协议，Keepalived就是巧用VRRP协议来实现高可用性(HA)的。
+</p>
+
+<p>
+VRRP协议有一篇文章写的非常好，大家可以直接看这里(记得认真看看哦，后面基本都已这个为基础的了)
+</p>
+
+<p>
+帖子地址：<a href="http://bbs.ywlm.net/thread-790-1-1.html">http://bbs.ywlm.net/thread-790-1-1.html</a>
+</p>
+
+<p>
+只需要把服务器当作路由器即可！
+</p>
+
+<p>
+在《VRRP协议》里讲到了虚拟路由器的ID也就是VRID在这里比较重要
+</p>
+
+<p>
+keepalived完全遵守VRRP协议，包括竞选机制等等
+</p>
+
+<h2 id="toc_1.2">Keepalived原理</h2>
+
+<p>
+keepalived也是模块化设计，不同模块复杂不同的功能，下面是keepalived的组件
+</p>
+<pre>
+core check vrrp libipfwc libipvs-2.4 libipvs-2.6
+</pre>
+
+<table>
+<tr>
+<td>
+core
+</td>
+<td>
+是keepalived的核心，复杂主进程的启动和维护，全局配置文件的加载解析等
+</td>
+</tr>
+<tr>
+<td>
+check
+</td>
+<td>
+负责healthchecker(健康检查)，包括了各种健康检查方式，以及对应的配置的解析包括LVS的配置解析
+</td>
+</tr>
+<tr>
+<td>
+vrrp
+</td>
+<td>
+VRRPD子进程，VRRPD子进程就是来实现VRRP协议的
+</td>
+</tr>
+<tr>
+<td>
+libipfwc
+</td>
+<td>
+iptables(ipchains)库，配置LVS会用到
+</td>
+</tr>
+<tr>
+<td>
+libipvs*
+</td>
+<td>
+配置LVS会用到
+</td>
+</tr>
+</table>
+
+<p>
+注意，keepalived和LVS完全是两码事，只不过他们各负其责相互配合而已
+</p>
+
+<p>
+<img src="../img/Keepalived_SoftwareDesign.gif" alt="keepalived Software Design">
+</p>
+
+<p>
+keepalived启动后会有三个进程：
+</p>
+<ol>
+<li>
+父进程：内存管理，子进程管理等等
+
+<li>
+子进程：VRRP子进程
+
+<li>
+子进程：healthchecker子进程
+
+</ol>
+
+<p>
+由图可知，两个子进程都被系统WatchDog看管，两个子进程各自复杂自己的事，healthchecker子进程复杂检查各自服务器的健康程度，例如HTTP，LVS等等，如果healthchecker子进程检查到MASTER上服务不可用了，就会通知本机上的兄弟VRRP子进程，让他删除通告，并且去掉虚拟IP，转换为BACKUP状态
+</p>
+
+<h2 id="toc_1.3">Keepalived配置详解</h2>
+
+<p>
+keepalived有三类配置区域(姑且就叫区域吧)，注意不是三种配置文件，是一个配置文件里面三种不同类别的配置区域：
+</p>
+<ol>
+<li>
+全局配置(Global Configuration)
+
+<li>
+VRRPD配置
+
+<li>
+LVS配置
+
+</ol>
+
+<h3 id="toc_1.3.1">全局配置</h3>
+
+<p>
+全局配置又包括两个子配置：
+</p>
+<ol>
+<li>
+全局定义(global definition)
+
+<li>
+静态路由配置(static ipaddress/routes)
+
+</ol>
+
+<h4 id="toc_1.3.1.1">全局定义</h4>
+
+<pre class="brush:bash">
+global_defs              # 全局配置标识，表示这个区域{}是全局配置
+{
+    notification_email   # keepalived在发生诸如切换操作时需要发送email通知、发送给哪些邮件地址，邮件地址可以多个，每行一个
+    {
+        admin@example.com
+        admin@ywlm.net
+    }
+    notification_email_from admin@example.com  # 发送通知邮件时邮件源地址
+    smtp_server 127.0.0.1   # smtp服务器地址，这里可以用本地的sendmail来实现
+    stmp_connect_timeout 30 # 连接smtp连接超时时间
+    router_id node1         # 机器标识
+}
+</pre>
+
+<h4 id="toc_1.3.1.2">静态地址和路由</h4>
+
+<pre class="brush:bash">
+static_ipaddress
+{
+192.168.1.1/24 brd + dev eth0 scope global
+192.168.1.2/24 brd + dev eth1 scope global
+}
+static_routes
+{
+src $SRC_IP to $DST_IP dev $SRC_DEVICE
+src $SRC_IP to $DST_IP via $GW dev $SRC_DEVICE
+}
+</pre>
+
+<p>
+这里实际上和系统里面命令配置IP地址和路由一样例如：
+</p>
+
+<p>
+192.168.1.1/24 brd + dev eth0 scope global 就是给eth0配置IP地址，相当于: 
+</p>
+
+<p>
+ip addr add 192.168.1.1/24 brd + dev eth0 scope global
+</p>
+
+<p>
+static_routes路由同理，一般这个区域不需要配置。
+</p>
+
+<p>
+这里实际上就是给服务器配置真实的IP地址和路由的，在复杂的环境下可能需要配置，一般不会用这个来配置，我们可以直接用vi /etc/sysconfig/network-script/ifcfg-eth1来配置，切记这里可不是VIP哦，不要搞混淆了，切记切记！
+</p>
+
+<h3 id="toc_1.3.2">VRRPD配置</h3>
+
+<p>
+VRRPD配置包括三个类：
+</p>
+<ol>
+<li>
+VRRP同步组(synchroization group)
+
+<li>
+VRRP实例(VRRP Instance)VRRP脚本
+
+<li>
+VRRP脚本
+
+</ol>
+
+<h4 id="toc_1.3.2.1">VRRP同步组(synchroization group)</h4>
+
+<pre class="brush:bash">
+vrrp_sync_group VG_1 {
+    group {     # http和mysql是实例名,和下面的实例名一致
+        http
+        mysql
+    }
+
+    notify_master /path/to/to_master.sh  # 表示当切换到master状态时，要执行的脚本
+    notify_backup /path_to/to_backup.sh  # 表示当切换到backup状态时，要执行的脚本
+    notify_fault "/path/fault.sh VG_1"
+    notify /path/to/notify.sh
+    smtp_alert   # 切换时给global defs中定义的邮件地址发送右键通知
+}
+</pre>
+
+<h4 id="toc_1.3.2.2">VRRP实例(instance)</h4>
+
+<pre class="brush:bash">
+vrrp_instance http {
+    # state：state指定instance(Initial)的初始状态，就是说在配置好后，这台服务器的初始状态就是这里指定的，但这里指定的不算，
+    # 还是得要通过竞选通过优先级来确定，里如果这里设置为master，但如若他的优先级不及另外一台，那么这台在发送通告时，会发
+    # 送自己的优先级，另外一台发现优先级不如自己的高，那么他会就回抢占为master
+    state MASTER
+    interface eth0     # 实例绑定的网卡，因为在配置虚拟IP的时候必须是在已有的网卡上添加的
+    dont_track_primary # 忽略VRRP的interface错误
+
+
+    # track interface：跟踪接口，设置额外的监控，里面任意一块网卡出现问题，都会进入故障(FAULT)状态，例如，用nginx做均衡器的
+    # 时候，内网必须正常工作，如果内网出问题了，这个均衡器也就无法运作了，所以必须对内外网同时做健康检查
+    track_interface {
+        eth0
+        eth1
+    }
+
+    # mcast src ip：发送多播数据包时的源IP地址，这里注意了，这里实际上就是在那个地址上发送VRRP通告，这个非常重要，一定要选择
+    # 稳定的网卡端口来发送，这里相当于heartbeat的心跳端口，如果没有设置那么就用默认的绑定的网卡的IP，也就是interface指定的IP地址
+    mcast_src_ip &lt;IPADDR&gt;
+
+    # lvs syncd绑定的网卡
+    lvs_sync_daemon_interface eth1
+
+    garp_master_delay 10  # 在切换到master状态后，延迟进行ARP(gratuitous ARP)请求
+    virtual_router_id 51  # 这里设置VRID，这里非常重要，相同的VRID为一个组，他将决定多播的MAC地址
+    priority 100          # 设置本节点的优先级，优先级高的为master
+    advert_int 1          # 检查间隔，默认为1秒
+    authentication {      # 设置vrrp认证
+        auth_type PASS    # 认证方式，可以是PASS或AH两种认证方式
+        autp_pass 1234    # 认证密码
+    }
+
+    # virtual ipaddress：这里设置的就是VIP，也就是虚拟IP地址，他随着state的变化而增加删除，当state为master的时候就添加，
+    # 当state为backup的时候删除，这里主要是有优先级来决定的，和state设置的值没有多大关系，这里可以设置多个IP地址
+    virtual_ipaddress {
+        #&lt;IPADDR&gt;/&lt;MASK&gt; brd &lt;IPADDR&gt; dev &lt;STRING&gt; scope &lt;SCOPT&gt; label &lt;LABEL&gt;
+        192.168.200.17/24 dev eth1
+        192.168.200.18/24 dev eth2 label eth2:1
+    }
+
+    # virtual routes：原理和virtual ipaddress一样，只不过这里是增加和删除路由
+    virtual_routes {
+        # src &lt;IPADDR&gt; [to] &lt;IPADDR&gt;/&lt;MASK&gt; via|gw &lt;IPADDR&gt; dev &lt;STRING&gt; scope &lt;SCOPE&gt; tab
+        src 192.168.100.1 to 192.168.109.0/24 via 192.168.200.254 dev eth1
+        192.168.110.0/24 via 192.168.200.254 dev eth1
+        192.168.111.0/24 dev eth2
+        192.168.112.0/24 via 192.168.100.254
+    }
+    nopreempt  # 设置不抢占，这里只能设置在state为backup的节点上，而且这个节点的优先级必须比另外的高
+    preemtp_delay 300 # 抢占延迟
+    debug  # debug级别(not implemented yet)
+
+    # notify master：和sync group这里设置的含义一样，可以单独设置，例如不同的实例通知不同的管理人员，
+    # http实例发给网站管理员，mysql的就发邮件给DBA
+    # notify scripts, alert as above
+    notify_master &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+    notify_backup &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+    notify_fault &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+    notify &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+    smtp_alert
+
+}
+</pre>
+
+<h4 id="toc_1.3.2.3">VRRP脚本</h4>
+
+<pre class="brush:bash">
+# 首先在vrrp_script区域定义脚本名字和脚本执行的间隔和脚本执行的优先级变更
+vrrp_script check_running {
+   script "/usr/local/bin/check_running"
+   interval 10  # 脚本执行间隔
+   weight 10    # 脚本结果导致的优先级变更：10表示优先级+10；-10则表示优先级-10
+}
+
+vrrp_instance http {
+   state BACKUP
+   smtp_alert
+   interface eth0
+   virtual_router_id 101
+   priority 90
+   advert_int 3
+   authentication {
+       auth_type PASS
+       auth_pass whatever
+   }
+   virtual_ipaddress {
+       1.1.1.1
+   }
+    # 然后在实例(vrrp_instance)里面引用，有点类似脚本里面的函数引用一样：先定义，后引用函数名
+   track_script {
+       check_running weight 20
+   }
+}
+</pre>
+
+<p>
+注意：VRRP脚本(vrrp_script)和VRRP实例(vrrp_instance)属于同一个级别。
+</p>
+
+<h3 id="toc_1.3.3">LVS配置</h3>
+
+<p>
+如果你没有配置LVS+keepalived那么无需配置这段区域，里如果你用的是nginx来代替LVS，就无需配置这段，这里的LVS配置是专门为keepalived+LVS集成准备的。
+</p>
+
+<p>
+注意了，这里LVS配置并不是指真的安装LVS然后用ipvsadm来配置他，而是用keepalived的配置文件来代替ipvsadm来配置LVS，这样会方便很多，一个配置文件搞定这些，维护方便，配置方便是也！
+</p>
+
+<p>
+这里LVS配置也有两个配置：
+</p>
+<ol>
+<li>
+虚拟主机组配置
+
+<li>
+虚拟主机配置
+
+</ol>
+
+<ul>
+<li>
+虚拟主机组
+
+</ul>
+
+<p>
+这个配置是可选的，根据需求来配置吧，这里配置主要是为了让一台realserver上的某个服务可以属于多个Virtual Server，并且只做一次健康检查
+</p>
+<pre class="brush:bash">
+virtual_server_group &lt;STRING&gt; {
+# VIP port
+&lt;IPADDR&gt; &lt;PORT&gt;
+&lt;IPADDR&gt; &lt;PORT&gt;
+fwmark &lt;INT&gt;
+}
+</pre>
+
+<ul>
+<li>
+虚拟主机配置
+
+</ul>
+
+<p>
+virtual server可以以下面三种的任意一种来配置
+</p>
+<ol>
+<li>
+virtual server IP port
+
+<li>
+virtual server fwmark int
+
+<li>
+virtual server group string
+
+</ol>
+
+<p>
+下面以第一种比较常用的方式来配详细解说一下：
+</p>
+
+<pre class="brush:bash">
+virtual_server 192.168.1.2 80 {        #设置一个virtual server: VIP:Vport
+    delay_loop 3                       # service polling的delay时间，即服务轮询的时间间隔
+
+    lb_algo rr|wrr|lc|wlc|lblc|sh|dh   #LVS调度算法
+    lb_kind NAT|DR|TUN                 #LVS集群模式                     
+    persistence_timeout 120            #会话保持时间（秒为单位），即以用户在120秒内被分配到同一个后端realserver
+    persistence_granularity &lt;NETMASK&gt;  #LVS会话保持粒度，ipvsadm中的-M参数，默认是0xffffffff，即每个客户端都做会话保持
+    protocol TCP                       #健康检查用的是TCP还是UDP
+    ha_suspend                         #suspendhealthchecker’s activity
+    virtualhost &lt;string&gt;               #HTTP_GET做健康检查时，检查的web服务器的虚拟主机（即host：头）
+
+    sorry_server &lt;IPADDR&gt; &lt;PORT&gt;       #备用机，就是当所有后端realserver节点都不可用时，就用这里设置的，也就是临时把所有的请求都发送到这里啦
+
+    real_server &lt;IPADDR&gt; &lt;PORT&gt;        #后端真实节点主机的权重等设置，主要，后端有几台这里就要设置几个
+    {
+        weight 1                           #给每台的权重，0表示失效(不知给他转发请求知道他恢复正常)，默认是1
+        inhibit_on_failure                 #表示在节点失败后，把他权重设置成0，而不是冲IPVS中删除
+
+        notify_up &lt;STRING&gt; | &lt;QUOTED-STRING&gt;   #检查服务器正常(UP)后，要执行的脚本
+        notify_down &lt;STRING&gt; | &lt;QUOTED-STRING&gt; #检查服务器失败(down)后，要执行的脚本
+
+        HTTP_GET                            #健康检查方式
+        {
+            url {                           #要坚持的URL，可以有多个
+                path /                      #具体路径
+                digest &lt;STRING&gt;                  
+                status_code 200             #返回状态码
+            }
+            connect_port 80                 #监控检查的端口
+
+            bindto &lt;IPADD&gt;                  #健康检查的IP地址
+            connect_timeout   3             #连接超时时间
+            nb_get_retry 3                  #重连次数
+            delay_before_retry 2            #重连间隔
+        } # END OF HTTP_GET|SSL_GET
+
+
+        #下面是常用的健康检查方式，健康检查方式一共有HTTP_GET|SSL_GET|TCP_CHECK|SMTP_CHECK|MISC_CHECK这些
+        #TCP方式
+        TCP_CHECK {
+            connect_port 80
+            bindto 192.168.1.1
+            connect_timeout 4
+        } # TCP_CHECK
+
+        # SMTP方式，这个可以用来给邮件服务器做集群
+        SMTP_CHECK {
+        host {
+            connect_ip &lt;IP ADDRESS&gt;
+            connect_port &lt;PORT&gt;                                     #默认检查25端口
+            14 KEEPALIVED
+            bindto &lt;IP ADDRESS&gt;
+        }
+            connect_timeout &lt;INTEGER&gt;
+            retry &lt;INTEGER&gt;
+            delay_before_retry &lt;INTEGER&gt;
+            # "smtp HELO"|·-
+            # _name &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+        } #SMTP_CHECK
+
+        #MISC方式，这个可以用来检查很多服务器只需要自己会些脚本即可
+        MISC_CHECK
+        {
+            misc_path &lt;STRING&gt;|&lt;QUOTED-STRING&gt; #外部程序或脚本
+            misc_timeout &lt;INT&gt;                 #脚本或程序执行超时时间
+
+            #这个就很好用了，可以非常精确的来调整权重，是后端每天服务器的压力都能均衡调配，
+            #这个主要是通过执行的程序或脚本返回的状态代码来动态调整weight值，使权重根据真实的后端压力来适当调整，
+            # 不过这需要有过硬的脚本功夫才行哦
+            #返回0：健康检查没问题，不修改权重
+            #返回1：健康检查失败，权重设置为0
+            #返回2-255：健康检查没问题，但是权重却要根据返回代码修改为返回码-2，
+            #例如如果程序或脚本执行后返回的代码为200，#那么权重这回被修改为 200-2
+            misc_dynamic
+        }
+    } # Realserver
+} # Virtual Server
+</pre>
+
+<h1 id="toc_2">man keepalived.conf</h1>
+
+<pre class="brush:bash">
+NAME
+       /etc/keepalived/keepalived.conf - configuration file for keepalived
+
+DESCRIPTION
+       keepalived.conf	is  the	 configuration	file  which  describes all the
+       keepalived keywords.  keywords are placed in hierachies of blocks  (and
+       subblocks), each layer being delimited by ’{’ and ’}’ pairs.
+
+       Comments	 start	with  ’#’  or ’!’ to the end of the line and can start
+       anywhere in a line.
+
+TOP HIERACHY
+       GLOBAL CONFIGURATION
+
+       VRRPD CONFIGURATION
+
+       LVS CONFIGURATION
+
+
+GLOBAL CONFIGURATION
+       contains subblocks of Global definitions and Static routes
+
+
+Global definitions
+	global_defs	      # Block id
+	{
+	notification_email    # To:
+	       {
+	       admin@example1.com
+	       ...
+	       }
+	# From: from address that will be in header
+	notification_email_from admin@example.com
+	smtp_server 127.0.0.1	# IP
+	smtp_connect_timeout 30 # integer, seconds
+	router_id my_hostname	# string identifying the machine,
+				# (doesn’t have to be hostname).
+	enable_traps		# enable SNMP traps
+	}
+
+
+
+Static routes/addresses
+       keepalived can configure static addresses and routes.  These  addresses
+       are  NOT moved by vrrpd, they stay on the machine.  If you already have
+       IPs and routes on your machines and your machines can ping each	other,
+       you don’t need this section.
+
+       The syntax is the same as for virtual addresses and virtual routes.
+
+	static_ipaddress
+	{
+	192.168.1.1/24 dev eth0 scope global
+	...
+	}
+
+	static_routes
+	{
+	192.168.2.0/24 via 192.168.1.100 dev eth0
+	...
+	}
+
+
+VRRPD CONFIGURATION
+       contains	  subblocks   of   VRRP	  synchronization  group(s)  and  VRRP
+       instance(s)
+
+
+VRRP synchronization group(s)
+	#string, name of group of IPs that failover together
+	vrrp_sync_group VG_1 {
+	   group {
+	     inside_network   # name of vrrp_instance (below)
+	     outside_network  # One for each moveable IP.
+	     ...
+	   }
+
+	   # notify scripts and alerts are optional
+	   #
+	   # filenames of scripts to run on transitions
+	   # can be unquoted (if just filename)
+	   # or quoted (if has parameters)
+	   # to MASTER transition
+	   notify_master /path/to_master.sh
+	   # to BACKUP transition
+	   notify_backup /path/to_backup.sh
+	   # FAULT transition
+	   notify_fault "/path/fault.sh VG_1"
+
+	   # for ANY state transition.
+	   # "notify" script is called AFTER the
+	   # notify_* script(s) and is executed
+	   # with 3 arguments provided by keepalived
+	   # (ie don’t include parameters in the notify line).
+	   # arguments
+	   # $1 = "GROUP"|"INSTANCE"
+	   # $2 = name of group or instance
+	   # $3 = target state of transition
+	   #	 ("MASTER"|"BACKUP"|"FAULT")
+	   notify /path/notify.sh
+
+	   # Send email notifcation during state transition,
+	   # using addresses in global_defs above.
+	   smtp_alert
+	}
+
+
+VRRP instance(s)
+       describes  the  moveable	 IP  for  each	instance   of	a   group   in
+       vrrp_sync_group.	  Here are described two IPs (on inside_network and on
+       outside_network), on machine "my_hostname", which belong to  the	 group
+       VG_1 and which will transition together on any state change.
+	#You will need to write another block for outside_network.
+	vrrp_instance inside_network {
+	   # Initial state, MASTER|BACKUP
+	   # As soon as the other machine(s) come up,
+	   # an election will be held and the machine
+	   # with the highest "priority" will become MASTER.
+	   # So the entry here doesn’t matter a whole lot.
+	   state MASTER
+
+	   # interface for inside_network, bound by vrrp
+	   interface eth0
+
+	   # Use VRRP Virtual MAC.
+	   use_vmac &lt;VMAC_INTERFACE&gt;
+
+	   # Ignore VRRP interface faults (default unset)
+	   dont_track_primary
+
+	   # optional, monitor these as well.
+	   # go to FAULT state if any of these go down.
+	   track_interface {
+	     eth0
+	     eth1
+	     ...
+	   }
+
+	   #default IP for binding vrrpd is the primary IP
+	   #on interface. If you want to hide location of vrrpd,
+	   #use this IP as src_addr for multicast vrrp packets.
+	   #(since it’s multicast, vrrpd will get the reply
+	   #packet no matter what src_addr is used).
+	   #optional
+	   mcast_src_ip &lt;IPADDR&gt;
+
+	   # Binding interface for lvs syncd
+	   lvs_sync_daemon_interface eth1
+
+	   # delay for gratuitous ARP after transition to MASTER
+	   garp_master_delay 10 # secs, default 5
+
+	   # arbitary unique number 0..255
+	   # used to differentiate multiple instances of vrrpd
+	   # running on the same NIC (and hence same socket).
+	   virtual_router_id 51
+
+	   # for electing MASTER, highest priority wins.
+	   # to be MASTER, make 50 more than other machines.
+	   priority 100
+
+	   # VRRP Advert interval, secs (use default)
+	   advert_int 1
+	   authentication {	# Authentication block
+	       # PASS||AH
+	       # PASS - Simple Passwd (suggested)
+	       # AH - IPSEC (not recommended))
+	       auth_type PASS
+	       # Password for accessing vrrpd.
+	       # should be the same for all machines.
+	       # Only the first eight (8) characters are used.
+	       auth_pass 1234
+        }
+	   #addresses add|del on change to MASTER, to BACKUP.
+	   #With the same entries on other machines,
+	   #the opposite transition will be occuring.
+	   virtual_ipaddress {
+	       &lt;IPADDR&gt;/&lt;MASK&gt;	brd  &lt;IPADDR&gt; dev &lt;STRING&gt; scope &lt;SCOPE&gt; label &lt;LABEL&gt;
+	       192.168.200.17/24 dev eth1
+	       192.168.200.18/24 dev eth2 label eth2:1
+	   }
+
+	   #VRRP IP excluded from VRRP
+	   #optional.
+	   #For cases with large numbers (eg 200) of IPs
+	   #on the same interface. To decrease the number
+	   #of packets sent in adverts, you can exclude
+	   #most IPs from adverts.
+	   #The IPs are add|del as for virtual_ipaddress.
+	   virtual_ipaddress_excluded {
+	    &lt;IPADDR&gt;/&lt;MASK&gt; brd &lt;IPADDR&gt; dev &lt;STRING&gt; scope &lt;SCOPE&gt;
+	    &lt;IPADDR&gt;/&lt;MASK&gt; brd &lt;IPADDR&gt; dev &lt;STRING&gt; scope &lt;SCOPE&gt;
+	       ...
+	   }
+	   # routes add|del when changing to MASTER, to BACKUP
+	   virtual_routes {
+	       #  src  &lt;IPADDR&gt;	 [to]  &lt;IPADDR&gt;/&lt;MASK&gt;	via|gw	&lt;IPADDR&gt;   [or
+       &lt;IPADDR&gt;] dev &lt;STRING&gt; scope &lt;SCOPE&gt; tab
+	       src  192.168.100.1  to 192.168.109.0/24 via 192.168.200.254 dev
+       eth1
+	       192.168.110.0/24 via 192.168.200.254 dev eth1
+	       192.168.111.0/24 dev eth2
+	       192.168.112.0/24 via 192.168.100.254	 192.168.113.0/24  via
+       192.168.200.254	  or	192.168.100.254	   dev	 eth1	     blackhole
+       192.168.114.0/24
+	   }
+
+	   # VRRP will normally preempt a lower priority
+	   # machine when a higher priority machine comes
+	   # online.  "nopreempt" allows the lower priority
+	   # machine to maintain the master role, even when
+	   # a higher priority machine comes back online.
+	   # NOTE: For this to work, the initial state of this
+	   # entry must be BACKUP.
+	   nopreempt
+
+	   # Seconds after startup until preemption
+	   # (if not disabled by "nopreempt").
+	   # Range: 0 (default) to 1,000
+	   # NOTE: For this to work, the initial state of this
+	   # entry must be BACKUP.
+	   preempt_delay 300	# waits 5 minutes
+
+	   # Debug level, not implemented yet.
+	   debug
+
+	   # notify scripts, alert as above
+	   notify_master &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+	   notify_backup &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+	   notify_fault &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+	   notify &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+	   smtp_alert
+	}
+
+
+LVS CONFIGURATION
+       contains subblocks of Virtual server group(s) and Virtual server(s)
+
+       The  subblocks  contain	arguments  for	ipvsadm(8).   A	 knowlege   of
+       ipvsadm(8) will be helpful here.
+
+
+Virtual server group(s)
+	# optional
+	# this groups allows a service on a real_server
+	# to belong to multiple virtual services
+	# and to be only health checked once.
+	# Only for very large LVSs.
+	virtual_server_group &lt;STRING&gt; {
+	       #VIP port
+	       &lt;IPADDR&gt; &lt;PORT&gt;
+	       &lt;IPADDR&gt; &lt;PORT&gt;
+	       ...
+	       #
+	       # &lt;IPADDR RANGE&gt; has the form
+	       # XXX.YYY.ZZZ.WWW-VVV eg 192.168.200.1-10
+	       # range includes both .1 and .10 address
+	       &lt;IPADDR RANGE&gt; &lt;PORT&gt;# VIP range VPORT
+	       &lt;IPADDR RANGE&gt; &lt;PORT&gt;
+	       ...
+	       fwmark &lt;INT&gt;  # fwmark
+	       fwmark &lt;INT&gt;
+	       ...  }
+
+
+Virtual server(s)
+       A virtual_server can be a declaration of one of
+
+       vip vport (IPADDR PORT pair)
+
+       fwmark &lt;INT&gt;
+
+       (virtual server) group &lt;STRING&gt;
+
+		  #setup service
+		  virtual_server IP port |
+		  virtual_server fwmark int |
+		  virtual_server group string
+		  {
+		  # delay timer for service polling
+		  delay_loop &lt;INT&gt;
+
+		  # LVS scheduler
+		  lb_algo rr|wrr|lc|wlc|lblc|sh|dh
+		  # LVS forwarding method
+		  lb_kind NAT|DR|TUN
+		  # LVS persistence timeout, sec
+		  persistence_timeout &lt;INT&gt;
+		  # LVS granularity mask (-M in ipvsadm)
+		  persistence_granularity &lt;NETMASK&gt;
+		  # Only TCP is implemented
+		  protocol TCP
+		  # If VS IP address is not set,
+		  # suspend healthchecker’s activity
+		  ha_suspend
+
+		  # VirtualHost string for HTTP_GET or SSL_GET
+		  # eg virtualhost www.firewall.loc
+		  virtualhost &lt;STRING&gt;
+
+		  # Assume silently all RSs down and healthchecks
+		  # failed on start. This helps preventing false
+		  # positive actions on startup. Alpha mode is
+		  # disabled by default.
+		  alpha
+
+		  # On daemon shutdown, consider quorum and RS
+		  # down notifiers for execution, where appropriate.
+		  # Omega mode is disabled by default.
+		  omega
+
+		  # Minimum total weight of all live servers in
+		  # the pool necessary to operate VS with no
+		  # quality regression. Defaults to 1.
+		  quorum &lt;INT&gt;
+
+		  # Tolerate this much weight units compared to the
+		  # nominal quorum, when considering quorum gain
+		  # or loss. A flap dampener. Defaults to 0.
+		  hysteresis &lt;INT&gt;
+
+		  # Script to launch when quorum is gained.
+		  quorum_up &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+
+		  # Script to launch when quorum is lost.
+		  quorum_down &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+
+
+		  # setup realserver(s)
+
+		  # RS to add when all realservers are down
+		  sorry_server &lt;IPADDR&gt; &lt;PORT&gt;
+
+		  # one entry for each realserver
+		  real_server &lt;IPADDR&gt; &lt;PORT&gt;
+		     {
+			 # relative weight to use, default: 1
+			 weight &lt;INT&gt;
+			 # Set weight to 0
+			 # when healthchecker detects failure
+			 inhibit_on_failure
+
+			 # Script to launch when healthchecker
+			 # considers service as up.
+			 notify_up &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+			 # Script to launch when healthchecker
+			 # considers service as down.
+			 notify_down &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+
+			 # pick one healthchecker
+			 # HTTP_GET|SSL_GET|TCP_CHECK|SMTP_CHECK|MISC_CHECK
+
+			 # HTTP and SSL healthcheckers
+			 HTTP_GET|SSL_GET
+			 {
+			     # A url to test
+			     # can have multiple entries here
+			     url {
+			       #eg path / , or path /mrtg2/
+			       path &lt;STRING&gt;
+			       # healthcheck needs status_code
+			       # or status_code and digest
+			       # Digest computed with genhash
+			       # eg digest 9b3a0c85a887a256d6939da88aabd8cd
+			       digest &lt;STRING&gt;
+			       # status code returned in the HTTP header
+			       # eg status_code 200
+			       status_code &lt;INT&gt;
+			     }
+			     #IP, tcp port for service on realserver
+			     connect_port &lt;PORT&gt;
+			     bindto &lt;IPADDR&gt;
+			     # Timeout connection, sec
+			     connect_timeout &lt;INT&gt;
+			     # number of get retry
+			     nb_get_retry &lt;INT&gt;
+			     # delay before retry
+			     delay_before_retry &lt;INT&gt;
+			 } #HTTP_GET|SSL_GET
+
+			 #TCP healthchecker (bind to IP port)
+			 TCP_CHECK
+			 {
+			     connect_port &lt;PORT&gt;
+			     bindto &lt;IPADDR&gt;
+			     connect_timeout &lt;INT&gt;
+			 } #TCP_CHECK
+
+			 # SMTP healthchecker
+			 SMTP_CHECK
+			 {
+			     # An optional host interface to check.
+			     # If no host directives are present, only
+			     # the ip address of the real server will
+			     # be checked.
+			     host {
+			       # IP address to connect to
+			       connect_ip &lt;IP ADDRESS&gt;
+			       # Optional port to connect to if not
+			       # the default of 25
+			       connect_port &lt;PORT&gt;
+			       # Optional interface to use to
+			       # originate the connection
+			       bindto &lt;IP ADDRESS&gt;
+			    }
+			    # Connection and read/write timeout
+			    # in seconds
+			    connect_timeout &lt;INTEGER&gt;
+			    # Number of times to retry a failed check
+			    retry &lt;INTEGER&gt;
+			    # Delay in seconds before retrying
+			    delay_before_retry &lt;INTEGER&gt;
+			    # Optional string to use for the smtp HELO request
+			    helo_name &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+			 } #SMTP_CHECK
+
+			 #MISC healthchecker, run a program
+			 MISC_CHECK
+			 {
+			     # External system script or program
+			     misc_path &lt;STRING&gt;|&lt;QUOTED-STRING&gt;
+			     # Script execution timeout
+			     misc_timeout &lt;INT&gt;
+
+			     # If set, exit code from healthchecker is used
+			     # to dynamically adjust the weight as follows:
+			     #	 exit status 0: svc check success, weight
+			     #	   unchanged.
+			     #	 exit status 1: svc check failed.
+			     #	 exit status 2-255: svc check success, weight
+			     #	   changed to 2 less than exit status.
+			     #	 (for example: exit status of 255 would set
+			     #	   weight to 253)
+			     misc_dynamic
+			 }
+		     } # realserver defn
+		  } # virtual service
+
+
+
+AUTHOR
+       Joseph Mack.
+       Information   derived   from   doc/keepalived.conf.SYNOPSIS,   doc/sam-
+       ples/keepalived.conf.*	and   Changelog	  by   Alexandre   Cassen  for
+       keepalived-1.1.4, and from HOWTOs by Adam Fletcher and Vince  Worthing-
+       ton.
+
+SEE ALSO
+       ipvsadm(8), ip --help.
+
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

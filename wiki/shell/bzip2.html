@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>bzip2</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>bzip2</h1>
+
+<ul>
+<li>
+语法
+<pre>
+bzip2 [-cdz] 档名
+bzcat 档名.bz2
+</pre>
+
+</ul>
+
+<ul>
+<li>
+参数
+<pre>
+-c ：将压缩的过程产生的资料输出到萤幕上！
+-d ：解压缩的参数
+-z ：压缩的参数
+-# ：与 gzip 同样的，都是在计算压缩比的参数， -9 最佳， -1 最快！
+</pre>
+
+</ul>
+
+<ul>
+<li>
+范例
+<pre class="brush;bash">
+# 范例一：将刚刚的 /tmp/man.config 以 bzip2 压缩
+bzip2 -z man.config
+# 此时 man.config 会变成 man.config.bz2 ！
+
+# 范例二：将范例一的文件内容读出来！
+bzcat man.config.bz2
+# 此时萤幕上会显示 man.config.bz2 解压缩之后的文件内容！！
+
+# 范例三：将范例一的文件解压缩
+bzip2 -d man.config.bz2
+
+# 范例四：将范例三解开的 man.config 用最佳的压缩比压缩，并保留原本的文件
+bzip2 -9 -c man.config &gt; man.config.bz2
+
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

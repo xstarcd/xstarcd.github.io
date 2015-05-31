@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>用SchemaSpy生成数据库结构文档</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">用SchemaSpy生成数据库结构文档</a>
+<ul>
+<li><a href="#toc_1.1">概要</a>
+<li><a href="#toc_1.2">安装</a>
+<ul>
+<li><a href="#toc_1.2.1">Ubuntu下安装jdk，graphviz</a>
+<li><a href="#toc_1.2.2">下载</a>
+</ul>
+<li><a href="#toc_1.3">使用</a>
+<ul>
+<li><a href="#toc_1.3.1">通过命令行使用</a>
+<li><a href="#toc_1.3.2">通过ant使用</a>
+</ul>
+</ul>
+</ul>
+</div>
+<h1 id="toc_1">用SchemaSpy生成数据库结构文档</h1>
+<h2 id="toc_1.1">概要</h2>
+
+<p>
+在包含数据库的项目管理中，数据库文档是一个不可缺少的资源，一般来说，在数据库设计阶段比较普遍使用的工具是PowerDesigner，相信在项目初始阶段，稍微有点责任心的人都会去维护它 ，但随着项目的扩大和时间的推移，会有多少项目组会投入资源去更新和维护，即便是投入了资源，又有多少能保证所维护的版本是最新和正确的呢，有些事情，依靠人来解决，似乎很不靠谱。
+</p>
+
+<p>
+好在有许多工具可以帮助我们来维护数据库文档，比如PowerDesigner就可以反向生成ER图。
+</p>
+
+<p>
+这里向大家推荐一下SchemaSpy，它提供了从实际数据库自动生成数据库结构的最新精确视图，其安装和使用都比较简单，而且支持目前绝大多数的数据库。看一下效果：[<a href="http://wiki.timanetwork.net/dc/">http://wiki.timanetwork.net/dc/</a> | dc库结构文档]
+</p>
+
+<p>
+界面还是比较友好的，通过SchemaSpy可以很方便的查看各个table信息，以及各个table之间的关联关系信息。
+下面说一下如何使用SchemaSpy
+</p>
+
+<h2 id="toc_1.2">安装</h2>
+
+<p>
+SchemaSpy的安装十分简单，实际上就是一个jar文件，官方下载地址：<a href="http://schemaspy.sourceforge.net/">http://schemaspy.sourceforge.net/</a>
+</p>
+
+<p>
+SchemaSpy依靠Graphviz程序库来生成数据库结构的图形视图，Graphviz的安装参考：<a href="http://hanqunfeng.iteye.com/admin/blogs/869293">http://hanqunfeng.iteye.com/admin/blogs/869293</a>
+</p>
+
+<h3 id="toc_1.2.1">Ubuntu下安装jdk，graphviz</h3>
+<pre class="brush:bash">
+#graphviz - rich set of graph drawing tools
+#libmysql-java - Java database (JDBC) driver for MySQL
+
+apt-get install default-jre graphviz
+</pre>
+
+<h3 id="toc_1.2.2">下载</h3>
+<ul>
+<li>
+schemaSpy
+
+<ul>
+<li>
+<a href="http://schemaspy.sourceforge.net/">http://schemaspy.sourceforge.net/</a>
+
+<li>
+<a href="../files/schemaSpy_5.0.0.tar.gz">schemaSpy_5.0.0.tar.gz</a>
+
+</ul>
+<li>
+MySQL JDBC包：
+
+<ul>
+<li>
+<a href="http://dev.mysql.com/downloads/connector/j/">http://dev.mysql.com/downloads/connector/j/</a>
+
+<li>
+<a href="../files/mysql-connector-java-5.1.25-bin.jar">mysql-connector-java-5.1.25-bin.jar</a>
+
+</ul>
+</ul>
+
+<h2 id="toc_1.3">使用</h2>
+
+<ul>
+<li>
+java -jar schemaSpy_5.0.0.jar --help
+<pre>
+#SchemaSpy generates an HTML representation of a database schema's relationships.
+#Usage:
+# java -jar schemaSpy_5.0.0.jar [options]
+#   -t databaseType       type of database - defaults to ora
+#                           use -dbhelp for a list of built-in types
+#   -u user               connect to the database with this user id
+#   -s schema             defaults to the specified user
+#   -p password           defaults to no password
+#   -o outputDirectory    directory to place the generated output in
+#   -dp pathToDrivers     optional - looks for JDBC drivers here before looking
+#                           in driverPath in [databaseType].properties.
+#Go to http://schemaspy.sourceforge.net for a complete list/description
+# of additional parameters.
+
+#Sample usage using the default database type (implied -t ora):
+# java -jar schemaSpy.jar -db mydb -s myschema -u devuser -p password -o output
+</pre>
+
+<li>
+java -jar schemaSpy.jar -dbhelp
+
+</ul>
+
+
+<h3 id="toc_1.3.1">通过命令行使用</h3>
+<pre class="brush:bash">
+#LANG=en_US
+/opt/jdk/bin/java -jar schemaSpy.jar \
+-t mysql \
+-dp ./mysql-connector-java-5.1.25-bin.jar \
+-charset=UTF-8 \
+-u yuanxing \
+-p xxxxxx \
+-host 172.16.16.21 \
+-port 3306 \
+-db cmdb \
+-o dc/cmdb
+</pre>
+
+
+<h3 id="toc_1.3.2">通过ant使用</h3>
+<p>
+这里给出在ant中的任务示例：
+</p>
+<pre class="brush:xml">
+&lt;!-- schemaspy lib路径 --&gt;
+    &lt;property name="schemaspy.lib" location="${schemaspy.home}" /&gt;
+    &lt;!-- schemaspy报告路径 --&gt;
+    &lt;property name="schemaspy.dir" location="${reports.dir}/schemaspy" /&gt;
+&lt;target name="schemaspy"&gt;
+        &lt;delete dir="${schemaspy.dir}" /&gt;
+        &lt;mkdir dir="${schemaspy.dir}" /&gt;
+        &lt;java jar="${schemaspy.lib}/schemaSpy_5.0.0.jar" output="${schemaspy.dir}/out.log" error="${schemaspy.dir}/error.log" fork="true" &gt;
+            &lt;arg line="-t=orathin"/&gt;   &lt;!-- 数据库类型，这里是oracle --&gt;
+            &lt;arg line="-db=serverID"/&gt; &lt;!-- 数据库实例 --&gt;
+            &lt;arg line="-u=username"/&gt; &lt;!-- 用户名 --&gt;     
+            &lt;arg line="-p=password"/&gt; &lt;!-- 密码  --&gt;
+            &lt;arg line="-cp=${catalina.home}/common/lib/ojdbc14.jar"/&gt; &lt;!-- 驱动 --&gt;
+            &lt;arg line="-host=192.168.0.xxx"/&gt; &lt;!-- 数据库地址 --&gt;
+            &lt;arg line="-port=1521"/&gt; &lt;!-- 端口 --&gt;
+            &lt;arg line="-o=${schemaspy.dir}"/&gt; &lt;!-- 文档输出目录 --&gt;
+            &lt;arg line="-charset=UTF-8"/&gt;   &lt;!-- 有中文时要设置编码 --&gt;
+        &lt;/java&gt;
+&lt;/target&gt;
+</pre>
+
+<p>
+如果是使用oracle数据库，[ <a href="http://oraschemadoc.yarpen.cz/">http://oraschemadoc.yarpen.cz/</a> | OraSchemadoc ]更好一些，其功能更加丰富和完整，包括存储过程，函数，序列等等都可以进行查看。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>X11rdp-o-Matic</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<div class="toc">
+<ul>
+<li><a href="#toc_1">X11rdp-o-Matic</a>
+<ul>
+<li><a href="#toc_1.1">Compile X11rdp</a>
+<ul>
+<li><a href="#toc_1.1.1">svn</a>
+<li><a href="#toc_1.1.2">Compile X11rdp</a>
+</ul>
+<li><a href="#toc_1.2">Compile xrdp</a>
+<ul>
+<li><a href="#toc_1.2.1">git</a>
+<li><a href="#toc_1.2.2">Compile xrdp</a>
+<li><a href="#toc_1.2.3">Install xrdp</a>
+<li><a href="#toc_1.2.4">RSA keys</a>
+<li><a href="#toc_1.2.5">startwm.sh</a>
+<li><a href="#toc_1.2.6">Finally</a>
+</ul>
+<li><a href="#toc_1.3">WindowManager</a>
+<li><a href="#toc_1.4">Connect via RDP!</a>
+<li><a href="#toc_1.5">Customizing</a>
+<li><a href="#toc_1.6">building on Debian 6</a>
+<li><a href="#toc_1.7">building on CentOS 5.x</a>
+</ul>
+</ul>
+</div>
+
+<h1 id="toc_1">X11rdp-o-Matic</h1>
+
+<p>
+原文：<a href="http://scarygliders.net/2011/11/17/x11rdp-ubuntu-11-10-gnome-3-xrdp-customization-new-hotness/">Ubuntu 11.04上安装基于x11rdp的xrdp说明</a>
+</p>
+<h2 id="toc_1.1">Compile X11rdp</h2>
+
+<h3 id="toc_1.1.1">svn</h3>
+
+<p>
+Obtain X11rdp from SVN repository…
+</p>
+
+<p>
+If you haven't got it already, install subversion – you need it to obtain the SVN version of X11rdp;
+</p>
+
+<p>
+<code>sudo apt-get install subversion</code>
+</p>
+
+<p>
+Then in a terminal, in your home directory, and as your normal (non-root) user, type:
+</p>
+
+<p>
+<code>svn co svn://server1.xrdp.org/srv/svn/repos/main/x11rdp_xorg71</code>
+</p>
+
+<p>
+svn will then nab the source from the repository to your home directory.
+</p>
+
+<h3 id="toc_1.1.2">Compile X11rdp</h3>
+
+<p>
+This is much the same procedure as outlined in the old article.
+</p>
+
+<p>
+You'll need various development libraries needed to build Xorg;
+</p>
+
+<p>
+<code>sudo apt-get build-dep xserver-xorg-core</code>
+</p>
+
+<p>
+If you haven't done so already, install automake 1.7 and 1.9 – the x11rdp compilation looks for those and whines if it can't find 'em;
+</p>
+
+<p>
+<code>sudo apt-get install automake1.7 automake1.9</code>
+</p>
+
+<p>
+Make a directory, to which the X11rdp (and in fact Xorg) build system will place all the built binaries and files. I'll use;
+</p>
+
+<p>
+<code>sudo mkdir /opt/X11rdp</code>
+</p>
+
+<p>
+NOTE: /opt/X11rdp will be owned by root. This is the intended result.
+</p>
+
+<p>
+Next, go into the root directory of the downloaded X11rdp source tree, which will be in your home directory;
+</p>
+
+<p>
+<code>cd x11rdp_xorg71</code>
+</p>
+
+<p>
+Then start the compilation using the already configured build script, supplying it with the directory location you made above;
+</p>
+
+<p>
+<code>time sudo sh buildx.sh /opt/X11rdp</code>
+</p>
+
+<p>
+Yes that's right, I added the "time" command in there, which will tell you how long it took to compile.  ;)
+</p>
+
+<p>
+Now, be prepared! The compilation takes AGES! You're basically compiling a whole Xorg tree here – that is – the whole X Window Display System. I'm not joking – this will take a loooooong time, so, go away while it's doing this (or read on for a bit to see what you'll need to do next).
+</p>
+
+<p>
+OK, so it took my virtual machine with 4 CPU's running over an iSCSI system disk 18 minutes and 25 seconds to compile. Your machine may be quicker, may be slower – ain't my fault if it takes longer :)
+</p>
+
+
+<p>
+After compilation is complete you can (even as a normal user);
+</p>
+
+<p>
+<code>cd /opt/X11rdp/bin; ls -lh</code>
+</p>
+
+<p>
+To see if everything is there. In my case it is so we continue…
+</p>
+
+<p>
+Lastly, we need to soft link the X11rdp binary to /usr/bin;
+</p>
+
+<p>
+<code>sudo ln -s /opt/X11rdp/bin/X11rdp /usr/bin/X11rdp</code>
+</p>
+
+<h2 id="toc_1.2">Compile xrdp</h2>
+
+<p>
+Compile xrdp from the Git repository
+</p>
+
+<h3 id="toc_1.2.1">git</h3>
+
+<p>
+In the previous article I used the xrdp package from the Ubuntu/Debian package repository. This was purely out of convenience and the fact that I had always used it before.
+</p>
+
+<p>
+However, both xrdp and X11rdp have been updated a lot and new features added, such that at time of writing, the current version of xrdp supplied by the distribution packages does not work with the SVN version of the X11rdp server. You'll get an xrdp session filled with garbage, as the screenshot shows. That totally threw me off when I wrote my original article, and I wasted about 2 days trying various different distros, 32 and 64-bit, and was even considering voodoo magic to get it to work ;) … no chickens were harmed though :P
+</p>
+
+<p>
+So we need to nab the xrdp source from the FreeRDP Git repository. To do that we'll need to install git (if you don't already have it);
+</p>
+
+<p>
+<code>sudo apt-get install git libssl-dev libpam0g-dev</code>
+</p>
+
+
+<p>
+Next up, we'll need to nab the startup script from the old &amp; busted xrdp package, for use with our new hotness compiled xrdp source, so;
+</p>
+
+<p>
+<code>sudo apt-get install xrdp</code>
+</p>
+
+<p>
+This installs the Ubuntu xrdp package, and also VNC server/clients.
+</p>
+
+<p>
+Then
+</p>
+
+<p>
+<code>sudo apt-get remove xrdp</code>
+</p>
+
+<p>
+This will get rid of Mr Old and Busted, while keeping the newly generated xrdp user,group, and startup scripts, because I didn't "–purge" them whilst removing – which is one of the useful benefits of using a Debian based system. This will come in very handy later thank you very much ;)
+</p>
+
+
+<p>
+Next up, retrieve xrdp source from the git repository;
+</p>
+
+<p>
+NOTE: Again, do this as a normal user, in your home directory!
+</p>
+
+<p>
+<code>git clone https://github.com/FreeRDP/xrdp.git xrdp.git</code>
+</p>
+
+<p>
+If you have trouble with https , then try
+</p>
+
+<p>
+<code>git clone http://github.com/FreeRDP/xrdp.git</code>
+</p>
+
+
+<p>
+Next, do the following steps, which will
+</p>
+
+<ul>
+<li>
+compile xrdp
+
+<li>
+install it in the correct locations for Ubuntu usage
+
+<li>
+copy and change the ownership and permissions of the RSA keys required for an encrypted RDP connection;
+
+</ul>
+
+<p>
+NOTE: Again, this starts off using your normal user account in your home directory…
+</p>
+
+<p>
+2012-03-22 NOTE : Added extra step (in orange) so xrdp works correctly again.
+</p>
+
+
+<h3 id="toc_1.2.2">Compile xrdp</h3>
+
+<pre>
+cd xrdp.git
+git checkout 4cd0c118c273730043cc77b749537dedc7051571
+./bootstrap
+./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
+make
+</pre>
+
+<h3 id="toc_1.2.3">Install xrdp</h3>
+
+<p>
+Install xrdp in the correct locations for Ubuntu/Debian use;
+</p>
+
+<pre>
+sudo make install
+</pre>
+
+<h3 id="toc_1.2.4">RSA keys</h3>
+
+<p>
+Copy and change permissions of the generated RSA keys required for an encrypted RDP session.
+</p>
+
+<p>
+NOTE: at this point, you will find yourself in a root prompt (after sudo su -)…
+</p>
+<pre>
+sudo su -
+mkdir /usr/share/doc/xrdp
+mv /etc/xrdp/rsakeys.ini /usr/share/doc/xrdp/
+chmod 600 /usr/share/doc/xrdp/rsakeys.ini
+chown xrdp:xrdp /usr/share/doc/xrdp/rsakeys.ini 
+</pre>
+
+<p>
+Stay in the root prompt for the next step.
+</p>
+
+<p>
+UPDATE: 2011-12-02; After a bit of conversation in the comments below, a better way of using the startwm.sh script has been figured out.
+</p>
+
+<p>
+In the comments section below, you'll notice I had a nice conversation with reader Ed, and eventually we came up with a better use for the startwm.sh script.
+</p>
+
+<p>
+Here's what to do. You should still be in a root prompt after the "RSA keys" step above…
+</p>
+
+<h3 id="toc_1.2.5">startwm.sh</h3>
+
+<p>
+Make a backup of startwm.sh
+</p>
+<pre>
+cd /etc/xrdp
+mv startwm.sh startwm.sh.BACKUP
+</pre>
+<p>
+Make a symbolic link called startwm.sh , to the file /etc/X11/Xsession
+</p>
+<pre>
+ln -s /etc/X11/Xsession /etc/xrdp/startwm.sh
+</pre>
+
+<h3 id="toc_1.2.6">Finally</h3>
+
+<p>
+Finally, edit /etc/init.d/xrdp and add or change the following near the beginning of that init script;
+</p>
+<pre>
+#PIDDIR=/var/run/xrdp
+PIDDIR=/var/run 
+SESMAN_START=yes
+</pre>
+
+<p>
+Note: I copied the old Ubuntu "PIDDIR=/var/run/xrdp" line and kept it as a comment above.
+</p>
+
+<p>
+OK, lets try starting xrdp… 
+</p>
+<pre>
+/etc/init.d/xrdp start
+</pre>
+
+<p>
+<code>ps ax | grep rdp</code> and… Success! Seems to be up and running.
+</p>
+
+<p>
+Okay from another computer try running your RDP client and see if you can connect and log in to an RDP session…
+</p>
+
+<pre>
+rdesktop -a 16 -g 1240×800 192.168.1.231  (your client and ip address will almost certainly differ from mine)
+</pre>
+
+<p>
+<a href="http://scarygliders.net/wpcontent/uploads/2011/11/014-NewXrdpIsRunning.png">014-NewXrdpIsRunning.png</a>
+</p>
+
+<p>
+And yes indeed, at least the freshly compiled xrdp is up and running.
+</p>
+
+<p>
+NOTE: If you don't want to have to be manually hunting down and killing an X11rdp process, and also having to stop and restart xrdp, don't try logging in like I'm just about to do as a test. We need to proceed to section 4 which is next up, in order to get our sessions running properly…
+</p>
+
+
+<p>
+Almost there!
+</p>
+
+<p>
+At least now there isn't a screen full of garbage, so the xrdp/X11rdp combination works. How to get a proper desktop though? Oh yes, we need to tell xrdp what type of session we want…
+</p>
+
+<p>
+<a href="http://scarygliders.net/wpcontent/uploads/2011/11/015-X11rdpRunsButNotQuiteThereYet.png">015-X11rdpRunsButNotQuiteThereYet.png</a>
+</p>
+
+<h2 id="toc_1.3">WindowManager</h2>
+
+<p>
+Telling xrdp what kind of session we want, after logging in…
+</p>
+
+<p>
+UPDATE: I have re-written this section, because of the new method we did above, which has made this procedure FAR simpler!
+</p>
+
+<p>
+There is a script in /etc/xrdp called startwm.sh , which is responsible for starting the window manager after you have logged in. In the step above we renamed it and turned it into a symbolic link to /etc/X11/Xsession.
+</p>
+
+<p>
+In its original form, the beginning of the script as supplied read like this;
+</p>
+
+<pre class="brush:bash">
+# change the order in line below to run to run whatever window manager you
+# want, default to kde
+
+SESSIONS="gnome-session blackbox fluxbox startxfce4 startkde xterm"
+
+# start the window manager
+wm_start()
+{
+  for WindowManager in $SESSIONS
+  do
+    which $WindowManager
+    if test $? -eq 0
+    then
+      echo "Starting $WindowManager"
+      $WindowManager
+      return 0
+    fi
+  done
+  return 0
+}
+</pre>
+
+
+<p>
+This would have caused us trouble when logging into xrdp, because what it's saying is "Here's a default bunch of the usual window managers. Go through each one and if you find one, start it".
+</p>
+
+<p>
+Blech!
+</p>
+
+<p>
+Not very flexible, and way over-complicated. Personally speaking, I'd rather it look at a file in my login directory and start whatever window manager or session I want.
+</p>
+
+<p>
+Also, we can do really interesting things with a customizable .xsession script – read Update 1 at the bottom of this article for bonus hot-ness ;)
+</p>
+
+<p>
+By turning startwm.sh into a symbolic link above, we can now automatically use our .xsession script in our home directory.
+</p>
+
+<ul>
+<li>
+Edit or create the file <strong>.xsession</strong> in your login directory.
+
+</ul>
+
+<p>
+Please read Update 1 at the bottom of this article for additional hotness – automatically remove background for the RDP session and restore when you log out of the RDP session.
+</p>
+
+<p>
+In your home directory there should be a file called .xsession
+</p>
+
+<p>
+Don't worry if there isn't – it just means you haven't created it yet. Anyway, after logging in via the xrdp login screen, the .xsession file basically specifies what kind of desktop session we want.
+</p>
+
+<p>
+In this case, I'm going to use the Gnome 3 classic session, which if you followed my other article, should be configured by now to resemble a pretty usable old skool gnome desktop.
+</p>
+
+<p>
+Simply open up a terminal and as your normal user either edit or create a file called .xsession , and enter the following;
+</p>
+
+<p>
+<code>gnome-session --session=gnome-fallback</code>
+</p>
+
+<p>
+Save the file, and if the xrdp server is not already running, start it up.
+</p>
+
+<p>
+Now try to connect to an RDP session!
+</p>
+
+<h2 id="toc_1.4">Connect via RDP!</h2>
+
+<p>
+I'll try using the RDP client from Windows 7, mstsc.exe;
+</p>
+
+
+<p>
+By the way, remember to select "sesman-X11rdp" module at the xrdp login screen! Log in and…
+</p>
+
+<p>
+It Works!
+</p>
+
+<p>
+Bingo! Works nicely!
+</p>
+
+<p>
+As I stated above, you can now specify exactly what session you wish to see when you log in via xrdp.
+</p>
+
+<p>
+I installed Xfce, logged out of that RDP session, edited my <code>.xsession</code> file, commented out the gnome session and entered this instead;
+</p>
+
+<pre class="brush:bash">
+#gnome-session --session=gnome-fallback
+xfce4-session
+</pre>
+
+<p>
+Then logged back in;
+</p>
+
+
+<p>
+Freedom of choice is wonderful, isn't it ;)
+</p>
+
+<p>
+Note that now you're using the more recently updated versions of xrdp and X11rdp, you can specify more color depths; 8,15,16,24,32 all work! (Although, I doubt using full 32-bit color over the internet is going to be fast – haven't tried it yet).
+</p>
+
+<p>
+And now for the last section of this tutorial; customization…
+</p>
+
+<h2 id="toc_1.5">Customizing</h2>
+
+<p>
+Customizing the xrdp login screen…
+</p>
+ 
+<ul>
+<li>
+X11rdp as default on the login screen…
+
+</ul>
+
+<p>
+First of all, let's make the sesman-X11rdp option appear by default. This is useful because A) You don't have to keep manually selecting it every time, and B) you can just plug in your login and password details to your RDP client and you can log straight into your RDP session.
+</p>
+
+<p>
+So with that in mind, have a look at the file <code>/etc/xrdp/xrdp.ini</code> ;
+</p>
+
+<pre class="brush:bash">
+[globals]
+bitmap_cache=yes
+bitmap_compression=yes
+port=3389
+crypt_level=low
+channel_code=1
+max_bpp=24
+#black=000000
+#grey=d6d3ce
+#dark_grey=808080
+#blue=08246b
+#dark_blue=08246b
+#white=ffffff
+#red=ff0000
+#green=00ff00
+#background=626c72
+
+[xrdp1]
+name=sesman-Xvnc
+lib=libvnc.so
+username=ask
+password=ask
+ip=127.0.0.1
+port=-1
+
+[xrdp2]
+name=console
+lib=libvnc.so
+ip=127.0.0.1
+port=5900
+username=na
+password=ask
+
+[xrdp3]
+name=vnc-any
+lib=libvnc.so
+ip=ask
+port=ask5900
+username=na
+password=ask
+
+[xrdp4]
+name=sesman-any
+lib=libvnc.so
+ip=ask
+port=-1
+username=ask
+password=ask
+
+[xrdp5]
+name=rdp-any
+lib=librdp.so
+ip=ask
+port=ask3389
+
+[xrdp6]
+name=freerdp-any
+lib=libxrdpfreerdp.so
+ip=ask
+port=ask3389
+
+[xrdp7]
+name=sesman-X11rdp
+lib=libxup.so
+username=ask
+password=ask
+ip=127.0.0.1
+port=-1
+xserverbpp=24
+</pre>
+
+<p>
+Notice the section "[xrdp7]".
+</p>
+
+<p>
+It's the one used for use with X11rdp.
+</p>
+
+<p>
+Simply edit that file (you need to be root), cut &amp; paste that to the top of the list and rename it to [xrdp1] , renumbering the others too. You should end up with something like this;
+</p>
+
+<pre class="brush:bash">
+[globals]
+bitmap_cache=yes
+bitmap_compression=yes
+port=3389
+crypt_level=low
+channel_code=1
+max_bpp=24
+#black=000000
+#grey=d6d3ce
+#dark_grey=808080
+#blue=08246b
+#dark_blue=08246b
+#white=ffffff
+#red=ff0000
+#green=00ff00
+#background=626c72
+
+[xrdp1]
+name=sesman-X11rdp
+lib=libxup.so
+username=ask
+password=ask
+ip=127.0.0.1
+port=-1
+xserverbpp=24
+
+[xrdp2]
+name=sesman-Xvnc
+lib=libvnc.so
+username=ask
+password=ask
+ip=127.0.0.1
+port=-1
+
+[xrdp3]
+name=console
+lib=libvnc.so
+ip=127.0.0.1
+port=5900
+username=na
+password=ask
+
+[xrdp4]
+name=vnc-any
+lib=libvnc.so
+ip=ask
+port=ask5900
+username=na
+password=ask
+
+[xrdp5]
+name=sesman-any
+lib=libvnc.so
+ip=ask
+port=-1
+username=ask
+password=ask
+
+[xrdp6]
+name=rdp-any
+lib=librdp.so
+ip=ask
+port=ask3389
+
+[xrdp7]
+name=freerdp-any
+lib=libxrdpfreerdp.so
+ip=ask
+port=ask3389
+</pre>
+
+<p>
+Save the edited file, then restart xrdp with sudo /etc/init.d/xrdp restart . Then use your RDP client to connect again;
+</p>
+
+<p>
+There ya go! X11rdp is now the default session type.
+</p>
+
+<p>
+Press Cancel, and now enter your complete login/password details to your RDP client. You'll be logged straight into your RDP session using the X11rdp server :)
+</p>
+
+
+<ul>
+<li>
+Changing the Xrdp Logo on the login screen!
+
+</ul>
+
+<p>
+I'm including this as a bit of fun, but I can see where this might be useful in a corporate environment where you may wish to place your company logo on the login screen.
+</p>
+
+<p>
+It's actually remarkably simple…
+</p>
+
+<p>
+Having looked at the xrdp source, I noticed that the utility loads the logo bitmaps at time of execution, so as an experiment, I spent a little bit of time to come up with a newer, fresher Xrdp logo, here's what it looks like on the xrdp login screen – compare that to the old logo in the last screenshot above;
+</p>
+
+
+<p>
+I think I like mine better, but I'm biased  ;)
+</p>
+
+<p>
+Basically all you need to do is replace the logo bitmaps with something of your choice – they have to be saved in BMP format, and it shouldn't matter if the bitmap is larger or smaller in size compared to the original files (widthxheight in pixels) , because if I've read the xrdp source code correctly, it takes the dimensions of the source bitmap and allocates the memory properly for proper fixing into the resultant login screen, from the bottom right outwards. You'll notice my logo is a bit bigger than the original Xrdp logo.
+</p>
+
+<p>
+The bitmaps, after installation, are stored in the directory /usr/share/xrdp/
+</p>
+
+<p>
+The two main ones to consider are xrdp24b.bmp, and xrdp256.bmp – obviously for 24-bit and 8-bit versions respectively.
+</p>
+
+<p>
+Here's the 24-bit one I made in GIMP as an example. If you like it, feel free to use this if you wish, but tell people where you got it from if they ask (and consider making a donation for all this fine work I've been doing for your benefit :D ).
+</p>
+
+<p>
+And here's the 8-bit version. Again same condition of use as above :)
+</p>
+
+<p>
+Okay and that's it for this one – I think I've covered just about all the specifics which are relevant to Ubuntu 11.10, and once again I hoped this helped!
+</p>
+
+<p>
+Have fun!
+</p>
+
+
+<h2 id="toc_1.6">building on Debian 6</h2>
+
+<p>
+<a href="http://www.xrdp.org/index.php?option=com_content&amp;view=article&amp;id=16:building-on-debian-6&amp;catid=2:documents&amp;Itemid=7">http://www.xrdp.org/index.php?option=com_content&amp;view=article&amp;id=16:building-on-debian-6&amp;catid=2:documents&amp;Itemid=7</a>
+</p>
+
+<p>
+Written by Jay Sorg   
+</p>
+
+<p>
+Monday, 28 January 2013 20:41
+</p>
+
+<pre class="brush:bash">
+# install Debian 6
+
+# as root
+apt-get update
+apt-get upgrade
+reboot
+
+apt-get install git autoconf libtool pkg-config gcc g++ make
+apt-get install libssl-dev libpam0g-dev libjpeg-dev libx11-dev libxfixes-dev
+apt-get install flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils
+reboot
+
+cd
+mkdir git
+cd git
+
+mkdir freerdp
+cd freerdp
+
+git clone git://github.com/FreeRDP/xrdp.git
+cd xrdp
+./bootstrap
+./configure --enable-jpeg
+make
+make install
+
+cd xorg
+cd X11R7.6
+./buildx.sh /opt/X11rdp
+# create the symbolic link for sesman
+ln -s /opt/X11rdp/bin/X11rdp /usr/local/bin/X11rdp
+
+# start on boot
+cp /etc/xrdp/xrdp.sh /etc/init.d/
+update-rc.d xrdp.sh defaults
+reboot
+</pre>
+
+<h2 id="toc_1.7">building on CentOS 5.x</h2>
+
+<p>
+Written by Jay Sorg   
+</p>
+
+<p>
+Friday, 28 December 2012 05:14
+</p>
+
+<p>
+Last Updated on Friday, 28 December 2012 05:15 
+</p>
+
+<pre class="brush:bash">
+# install Centos 5.6
+
+# as root
+yum update
+reboot
+
+yum install finger cmake patch gcc make autoconf libtool automake
+pkgconfig openssl-devel gettext file
+yum install pam-devel libX11-devel libXfixes-devel libjpeg-devel
+yum install flex bison gcc-c++ libxslt perl-libxml-perl xorg-x11-font-utils
+reboot
+
+# git
+# if yum install git fails
+wget http://git-core.googlecode.com/files/git-1.8.0.2.tar.gz
+tar -zxvf git-1.8.0.2.tar.gz
+cd git-1.8.0.2
+./configure --without-tcltk
+make
+make install
+
+cd
+mkdir git
+cd git
+
+mkdir freerdp
+cd freerdp
+
+git clone git://github.com/FreeRDP/xrdp.git
+cd xrdp
+./bootstrap
+./configure --enable-jpeg
+make
+make install
+
+cd xorg
+cd X11R7.6
+./buildx.sh /opt/X11rdp
+# create the symbolic link for sesman
+ln -s /opt/X11rdp/bin/X11rdp /usr/local/bin/X11rdp
+
+# start on boot
+cp /etc/xrdp/xrdp.sh /etc/init.d/
+/sbin/chkconfig --add xrdp.sh
+reboot
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2014 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="../scripts/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
