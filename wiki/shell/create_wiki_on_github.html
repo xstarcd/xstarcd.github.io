@@ -35,6 +35,7 @@
 <ul>
 <li><a href="#toc_0.5.1">git.conf内容</a>
 <li><a href="#toc_0.5.2">设置密码缓存</a>
+<li><a href="#toc_0.5.3">Jekyll</a>
 </ul>
 </ul>
 </ul>
@@ -489,18 +490,32 @@ emoji仓库CNAME设置为<code>emoji.muan.co</code>，所有者为<code>muan</co
 </p>
 <pre>
 git config --global credential.helper wincred
+# 测试使用wincred没有效果，第二次pull还是提示输入username,password。
+# 改用store有效。
 </pre>
-
-<p>
-保存文件：~/.git-credentials
-</p>
-
 <ul>
 <li>
 <a href="http://git-scm.com/docs/git-credential-store">http://git-scm.com/docs/git-credential-store</a>
 <pre>
 git config credential.helper 'store [options]'
 </pre>
+
+</ul>
+<p>
+保存位存：~/.git-credentials
+</p>
+
+<h3 id="toc_0.5.3">Jekyll</h3>
+
+<ul>
+<li>
+github Pages和Jekyll入门: <a href="http://www.ruanyifeng.com/blog/2012/08/blogging_with_jekyll.html">http://www.ruanyifeng.com/blog/2012/08/blogging_with_jekyll.html</a>
+
+<li>
+Liquid模板语言: <a href="https://github.com/shopify/liquid/wiki/liquid-for-designers">https://github.com/shopify/liquid/wiki/liquid-for-designers</a>
+
+<li>
+<a href="https://github.com/ZE3kr/ZE3kr.github.io">https://github.com/ZE3kr/ZE3kr.github.io</a>
 
 </ul>
 

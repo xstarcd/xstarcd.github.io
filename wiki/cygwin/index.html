@@ -41,6 +41,7 @@
 </ul>
 <li><a href="#toc_1.4">中文乱码设置</a>
 <li><a href="#toc_1.5">技巧收集</a>
+<li><a href="#toc_1.6">SSH Agent on Cygwin</a>
 </ul>
 </ul>
 </div>
@@ -205,10 +206,12 @@ alias ll='ls -la'                             # long list
 alias la='ls -A'                              # all but . and ..
 alias l='ls -CF'                              #
 
-# 关闭ControlMaster auto，避免ssh连接时报错
+# 关闭ControlMaster auto，避免ssh连接时因不支持unix-socket报如下错误问题：
+# mm_receive_fd: no message header
+# process_mux_new_session: failed to receive fd 0 from slave
 alias ssh="ssh -S none"
 
-# 将Windows命令输出转换为utf8，解决乱码问题
+# 将常用Windows命令输出转换为utf8，解决Windows自有命令显示乱码问题
 _runiconv () { _cmd=$1;shift;$_cmd $* 2&gt;&amp;1|iconv -f gbk -t utf8; }
 alias ping='_runiconv ping'
 alias ifconfig='_runiconv ipconfig'
@@ -486,7 +489,7 @@ mkgroup -l &gt; /etc/group
 界面中设置：右键菜单-&gt;Options-&gt;Text，然后选择你喜欢的字体和大小。
 
 <li>
-如果没有你相要的字体，但Windows中有，可修改配置文件：<code>~/.minttyrc</code>，添加以下设置：
+Windows中有些字体不会列出，可在配置文件：<code>~/.minttyrc</code>中直接指定：
 <pre>
 BoldAsFont=no
 #Font=Courier New
@@ -569,6 +572,122 @@ rkosegi's Answer seems to be working for everyone (myself included). But, just s
 This process worked for me. I hope it works for you guys too.
 
 Source: http://cygwin.wikia.com/wiki/Rebaseall
+</pre>
+
+</ul>
+</ul>
+
+<h2 id="toc_1.6">SSH Agent on Cygwin</h2>
+
+<p>
+ssh-agent 启动后，会设置 SSH_AUTH_SOCK 和 SSH_AGENT_PID 两个环境变量。
+</p>
+
+<p>
+ssh 通过检测 SSH_AUTH_SOCK 和 SSH_AGENT_PID 两个环境变量判断是否存在 ssh-agent 后台进程，如果存在则使用 ssh-agent 完成自动认证，否则提示用户输入密码。
+</p>
+
+<p>
+ssh-agent启动输出内容为环境参数设置脚本，需以eval或source方式执行来加入环境参数。
+</p>
+<pre>
+ssh-agent.exe -s
+SSH_AUTH_SOCK=/tmp/ssh-GYP4AmeZ5LP6/agent.1272; export SSH_AUTH_SOCK;
+SSH_AGENT_PID=4536; export SSH_AGENT_PID;
+echo Agent pid 4536;
+</pre>
+
+<ul>
+<li>
+在~/.bash_profile中添加自动启动、停止ssh-agent代码
+
+</ul>
+<p>
+实现如下功能：
+</p>
+<ol>
+<li>
+打开Cygwin时若没有ssh-agent进程，则自动启动，若已有ssh-agent进程，则不再重复启动；
+
+<li>
+关闭Cygwin时，检查若是最后一个Cygwin窗口则自动关闭ssh-agent，若还有其它Cygwin窗口则不关闭。
+
+<li>
+关闭所有Cygwin窗口，之前保存的key将不再有效。
+
+<li>
+多个窗口均共用同ssh-agent。
+<pre class="brush:bash">
+# Add to ~/.bash_profile
+# start_stop_ssh_agent
+SSH_ENV=$HOME/.ssh/ssh-agent-env
+function stop_ssh_agent {
+    if [ $(ps -ef|grep mintty$|wc -l) -lt 2 -a -n "$SSH_AGENT_PID" ];then
+        ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent$ &gt; /dev/null &amp;&amp; kill $SSH_AGENT_PID
+    fi
+}
+function start_ssh_agent {
+    if [ -f "${SSH_ENV}" ]; then
+         . ${SSH_ENV} &gt; /dev/null
+         ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent$ &gt; /dev/null &amp;&amp; return 0
+    fi
+    echo "Initialising new SSH agent..."
+    /usr/bin/ssh-agent -s | sed 's/^echo/#echo/' &gt; ${SSH_ENV} \
+    &amp;&amp; echo succeeded \
+    &amp;&amp; chmod 600 ${SSH_ENV} \
+    &amp;&amp; . ${SSH_ENV} &gt; /dev/null
+    #&amp;&amp; /usr/bin/ssh-add \
+}
+start_ssh_agent
+#trap "[ \$(ps -ef|grep mintty\$|wc -l) -lt 2 ] &amp;&amp; kill $SSH_AGENT_PID" 0
+trap "stop_ssh_agent" 0
+</pre>
+
+</ol>
+
+<ul>
+<li>
+ssh-add
+
+</ul>
+
+<p>
+ssh-add的作用是把指定的私钥添加到 ssh-agent 所管理的一个 session 当中。
+</p>
+
+<p>
+ssh-agent 是一个用于存储私钥的临时性的 session 服务，也就是说当你重启之后，ssh-agent 服务也就重置了。
+</p>
+
+<pre class="brush:bash">
+ssh-add ~/.ssh/id_rsa
+[enter your password]
+</pre>
+
+<ul>
+<li>
+keychain
+
+<ul>
+<li>
+<a href="http://www.funtoo.org/Keychain">http://www.funtoo.org/Keychain</a>
+<pre>
+sdesc: "Key manager for OpenSSH"
+ldesc: "Keychain is an OpenSSH key manager, typically run from
+~/.bash_profile. When keychain is run, it checks for a running
+ssh-agent, otherwise it starts one. It saves the ssh-agent environment
+variables to ~/.keychain/$HOSTNAME-sh, so that subsequent logins
+and non-interactive shells such as cron jobs can source the file and
+make passwordless ssh connections. In addition, when keychain runs, it
+verifies that the key files specified on the command-line are known to
+ssh-agent, otherwise it loads them, prompting you for a password if
+necessary"
+</pre>
+
+<li>
+~/.bash_profile: 
+<pre>
+eval `keychain --eval --agents ssh id_dsa`
 </pre>
 
 </ul>
