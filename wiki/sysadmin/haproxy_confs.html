@@ -124,8 +124,8 @@ defaults
 
 listen MyRdp
     mode tcp
-    bind *:12222
-    server myRdp1 192.168.1.100:12222 maxconn 32
+    bind *:3389
+    server myRdp1 192.168.1.100:3389 maxconn 32
     option tcplog
 
 listen web_vip 0.0.0.0:80
