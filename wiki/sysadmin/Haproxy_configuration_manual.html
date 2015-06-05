@@ -16,6 +16,264 @@
 <div id="main">
 
 <h1>Haproxy 1.5 配置手册</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">关于HTTP协议</a>
+<ul>
+<li><a href="#toc_0.1.1">HTTP事务模型</a>
+<li><a href="#toc_0.1.2">HTTP Request</a>
+<li><a href="#toc_0.1.3">HTTP Response</a>
+</ul>
+<li><a href="#toc_0.2">配置Haproxy</a>
+<ul>
+<li><a href="#toc_0.2.1">配置文件格式</a>
+<li><a href="#toc_0.2.2">时间格式</a>
+<li><a href="#toc_0.2.3">配置范例</a>
+</ul>
+<li><a href="#toc_0.3">Global全局参数</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">关于HTTP协议</h2>
+
+<p>
+当Haproxy运行在HTTP模式下时，请求和响应均经过haproxy分析和处理，几乎可以构建匹配规则来处理所有内容。
+</p>
+
+<p>
+然而，重要的是要理解HTTP的request和response，以及Haproxy如何分解它们，才能更容易地编写正确的规则和调试配置。
+</p>
+
+<h3 id="toc_0.1.1">HTTP事务模型</h3>
+
+<ul>
+<li>
+HTTP close mode
+
+</ul>
+<p>
+HTTP协议是事务驱动模式，这意味着每个请求有且只有一个响应。传统上，从客户端与服务端建立一个TCP连接，客户端通过连接发起一个请求，服务端作出响应和关闭连接。一个新的请求会再创建一个新的连接。
+</p>
+
+<pre>
+[CON1] [REQ1] ... [RESP1] [CLO1] [CON2] [REQ2] ... [RESP2] [CLO2] ...
+</pre>
+
+<p>
+这种模式叫做HTTP close模式，有多少HTTP事务就有多少个连接。因为服务端在回应后断会断开连接，客户端不需要知道内容长度。
+</p>
+
+<ul>
+<li>
+Keep-alive mode
+
+</ul>
+
+<p>
+由于事务协议的性质，可以改进它，避免在两个事务之间断开连接。在这种模式下，服务端在协议头中增加"Content-length"来表示响应的内容长度，以便客户端无限期等待。
+</p>
+
+<pre>
+[CON] [REQ1] ... [RESP1] [REQ2] ... [RESP2] [CLO] ...
+</pre>
+
+<p>
+它的优点是减少事务之间的延迟时间和服务端的开销，这会比HTTP close模式更好，但不总是这样，因为客户端经常会限制其并发连接为一个较小的值。
+</p>
+
+<ul>
+<li>
+pipelining mode
+
+</ul>
+
+<p>
+还有一个改进通信效率模式是流水线模式。它仍然使用keep-alive，但客户端不再等待前一个响应结束才发起第二个请求，这在需要获取大量的图片来组成一个页面非常适用。
+</p>
+
+<pre>
+[CON] [REQ1] [REQ2] ... [RESP1] [RESP2] [CLO] ...
+</pre>
+
+<p>
+因为同时发起多个请求，网络延迟大大降低，对提高页面的加载速度有很大帮助。
+</p>
+
+<p>
+很多HTTP代理不支持pipelining模式，因为没有办法正确地把响应和请求关联上。因此，要求服务器使用完全相同的顺序来回复收到的请求。
+</p>
+
+<p>
+默认情况下Haproxy持久连接处于Keep-alive模式：为每个连接处理各自的请求和响应，响应结束后连接进入空闲状态，并用于处理下一个请求。
+</p>
+
+<ul>
+<li>
+HAProxy支持五种连接模型：
+
+<ul>
+<li>
+keep alive    : all requests and responses are processed (default)
+
+<li>
+tunnel        : only the first request and response are processed,everything else is forwarded with no analysis.
+
+<li>
+passive close : tunnel with "Connection: close" added in both directions.
+
+<li>
+server close  : the server-facing connection is closed after the response.
+
+<li>
+forced close  : the connection is actively closed after end of response.
+
+</ul>
+</ul>
+
+<h3 id="toc_0.1.2">HTTP Request</h3>
+<pre>
+Line     Contents
+number
+ 1       GET /serv/login.php?lang=en&amp;profile=2 HTTP/1.1
+ 2       Host: www.mydomain.com
+ 3       User-agent: my small browser
+ 4       Accept: image/jpeg, image/gif
+ 5       Accept: image/png
+</pre>
+
+<p>
+略。
+</p>
+
+<h3 id="toc_0.1.3">HTTP Response</h3>
+<pre>
+Line     Contents
+number
+ 1       HTTP/1.1 200 OK
+ 2       Content-length: 350
+ 3       Content-Type: text/html
+</pre>
+
+<p>
+略。
+</p>
+
+<h2 id="toc_0.2">配置Haproxy</h2>
+
+<h3 id="toc_0.2.1">配置文件格式</h3>
+
+<p>
+HAProxy参数的配置过程包括三个主要来源:
+</p>
+
+<ul>
+<li>
+命令行参数，优先级最高
+
+<li>
+global部分，设置进程参数
+
+<li>
+代理部分，包括：defaults,listen,frrontend,backend
+
+</ul>
+
+<p>
+配置文件中，以配置项关键字开始，后跟一个或几个参数，多个参数之间用空格分隔。
+</p>
+
+<p>
+如果参数中包含空格或反斜杠(<code>\</code>)，必须使用反斜杠(<code>\</code>)进行转义。
+</p>
+
+<h3 id="toc_0.2.2">时间格式</h3>
+
+<p>
+有些参数包括时间，如timeout。时间通常使用ms单位(特别说明的除外)，也可以使用其它单位的数值。支持的时间单位包括：
+</p>
+
+<ul>
+<li>
+us : microseconds. 1 microsecond = 1/1000000 second
+
+<li>
+ms : milliseconds. 1 millisecond = 1/1000 second. This is the default.
+
+<li>
+s  : seconds. 1s = 1000ms
+
+<li>
+m  : minutes. 1m = 60s = 60000ms
+
+<li>
+h  : hours.   1h = 60m = 3600s = 3600000ms
+
+<li>
+d  : days.    1d = 24h = 1440m = 86400s = 86400000ms
+
+</ul>
+
+
+<h3 id="toc_0.2.3">配置范例</h3>
+
+<ul>
+<li>
+一个简单的HTTP Proxy配置:
+
+<ul>
+<li>
+在所有接口上侦听80端口(frontend http-in)，将请求转发到backend servers。
+
+<li>
+backend中只有一台服务器server1，侦听127.0.0.1:8000端口。
+<pre class="brush:bash">
+global
+    daemon
+    maxconn 256
+
+defaults
+    mode http
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+
+frontend http-in
+    bind *:80
+    default_backend servers
+
+backend servers
+    server server1 127.0.0.1:8000 maxconn 32
+</pre>
+
+</ul>
+<li>
+使用一个listen块完成相同功能的配置，简短但太清晰
+<pre class="brush:bash">
+global
+    daemon
+    maxconn 256
+
+defaults
+    mode http
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+
+listen http-in
+    bind *:80
+    server server1 127.0.0.1:8000 maxconn 32
+</pre>
+
+<li>
+配置文件测试
+<pre class="brush:bash">
+sudo haproxy -f configuration.conf -c
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">Global全局参数</h2>
 
 </div>
 <div id="footer">
