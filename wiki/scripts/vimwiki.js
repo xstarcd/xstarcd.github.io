@@ -22,7 +22,7 @@ var kwiki = {
         var kwiki_identifier = 'wiki' + window.location.pathname.replace(/\//g, '_').replace('index.html', '')
             //.replace('.html', '');
         var kwiki_title = $(document).attr("title");
-        var kwiki_url = 'http://w.gdu.me/' + window.location.pathname.replace('index.html', '');
+        var kwiki_url = 'http://w.gdu.me' + window.location.pathname.replace('index.html', '');
 
         if (provider == 'disqus') {
             //disqus
