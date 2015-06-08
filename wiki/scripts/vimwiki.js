@@ -19,9 +19,10 @@ var kwiki = {
         if ($('#no-comment').length > 0) return;
         var thread, extraCSS, theJS;
 
-        var kwiki_identifier = 'wiki' + window.location.pathname.replace(/\//g, '_')
-            .replace('index.html', '')
-            .replace('.html', '');
+        var kwiki_identifier = 'wiki' + window.location.pathname.replace(/\//g, '_').replace('index.html', '')
+            //.replace('.html', '');
+        var kwiki_title = $(document).attr("title");
+        var kwiki_url = 'http://w.gdu.me/' + window.location.pathname.replace('index.html', '');
 
         if (provider == 'disqus') {
             //disqus
@@ -33,7 +34,8 @@ var kwiki = {
         } else if (provider == 'duoshuo') {
             //duoshuo
             window.duoshuoQuery = {short_name:"xstar"};
-            thread = $('<div class="ds-thread">');
+            //thread = $('<div class="ds-thread">');
+            thread = $('<div class="ds-thread" data-thread-key="'+kwiki_identifier+'" data-title="'+kwiki_title+'" data-url="'+kwiki_url+'">');
             theJS = 'http://static.duoshuo.com/embed.js';
         } else {
             return;
@@ -194,6 +196,7 @@ $(document).ready(function() {
 });
 
 //Google 统计
+/*
 if (window.location.hostname!='') {
     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -202,4 +205,5 @@ if (window.location.hostname!='') {
     ga('create', 'UA-46664569-1', 'gdu.me');
     ga('send', 'pageview');
 }
+*/
 
