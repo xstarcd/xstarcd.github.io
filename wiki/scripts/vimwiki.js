@@ -194,7 +194,8 @@ $(document).ready(function() {
     */
 
     //评论:duoshuo,disqus
-    if (!$.browser.msie && window.location.hostname!='') kwiki.loadCmt('duoshuo');
+    //if (!$.browser.msie && window.location.hostname!='') kwiki.loadCmt('duoshuo');
+    if (window.location.hostname!='') kwiki.loadCmt('duoshuo');
 });
 
 //Google 统计
