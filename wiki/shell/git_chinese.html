@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Git中文显示问题解决</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Git中文显示问题解决</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">ls显示中文文件名</a>
+<li><a href="#toc_0.2">输入中文</a>
+<li><a href="#toc_0.3">中文commit log</a>
+<li><a href="#toc_0.4">git gui显示中文</a>
+<li><a href="#toc_0.5">转换编码</a>
+<li><a href="#toc_0.6">修改显示编辑器</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+原文：windows下git bash显示中文: <a href="http://blog.csdn.net/self001/article/details/7337182">http://blog.csdn.net/self001/article/details/7337182</a>
+
+</ul>
+
+<p>
+git bash很多中文显示问题解决方法与CygWin一样。
+</p>
+
+<h2 id="toc_0.1">ls显示中文文件名</h2>
+
+<ul>
+<li>
+C:\Program Files\Git\etc\git-completion.bash：
+<pre class="brush:bash">
+alias ls='ls --show-control-chars --color=auto'
+</pre>
+
+</ul>
+
+<p>
+说明：使得在 Git Bash 中输入 ls 命令，可以正常显示中文文件名。
+</p>
+
+<p>
+注：Cygwin 1.7.1版本中无此问题。
+</p>
+
+<h2 id="toc_0.2">输入中文</h2>
+
+<ul>
+<li>
+C:\Program Files\Git\etc\inputrc：
+<pre class="brush:bash">
+set output-meta on
+set convert-meta off
+</pre>
+
+</ul>
+
+<p>
+说明：使得在 Git Bash 中可以正常输入中文，比如中文的 commit log。
+</p>
+
+<p>
+注：Cygwin 1.7.1版本中无此问题。
+</p>
+
+<h2 id="toc_0.3">中文commit log</h2>
+
+<ul>
+<li>
+C:\Program Files\Git\etc\profile：
+<pre class="brush:bash">
+export LESSCHARSET=utf-8
+</pre>
+
+</ul>
+
+<p>
+说明：git log 命令不像其它 vcs 一样，n 条 log 从头滚到底，它会恰当地停在第一页，按 space 键再往后翻页。这是通过将 log 送给 less 处理实现的。以上即是设置 less 的字符编码，使得 git log 可以正常显示中文。
+</p>
+
+<p>
+其实，它的值不一定要设置为 utf-8，比如 latin1 也可以……(在Cgywin中测试utf-8可以，latin1仍是乱码)。还有个办法是 git –no-pager log，在选项里禁止分页，则无需设置上面的选项。
+</p>
+
+<h2 id="toc_0.4">git gui显示中文</h2>
+
+<ul>
+<li>
+C:\Program Files\Git\etc\gitconfig：
+<pre class="brush:bash">
+[gui]
+encoding = utf-8
+</pre>
+
+</ul>
+
+<p>
+说明：我们的代码库是统一用的 utf-8，这样设置可以在 git gui 中正常显示代码中的中文。
+</p>
+
+<h2 id="toc_0.5">转换编码</h2>
+
+<ul>
+<li>
+C:\Program Files\Git\etc\gitconfig：
+<pre class="brush:bash">
+[i18n]
+commitencoding = GB2312
+</pre>
+
+</ul>
+
+<p>
+说明：如果没有这一条，虽然我们在本地用 git log 看自己的中文修订没问题，但是：一、我们的 log 推到服务器后会变成乱码；
+二、别人在 Linux 下推的中文 log 我们 pull 过来之后看起来也是乱码。这是因为，我们的 commit log 会被先存放在项目的 .git/COMMIT_EDITMSG 文件中；在中文 Windows 里，新建文件用的是 GB2312 的编码；但是 Git 不知道，当成默认的 utf-8 的送出去了，所以就乱码了。有了这条之后，Git 会先将其转换成 utf-8，再发出去，于是就没问题了。
+</p>
+
+<p>
+注：我在Cygwin中使用的UTF-8，所以不存在上面的问题。
+</p>
+
+<h2 id="toc_0.6">修改显示编辑器</h2>
+
+<p>
+可以设置git默认为其它编辑器：
+</p>
+<pre class="brush:bash">
+git config --global core.editor "notepad"
+</pre>
+
+<p>
+其中 notepad 可以替换为更好用的 wordpad、notepad++ 等（不过它们在命令行里无法直接访问，得先设置 PATH 变量）。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

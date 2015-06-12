@@ -414,13 +414,18 @@ export CYGWIN="nontsec nosmbntsec"
 Rethat Cygwin安装后目录中文即正常，以下设置不一定需要。
 
 <li>
+git log命令中出现乱码，可以通过以下设置解决
+
+<li>
 ~/.bashrc
 <pre class="brush: bash">
 export SVN_EDITOR=vim
 
 # Redhat Cygwin中未做以下设置，中文正常
 alias ls='ls --color --show-control-chars'
-export LESSCHARSET=latin1
+# git log修改这个设置后可显示中文commit log
+#export LESSCHARSET=latin1
+export LESSCHARSET=UTF-8
 alias less='/bin/less -r'
 #export LC_ALL=zh_CN.UTF-8
 #export LC_CTYPE=zh_CN.UTF-8
