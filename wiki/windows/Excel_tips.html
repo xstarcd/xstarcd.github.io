@@ -54,10 +54,10 @@ End Function
 
 <ul>
 <li>
-相对引用：<code>=CELL("address",E2)</code>
+相对引用：<code>=CELL("address",A1)</code>
 
 <li>
-绝对应用：<code>=SUBSTITUTE(CELL("address",B2),"$","")</code>
+绝对应用：<code>=SUBSTITUTE(CELL("address",A1),"$","")</code>
 
 </ul>
 </ul>
@@ -103,6 +103,14 @@ if len(sys.argv)&lt;2:
 fs=sys.argv[1]
 _s = [('"\'"&amp;%s&amp;"\'"'%f[1:] if f.startswith('#') else f) for f in fs.split(',')]
 print ('="("&amp;%s&amp;"),"'%'&amp;","&amp;'.join(_s)).replace('"&amp;"','')
+</pre>
+
+<li>
+执行结果
+<pre class="brush:bash">
+./mkexcel.py "#A1,#B1,D1,E1"
+
+="('"&amp;A1&amp;"','"&amp;B1&amp;"',"&amp;D1&amp;","&amp;E1&amp;"),"
 </pre>
 
 </ul>
