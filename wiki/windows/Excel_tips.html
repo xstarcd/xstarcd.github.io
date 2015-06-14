@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Excel技巧收集</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Excel技巧收集</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Excel中用公式生成SQL</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+换行符替换
+
+<ul>
+<li>
+删除文本中不能打印的字符(如换行符):<code>=CLEAN(A1)</code>
+
+<li>
+替换单元格中的换行符：<code>=SUBSTITUTE(SUBSTITUTE(A4,CHAR(10),"&lt;BR&gt;"),CHAR(13),"")</code>
+
+</ul>
+<li>
+提取字符串中的数字:VBA自定义函数
+<pre class="brush:vb">
+Function tqsz(rng As Range)
+    Dim R As Object
+    Set R = CreateObject("VBSCRIPT.REGEXP")
+    R.Pattern = "\D"
+    R.IgnoreCase = True
+    R.Global = True
+    tqsz = R.Replace(rng.Value, "")
+    Set R = Nothing
+End Function
+</pre>
+
+<li>
+获取指定单元格引用名:
+
+<ul>
+<li>
+相对引用：<code>=CELL("address",E2)</code>
+
+<li>
+绝对应用：<code>=SUBSTITUTE(CELL("address",B2),"$","")</code>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.1">Excel中用公式生成SQL</h2>
+
+<p>
+将表格转换为SQL INSERT语句，方便导入数据库。
+</p>
+<ul>
+<li>
+Excel公式
+<pre class="brush:bash">
+="('"&amp;B126&amp;"',"&amp;C126&amp;","&amp;D126&amp;",'"&amp;I126&amp;"'),"
+</pre>
+
+<li>
+SQL范例
+<pre class="brush:sql">
+="('"&amp;B126&amp;"',"&amp;C126&amp;","&amp;D126&amp;",'"&amp;I126&amp;"'),"
+TRUNCATE TABLE disciple_level;
+INSERT INTO `disciple_level` 
+(`c`,`level`,`hp_limit`,`attrs`,`acupoints`)
+VALUES
+('A',1,36,'EA:7.6,ED:3,SA:11.5,SD:2.8','');
+</pre>
+
+<li>
+Excel公式生成工具
+<pre class="brush:python">
+#!/usr/bin/env python
+# -*- coding=utf8 -*-
+
+import sys
+
+if len(sys.argv)&lt;2:
+    print """eg: 
+    Excel公式生成(#开头为字符串型字段，其余为数值型)
+    %s "#A1,#B1,#D1,E1,#F1,#G1,#H1,K1,L1,M1,#N1,#O1,#P1,#Q1,#R1,#S1,#T1,U1,V1"
+    """%(sys.argv[0])
+    sys.exit(0)
+
+fs=sys.argv[1]
+_s = [('"\'"&amp;%s&amp;"\'"'%f[1:] if f.startswith('#') else f) for f in fs.split(',')]
+print ('="("&amp;%s&amp;"),"'%'&amp;","&amp;'.join(_s)).replace('"&amp;"','')
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
