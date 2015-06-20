@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Shell中的算术运算</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Shell中的算术运算</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Bash shell的算术运算</a>
+<ul>
+<li><a href="#toc_0.1.1">使用 expr 外部程式</a>
+<li><a href="#toc_0.1.2">使用 $(( ))</a>
+<li><a href="#toc_0.1.3">使用 $[ ]</a>
+<li><a href="#toc_0.1.4">使用let命令</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+
+<h2 id="toc_0.1">Bash shell的算术运算</h2>
+
+<ul>
+<li>
+原文：<a href="http://blog.csdn.net/hansel/article/details/8736775">http://blog.csdn.net/hansel/article/details/8736775</a>
+
+</ul>
+
+<p>
+Bash shell 的算术运算有四种方式:
+</p>
+
+<h3 id="toc_0.1.1">使用 expr 外部程式</h3>
+
+<pre class="brush:bash">
+# 加法 
+r=`expr 4 + 5`
+echo $r
+# 注意! '4' '+' '5' 这三者之间要有空白
+
+# 乘法
+r=`expr 4 * 5` #错误
+r=`expr 4 \* 5`
+
+# 注：expr 没有乘幂
+</pre>
+
+<h3 id="toc_0.1.2">使用 $(( ))</h3>
+
+<pre class="brush:bash">
+r=$(( 4 + 5 ))
+echo $r
+</pre>
+
+<h3 id="toc_0.1.3">使用 $[ ]</h3>
+
+<pre class="brush:bash">
+r=$[ 4 + 5 ]
+echo $r
+
+# 乘法
+r=`expr 4 \* 5`
+r=$(( 4 * 5 ))
+r=$[ 4 * 5 ]
+echo $r
+
+# 除法
+r=`expr 40 / 5`
+r=$(( 40 / 5 ))
+r=$[ 40 / 5 ]
+echo $r
+
+# 减法
+r=`expr 40 - 5`
+r=$(( 40 - 5 ))
+r=$[ 40 - 5 ]
+echo $r
+
+# 求余数
+r=$[ 100 % 43 ]
+echo $r
+
+# 乘幂 (如 2 的 3 次方)
+r=$(( 2 ** 3 ))
+r=$[ 2 ** 3 ]
+echo $r
+</pre>
+
+<h3 id="toc_0.1.4">使用let命令</h3>
+
+<p>
+变量和运算符直接不能有空格，否则要用引号括起。
+</p>
+
+<pre class="brush:bash">
+# 加法：
+n=10
+let n=n+1
+echo $n #n=11
+
+# 乘法：
+let m=n*10
+echo $m
+
+# 除法：
+let r=m/10
+echo $r
+
+# 求余数：
+let r=m%7
+echo $r
+
+# 乘幂：
+let r=m**2
+echo $r
+</pre>
+
+<p>
+虽然Bash shell 有四种算术运算方法，但并不是每一种都是跨平台的，建议使用expr。
+</p>
+
+<p>
+另外，我们在 script 中经常有加1操作，以下四法皆可：
+</p>
+<pre class="brush:bash">
+m=$[ m + 1]
+m=`expr $m + 1`
+m=$(($m + 1))
+let m=m+1
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
