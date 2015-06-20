@@ -111,7 +111,7 @@ var duoshuoQuery = {short_name:"xstar"};
 #Scriptname: sitemap.sh
 #Auther: YuanXing
 #Create: 2013-12-17
-#Update: 2014-11-13
+#Update: 2015-06-20
 
 WikiDir=/data/soft/Vimwiki/Mywiki
 SiteMap=${WikiDir}/SiteMap.wiki
@@ -120,7 +120,7 @@ SiteMaptxt=${WikiDir}_html/SiteMap.txt
 WikiUrl=http://w.gdu.me/wiki
 EXCLUDE='/personal|/ogames|/gmxzd'
 
-export PATH=/usr/local/bin:/usr/bin
+export PATH=/usr/local/bin:/usr/bin:/bin
 
 # -----------------------------------------------------------------------------
 kernelname=$(uname -s)
@@ -144,7 +144,7 @@ esac
 rm -f "$SiteMapold"
 cp "$SiteMap" "$SiteMapold"
 ECHO_BR "%title 站点地图\n%toc 站点地图\n&lt;pre id='no-comment'&gt;本页不允许评论&lt;/pre&gt;" &gt; "$SiteMap"
-ECHO_BR "\n* Update: `date +'%Y-%m-%d %H:%M:%S'`" &gt;&gt; "$SiteMap"
+ECHO_BR "\n* Update: $(date +'%Y-%m-%d %H:%M:%S')" &gt;&gt; "$SiteMap"
 echo -n "" &gt; "$SiteMaptxt"
 for D in `find $WikiDir -type d|grep -vE "$EXCLUDE"|sort`;do
     ECHO_N "${D}:"
@@ -162,7 +162,8 @@ for D in `find $WikiDir -type d|grep -vE "$EXCLUDE"|sort`;do
         out=
         cnt=0
         for F in `find $D -maxdepth 1 -type f \( -name "*.wiki" -and ! -name "index.wiki" \)|grep -vE 'personal'|sort`;do
-            cnt=$(expr $cnt + 1)
+            #cnt=$(expr $cnt + 1)
+            let cnt=cnt+1
             url=`echo "$F"|sed -e "s#$WikiDir/##g" -e 's#\.wiki##g'`
             #level=`echo "${url}"|sed -e 's#[^/]##g' -e 's#/#    #g'|awk '{print $0"*"}'`
             level="`echo "${url}"|sed -e 's#[^/]##g' -e 's#/#    #g'`*"
@@ -184,7 +185,7 @@ for D in `find $WikiDir -type d|grep -vE "$EXCLUDE"|sort`;do
     fi
     echo ""
 done
-ECHO_N "Total:";cat "$SiteMaptxt"|wc -l
+ECHO_N "Total:"cat "$SiteMaptxt"|wc -l
 
 </pre>
 
