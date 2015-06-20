@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>MacOS软件包管理工具-HomeBrew</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>MacOS软件包管理工具-HomeBrew</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">优点和缺陷</a>
+<li><a href="#toc_0.2">Install Homebrew</a>
+<li><a href="#toc_0.3">Homebrew使用</a>
+<li><a href="#toc_0.4">定制自己的软件包</a>
+</ul>
+</ul>
+</div>
+
+<p>
+虽然 Mac OS X 自带了不少 Unix 下的开源软件，比如 vim, ruby, python, perl 等等，也自带了许多常用的库，包括 iconv, zlib 等等，但我们仍然有时会需要自己动手安装一些这样的软件或者库，要自动化这样的安装，现有最常见的选择是 MacPorts、Fink、HomeBrew。
+</p>
+
+<p>
+其中 MacPorts 是基于源代码的包管理，并不在自己的库里储存软件的实际内容，只有一个定义如何编译代码的 Portfile 和一些专门针对这个平台的 patch；
+</p>
+
+<p>
+而 Fink 则是 Apt 包管理系统在 Mac OS X 下的一个克隆，采用二进制分发，用户直接从 Fink 的仓库中下载安装软件。
+</p>
+
+
+<h2 id="toc_0.1">优点和缺陷</h2>
+
+<ul>
+<li>
+MacPorts
+
+</ul>
+<p>
+MacPorts 基于源代码的管理优点是非常灵活，更新很快 (很多时候更新只需要修改一下 Portfile 里的版本号和压缩包校验码就可以)，用户要订制安装也可以简单的通过修改 Portfile 实现，而且很多开源软件的安装配置会有多种模式 (典型的大都通过 configure 步骤配置)，在 MacPorts 中可以方便地通过 variants 参数指定，而不必像二进制分发那样，在远程服务器上编译的时候就定死了。
+</p>
+
+<p>
+而 MacPorts 的问题是，它希望自己安装的每套软件，所有的依赖都在它自己这个系统内 (一般就是你的 /opt/local) 解决，就算 Mac OS X 系统原生自带了满足依赖的库，它也坚决不用，这样就给你的系统增加了许多冗余，也客观增加了管理上的难度，典型的情况是：你的系统里装了两套 Python，该怎么管理外部安装的 Python 模块？比如通过 easy_install 或 setup.py 安装的，往往很难记住到底装到哪里了。
+</p>
+
+<ul>
+<li>
+Fink
+
+</ul>
+
+<p>
+而 Fink 虽然不会这么自作主张地添加依赖，最大的问题是更新不够及时，这也是缺乏维护人手导致的。二进制安装的缺点在上面也提到了：不便定制。
+</p>
+
+<ul>
+<li>
+Homebrew
+
+</ul>
+
+<p>
+所以 Homebrew 的出现，也许不是很及时，但在现在仍然是很必要的，它有这么一些优点：
+</p>
+
+<ol>
+<li>
+尽可能的利用你的系统里自带的库，包括 zlib, OpenSSL, Python 等等，只要 Mac OS X 自带了，它就不会另装一份。
+
+<li>
+定制简单，通过用 Ruby 写的 Homebrew formula 来定制，甚至可以灵活的跟踪直接来自版本管理库的最新软件
+
+<li>
+用 Git 管理和同步自身
+
+<li>
+直接装在 /usr/local 下，这样可以少定义很多各种 PATH 环境变量
+
+</ol>
+
+<p>
+其中第一点尤为重要。好的，下面简单介绍一下 Homebrew 的安装，以及它是如何工作的。
+</p>
+
+<p>
+推荐程度：Homebrew &gt; MacPorts &gt; pkgsrc &gt; gentoo-prefix，Rudix 可以作为备胎，Fink 目前来看挺鸡肋。
+</p>
+
+<h2 id="toc_0.2">Install Homebrew</h2>
+
+<ul>
+<li>
+官方网站：
+
+<ul>
+<li>
+<a href="http://brew.sh/">http://brew.sh/</a>
+
+<li>
+<a href="http://brew.sh/index_zh-cn.html">http://brew.sh/index_zh-cn.html</a>
+
+</ul>
+<li>
+文档：<a href="https://github.com/Homebrew/homebrew/tree/master/share/doc/homebrew#readme">https://github.com/Homebrew/homebrew/tree/master/share/doc/homebrew#readme</a>
+
+<li>
+首先确保你的系统满足如下要求：
+<pre>
+    基于Intel CPU
+    操作系统为Mac OS X 10.5 Leopard或更高版本
+    已安装版本管理工具Git（Mac OS X 10.7 Lion已经预安装）
+    已安装Xcode开发工具1
+    已安装Java Developer Update2
+
+注1：Xcode 4.3中，命令行编译工具是可选安装，需要在Preferences &gt; Downloads中激活。
+注2：可选，Homebrew本身不依赖于Java，只有部分软件包的安装需要Java支持。
+</pre>
+
+<li>
+官方安装方法
+
+</ul>
+
+<p>
+由于Homebrew的安装地址可能变化，请到官方网站查看最新的安装方法。
+</p>
+
+<p>
+安装过程需要输入root口令。
+</p>
+
+<pre class="brush:bash">
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+</pre>
+
+<pre>
+==&gt; This script will install:
+/usr/local/bin/brew
+/usr/local/Library/...
+/usr/local/share/man/man1/brew.1
+==&gt; The following directories will be made group writable:
+/usr/local/.
+/usr/local/bin
+==&gt; The following directories will have their group set to admin:
+/usr/local/.
+/usr/local/bin
+
+Press RETURN to continue or any other key to abort
+==&gt; /usr/bin/sudo /bin/chmod g+rwx /usr/local/. /usr/local/bin
+Password:
+==&gt; /usr/bin/sudo /usr/bin/chgrp admin /usr/local/. /usr/local/bin
+==&gt; /usr/bin/sudo /bin/mkdir /Library/Caches/Homebrew
+==&gt; /usr/bin/sudo /bin/chmod g+rwx /Library/Caches/Homebrew
+==&gt; Downloading and installing Homebrew...
+remote: Counting objects: 3616, done.
+remote: Compressing objects: 100% (3449/3449), done.
+remote: Total 3616 (delta 36), reused 685 (delta 27), pack-reused 0
+Receiving objects: 100% (3616/3616), 2.91 MiB | 32.00 KiB/s, done.
+Resolving deltas: 100% (36/36), done.
+From https://github.com/Homebrew/homebrew
+ * [new branch]      master     -&gt; origin/master
+HEAD is now at 0f175c1 points2grid: fix test
+==&gt; Installation successful!
+==&gt; Next steps
+Run `brew help` to get started
+</pre>
+
+<ul>
+<li>
+手动安装
+
+</ul>
+<p>
+首先，Homebrew 的原则是“No sudo”，也就是说，既然 Mac OS X (client 版本) 绝大部分情况下都是归你这个有管理员权限的用户，为什么在自己的 /usr/local 下安装程序还需要 sudo 呢？所以，首先：
+</p>
+<pre class="brush:bash">
+sudo chown -R `whoami` /usr/local
+</pre>
+
+<p>
+然后可以正式开始安装，我推荐的安装方式是先用 git-osx-installer 装上 git，然后用 git 安装：
+</p>
+
+<pre class="brush:bash">
+cd /usr/local
+git init
+git remote add origin https://github.com/Homebrew/homebrew
+git pull origin master
+</pre>
+
+<p>
+这么做的实际作用是把你的 /usr/local 目录变成了一个本地 git 仓库，只不过这个仓库只跟踪跟 Homebrew 相关的更新，并不影响任何其他软件的安装。
+</p>
+
+<p>
+这样安装会在 /usr/local 下创建 Library 这个目录，然后在 /usr/local/bin 中加入 brew 这个 ruby 脚本。
+</p>
+
+<h2 id="toc_0.3">Homebrew使用</h2>
+
+<p>
+Homebrew的可执行命令是brew，命令参数说明如下。
+</p>
+
+<pre>
+brew help
+Example usage:
+  brew [info | home | options ] [FORMULA...]
+  brew install FORMULA...
+  brew uninstall FORMULA...
+  brew search [foo]
+  brew list [FORMULA...]
+  brew update
+  brew upgrade [--all | FORMULA...]
+  brew pin/unpin [FORMULA...]
+
+Troubleshooting:
+  brew doctor
+  brew install -vd FORMULA
+  brew [--env | config]
+
+Brewing:
+  brew create [URL [--no-fetch]]
+  brew edit [FORMULA...]
+  https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Formula-Cookbook.md
+
+Further help:
+  man brew
+  brew home
+</pre>
+
+<ul>
+<li>
+常用命令
+
+</ul>
+
+<pre class="brush:bash">
+brew home        # 访问Homebrew主页
+brew update      # 更新Homebrew
+
+brew list        # 查看已安装软件包
+brew search      # 列出所有软件
+
+brew search vim  # 查找vim软件包
+brew info vim    # 查看vim包详细信息 
+brew deps vim    # 查看vim包依赖关系
+brew install vim # 安装vim软件包
+brew uninstall vim # 安装vim软件包
+
+brew outdated     # 列出过时的软件包（已安装但不是最新版本）
+brew upgrade      # 更新过时的软件包（全部）
+brew upgrade wget # 更新过时的软件包（指定）
+</pre>
+
+<h2 id="toc_0.4">定制自己的软件包</h2>
+
+<p>
+如果自己需要的软件包并不能在Homebrew中找到，怎么办呢，毕竟Homebrew是一个新生项目，不可能满足所有人的需求。当然，我们可以自行编译安装，但手工安装的软件包游离于Homebrew之外，管理起来不是很方便。
+</p>
+
+<p>
+前文说过，Homebrew使用Ruby实现的软件包配置非常方便，下面简单谈一谈软件包的定制（假定软件包名称是bar，来自foo站点）。
+</p>
+
+<ol>
+<li>
+首先找到待安装软件的源码下载地址:<a href="http://foo.com/bar-1.0.tgz">http://foo.com/bar-1.0.tgz</a>
+
+<li>
+建立自己的formula: <code>brew create http://foo.com/bar-1.0.tgz</code>
+
+<li>
+编辑formula，上一步建立成功后，Homebrew会自动打开新建的formula进行编辑，也可用如下命令打开formula进行编辑:<code>brew edit bar</code>
+
+<li>
+Homebrew自动建立的formula已经包含了基本的configure和make install命令，对于大部分软件，不需要进行修改，退出编辑即可。
+
+<li>
+输入以下命令安装自定义的软件包:<code>brew install bar</code>
+
+</ol>
+
+<p>
+关于Homebrew的其它功能，比如将自定义软件包提交到官方发布等，请参考Homebrew项目的主页及其Man Page。你将发现Homebrew不仅是“家酿”，更是“佳酿”。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -16,6 +16,12 @@
 <div id="main">
 
 <h1>MacOS</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">软件包管理工具</a>
+</ul>
+</ul>
+</div>
 
 <ul>
 <li>
@@ -35,9 +41,56 @@ ZOC
 SecureCRT
 
 </ul>
-</ul>
+<li>
+MacOS中的Home, End, Page UP, Page DOWN键
 
 <ul>
+<li>
+Home:       Fn+左方向
+
+<li>
+End:        Fn+右方向
+
+<li>
+PageUP:     Fn+上方向
+
+<li>
+PageDOWN:   Fn+下方向
+
+<li>
+向前Delete: Fn+delete
+
+</ul>
+<li>
+安装bash-completion
+
+<ul>
+<li>
+<code>brew install bash-completion</code>
+
+<li>
+在~/.bashrc或~/.bash_profile中设置启用
+<pre class="brush:bash">
+# Homebrew's own bash completion script has been installed to
+# /usr/local/etc/bash_completion.d
+# Add the following lines to your ~/.bash_profile:
+if [ -f $(brew --prefix)/etc/bash_completion ]; then
+    . $(brew --prefix)/etc/bash_completion
+fi
+</pre>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.1">软件包管理工具</h2>
+
+<ul>
+<li>
+<a href="MacOS_PkgManager_tools_Homebrew.html">MacOS软件包管理工具HomeBrew</a>
+
+<li>
+<a href="MacOS_MacPorts.html">MacOS中MacPorts安装和使用</a>
+
 <li>
 rsync编译安装:<a href="http://blog.csdn.net/cneducation/article/details/4353523">http://blog.csdn.net/cneducation/article/details/4353523</a>
 

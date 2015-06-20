@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>MacOS中MacPorts安装和使用</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>MacOS中MacPorts安装和使用</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">安装MacPorts</a>
+<li><a href="#toc_0.2">MacPorts使用</a>
+</ul>
+</ul>
+</div>
+
+<p>
+原文(Koda)：<a href="http://koda.iteye.com/blog/1608041">http://koda.iteye.com/blog/1608041</a>
+</p>
+
+<p>
+Mac下面除了用dmg、pkg来安装软件外，比较方便的还有用MacPorts来帮助你安装其他应用程序，跟BSD中的ports道理一样。MacPorts就像apt-get、yum一样，可以快速安装些软件。
+</p>
+
+<p>
+下面将MacPorts的安装和使用方法记录在这里以备查。
+</p>
+
+<h2 id="toc_0.1">安装MacPorts</h2>
+
+<ul>
+<li>
+下载：
+
+<ul>
+<li>
+官方网站: <a href="http://www.macports.org/install.php">http://www.macports.org/install.php</a>
+
+<li>
+Mac Port的说明文档: <a href="http://guide.macports.org">http://guide.macports.org</a>
+
+<li>
+使用pkg二进制包直接安装:<a href="https://distfiles.macports.org/MacPorts/MacPorts-2.1.2-10.8-MountainLion.pkg">https://distfiles.macports.org/MacPorts/MacPorts-2.1.2-10.8-MountainLion.pkg</a>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+加入环境
+
+</ul>
+<p>
+然后将/opt/local/bin和/opt/local/sbin添加到$PATH搜索路径中，编辑/etc/profile文件中，加上
+</p>
+<pre>
+export PATH=/opt/local/bin:$PATH
+export PATH=/opt/local/sbin:$PATH
+</pre>
+
+<ul>
+<li>
+Mac Port中第三方软件下载包存放的默认路径是：/opt/local/var/macports/distfiles/ 
+
+</ul>
+
+<p>
+为了提高安装速度，可以在安装新port时直接将此目录下的文件拷贝到新的Mac Port相同的目录中就可以避免Port去网上下载。 
+</p>
+
+<ul>
+<li>
+使用Mac Port前应该首先更新Port的index
+
+</ul>
+
+<h2 id="toc_0.2">MacPorts使用</h2>
+
+<pre class="brush:bash">
+# 更新ports tree和MacPorts版本，强烈推荐第一次运行的时候使用-v参数，显示详细的更新过程。
+sudo port -v selfupdate
+
+# 查看Mac Port中当前可用的软件包及其版本
+port list
+
+# 搜索索引中的软件
+port search name
+
+# 查看包详细信息
+port info name
+
+# 查看包详细信赖信息`
+port deps name
+
+# 查看安装时允许客户定制的参数
+port variants name
+
+# 安装新软件
+sudo port install name
+
+# 安装完毕之后，清除安装时产生的临时文件
+sudo port clean --all name
+
+# 卸载软件
+sudo port uninstall name
+
+# 查看有更新的软件以及版本
+port outdated
+
+# 升级可以更新的软件
+sudo port upgrade outdated
+
+# Eclipse的插件需要subclipse需要JavaHL，下面通过MacPorts来安装
+sudo port install subversion-javahlbindings 
+
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
