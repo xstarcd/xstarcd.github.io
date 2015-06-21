@@ -25,9 +25,10 @@
 #Update: 2015-06-20
 
 WikiDir=/data/soft/Vimwiki/Mywiki
+WikiHtmlDir=/data/soft/xstarcd.github.io/wiki
 SiteMap=${WikiDir}/SiteMap.wiki
 SiteMapold=${WikiDir}/SiteMap.old
-SiteMaptxt=${WikiDir}_html/SiteMap.txt
+SiteMaptxt=${WikiHtmlDir}/SiteMap.txt
 WikiUrl=http://w.gdu.me/wiki
 EXCLUDE='/personal|/ogames|/gmxzd'
 
@@ -73,8 +74,8 @@ for D in `find $WikiDir -type d|grep -vE "$EXCLUDE"|sort`;do
         out=
         cnt=0
         for F in `find $D -maxdepth 1 -type f \( -name "*.wiki" -and ! -name "index.wiki" \)|grep -vE 'personal'|sort`;do
-            #cnt=$(expr $cnt + 1)
-            let cnt=cnt+1
+            cnt=$(expr $cnt + 1)
+            #let cnt=cnt+1
             url=`echo "$F"|sed -e "s#$WikiDir/##g" -e 's#\.wiki##g'`
             #level=`echo "${url}"|sed -e 's#[^/]##g' -e 's#/#    #g'|awk '{print $0"*"}'`
             level="`echo "${url}"|sed -e 's#[^/]##g' -e 's#/#    #g'`*"
@@ -96,7 +97,7 @@ for D in `find $WikiDir -type d|grep -vE "$EXCLUDE"|sort`;do
     fi
     echo ""
 done
-ECHO_N "Total:"cat "$SiteMaptxt"|wc -l
+ECHO_N "Total:";cat "$SiteMaptxt"|wc -l
 
 </pre>
 
