@@ -16,14 +16,88 @@
 <div id="main">
 
 <h1>haproxy配置范例</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">HaProxy特性</a>
+<li><a href="#toc_0.2">开启日志</a>
+<li><a href="#toc_0.3">配置范例</a>
+<ul>
+<li><a href="#toc_0.3.1">简单的tcp代理配置</a>
+<li><a href="#toc_0.3.2">基本配置说明</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">HaProxy特性</h2>
+
+<p>
+HAProxy提供高可用性、负载均衡以及基于TCP和HTTP应用的代理，支持虚拟主机，它是免费、快速并且可靠的一种解决方案。根据官方数据，其最高极限支持10G的并发。
+</p>
+
+<p>
+HAProxy特别适用于那些负载特大的web站点， 这些站点通常又需要会话保持或七层处理。HAProxy运行在当前的硬件上，完全可以支持数以万计的并发连接。并且它的运行模式使得它可以很简单安全的整合进您当前的架构中，同时可以保护你的web服务器不被暴露到网络上。 
+</p>
+
+<p>
+其支持从4层至7层的网络交换，即覆盖所有的TCP协议。就是说，Haproxy 甚至还支持 Mysql 的均衡负载。。 
+</p>
+
+<p>
+如果说在功能上，能以proxy反向代理方式实现WEB均衡负载，这样的产品有很多。包括 Nginx，ApacheProxy，lighttpd，Cheroke 等。 
+</p>
+
+<p>
+但要明确一点的，Haproxy 并不是 Http 服务器。以上提到所有带反向代理均衡负载的产品，都清一色是 WEB 服务器。简单说，就是他们能自个儿提供静态(html,jpg,gif..)或动态(php,cgi..)文件的传输以及处理。而Haproxy 仅仅，而且专门是一款的用于均衡负载的应用代理。其自身并不能提供http服务。 
+</p>
+
+<p>
+但其配置简单，拥有非常不错的服务器健康检查功能还有专门的系统状态监控页面，当其代理的后端服务器出现故障, HAProxy会自动将该服务器摘除，故障恢复后再自动将该服务器加入。自1.3版本开始还引入了frontend,backend,frontend根据任意HTTP请求头内容做规则匹配，然后把请求定向到相关的backend。 
+</p>
+
+<p>
+另外, 版本1.3 是处于活跃开发阶段的版本, 它支持如下新特性： 
+</p>
+
+<ol>
+<li>
+内容交换 : 可以根据请求(request)的任何一部分 来选择一组服务器, 比如请求的 URI , Host头(header) , cookie , 以及其他任何东西. 当然，对那些静态分离的站点来说，对此特性还有更多的需求。 
+
+<li>
+全透明代理 : 可以用 客户端IP地址 或者任何其他地址来连接后端服务器. 这个特性仅在Linux 2.4/2.6内核打了cttproxy 补丁后才可以使用. 这个特性也使得为某特殊服务器处理部分流量同时又不修改服务器的地址成为可能。 
+
+<li>
+基于树的更快的调度器 : 1.2.16以上的版本要求所有的超时都设成同样的值以支持数以万计的全速连接. 这个特性已经移植到1.2.17. 
+
+<li>
+内核TCP拼接 : 避免了内核到用户然后用户到内核端的数据拷贝, 提高了吞吐量同时又降低了CPU使用率 . Haproxy 1.3支持Linux L7SW 以满足在商用硬件上数Gbps 的吞吐的需求。 
+
+<li>
+连接拒绝 : 因为维护一个连接的打开的开销是很低的，有时我们很需要限制攻击蠕虫(attack bots)，也就是说限制它们的连接打开从而限制它们的危害。 这个已经为一个陷于小型DDoS攻击的网站开发了而且已经拯救了很多站点。 
+
+<li>
+细微的头部处理 : 使得编写基于header的规则更为简单，同时可以处理URI的某部分。 l 快而可靠的头部处理 : 使用完全RFC2616 兼容的完整性检查对一般的请求全部进行分析和索引仅仅需要不到2ms 的时间。 
+
+<li>
+模块化设计 : 允许更多人加入进此项目，调试也非常简单. poller已经分离, 已经使得它们的开发简单了很多. HTTP已经从TCP分离出来了，这样增加新的七层特性变得非常简单. 其他子系统也会很快实现模块化 
+
+<li>
+投机I/O 处理 : 在一个套接字就绪前就尝试从它读取数据。poller仅推测哪个可能就绪哪个没有，尝试猜测，并且如果成功，一些开销很大的系统调用就可以省去了。如果失败，就会调用这些系统调用。已知的使用Linux epoll()已经净提升起码10%了。 l ACLs : 使用任意规则的任意组合作为某动作的执行条件。 
+
+<li>
+TCP协议检查 : 结合ACL来对请求的任意部分进行检查，然后再进行转发。这就可以执行协议验证而不是盲目的进行转发。比如说允许SSL但拒绝SSH。 
+
+<li>
+更多的负载均衡算法 : 现在，动态加权轮循(Dynamic Round Robin)，加权源地址哈希(Weighted Source Hash)，加权URL哈希和加权参数哈希(Weighted Parameter Hash)已经实现。其他算法比如Weighted Measured Response Time也很快会实现。
+
+</ol>
+
+
+<h2 id="toc_0.2">开启日志</h2>
 
 <ul>
 <li>
-haproxy无记录日志问题
-
-<ul>
-<li>
-需修改/etc/rsyslog.conf
+haproxy无记录日志问题，需修改/etc/rsyslog.conf
 <pre class="brush:bash">
 # Provides UDP syslog reception
 $ModLoad imudp
@@ -34,8 +108,11 @@ local2.*                                                /var/log/haproxy.log
 </pre>
 
 </ul>
-<li>
-简单的tcp代理配置
+
+<h2 id="toc_0.3">配置范例</h2>
+
+<h3 id="toc_0.3.1">简单的tcp代理配置</h3>
+
 <pre class="brush:bash">
 #---------------------------------------------------------------------
 # Example configuration for a possible web application.  See the
@@ -135,7 +212,247 @@ listen web_vip 0.0.0.0:80
     stats  uri         /haproxy-stats
 </pre>
 
-</ul>
+<h3 id="toc_0.3.2">基本配置说明</h3>
+
+<pre class="brush:bash">
+global               #全局设置
+    log 127.0.0.1   local0   #日志输出配置，所有日志都记录在本机，通过local0输出
+    #log loghost    local0 info
+    maxconn 4096             #最大连接数
+    chroot /usr/local/haproxy
+    uid 99                   #所属运行的用户uid
+    gid 99                   #所属运行的用户组
+    group haproxy            #用户组
+    daemon                   #后台运行haproxy
+    nbproc 1                 #启动1个haproxy实例
+    pidfile /usr/local/haproxy/haproxy.pid  #将所有进程PID写入pid文件
+    #debug
+    #quiet
+
+defaults             #默认设置
+    #log    global
+    log     127.0.0.1       local3      #日志文件的输出定向
+
+    #默认的模式:tcp|http|health
+    mode   http         #所处理的类别,默认采用http模式
+
+    option  httplog      #日志类别,采用http日志格式`
+    option  dontlognull
+    option  forwardfor   #将客户端真实ip加到HTTP Header中供后端服务器读取
+    option  retries 3    #三次连接失败则认证服务器不可用
+    option  httpclose    #每次请求完毕后主动关闭http通道,haproxy不支持keep-alive,只&gt;能模拟这种模式的实现
+    retries 3            #3次连接失败就认为服务器不可用，主要通过后面的check检查
+    option  redispatch   #当serverid对应的服务器挂掉后，强制定向到其他健康服务器
+    option  abortonclose #当服务器负载很高时，自动结束掉当前队列中处理比较久的链接
+    maxconn 2000         #默认最大连接数
+
+    timeout connect 5000  #连接超时时间
+    timeout client  50000 #客户端连接超时时间
+    timeout server  50000 #服务器端连接超时时间
+
+    stats   enable
+    stats   uri /haproxy-stats   #haproxy监控页面的访问地址
+    stats   auth test:test123    #设置监控页面的用户和密码
+    stats   hide-version         #隐藏统计页面的HAproxy版本信息
+
+frontend http-in              #前台
+    bind    *:81
+    mode    http
+    option  httplog
+    log     global
+    default_backend htmpool   #静态服务器池
+
+backend htmpool               #后台
+    balance leastconn         #负载均衡算法
+    option  httpchk HEAD /index.html HTTP/1.0    #健康检查
+    server  web1 192.168.2.10:80 cookie 1 weight 5 check inter 2000 rise 2 fall 3
+    server  web2 192.168.2.11:80 cookie 2 weight 3 check inter 2000 rise 2 fall 3
+    # web1/web2:自定义服务器别名
+    # 192.168.2.10:80:服务器IP:Port
+    # cookie 1/2:表示serverid
+    # weight: 服务器权重，数字越大分配到的请求数越高
+    # check: 接受定时健康检查 
+    # inter 2000: 检查频率
+    # rise 2: 两次检测正确认为服务器可用
+    # fall 3: 三次失败认为服务器不可用
+
+listen w.gdu.me 0.0.0.0:80
+    option  httpchk GET /index.html
+    server  s1 192.168.2.10:80 weight 3 check
+    server  s3 192.168.2.11:80 weight 3 check
+
+# Haproxy统计页面
+# --------------------------------------------------------------------------------------------
+listen haproxy_stats
+    bind 0.0.0.0:1080  #侦听IP:Port
+    mode http
+    log  127.0.0.1 local 0 err #err|warning|info|debug]
+    stats refresh 30s
+    stats uri /haproxy-stats
+    stats realm Haproxy\ Statistics
+    stats auth admin:admin
+    stats auth test:test
+    stats hide-version
+    stats admin if TRUE  #手工启用/禁用后端服务器
+
+
+# 网站检测listen配置
+# --------------------------------------------------------------------------------------------
+listen site_status
+    bind 0.0.0.0:1081
+    mode http
+    log  127.0.0.1 local0 err
+
+    #网站健康检查URI，用来检测Haproxy管理的网站是否可能，正常返回200、异常返回500
+    monitor-uri /site_status
+
+    #定义网站down时的策略
+    #当backend中的有效服务器数&lt;1时，返回true
+    acl site_dead nbsrv(denali_server) lt 1
+    acl site_dead nbsrv(tm_server) lt 1
+    acl site_dead nbsrv(mms_server) lt 1
+
+    #当满足策略的时候返回500
+    monitor fail if site_dead
+
+    #如果192.168.0.252或者192.168.0.31这两天机器挂了
+    #认为网站挂了,这时候返回500,判断标准是如果mode是
+    #http返回200认为是正常的,如果mode是tcp认为端口畅通是好的
+    monitor-net 192.168.0.252/31
+
+
+# https的配置方法
+# --------------------------------------------------------------------------------------------
+listen login_https_server
+    bind 0.0.0.0:443   #绑定HTTPS的443端口
+    mode tcp           #https必须使用tcp模式
+    log global
+    balance roundrobin
+    option httpchk GET /member/login.jhtml HTTP/1.1\r\nHost:login.daily.taobao.net
+    #回送给server的端口也必须是443
+    server vm94f.sqa 192.168.212.94:443 check port 80 inter 6000 rise 3 fall 3
+    server v215120.sqa 192.168.215.120:443 check port 80 inter 6000 rise 3 fall 3
+
+
+# frontend配置
+# --------------------------------------------------------------------------------------------
+frontend http_80_in
+    bind 0.0.0.0:80   #监听端口
+    mode http         #http的7层模式
+    log global        #应用全局的日志配置
+    option httplog    #启用http的log
+    option httpclose  #每次请求完毕后主动关闭http通道,HA-Proxy不支持keep-alive模式
+    option forwardfor ##如果后端服务器需要获得客户端的真实IP需要配置次参数,将可以从Http Header中获得客户端IP
+
+    #HAProxy的日志记录内容配置
+    capture request header Host len 40
+    capture request header Content-Length len 10
+    capture request header Referer len 200
+    capture response header Server len 40
+    capture response header Content-Length len 10
+    capture response header Cache-Control len 8
+
+    #acl策略定义
+    #如果请求的域名满足正则表达式返回true(-i:忽略大小写)
+    acl denali_policy hdr_reg(host) -i ^(www.gemini.taobao.net|my.gemini.taobao.net|auction1.gemini.taobao.net)$
+
+    #如果请求域名满足trade.gemini.taobao.net返回true
+    acl tm_policy hdr_dom(host) -i trade.gemini.taobao.net
+
+    #在请求url中包含sip_apiname=,则此控制策略返回true,否则为false
+    acl invalid_req url_sub -i sip_apiname=
+
+    #在请求url中存在timetask作为部分地址路径,则此控制策略返回true,否则返回false
+    acl timetask_req url_dir -i timetask
+
+    #当请求的header中Content-length等于0时返回true
+    acl missing_cl hdr_cnt(Content-length) eq 0
+
+    #acl策略匹配相应
+    #当请求中header中Content-length等于0阻止请求返回403
+    block if missing_cl     #block表示阻止请求,返回403错误
+
+    #如果不满足策略invalid_req,或者满足策略timetask_req,则阻止请求
+    block if !invalid_req || timetask_req
+
+    #当满足denali_policy的策略时使用denali_server的backend
+    use_backend denali_server if denali_policy
+
+    #当满足tm_policy的策略时使用tm_server的backend
+    use_backend tm_server if tm_policy
+
+    #reqisetbe关键字定义,根据定义的关键字选择backend
+    reqisetbe ^Host:\ img           dynamic
+    reqisetbe ^[^\ ]*\ /(img|css)/  dynamic
+    reqisetbe ^[^\ ]*\ /admin/stats stats
+
+    #以上都不满足的时候使用默认mms_server的backend
+    default_backend mms_server
+
+    #HAProxy错误页面设置
+    errorfile 400 /home/admin/haproxy/errorfiles/400.http
+    errorfile 403 /home/admin/haproxy/errorfiles/403.http
+    errorfile 408 /home/admin/haproxy/errorfiles/408.http
+    errorfile 500 /home/admin/haproxy/errorfiles/500.http
+    errorfile 502 /home/admin/haproxy/errorfiles/502.http
+    errorfile 503 /home/admin/haproxy/errorfiles/503.http
+    errorfile 504 /home/admin/haproxy/errorfiles/504.http
+
+# backend的设置
+# --------------------------------------------------------------------------------------------
+backend mms_server
+    mode http           #http的7层模式
+    balance roundrobin  #负载均衡的方式,roundrobin平均方式
+    cookie SERVERID     #允许插入serverid到cookie中,serverid后面可以定义
+    
+    #心跳检测的URL,HTTP/1.1¥r¥nHost:XXXX,指定了心跳检测HTTP的版本,XXX为检测时请求
+    #服务器的request中的域名是什么,这个在应用的检测URL对应的功能有对域名依赖的话需要设置
+    option httpchk GET /member/login.jhtml HTTP/1.1\r\nHost:member1.gemini.taobao.net
+    
+    #服务器定义,cookie 1表示serverid为1,check inter 1500 是检测心跳频率
+    #rise 3是3次正确认为服务器可用,fall 3是3次失败认为服务器不可用,weight代表权重
+    server mms1 10.1.5.134:80 cookie 1 check inter 1500 rise 3 fall 3 weight 1
+    server mms2 10.1.6.118:80 cookie 2 check inter 1500 rise 3 fall 3 weight 2
+
+
+backend denali_server
+    mode http
+    balance source     #负载均衡的方式,source根据客户端IP进行哈希的方式
+    option allbackups  #设置了backup的时候,默认第一个backup会优先,设置option allbackups后所有备份服务器权重一样
+
+    #心跳检测URL设置
+    option httpchk GET /mytaobao/home/my_taobao.jhtml HTTP/1.1\r\nHost:my.gemini.taobao.net
+
+    #可以根据机器的性能不同,指定连接数配置，如minconn 10 maxconn 20
+    server denlai1 10.1.5.114:80 minconn 4 maxconn 12 check inter 1500 rise 3 fall 3
+    server denlai2 10.1.6.104:80 minconn 10 maxconn 20 check inter 1500 rise 3 fall 3
+    #备份机器配置,正常情况下备机不会使用,当主机的全部服务器都down的时候备机会启用
+    server dnali-back1 10.1.7.114:80 check backup inter 1500 rise 3 fall 3
+    server dnali-back2 10.1.7.114:80 check backup inter 1500 rise 3 fall 3
+
+
+backend tm_server
+    mode http
+    balance leastconn   #负载均衡的方式,leastcon选择当前请求数最少的服务器
+    option httpchk GET /trade/itemlist/prepayCard.htm HTTP/1.1\r\nHost:trade.gemini.taobao.net
+    server tm1 10.1.5.115:80 check inter 1500 rise 3 fall 3
+    server tm2 10.1.6.105:80 check inter 1500 rise 3 fall 3
+
+#reqisetbe自定义关键字匹配backend部分
+backend dynamic
+    mode http
+    balance source
+    option httpchk GET /welcome.html HTTP/1.1\r\nHost:www.taobao.net
+    server denlai1 10.3.5.114:80 check inter 1500 rise 3 fall 3
+    server denlai2 10.4.6.104:80 check inter 1500 rise 3 fall 3
+
+backend stats
+    mode http
+    balance source
+    option httpchk GET /welcome.html HTTP/1.1\r\nHost:www.taobao.net
+    server denlai1 10.5.5.114:80 check inter 1500 rise 3 fall 3
+    server denlai2 10.6.6.104:80 check inter 1500 rise 3 fall 3
+</pre>
 
 </div>
 <div id="footer">
