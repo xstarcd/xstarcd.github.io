@@ -337,20 +337,23 @@ listen login_https_server
 frontend http_80_in
     bind 0.0.0.0:80   #监听端口
     mode http         #http的7层模式
-    log global        #应用全局的日志配置
+    log global        #使用全局的日志配置
     option httplog    #启用http的log
     option httpclose  #每次请求完毕后主动关闭http通道,HA-Proxy不支持keep-alive模式
     option forwardfor ##如果后端服务器需要获得客户端的真实IP需要配置次参数,将可以从Http Header中获得客户端IP
 
     #HAProxy的日志记录内容配置
-    capture request header Host len 40
-    capture request header Content-Length len 10
-    capture request header Referer len 200
-    capture response header Server len 40
-    capture response header Content-Length len 10
-    capture response header Cache-Control len 8
+    capture request header Host len 40              # 请求中的主机名
+    capture request header Content-Length len 10    # 请求中的内容长度
+    capture request header Referer len 200          # 请求中的引用地址
+    capture response header Server len 40           # 响应中的server name
+    capture response header Content-Length len 10   # 响应中的内容长度(可配合option logasap使用)
+    capture response header Cache-Control len 8     # 响应中的cache控制
+    capture response header Location len 20         # 响应中的重定向地址
 
-    #acl策略定义
+
+    #ACL策略规则定义
+    #-------------------------------------------------
     #如果请求的域名满足正则表达式返回true(-i:忽略大小写)
     acl denali_policy hdr_reg(host) -i ^(www.gemini.taobao.net|my.gemini.taobao.net|auction1.gemini.taobao.net)$
 
@@ -366,9 +369,12 @@ frontend http_80_in
     #当请求的header中Content-length等于0时返回true
     acl missing_cl hdr_cnt(Content-length) eq 0
 
-    #acl策略匹配相应
+
+    #ACL策略匹配相应
+    #-------------------------------------------------
     #当请求中header中Content-length等于0阻止请求返回403
-    block if missing_cl     #block表示阻止请求,返回403错误
+    #block表示阻止请求,返回403错误
+    block if missing_cl
 
     #如果不满足策略invalid_req,或者满足策略timetask_req,则阻止请求
     block if !invalid_req || timetask_req
@@ -395,6 +401,7 @@ frontend http_80_in
     errorfile 502 /home/admin/haproxy/errorfiles/502.http
     errorfile 503 /home/admin/haproxy/errorfiles/503.http
     errorfile 504 /home/admin/haproxy/errorfiles/504.http
+
 
 # backend的设置
 # --------------------------------------------------------------------------------------------
@@ -436,6 +443,7 @@ backend tm_server
     server tm1 10.1.5.115:80 check inter 1500 rise 3 fall 3
     server tm2 10.1.6.105:80 check inter 1500 rise 3 fall 3
 
+
 #reqisetbe自定义关键字匹配backend部分
 backend dynamic
     mode http
@@ -443,6 +451,7 @@ backend dynamic
     option httpchk GET /welcome.html HTTP/1.1\r\nHost:www.taobao.net
     server denlai1 10.3.5.114:80 check inter 1500 rise 3 fall 3
     server denlai2 10.4.6.104:80 check inter 1500 rise 3 fall 3
+
 
 backend stats
     mode http
