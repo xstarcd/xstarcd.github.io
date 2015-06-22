@@ -312,12 +312,10 @@ listen site_status
     acl site_dead nbsrv(tm_server) lt 1
     acl site_dead nbsrv(mms_server) lt 1
 
-    #当满足策略的时候返回500
+    #当满足策略的时候返回http-500，否则返回http-200
     monitor fail if site_dead
 
-    #如果192.168.0.252或者192.168.0.31这两天机器挂了
-    #认为网站挂了,这时候返回500,判断标准是如果mode是
-    #http返回200认为是正常的,如果mode是tcp认为端口畅通是好的
+    #声名一个监测请求的来源网络
     monitor-net 192.168.0.252/31
 
 
