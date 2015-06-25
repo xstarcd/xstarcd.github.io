@@ -22,7 +22,7 @@
 <li><a href="#toc_1.1">概要</a>
 <li><a href="#toc_1.2">安装</a>
 <ul>
-<li><a href="#toc_1.2.1">Ubuntu下安装jdk，graphviz</a>
+<li><a href="#toc_1.2.1">安装jdk，graphviz</a>
 <li><a href="#toc_1.2.2">下载</a>
 </ul>
 <li><a href="#toc_1.3">使用</a>
@@ -63,12 +63,15 @@ SchemaSpy的安装十分简单，实际上就是一个jar文件，官方下载�
 SchemaSpy依靠Graphviz程序库来生成数据库结构的图形视图，Graphviz的安装参考：<a href="http://hanqunfeng.iteye.com/admin/blogs/869293">http://hanqunfeng.iteye.com/admin/blogs/869293</a>
 </p>
 
-<h3 id="toc_1.2.1">Ubuntu下安装jdk，graphviz</h3>
+<h3 id="toc_1.2.1">安装jdk，graphviz</h3>
 <pre class="brush:bash">
 #graphviz - rich set of graph drawing tools
 #libmysql-java - Java database (JDBC) driver for MySQL
-
+# Ubuntu
 apt-get install default-jre graphviz
+
+# CentOS
+yum install graphviz
 </pre>
 
 <h3 id="toc_1.2.2">下载</h3>
@@ -129,6 +132,7 @@ java -jar schemaSpy.jar -dbhelp
 
 <h3 id="toc_1.3.1">通过命令行使用</h3>
 <pre class="brush:bash">
+java -jar schemaSpy.jar -t dbType -db dbName [-s schema] -u user [-p password] -o outputDir
 #LANG=en_US
 /opt/jdk/bin/java -jar schemaSpy.jar \
 -t mysql \
