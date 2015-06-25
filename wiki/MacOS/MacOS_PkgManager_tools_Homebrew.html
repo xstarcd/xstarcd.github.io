@@ -22,6 +22,8 @@
 <li><a href="#toc_0.2">Install Homebrew</a>
 <li><a href="#toc_0.3">Homebrew使用</a>
 <li><a href="#toc_0.4">定制自己的软件包</a>
+<li><a href="#toc_0.5">GitHub API rate limit</a>
+<li><a href="#toc_0.6">brew tap</a>
 </ul>
 </ul>
 </div>
@@ -296,6 +298,64 @@ Homebrew自动建立的formula已经包含了基本的configure和make install�
 <p>
 关于Homebrew的其它功能，比如将自定义软件包提交到官方发布等，请参考Homebrew项目的主页及其Man Page。你将发现Homebrew不仅是“家酿”，更是“佳酿”。
 </p>
+
+
+<h2 id="toc_0.5">GitHub API rate limit</h2>
+
+<pre>
+Error: GitHub API rate limit exceeded for 220.166.254.65. (But here's the good news: Authenticated requests get a higher rate limit. Check out the documentation for more details.)
+Try again in 56 minutes 17 seconds, or create an personal access token:
+  https://github.com/settings/tokens
+and then set it as HOMEBREW_GITHUB_API_TOKEN.
+</pre>
+
+<ul>
+<li>
+注册、登录github.com
+
+<li>
+访问 <a href="https://github.com/settings/tokens">https://github.com/settings/tokens</a> 
+
+<li>
+在Personal settings -&gt; Personal access tokens中点击"Generate new token"创建token
+
+<li>
+Make sure to copy your new personal access token now. You won't be able to see it again!
+
+<li>
+Personal access tokens function like ordinary OAuth access tokens. They can be used instead of a password for Git over HTTPS, or can be used to authenticate to the API over Basic Authentication.
+
+<li>
+在~/.bashrc中添加HOMEBREW_GITHUB_API_TOKEN环境变量
+<pre>
+if [ -f /usr/local/bin/brew ]; then
+    export HOMEBREW_GITHUB_API_TOKEN=xxxxxxxxxx
+fi
+</pre>
+
+</ul>
+
+<h2 id="toc_0.6">brew tap</h2>
+
+<p>
+brew 有个默认的仓库，brew tap 你可以看成是第三方的仓库。
+</p>
+
+<ul>
+<li>
+Interesting Taps &amp; Branches: <a href="https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Interesting-Taps-%26-Branches.md">https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Interesting-Taps-%26-Branches.md</a>
+
+</ul>
+
+<p>
+安装rsync 3.1.1版本，解决中文文件名在日志中乱码问题。
+</p>
+
+<pre class="brush:bash">
+brew tap homebrew/dupes
+brew info homebrew/dupes/rsync
+brew install homebrew/dupes/rsync
+</pre>
 
 </div>
 <div id="footer">
