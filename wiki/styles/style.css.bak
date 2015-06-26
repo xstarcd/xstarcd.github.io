@@ -237,11 +237,6 @@ textarea {
 .toc li {
     color: #eff;
 }
-/*
-.toc ul li ul li ul li {
-    display: none;
-}
-*/
 .toc a {
     color: #eff;
 }

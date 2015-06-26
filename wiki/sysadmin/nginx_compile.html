@@ -25,6 +25,7 @@
 <li><a href="#toc_1.4">用户及工作目录</a>
 <li><a href="#toc_1.5">编译安装</a>
 <li><a href="#toc_1.6">启动脚本</a>
+<li><a href="#toc_1.7">Nginx+google-perftools</a>
 </ul>
 </ul>
 </div>
@@ -94,14 +95,15 @@ V=1.2.5 \
 </pre>
 
 <h2 id="toc_1.6">启动脚本</h2>
-<pre class="brush: bash">
+
+<pre class="brush:bash">
 [ -f /usr/sbin/nginx ] &amp;&amp; mv /usr/sbin/nginx{,.backup}
 ln -sfT /usr/local/nginx/sbin/nginx /usr/sbin/nginx
 
 #install -m 755 -o root -g root "CentOS_init.nginx2" /etc/init.d/nginx
 </pre>
 
-<pre class="brush: bash">
+<pre class="brush:bash">
 #!/bin/sh
 #
 # nginx        Startup script for nginx
@@ -244,6 +246,147 @@ esac
 
 exit $RETVAL
 
+</pre>
+
+<h2 id="toc_1.7">Nginx+google-perftools</h2>
+
+<ul>
+<li>
+Nginx + varnish 构建高可用CDN节点集群: <a href="http://bbs.osapub.com/thread-3370-1-1.html">http://bbs.osapub.com/thread-3370-1-1.html</a>
+
+</ul>
+
+<p>
+仅做记录，还没有实验过。
+</p>
+
+<pre class="brush:bash">
+#!/bin/bash
+# nginx 环境安装脚本，注意环境不同可能导致脚本运行出错，如果环境不同建议手工一条一条执行指令。
+# 环境：CentOS release 5.8 Final
+ 
+#创建工作目录
+mkdir -p /dist/{dist,src}
+cd /dist/dist
+ 
+#下载安装包
+wget http://bbs.osapub.com/down/google-perftools-1.8.3.tar.gz &amp;&gt; /dev/null
+wget http://bbs.osapub.com/down/libunwind-0.99.tar.gz &amp;&gt; /dev/null
+wget http://bbs.osapub.com/down/pcre-8.01.tar.gz &amp;&gt; /dev/null
+wget http://bbs.osapub.com/down/nginx-1.0.5.tar.gz &amp;&gt; /dev/null
+ 
+#------------------------------------------------------------------------
+# 使用Google的开源TCMalloc库，忧化性能
+ 
+cd /dist/src
+tar zxf ../dist/libunwind-0.99.tar.gz
+cd libunwind-0.99/
+ 
+## 注意这里不能加其它 CFLAGS加速编译参数
+ 
+CFLAGS=-fPIC ./configure
+make clean
+make CFLAGS=-fPIC
+make CFLAGS=-fPIC install
+if [ "$?" == "0" ]; then
+    echo "libunwind-0.99安装成功." &gt;&gt; ./install_log.txt
+else
+    echo "libunwind-0.99安装失败." &gt;&gt; ./install_log.txt
+    exit 1
+fi
+ 
+##----------------------------------------------------------
+## 使用Google的开源TCMalloc库，提高MySQL在高并发情况下的性能
+ 
+cd /dist/src
+tar zxf ../dist/google-perftools-1.8.3.tar.gz
+cd google-perftools-1.8.3/
+ 
+CHOST="x86_64-pc-linux-gnu" CFLAGS="-march=nocona -O2 -pipe" CXXFLAGS="-march=nocona -O2 -pipe" \
+./configure
+ 
+make clean
+make &amp;&amp; make install
+if [ "$?" == "0" ]; then
+    echo "google-perftools-1.8.3安装成功." &gt;&gt; ./install_log.txt
+else
+    echo "google-perftools-1.8.3安装失败." &gt;&gt; ./install_log.txt
+    exit 1
+fi
+ 
+echo "/usr/local/lib" &gt; /etc/ld.so.conf.d/usr_local_lib.conf
+/sbin/ldconfig
+ 
+ 
+################ 安装nginx ##########################
+#安装Nginx所需的pcre库
+ 
+cd /dist/src
+tar zxvf ../dist/pcre-8.01.tar.gz
+cd pcre-8.01/
+ 
+CHOST="x86_64-pc-linux-gnu" CFLAGS="-march=nocona -O2 -pipe" CXXFLAGS="-march=nocona -O2 -pipe" \
+./configure
+make &amp;&amp; make install
+if [ "$?" == "0" ]; then
+    echo "pcre-8.01安装成功." &gt;&gt; ./install_log.txt
+else
+    echo "pcre-8.01安装失败." &gt;&gt; ./install_log.txt
+    exit 1
+fi
+cd ../
+ 
+ 
+## 安装Nginx
+## 为优化性能，可以安装 google 的 tcmalloc ，之前己经安装过了
+## 所以我们编译 Nginx 时，加上参数 --with-google_perftools_module
+## 然后在启动nginx前需要设置环境变量 export LD_PRELOAD=/usr/local/lib/libtcmalloc.so
+## 加上 -O2 参数也能优化一些性能
+##
+## 默认的Nginx编译选项里居然是用 debug模式的(-g参数)，在 auto/cc/gcc 文件最底下，去掉那个 -g 参数
+## 就是将  CFLAGS="$CFLAGS -g"  修改为   CFLAGS="$CFLAGS"   或者直接删除这一行
+ 
+cd /dist/src
+rm -rf nginx-1.0.5
+tar zxf ../dist/nginx-1.0.5.tar.gz
+cd nginx-1.0.5/
+ 
+sed -i 's#CFLAGS="$CFLAGS -g"#CFLAGS="$CFLAGS "#' auto/cc/gcc
+ 
+make clean
+ 
+CHOST="x86_64-pc-linux-gnu" CFLAGS="-march=nocona -O2 -pipe" CXXFLAGS="-march=nocona -O2 -pipe" \
+./configure --user=www --group=www \
+--prefix=/usr/local/nginx \
+--with-http_stub_status_module \
+--with-google_perftools_module
+ 
+make &amp;&amp; make install
+if [ "$?" == "0" ]; then
+    echo "nginx-1.0.5安装成功." &gt;&gt; ./install_log.txt
+else
+    echo "nginx-1.0.5安装失败." &gt;&gt; ./install_log.txt
+    exit 1
+fi
+cd ../
+ 
+#创建Nginx日志目录
+mkdir -p /data/logs
+chmod +w /data/logs
+chown -R www:www /data/logs
+ 
+cd /usr/local/nginx/
+mv conf conf_bak
+ln -s /data/conf/nginx/ conf
+ 
+echo 'export LD_PRELOAD=/usr/local/lib/libtcmalloc.so' &gt; /root/nginx_start
+echo 'ulimit -SHn 51200' &gt;&gt; /root/nginx_start
+echo '/usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf' &gt;&gt; /root/nginx_start
+ 
+echo '/usr/local/nginx/sbin/nginx -t' &gt; /root/nginx_reload
+echo 'kill -HUP `cat /usr/local/nginx/logs/nginx.pid`' &gt;&gt; /root/nginx_reload
+ 
+chmod 700 /root/nginx_*
 </pre>
 
 </div>

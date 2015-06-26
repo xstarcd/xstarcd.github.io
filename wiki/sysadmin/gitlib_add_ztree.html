@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>用ztree给gitlab wiki添加目录</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>用ztree给gitlab wiki添加目录</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">ztree</a>
+<li><a href="#toc_0.2">添加至gitlab页面</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">ztree</h2>
+
+<ul>
+<li>
+源码：<a href="https://github.com/i5ting/i5ting_ztree_toc">https://github.com/i5ting/i5ting_ztree_toc</a>
+
+<li>
+介绍：<a href="https://ruby-china.org/topics/17028">https://ruby-china.org/topics/17028</a>
+
+<li>
+Demo: <a href="http://i5ting.github.io/i5ting_ztree_toc/build/jquery.plugin.html">http://i5ting.github.io/i5ting_ztree_toc/build/jquery.plugin.html</a>
+
+</ul>
+
+<h2 id="toc_0.2">添加至gitlab页面</h2>
+
+<ul>
+<li>
+ztree基础文件:<a href="../files/ztree_3.5.tar.gz">ztree_3.5.tar.gz</a>
+
+</ul>
+
+<pre class="brush:html">
+&lt;!DOCTYPE html&gt;
+...
+...
+&lt;meta content="authenticity_token" name="csrf-param"&gt;
+&lt;meta content="xW13ZWv9x6FCUK0yrbn5dbYv3RPu/q1ZBL2Us/T449k=" name="csrf-token"&gt;
+...
+...
+&lt;!--ztree--&gt;
+&lt;!--link rel="stylesheet" href="http://i5ting.github.io/i5ting_ztree_toc/build/style/zTreeStyle/zTreeStyle.css" type="text/css"--&gt;
+&lt;link rel="stylesheet" href="ztree/zTreeStyle.css" type="text/css"&gt;
+&lt;style&gt;
+.ztree li a.curSelectedNode {
+  padding-top: 0px;
+  background-color: #FFE6B0;
+  color: black;
+  height: 16px;
+  border: 1px #FFB951 solid;
+  opacity: 0.8;
+}
+.ztree{
+  overflow: auto;
+  height:100%;
+  min-height: 200px;
+  top: 0px;
+}
+&lt;/style&gt;
+&lt;!--ztree--&gt;
+
+&lt;/head&gt;
+
+&lt;body class="ui_mars  project" data-page="projects:blob:show" data-project-id="13"&gt;
+&lt;header class="navbar navbar-fixed-top navbar-gitlab"&gt;
+&lt;div class="navbar-inner"&gt;
+
+&lt;!--ztree--&gt;
+&lt;div style='width:30%;'&gt;
+ &lt;ul id="tree" class="ztree" style='width:100%'&gt;
+ &lt;/ul&gt;
+&lt;/div&gt;
+&lt;!--ztree--&gt;
+
+&lt;div class="container"&gt;
+...
+...
+...
+
+&lt;div class="file-content wiki"&gt;
+
+...
+...
+...
+
+
+
+&lt;!--ztree--&gt;
+&lt;!--
+&lt;script src='http://i5ting.github.io/i5ting_ztree_toc/build/js/jquery-1.10.2.min.js'&gt;&lt;/script&gt;
+&lt;script src='http://i5ting.github.io/i5ting_ztree_toc/build/js/jquery.ztree.all-3.5.js'&gt;&lt;/script&gt;
+&lt;script src='http://i5ting.github.io/i5ting_ztree_toc/build/js/jquery.ztree_toc.js'&gt;&lt;/script&gt;
+--&gt;
+&lt;script src='ztree/jquery-1.10.2.min.js'&gt;&lt;/script&gt;
+&lt;script src='ztree/jquery.ztree.all-3.5.js'&gt;&lt;/script&gt;
+&lt;script src='ztree/jquery.ztree_toc.js'&gt;&lt;/script&gt;
+&lt;SCRIPT type="text/javascript"&gt;
+&lt;!--
+//documment_selector: '.file-holder'
+//documment_selector: '.wiki-holder'
+//documment_selector: '.wiki'
+$(document).ready(function(){
+    $('#tree').ztree_toc({
+        is_auto_number:true,
+        documment_selector: '.wiki'
+    });
+});
+//--&gt;
+&lt;/SCRIPT&gt;
+&lt;!--ztree--&gt;
+
+&lt;/body&gt;&lt;/html&gt;
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
