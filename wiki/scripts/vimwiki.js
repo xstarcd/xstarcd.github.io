@@ -36,8 +36,8 @@ var kwiki = {
             //duoshuo
             window.duoshuoQuery = {short_name:"xstar"};
             //thread = $('<div class="ds-thread">');
-            //thread = $('<div class="ds-thread" data-thread-key="'+kwiki_identifier+'" data-title="'+kwiki_title+'" data-url="'+kwiki_url+'">');
-            thread = $('<div class="ds-thread" data-thread-key="'+kwiki_identifier+'" data-title="'+kwiki_title+'">');
+            thread = $('<div class="ds-thread" data-thread-key="'+kwiki_identifier+'" data-title="'+kwiki_title+'" data-url="'+kwiki_url+'">');
+            //thread = $('<div class="ds-thread" data-thread-key="'+kwiki_identifier+'" data-title="'+kwiki_title+'">');
             theJS = 'http://static.duoshuo.com/embed.js';
         } else {
             return;
