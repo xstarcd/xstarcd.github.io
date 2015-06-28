@@ -18,10 +18,18 @@
 <h1>Excel技巧收集</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">Excel中用公式生成SQL</a>
+<li><a href="#toc_0.1">计算公式</a>
+<li><a href="#toc_0.2">Excel中用公式生成SQL</a>
+<li><a href="#toc_0.3">VBA自定义函数</a>
 </ul>
 </ul>
 </div>
+
+<p>
+Excel表格是一个伪装成办公软件的的小型的数据库系统，拥有最快捷、易用的数据编辑和处理界面，无需专业知识、人人均可使用，是日常数据处理、系统数据配置的最佳选择。
+</p>
+
+<h2 id="toc_0.1">计算公式</h2>
 
 <ul>
 <li>
@@ -36,20 +44,6 @@
 
 </ul>
 <li>
-提取字符串中的数字:VBA自定义函数
-<pre class="brush:vb">
-Function tqsz(rng As Range)
-    Dim R As Object
-    Set R = CreateObject("VBSCRIPT.REGEXP")
-    R.Pattern = "\D"
-    R.IgnoreCase = True
-    R.Global = True
-    tqsz = R.Replace(rng.Value, "")
-    Set R = Nothing
-End Function
-</pre>
-
-<li>
 获取指定单元格引用名:
 
 <ul>
@@ -62,7 +56,7 @@ End Function
 </ul>
 </ul>
 
-<h2 id="toc_0.1">Excel中用公式生成SQL</h2>
+<h2 id="toc_0.2">Excel中用公式生成SQL</h2>
 
 <p>
 将表格转换为SQL INSERT语句，方便运营、策划人员在Excel中进行数据配置后，IT人员生成SQL导入数据库。
@@ -316,6 +310,25 @@ print ('="("&amp;%s&amp;"),"'%'&amp;","&amp;'.join(_s)).replace('"&amp;"','')
 </pre>
 
 </ul>
+</ul>
+
+<h2 id="toc_0.3">VBA自定义函数</h2>
+
+<ul>
+<li>
+提取字符串中的数字:VBA自定义函数
+<pre class="brush:vb">
+Function tqsz(rng As Range)
+    Dim R As Object
+    Set R = CreateObject("VBSCRIPT.REGEXP")
+    R.Pattern = "\D"
+    R.IgnoreCase = True
+    R.Global = True
+    tqsz = R.Replace(rng.Value, "")
+    Set R = Nothing
+End Function
+</pre>
+
 </ul>
 
 </div>
