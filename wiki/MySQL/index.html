@@ -74,6 +74,87 @@ MySQL管理利器MySQL Utilities教程:<a href="http://www.ttlsa.com/mysql/mysql
 <li>
 HAProxy + Pacemaker实现MySQL的高可用负载均衡: <a href="http://blog.itpub.net/14431099/viewspace-1316655/">http://blog.itpub.net/14431099/viewspace-1316655/</a>
 
+<li>
+Linux上MySQL优化三板斧:<a href="http://www.eit.name/blog/read.php?558">http://www.eit.name/blog/read.php?558</a>
+
+<ul>
+<li>
+CPU方面
+
+<ul>
+<li>
+在BIOS中关闭电源保护模式，保证MySQL能够充分利用CPU的资源。
+
+</ul>
+<li>
+内存：
+
+<ul>
+<li>
+vm.swappiness = 0
+
+<ul>
+<li>
+<code>echo "vm.swappiness = 0" &gt;&gt;/etc/sysctl.conf;sysctl -p</code>
+
+<li>
+vm.swappiness设置为0表示尽量少swap，100表示尽量将inactive的内存页交换出去。设置为0让InnoDB自己管理缓存。
+
+<li>
+观察incative内存：
+
+<ul>
+<li>
+<code>vmstat -an 1</code>的inact列
+
+<li>
+<code>cat /proc/meminfo</code>
+
+</ul>
+</ul>
+<li>
+关闭numa
+
+<ul>
+<li>
+在BIOS中关闭
+
+<li>
+在操作系统中关闭:可以直接在/etc/grub.conf的kernel行最后添加<code>numa=off</code>。另外可以设置<code>vm.zone_reclaim_mode=0</code>尽量回收内存。
+
+<li>
+启动MySQL的时候，关闭NUMA特性：<code>numactl --interleave=all  mysqld &amp;</code>
+
+</ul>
+</ul>
+<li>
+文件系统：
+
+<ul>
+<li>
+用noatime，nobarrier挂载系统
+
+<ul>
+<li>
+对于ext3, ext4和 reiserfs文件系统可以在mount时指定barrier=0；对于xfs可以指定nobarrier选项。 
+
+</ul>
+<li>
+IO调度策略修改为deadline。
+
+<ul>
+<li>
+deadline兼顾到一个请求不会在队列中等待太久导致饿死，对数据库这种应用来说更加适用。 
+
+<li>
+将sda的调度策略设置为deadline:<code>echo deadline &gt;/sys/block/sda/queue/scheduler</code>
+
+<li>
+也可以直接在/etc/grub.conf的kernel行最后添加<code>elevator=deadline</code>来永久生效。
+
+</ul>
+</ul>
+</ul>
 </ul>
 
 
