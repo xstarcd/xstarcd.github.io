@@ -23,7 +23,7 @@ var kwiki = {
             //.replace('.html', '');
         var kwiki_title = $(document).attr("title");
         //var kwiki_url = 'http://w.gdu.me' + window.location.pathname.replace('index.html', '');
-        var kwiki_url = 'http://xstarcd.github.io' + window.location.pathname.replace('index.html', '');
+        var kwiki_url = 'http://xstarcd.github.io' + window.location.pathname.replace('index.html', '').replace('//','/');
 
         if (provider == 'disqus') {
             //disqus
