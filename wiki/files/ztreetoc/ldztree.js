@@ -1,3 +1,5 @@
+// XStar
+// 2015-07-02
 function getCSS(url) {
     var tag = '<link rel="stylesheet" href="' + url + '" />';
     $('head').append(tag);
@@ -15,7 +17,6 @@ function genTree() {
         clearTimeout(timeId);
         timeId=0;
     }
-    //if ($('#tree').ztree_toc != undefined) {
     if ($.fn.zTree) {
         $('#tree').ztree_toc({
             documment_selector: '.wiki',
