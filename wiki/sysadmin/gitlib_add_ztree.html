@@ -3,7 +3,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
-    <title>用ztree给gitlab wiki添加目录</title>
+    <title>用ztree给gitlab wiki生成TOC</title>
 </head>
 <body>
 <div id="header">
@@ -15,7 +15,7 @@
 <div id="cse"></div>
 <div id="main">
 
-<h1>用ztree给gitlab wiki添加目录</h1>
+<h1>用ztree给gitlab wiki生成TOC</h1>
 <div class="toc">
 <ul>
 <li><a href="#toc_0.1">ztree</a>
@@ -58,6 +58,10 @@ ztree_toc基础文件:<a href="../files/ztreetoc/ztree_3.5.tar.gz">ztree_3.5.tar
 
 <h2 id="toc_0.2">添加至gitlab页面</h2>
 
+<p>
+用下面的方式可以给gitlab的wiki和markdown页面生成TOC(Table of Contents)，翻阅篇幅长的文档变得轻松多了。
+</p>
+
 <h3 id="toc_0.2.1">注入方式</h3>
 
 <ul>
@@ -89,7 +93,7 @@ javascript:$('head').append("&lt;script src='http://dwz.cn/W9zZw'&gt;&lt;script&
 
 <ol>
 <li>
-因外部资源加载和内容解析，显示目录约需要2-3秒时间i(受网速影响)。
+因外部资源加载和内容解析，显示目录约需要2-3秒时间(受网速影响)。
 
 <li>
 点击左上角的"HideToc"可隐藏/显示目录；
