@@ -19,11 +19,11 @@ var kwiki = {
         if ($('#no-comment').length > 0) return;
         var thread, extraCSS, theJS;
 
-        var kwiki_identifier = 'wiki' + window.location.pathname.replace(/\//g, '_').replace('index.html', '')
+        var kwiki_identifier = 'wiki' + window.location.pathname.replace(/\//g, '_').replace('index.html', '').replace(/__/g,'_');
             //.replace('.html', '');
         var kwiki_title = $(document).attr("title");
         //var kwiki_url = 'http://w.gdu.me' + window.location.pathname.replace('index.html', '');
-        var kwiki_url = 'http://xstarcd.github.io' + window.location.pathname.replace('index.html', '');
+        var kwiki_url = 'http://xstarcd.github.io' + window.location.pathname.replace('index.html', '').replace(/\/\//g,'/');
 
         if (provider == 'disqus') {
             //disqus
