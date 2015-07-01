@@ -82,6 +82,13 @@ ztree_toc基础文件:<a href="../files/ztreetoc/ztree_3.5.tar.gz">ztree_3.5.tar
 javascript:$('head').append("&lt;script src='http://xstarcd.github.io/wiki/files/ztreetoc/ldztree.js'&gt;&lt;script&gt;");void(0);
 </pre>
 
+<p>
+github.com的HTTP Header中添加了CSP(Content Security Policy)控制，无法通过JS注入方式生成目录。
+</p>
+<pre>
+content-security-policy: default-src *; script-src assets-cdn.github.com collector-cdn.github.com;...
+</pre>
+
 <h3 id="toc_0.2.2">添加说明</h3>
 
 <pre class="brush:html">
