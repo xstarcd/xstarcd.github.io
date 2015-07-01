@@ -77,6 +77,12 @@ ztree_toc基础文件:<a href="../files/ztreetoc/ztree_3.5.tar.gz">ztree_3.5.tar
 </ol>
 </ul>
 
+<pre class="brush:javascript">
+javascript:$('head').append("&lt;script src='http://xstarcd.github.io/wiki/files/ztreetoc/ldztree.js'&gt;&lt;script&gt;");void(0);
+//或者
+javascript:$('head').append("&lt;script src='http://dwz.cn/W9zZw'&gt;&lt;script&gt;");void(0);
+</pre>
+
 <ul>
 <li>
 说明：
@@ -100,18 +106,22 @@ ztree_toc基础文件:<a href="../files/ztreetoc/ztree_3.5.tar.gz">ztree_3.5.tar
 </ol>
 </ul>
 
-<pre class="brush:javascript">
-javascript:$('head').append("&lt;script src='http://xstarcd.github.io/wiki/files/ztreetoc/ldztree.js'&gt;&lt;script&gt;");void(0);
-//或者
-javascript:$('head').append("&lt;script src='http://dwz.cn/W9zZw'&gt;&lt;script&gt;");void(0);
-</pre>
+<ul>
+<li>
+已知问题：
 
-<p>
+<ul>
+<li>
+注入后所有标题上的链接会被删除。
+
+<li>
 github.com的HTTP Header中添加了CSP(Content Security Policy)控制，无法通过JS注入方式生成目录。
-</p>
 <pre>
 content-security-policy: default-src *; script-src assets-cdn.github.com collector-cdn.github.com;...
 </pre>
+
+</ul>
+</ul>
 
 <h3 id="toc_0.2.2">添加说明</h3>
 
