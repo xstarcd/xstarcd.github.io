@@ -5,7 +5,7 @@ var kwiki = {
     },
     insertCSS: function(url) {
         $.get(url, function(res) {
-            var tag = '<style>' + res + '</stle>';
+            var tag = '<style>' + res + '</style>';
             $('body').append(tag);
         });
     },
