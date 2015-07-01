@@ -4,14 +4,12 @@ function getCSS(url) {
     var tag = '<link rel="stylesheet" href="' + url + '" />';
     $('head').append(tag);
 }
-
 function insertCSS(url) {
     $.get(url, function(res) {
         var tag = '<style>' + res + '</style>';
         $('body').append(tag);
     });
 }
-
 function genTree() {
     if(timeId){
         clearTimeout(timeId);
@@ -55,7 +53,6 @@ function hidetoc(){
     }
     return null;
 }
-
 function loadWikiTocCore(){
     WikiTocStyle={
         width:'260px',
