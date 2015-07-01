@@ -20,6 +20,10 @@
 <ul>
 <li><a href="#toc_0.1">ztree</a>
 <li><a href="#toc_0.2">添加至gitlab页面</a>
+<ul>
+<li><a href="#toc_0.2.1">注入方式</a>
+<li><a href="#toc_0.2.2">添加说明</a>
+</ul>
 </ul>
 </ul>
 </div>
@@ -47,15 +51,38 @@
 <li>
 Demo：<a href="http://i5ting.github.io/i5ting_ztree_toc/build/jquery.plugin.html">http://i5ting.github.io/i5ting_ztree_toc/build/jquery.plugin.html</a>
 
+<li>
+ztree_toc基础文件:<a href="../files/ztreetoc/ztree_3.5.tar.gz">ztree_3.5.tar.gz</a>
+
 </ul>
 
 <h2 id="toc_0.2">添加至gitlab页面</h2>
 
-<ul>
-<li>
-ztree基础文件:<a href="../files/ztree_3.5.tar.gz">ztree_3.5.tar.gz</a>
+<h3 id="toc_0.2.1">注入方式</h3>
 
-</ul>
+<ol>
+<li>
+浏览器进入gitlab的Wiki页面、或者md文件查看页面;
+
+<li>
+将下面的代码复制、粘贴到浏览器地址栏，按回车键即可完成注入(注意<code>javascript:</code>前缀可能会被浏览器删除，需手工补上)；
+
+<li>
+测试Firefox,Chrome工作正常；
+
+<li>
+注入时会自动检测当前页面是否为wiki或markdown页面，若不是则不会注入目录；
+
+<li>
+你也可以将这行代码添加到gitlab服务器的模版文件中，实现自动加载。
+
+</ol>
+
+<pre class="brush:javascript">
+javascript:$('head').append("&lt;script src='http://xstarcd.github.io/wiki/files/ztreetoc/ldztree.js'&gt;&lt;script&gt;");void(0);
+</pre>
+
+<h3 id="toc_0.2.2">添加说明</h3>
 
 <pre class="brush:html">
 &lt;!DOCTYPE html&gt;
