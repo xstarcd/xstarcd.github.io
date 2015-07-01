@@ -46,7 +46,7 @@ function genTree() {
 function hidetoc(){
     if($('#tree').css('display') == 'block'){
         $('#tree').css('display','none');
-        $('#WikiToc').css({width:'70px',height:'25px'});
+        $('#WikiToc').css({width:'70px',height:'22px'});
         $('#ShowHideToc')[0].innerHTML="ShowTOC";
     }else{
         $('#tree').css('display','block');
