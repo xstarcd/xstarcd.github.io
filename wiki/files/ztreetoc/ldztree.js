@@ -47,11 +47,11 @@ function hidetoc(){
     if($('#tree').css('display') == 'block'){
         $('#tree').css('display','none');
         $('#WikiToc').css({width:'70px',height:'25px'});
-        $('#ShowHideToc')[0].innerText="ShowTOC";
+        $('#ShowHideToc')[0].innerHTML="ShowTOC";
     }else{
         $('#tree').css('display','block');
         $('#WikiToc').css({width:'260px',height:'98%'});
-        $('#ShowHideToc')[0].innerText="HideTOC";
+        $('#ShowHideToc')[0].innerHTML="HideTOC";
     }
     return null;
 }

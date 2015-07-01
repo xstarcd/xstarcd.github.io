@@ -60,12 +60,27 @@ ztree_toc基础文件:<a href="../files/ztreetoc/ztree_3.5.tar.gz">ztree_3.5.tar
 
 <h3 id="toc_0.2.1">注入方式</h3>
 
+<ul>
+<li>
+注入方法：
+
 <ol>
 <li>
-浏览器进入gitlab的Wiki页面、或者md文件查看页面;
+用浏览器进入gitlab的Wiki页面、或者md文件查看页面;
 
 <li>
 将下面的代码复制、粘贴到浏览器地址栏，按回车键即可完成注入(注意<code>javascript:</code>前缀可能会被浏览器删除，需手工补上)；
+
+</ol>
+</ul>
+
+<ul>
+<li>
+说明：
+
+<ol>
+<li>
+点击左上角的"HideToc"可隐藏/显示目录；
 
 <li>
 测试Firefox,Chrome工作正常；
@@ -77,6 +92,7 @@ ztree_toc基础文件:<a href="../files/ztreetoc/ztree_3.5.tar.gz">ztree_3.5.tar
 你也可以将这行代码添加到gitlab服务器的模版文件中，实现自动加载。
 
 </ol>
+</ul>
 
 <pre class="brush:javascript">
 javascript:$('head').append("&lt;script src='http://xstarcd.github.io/wiki/files/ztreetoc/ldztree.js'&gt;&lt;script&gt;");void(0);
