@@ -18,7 +18,7 @@ function genTree() {
     if ($.fn.zTree) {
         $('#tree').ztree_toc({
             documment_selector: '.wiki',
-            is_auto_number:true,
+            is_auto_number:false,
             is_expand_all:true,
             is_posion_top:true,
             is_highlight_selected_line:false,
