@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>给gitlab wiki页面注入TOC</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>给gitlab wiki页面注入TOC</h1>
+
+<pre class="brush:javascript">
+// XStar
+// 2015-07-02
+function getCSS(url) {
+    var tag = '&lt;link rel="stylesheet" href="' + url + '" /&gt;';
+    $('head').append(tag);
+}
+function insertCSS(url) {
+    $.get(url, function(res) {
+        var tag = '&lt;style&gt;' + res + '&lt;/style&gt;';
+        $('body').append(tag);
+    });
+}
+function genTree() {
+    if(timeId){
+        clearTimeout(timeId);
+        timeId=0;
+    }
+    if ($.fn.zTree) {
+        $('#tree').ztree_toc({
+            documment_selector: '.wiki',
+            is_auto_number:true,
+            is_expand_all:false,
+            is_posion_top:true,
+            is_highlight_selected_line:false,
+            debug:false,
+            highlight_on_scroll:false,
+            _header_nodes:[],
+            ztreeStyle: {
+                width:'260px',
+                overflow: 'auto',
+                position: 'fixed',
+                'z-index': 2147483647,
+                border: '0px none',
+                left: '0px',
+                'top': '15px',
+                //bottom: '0px',
+                // height:'100px'
+            },
+        });
+    }else{
+        timeId=setTimeout(genTree,1000); 
+    }
+}
+function hidetoc(){
+    if($('#tree').css('display') == 'block'){
+        $('#tree').css('display','none');
+        $('#WikiToc').css({width:'70px',height:'22px'});
+        $('#ShowHideToc')[0].innerHTML="ShowTOC";
+    }else{
+        $('#tree').css('display','block');
+        $('#WikiToc').css({width:'260px',height:'98%'});
+        $('#ShowHideToc')[0].innerHTML="HideTOC";
+    }
+    return null;
+}
+function loadWikiTocCore(){
+    WikiTocStyle={
+        width:'260px',
+        height:'98%',
+        //overflow: 'auto',
+        position: 'fixed',
+        'z-index': 2147483647,
+        border: '0px none',
+        left: '0px',
+        'top': '0px',
+        //'background-color': 'yellowgreen',
+        'background-color': 'whitesmoke',
+        //bottom: '0px',
+    };
+    theURL='http://xstarcd.github.io/wiki/files/ztreetoc/';
+    theCSS=theURL + 'zTreeStyle.css';
+    theJS1=theURL + 'jquery.ztree.all-3.5.min.js';
+    theJS2=theURL + 'jquery.ztree_toc.js';
+    thread=$("&lt;div id='WikiToc' style='width:30%;'&gt;&lt;span id='ShowHideToc' style='cursor:pointer' onclick='javasript:hidetoc()'&gt;HideTOC&lt;/span&gt;&lt;ul id='tree' class='ztree' style='width:100%'&gt;&lt;/ul&gt;&lt;/div&gt;'");
+    getCSS(theCSS);
+    $('body').append(thread);
+    $('#WikiToc').css(WikiTocStyle);
+    $.getScript(theJS1);
+    $.getScript(theJS2);
+}
+var timeId = 0;
+$(document).ready(function(){
+    if($('.wiki').length &gt;0){
+        loadWikiTocCore();
+        timeId=setTimeout(genTree,1000); 
+    }
+});
+//javascript:$('head').append("&lt;script src='http://xstarcd.github.io/wiki/files/ztreetoc/ldztree.js'&gt;&lt;script&gt;");void(0);
+
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
