@@ -63,7 +63,8 @@ function loadWikiTocCore(){
         border: '0px none',
         left: '0px',
         'top': '0px',
-        'background-color': 'yellowgreen',
+        //'background-color': 'yellowgreen',
+        'background-color': 'whitesmoke',
         //bottom: '0px',
     };
     theURL='http://xstarcd.github.io/wiki/files/ztreetoc/';
