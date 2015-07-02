@@ -73,7 +73,9 @@ function loadWikiTocCore(){
     theJS2=theURL + 'jquery.ztree_toc.js';
     thread=$("<div id='WikiToc' style='width:30%;'><span id='ShowHideToc' style='cursor:pointer' onclick='javasript:hidetoc()'>HideTOC</span><ul id='tree' class='ztree' style='width:100%'></ul></div>'");
     getCSS(theCSS);
+    if($('WikiToc')) $('#WikiToc').remove();
     $('body').append(thread);
+    //$('#tree').empty();
     $('#WikiToc').css(WikiTocStyle);
     $.getScript(theJS1);
     $.getScript(theJS2);
@@ -82,7 +84,6 @@ var timeId = 0;
 $(document).ready(function(){
     if($('.wiki').length >0){
         loadWikiTocCore();
-        $('#tree').empty();
         timeId=setTimeout(genTree,1000); 
     }
 });
