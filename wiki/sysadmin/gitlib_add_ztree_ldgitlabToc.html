@@ -63,11 +63,11 @@ function genTree() {
 }
 function hidetoc(){
     if($('#tree').css('display') == 'block'){
-        $('#tree').css('display','none');
+        $('#tree').hide();
         $('#WikiToc').css({width:'70px',height:'22px'});
         $('#ShowHideToc')[0].innerHTML="ShowTOC";
     }else{
-        $('#tree').css('display','block');
+        $('#tree').show();
         $('#WikiToc').css({width:'260px',height:'98%'});
         $('#ShowHideToc')[0].innerHTML="HideTOC";
     }
