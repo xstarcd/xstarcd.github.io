@@ -22,7 +22,7 @@
 <li><a href="#toc_0.2">添加至gitlab页面</a>
 <ul>
 <li><a href="#toc_0.2.1">注入方式</a>
-<li><a href="#toc_0.2.2">添加说明</a>
+<li><a href="#toc_0.2.2">添加模板说明</a>
 </ul>
 </ul>
 </ul>
@@ -122,7 +122,7 @@ javascript:$('head').append("&lt;script src='http://dwz.cn/W9zZw'&gt;&lt;script&
 
 <ul>
 <li>
-注入后所有标题上的链接会被删除。
+启用自动编号时(is_auto_number:true)时，所有标题上的链接会丢失。
 
 <li>
 github.com的HTTP Header中添加了CSP(Content Security Policy)控制，无法通过JS注入方式生成目录。
@@ -144,9 +144,9 @@ github的Wiki或markdown可在chrome浏览器中安装github-toc插件来实现�
 </ul>
 </ul>
 
-<h3 id="toc_0.2.2">添加说明</h3>
+<h3 id="toc_0.2.2">添加模板说明</h3>
 
-<pre class="brush:html">
+<pre class="brush:html; collapse: true; toolbar:true;">
 &lt;!DOCTYPE html&gt;
 ...
 ...

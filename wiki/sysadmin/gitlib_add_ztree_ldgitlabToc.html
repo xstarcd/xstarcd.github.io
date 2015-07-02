@@ -18,8 +18,8 @@
 <h1>给gitlab wiki页面注入TOC</h1>
 
 <pre class="brush:javascript">
-// XStar
-// 2015-07-02
+// Auther: YuanXing
+// Create: 2015-07-02
 function getCSS(url) {
     var tag = '&lt;link rel="stylesheet" href="' + url + '" /&gt;';
     $('head').append(tag);
@@ -38,8 +38,8 @@ function genTree() {
     if ($.fn.zTree) {
         $('#tree').ztree_toc({
             documment_selector: '.wiki',
-            is_auto_number:true,
-            is_expand_all:false,
+            is_auto_number:false,
+            is_expand_all:true,
             is_posion_top:true,
             is_highlight_selected_line:false,
             debug:false,
@@ -52,7 +52,7 @@ function genTree() {
                 'z-index': 2147483647,
                 border: '0px none',
                 left: '0px',
-                'top': '15px',
+                'top': '18px',
                 //bottom: '0px',
                 // height:'100px'
             },
@@ -93,7 +93,9 @@ function loadWikiTocCore(){
     theJS2=theURL + 'jquery.ztree_toc.js';
     thread=$("&lt;div id='WikiToc' style='width:30%;'&gt;&lt;span id='ShowHideToc' style='cursor:pointer' onclick='javasript:hidetoc()'&gt;HideTOC&lt;/span&gt;&lt;ul id='tree' class='ztree' style='width:100%'&gt;&lt;/ul&gt;&lt;/div&gt;'");
     getCSS(theCSS);
+    if($('WikiToc')) $('#WikiToc').remove();
     $('body').append(thread);
+    //$('#tree').empty();
     $('#WikiToc').css(WikiTocStyle);
     $.getScript(theJS1);
     $.getScript(theJS2);
