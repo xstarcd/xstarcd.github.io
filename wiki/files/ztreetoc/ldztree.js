@@ -1,5 +1,5 @@
-// XStar
-// 2015-07-02
+// Auther: YuanXing
+// Create: 2015-07-02
 function getCSS(url) {
     var tag = '<link rel="stylesheet" href="' + url + '" />';
     $('head').append(tag);
@@ -19,7 +19,7 @@ function genTree() {
         $('#tree').ztree_toc({
             documment_selector: '.wiki',
             is_auto_number:true,
-            is_expand_all:false,
+            is_expand_all:true,
             is_posion_top:true,
             is_highlight_selected_line:false,
             debug:false,
@@ -32,7 +32,7 @@ function genTree() {
                 'z-index': 2147483647,
                 border: '0px none',
                 left: '0px',
-                'top': '15px',
+                'top': '18px',
                 //bottom: '0px',
                 // height:'100px'
             },
@@ -82,6 +82,7 @@ var timeId = 0;
 $(document).ready(function(){
     if($('.wiki').length >0){
         loadWikiTocCore();
+        $('#tree').empty();
         timeId=setTimeout(genTree,1000); 
     }
 });
