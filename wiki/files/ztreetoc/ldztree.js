@@ -67,8 +67,7 @@ function loadWikiTocCore(){
         'background-color': 'whitesmoke',
         //bottom: '0px',
     };
-    //theURL='http://xstarcd.github.io/wiki/files/ztreetoc/';
-    theURL='/wiki/files/ztreetoc/';
+    theURL=window.location.protocol + '//xstarcd.github.io/wiki/files/ztreetoc/';
     theCSS=theURL + 'zTreeStyle.css';
     theJS1=theURL + 'jquery.ztree.all-3.5.min.js';
     theJS2=theURL + 'jquery.ztree_toc.js';
