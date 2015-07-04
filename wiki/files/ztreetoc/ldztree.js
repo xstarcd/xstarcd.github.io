@@ -1,5 +1,7 @@
 // Auther: YuanXing
 // Create: 2015-07-04
+var documment_selector='';
+theURL=window.location.protocol + '//xstarcd.github.io/wiki/files/ztreetoc/';
 function getCSS(url) {
     var tag = '<link rel="stylesheet" href="' + url + '" />';
     $('head').append(tag);
@@ -68,7 +70,6 @@ function loadWikiTocCore(){
         'background-color': 'whitesmoke',
         //bottom: '0px',
     };
-    theURL=window.location.protocol + '//xstarcd.github.io/wiki/files/ztreetoc/';
     theCSS=theURL + 'zTreeStyle.css';
     theJS1=theURL + 'jquery.ztree.all-3.5.min.js';
     theJS2=theURL + 'jquery.ztree_toc.js';
@@ -83,7 +84,6 @@ function loadWikiTocCore(){
 }
 var timeId = 0;
 $(document).ready(function(){
-    var documment_selector='';
     if($('.wiki').length >0)
         { documment_selector='.wiki'; }
     else if($('.markdown-body').length >0)
