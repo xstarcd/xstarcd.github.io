@@ -17,7 +17,7 @@ function genTree() {
     }
     if ($.fn.zTree) {
         $('#tree').ztree_toc({
-            documment_selector: '.wiki .markdown-body',
+            documment_selector: '.wiki',
             is_auto_number:false,
             is_expand_all:true,
             is_posion_top:true,
@@ -82,7 +82,12 @@ function loadWikiTocCore(){
 }
 var timeId = 0;
 $(document).ready(function(){
-    if($('.wiki').length >0){
+    var documment_selector='';
+    if($('.wiki').length >0)
+        { documment_selector='.wiki'; }
+    else if($('.markdown-body').length >0)
+        { documment_selector='.markdown-body'; }
+    if(documment_selector != ''){
         loadWikiTocCore();
         timeId=setTimeout(genTree,1000); 
     }
