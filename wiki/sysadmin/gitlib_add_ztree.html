@@ -22,7 +22,7 @@
 <li><a href="#toc_0.2">添加至gitlab页面</a>
 <ul>
 <li><a href="#toc_0.2.1">注入方式</a>
-<li><a href="#toc_0.2.2">添加模板说明</a>
+<li><a href="#toc_0.2.2">添加到模板</a>
 </ul>
 </ul>
 </ul>
@@ -59,7 +59,7 @@ ztree_toc基础文件:<a href="../files/ztreetoc/ztree_3.5.tar.gz">ztree_3.5.tar
 <h2 id="toc_0.2">添加至gitlab页面</h2>
 
 <p>
-用下面的方式可以给gitlab的wiki和markdown页面生成TOC(Table of Contents)，翻阅篇幅长的文档变得轻松多了。
+用下面的方式可以给gitlab的wiki和markdown页面生成目录(TOC:Table of Contents)，翻阅篇幅长的文档变得轻松多了。
 </p>
 
 <h3 id="toc_0.2.1">注入方式</h3>
@@ -74,13 +74,6 @@ ztree_toc基础文件:<a href="../files/ztreetoc/ztree_3.5.tar.gz">ztree_3.5.tar
 
 <li>
 将下面的代码复制、粘贴到浏览器地址栏，按回车键即可完成注入(注意<code>javascript:</code>前缀可能会被浏览器删除，需手工补上)；
-
-<li>
-也可以将以下代码设置为浏览器书签，以后点击该书签即可加载目录。
-
-</ol>
-</ul>
-
 <pre class="brush:javascript">
 # http:
 javascript:$('head').append("&lt;script src='http://xstarcd.github.io/wiki/files/ztreetoc/ldztree.js'&gt;&lt;script&gt;");void(0);
@@ -91,14 +84,24 @@ javascript:$('head').append("&lt;script src='http://dwz.cn/W9zZw'&gt;&lt;script&
 javascript:$('head').append("&lt;script src='https://xstarcd.github.io/wiki/files/ztreetoc/ldztree.js'&gt;&lt;script&gt;");void(0);
 </pre>
 
+<li>
+也可以将以下代码设置为浏览器书签，在进入wiki页面后点击该书签即可加载目录。
+
+</ol>
+</ul>
+
+<p>
+<img src="../files/ztreetoc/img/ZtreeToc_bookmark.png" width="500px" alt="zTreeToc Bookmark">
+</p>
+
 <ul>
 <li>
-TOC效果图
+目录效果截图
 
 </ul>
 
 <p>
-<img src="../files/ztreetoc/img/ZtreeToc_ScreenShot.png" alt="zTreeToc ScreenShot">
+<img src="../files/ztreetoc/img/ZtreeToc_ScreenShot.png" width="1000px" alt="zTreeToc ScreenShot">
 </p>
 
 <ul>
@@ -158,7 +161,11 @@ github的Wiki或markdown可在chrome浏览器中安装github-toc插件来实现�
 </ul>
 </ul>
 
-<h3 id="toc_0.2.2">添加模板说明</h3>
+<h3 id="toc_0.2.2">添加到模板</h3>
+
+<p>
+对于自己的gitlab服务器，则可通过将zTreeToc加到gitlab网站模板方式来进行加载(也可以将上面的ldztree.js添加加载到模板中来实现TOC加载)。
+</p>
 
 <pre class="brush:html; collapse: true; toolbar:true;">
 &lt;!DOCTYPE html&gt;
@@ -221,17 +228,13 @@ github的Wiki或markdown可在chrome浏览器中安装github-toc插件来实现�
 &lt;script src='http://i5ting.github.io/i5ting_ztree_toc/build/js/jquery.ztree.all-3.5.js'&gt;&lt;/script&gt;
 &lt;script src='http://i5ting.github.io/i5ting_ztree_toc/build/js/jquery.ztree_toc.js'&gt;&lt;/script&gt;
 --&gt;
-&lt;script src='ztree/jquery-1.10.2.min.js'&gt;&lt;/script&gt;
 &lt;script src='ztree/jquery.ztree.all-3.5.js'&gt;&lt;/script&gt;
 &lt;script src='ztree/jquery.ztree_toc.js'&gt;&lt;/script&gt;
 &lt;SCRIPT type="text/javascript"&gt;
 &lt;!--
-//documment_selector: '.file-holder'
-//documment_selector: '.wiki-holder'
-//documment_selector: '.wiki'
 $(document).ready(function(){
     $('#tree').ztree_toc({
-        is_auto_number:true,
+        is_auto_number:false,
         documment_selector: '.wiki'
     });
 });
