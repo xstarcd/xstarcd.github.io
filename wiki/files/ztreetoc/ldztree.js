@@ -2,7 +2,7 @@
 // Create: 2015-07-04
 var documment_selector='';
 theURL='//xstarcd.github.io/wiki/files/ztreetoc/';
-if (window.location.protocol='file:'){
+if (window.location.protocol == 'file:'){
     theURL='http:'+theURL;
 }else{
     theURL=window.location.protocol+theURL;
