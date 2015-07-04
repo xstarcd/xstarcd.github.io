@@ -20,6 +20,13 @@
 <pre class="brush:javascript">
 // Auther: YuanXing
 // Create: 2015-07-04
+var documment_selector='';
+theURL='//xstarcd.github.io/wiki/files/ztreetoc/';
+if (window.location.protocol == 'file:'){
+    theURL='http:'+theURL;
+}else{
+    theURL=window.location.protocol+theURL;
+}
 function getCSS(url) {
     var tag = '&lt;link rel="stylesheet" href="' + url + '" /&gt;';
     $('head').append(tag);
@@ -37,7 +44,8 @@ function genTree() {
     }
     if ($.fn.zTree) {
         $('#tree').ztree_toc({
-            documment_selector: '.wiki',
+            //documment_selector: '.wiki',
+            documment_selector: documment_selector,
             is_auto_number:false,
             is_expand_all:true,
             is_posion_top:true,
@@ -46,7 +54,7 @@ function genTree() {
             highlight_on_scroll:false,
             _header_nodes:[],
             ztreeStyle: {
-                width:'260px',
+                width:'250px',
                 overflow: 'auto',
                 position: 'fixed',
                 'z-index': 2147483647,
@@ -76,7 +84,7 @@ function hidetoc(){
 function loadWikiTocCore(){
     WikiTocStyle={
         width:'260px',
-        height:'98%',
+        height:'100%',
         //overflow: 'auto',
         position: 'fixed',
         'z-index': 2147483647,
@@ -87,7 +95,6 @@ function loadWikiTocCore(){
         'background-color': 'whitesmoke',
         //bottom: '0px',
     };
-    theURL=window.location.protocol + '//xstarcd.github.io/wiki/files/ztreetoc/';
     theCSS=theURL + 'zTreeStyle.css';
     theJS1=theURL + 'jquery.ztree.all-3.5.min.js';
     theJS2=theURL + 'jquery.ztree_toc.js';
@@ -102,7 +109,15 @@ function loadWikiTocCore(){
 }
 var timeId = 0;
 $(document).ready(function(){
-    if($('.wiki').length &gt;0){
+    if($('.wiki').length &gt;0) {
+        documment_selector='.wiki';
+    }else if($('.markdown-body').length &gt;0) {
+        documment_selector='.markdown-body';
+    }else if($('#main').length &gt;0) {
+        documment_selector='#main'; 
+    }
+
+    if(documment_selector != ''){
         loadWikiTocCore();
         timeId=setTimeout(genTree,1000); 
     }
