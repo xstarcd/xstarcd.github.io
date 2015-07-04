@@ -1,7 +1,12 @@
 // Auther: YuanXing
 // Create: 2015-07-04
 var documment_selector='';
-theURL=window.location.protocol + '//xstarcd.github.io/wiki/files/ztreetoc/';
+theURL='//xstarcd.github.io/wiki/files/ztreetoc/';
+if (window.location.protocol='file:'){
+    theURL='http:'+theURL;
+}else{
+    theURL=window.location.protocol+theURL;
+}
 function getCSS(url) {
     var tag = '<link rel="stylesheet" href="' + url + '" />';
     $('head').append(tag);
