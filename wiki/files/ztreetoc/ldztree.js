@@ -84,12 +84,14 @@ function loadWikiTocCore(){
 }
 var timeId = 0;
 $(document).ready(function(){
-    if($('.wiki').length >0)
-        { documment_selector='.wiki'; }
-    else if($('.markdown-body').length >0)
-        { documment_selector='.markdown-body'; }
-    else if($('.main').length >0)
-        { documment_selector='.main'; }
+    if($('.wiki').length >0) {
+        documment_selector='.wiki';
+    }else if($('.markdown-body').length >0) {
+        documment_selector='.markdown-body';
+    }else if($('#main').length >0) {
+        documment_selector='#main'; 
+    }
+
     if(documment_selector != ''){
         loadWikiTocCore();
         timeId=setTimeout(genTree,1000); 
