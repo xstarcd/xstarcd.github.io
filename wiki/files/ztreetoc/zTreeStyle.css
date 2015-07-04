@@ -109,7 +109,7 @@ ul.ztree.zTreeDragUL {margin:0; padding:0; position:absolute; width:auto; height
 .ztree {
   overflow: auto;
   //background-color: yellowgreen;
-  background-color: whitesmoke;
+  //background-color: whitesmoke;
   height:100%;
   min-height: 200px;
   top: 0px;
