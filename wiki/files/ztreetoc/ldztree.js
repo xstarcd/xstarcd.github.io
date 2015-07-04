@@ -17,7 +17,8 @@ function genTree() {
     }
     if ($.fn.zTree) {
         $('#tree').ztree_toc({
-            documment_selector: '.wiki',
+            //documment_selector: '.wiki',
+            documment_selector: documment_selector,
             is_auto_number:false,
             is_expand_all:true,
             is_posion_top:true,
