@@ -1,5 +1,5 @@
 // Auther: YuanXing
-// Create: 2015-07-02
+// Create: 2015-07-04
 function getCSS(url) {
     var tag = '<link rel="stylesheet" href="' + url + '" />';
     $('head').append(tag);

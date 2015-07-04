@@ -19,7 +19,7 @@
 
 <pre class="brush:javascript">
 // Auther: YuanXing
-// Create: 2015-07-02
+// Create: 2015-07-04
 function getCSS(url) {
     var tag = '&lt;link rel="stylesheet" href="' + url + '" /&gt;';
     $('head').append(tag);
@@ -87,7 +87,7 @@ function loadWikiTocCore(){
         'background-color': 'whitesmoke',
         //bottom: '0px',
     };
-    theURL='http://xstarcd.github.io/wiki/files/ztreetoc/';
+    theURL=window.location.protocol + '//xstarcd.github.io/wiki/files/ztreetoc/';
     theCSS=theURL + 'zTreeStyle.css';
     theJS1=theURL + 'jquery.ztree.all-3.5.min.js';
     theJS2=theURL + 'jquery.ztree_toc.js';
