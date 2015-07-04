@@ -3,7 +3,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
-    <title>用ztree给gitlab wiki生成TOC</title>
+    <title>用ztree给gitlab添加目录导航</title>
 </head>
 <body>
 <div id="header">
@@ -15,125 +15,93 @@
 <div id="cse"></div>
 <div id="main">
 
-<h1>用ztree给gitlab wiki生成TOC</h1>
+<h1>用ztree给gitlab添加目录导航</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">ztree</a>
-<li><a href="#toc_0.2">添加至gitlab页面</a>
+<li><a href="#toc_0.1">给gitlab wiki添加TOC</a>
 <ul>
-<li><a href="#toc_0.2.1">注入方式</a>
-<li><a href="#toc_0.2.2">添加到模板</a>
+<li><a href="#toc_0.1.1">外部加载方式</a>
+<ul>
+<li><a href="#toc_0.1.1.1">使用方法</a>
+<li><a href="#toc_0.1.1.2">说明</a>
+<li><a href="#toc_0.1.1.3">效果截图</a>
+<li><a href="#toc_0.1.1.4">其它</a>
 </ul>
+<li><a href="#toc_0.1.2">添加到模板</a>
+</ul>
+<li><a href="#toc_0.2">Ztree及ztree_toc</a>
 </ul>
 </ul>
 </div>
-
-<h2 id="toc_0.1">ztree</h2>
-
-<ul>
-<li>
-官网：<a href="http://www.ztree.me">http://www.ztree.me</a>
-
-<li>
-源码：
-
-<ul>
-<li>
-<a href="https://github.com/i5ting/i5ting_ztree_toc">https://github.com/i5ting/i5ting_ztree_toc</a>
-
-<li>
-<a href="https://git.oschina.net/zTree/zTree_v3">https://git.oschina.net/zTree/zTree_v3</a>
-
-</ul>
-<li>
-介绍：<a href="https://ruby-china.org/topics/17028">https://ruby-china.org/topics/17028</a>
-
-<li>
-Demo：<a href="http://i5ting.github.io/i5ting_ztree_toc/build/jquery.plugin.html">http://i5ting.github.io/i5ting_ztree_toc/build/jquery.plugin.html</a>
-
-<li>
-ztree_toc基础文件:<a href="../files/ztreetoc/ztree_3.5.tar.gz">ztree_3.5.tar.gz</a>
-
-</ul>
-
-<h2 id="toc_0.2">添加至gitlab页面</h2>
 
 <p>
 给gitlab的wiki和markdown页面生成目录导航(TOC:Table of Contents)，方便长篇Wiki内容的翻阅。
 </p>
 
-<h3 id="toc_0.2.1">注入方式</h3>
+
+<h2 id="toc_0.1">给gitlab wiki添加TOC</h2>
+
+<h3 id="toc_0.1.1">外部加载方式</h3>
+
+<p>
+通过jquery加载外部JS，达到给Wiki和markdown页面添加目录导航目的，测试在Firefox,Chrome中工作正常。
+</p>
+
+<p>
+因在浏览器用js实现，不需要具有服务器管理权限、修改服务端模板，在gitlab服务器、gitlab.com均可使用该方法。
+</p>
+
+<h4 id="toc_0.1.1.1">使用方法</h4>
 
 <ul>
 <li>
-注入方法：
-
-<ol>
-<li>
-用浏览器进入gitlab的Wiki页面、或者md文件查看页面;
-
-<li>
-将下面的代码复制、粘贴到浏览器地址栏，按回车键即可完成注入(注意<code>javascript:</code>前缀可能会被浏览器删除，需手工补上)；
-<pre class="brush:javascript">
-# http:
-javascript:$('head').append("&lt;script src='http://xstarcd.github.io/wiki/files/ztreetoc/ldztree.js'&gt;&lt;script&gt;");void(0);
-//or
-javascript:$('head').append("&lt;script src='http://dwz.cn/W9zZw'&gt;&lt;script&gt;");void(0);
-
-# https
-javascript:$('head').append("&lt;script src='https://xstarcd.github.io/wiki/files/ztreetoc/ldztree.js'&gt;&lt;script&gt;");void(0);
+将下面的代码做为"地址(L)"添加到浏览器书签中：
+<pre>
+javascript:$('head').append("&lt;script src='"+window.location.protocol+"//xstarcd.github.io/wiki/files/ztreetoc/ldztree.js'&gt;&lt;script&gt;");void(0);
 </pre>
 
-<li>
-也可以将以下代码设置为浏览器书签，在进入wiki页面后点击该书签即可加载目录。
-
-</ol>
 </ul>
-
 <p>
-<img src="../files/ztreetoc/img/ZtreeToc_bookmark.png" width="600px" alt="zTreeToc Bookmark">
+<img src="../files/ztreetoc/img/ZtreeToc_bookmark.png" alt="zTreeToc Bookmark">
 </p>
-
 <ul>
 <li>
-目录效果截图
+进入gitlab的Wiki页面、或者md/markdown文件查看页面;
+
+<li>
+在wiki/markdown页面加载完成后，点击该书签，约2-3秒即可显示出目录导航。
 
 </ul>
 
-<p>
-<img src="../files/ztreetoc/img/ZtreeToc_ScreenShot.png" width="1000px" alt="zTreeToc ScreenShot">
-</p>
-
-<ul>
-<li>
-说明：
+<h4 id="toc_0.1.1.2">说明</h4>
 
 <ol>
 <li>
-因外部资源加载和内容解析，显示目录约需要2-3秒时间(受网速影响)。
+因资源加载和内容解析受网速影响，显示目录约需要2-3秒时间；
+
+<li>
+第一次使用可能因没有缓存而失败(如：空白的目录)，再点一次书签即可成功加载；
 
 <li>
 点击左上角的"HideToc"可隐藏/显示目录；
 
 <li>
-测试Firefox,Chrome工作正常；
-
-<li>
-注入时会自动检测当前页面是否为wiki或markdown页面，若不是则不会注入目录；
-
-<li>
-你也可以将这行代码添加到gitlab服务器的模版文件中，实现自动加载。
+自动检测当前页面是wiki或markdown页面，才会生成导航，否则不会加载。
 
 </ol>
-</ul>
+
+<h4 id="toc_0.1.1.3">效果截图</h4>
+
+<p>
+<img src="../files/ztreetoc/img/ZtreeToc_ScreenShot.png" width="1000px" alt="zTreeToc ScreenShot">
+</p>
+
+<h4 id="toc_0.1.1.4">其它</h4>
 
 <ul>
 <li>
 源码：<a href="gitlib_add_ztree_ldgitlabToc.html">ldztree.js</a>
 
-</ul>
-
-<ul>
 <li>
 已知问题：
 
@@ -161,89 +129,49 @@ github的Wiki或markdown可在chrome浏览器中安装github-toc插件来实现�
 </ul>
 </ul>
 
-<h3 id="toc_0.2.2">添加到模板</h3>
+<h3 id="toc_0.1.2">添加到模板</h3>
 
 <p>
-对于自己的gitlab服务器，则可通过将zTreeToc加到gitlab网站模板方式来进行加载(也可以将上面的ldztree.js添加加载到模板中来实现TOC加载)。
+对于自己的gitlab服务器，可以将上面的ldztree.js添加到gitlabb模板中来实现自动加载目录导航。
 </p>
 
-<pre class="brush:html; collapse: true; toolbar:true;">
-&lt;!DOCTYPE html&gt;
-...
-...
-&lt;meta content="authenticity_token" name="csrf-param"&gt;
-&lt;meta content="xW13ZWv9x6FCUK0yrbn5dbYv3RPu/q1ZBL2Us/T449k=" name="csrf-token"&gt;
-...
-...
-&lt;!--ztree--&gt;
-&lt;!--link rel="stylesheet" href="http://i5ting.github.io/i5ting_ztree_toc/build/style/zTreeStyle/zTreeStyle.css" type="text/css"--&gt;
-&lt;link rel="stylesheet" href="ztree/zTreeStyle.css" type="text/css"&gt;
-&lt;style&gt;
-.ztree li a.curSelectedNode {
-  padding-top: 0px;
-  background-color: #FFE6B0;
-  color: black;
-  height: 16px;
-  border: 1px #FFB951 solid;
-  opacity: 0.8;
-}
-.ztree{
-  overflow: auto;
-  height:100%;
-  min-height: 200px;
-  top: 0px;
-}
-&lt;/style&gt;
-&lt;!--ztree--&gt;
+<h2 id="toc_0.2">Ztree及ztree_toc</h2>
 
-&lt;/head&gt;
+<ul>
+<li>
+ztree
 
-&lt;body class="ui_mars  project" data-page="projects:blob:show" data-project-id="13"&gt;
-&lt;header class="navbar navbar-fixed-top navbar-gitlab"&gt;
-&lt;div class="navbar-inner"&gt;
+<ul>
+<li>
+官网：<a href="http://www.ztree.me">http://www.ztree.me</a>
 
-&lt;!--ztree--&gt;
-&lt;div style='width:30%;'&gt;
- &lt;ul id="tree" class="ztree" style='width:100%'&gt;
- &lt;/ul&gt;
-&lt;/div&gt;
-&lt;!--ztree--&gt;
+<li>
+源码：
 
-&lt;div class="container"&gt;
-...
-...
-...
+<ul>
+<li>
+<a href="https://github.com/i5ting/i5ting_ztree_toc">https://github.com/i5ting/i5ting_ztree_toc</a>
 
-&lt;div class="file-content wiki"&gt;
+<li>
+<a href="https://git.oschina.net/zTree/zTree_v3">https://git.oschina.net/zTree/zTree_v3</a>
 
-...
-...
-...
+</ul>
+</ul>
+<li>
+i5ting_ztree_toc
 
+<ul>
+<li>
+Demo：<a href="http://i5ting.github.io/i5ting_ztree_toc/build/jquery.plugin.html">http://i5ting.github.io/i5ting_ztree_toc/build/jquery.plugin.html</a>
 
+<li>
+介绍：<a href="https://ruby-china.org/topics/17028">https://ruby-china.org/topics/17028</a>
 
-&lt;!--ztree--&gt;
-&lt;!--
-&lt;script src='http://i5ting.github.io/i5ting_ztree_toc/build/js/jquery-1.10.2.min.js'&gt;&lt;/script&gt;
-&lt;script src='http://i5ting.github.io/i5ting_ztree_toc/build/js/jquery.ztree.all-3.5.js'&gt;&lt;/script&gt;
-&lt;script src='http://i5ting.github.io/i5ting_ztree_toc/build/js/jquery.ztree_toc.js'&gt;&lt;/script&gt;
---&gt;
-&lt;script src='ztree/jquery.ztree.all-3.5.js'&gt;&lt;/script&gt;
-&lt;script src='ztree/jquery.ztree_toc.js'&gt;&lt;/script&gt;
-&lt;SCRIPT type="text/javascript"&gt;
-&lt;!--
-$(document).ready(function(){
-    $('#tree').ztree_toc({
-        is_auto_number:false,
-        documment_selector: '.wiki'
-    });
-});
-//--&gt;
-&lt;/SCRIPT&gt;
-&lt;!--ztree--&gt;
+<li>
+ztree_toc基础文件:<a href="../files/ztreetoc/ztree_3.5.tar.gz">ztree_3.5.tar.gz</a>
 
-&lt;/body&gt;&lt;/html&gt;
-</pre>
+</ul>
+</ul>
 
 </div>
 <div id="footer">
