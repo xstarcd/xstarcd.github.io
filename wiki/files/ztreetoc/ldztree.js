@@ -67,7 +67,7 @@ function loadWikiTocCore(){
         left: '0px',
         'top': '0px',
         //'background-color': 'yellowgreen',
-        //'background-color': 'whitesmoke',
+        'background-color': 'whitesmoke',
         //bottom: '0px',
     };
     theCSS=theURL + 'zTreeStyle.css';
