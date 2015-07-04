@@ -76,20 +76,30 @@ ztree_toc基础文件:<a href="../files/ztreetoc/ztree_3.5.tar.gz">ztree_3.5.tar
 将下面的代码复制、粘贴到浏览器地址栏，按回车键即可完成注入(注意<code>javascript:</code>前缀可能会被浏览器删除，需手工补上)；
 
 <li>
-也可以将代码设置为浏览器书签，以后点击该书签即可加载目录。
+也可以将以下代码设置为浏览器书签，以后点击该书签即可加载目录。
 
 </ol>
 </ul>
 
 <pre class="brush:javascript">
-# http://
+# http:
 javascript:$('head').append("&lt;script src='http://xstarcd.github.io/wiki/files/ztreetoc/ldztree.js'&gt;&lt;script&gt;");void(0);
 //or
 javascript:$('head').append("&lt;script src='http://dwz.cn/W9zZw'&gt;&lt;script&gt;");void(0);
 
-# https://
+# https
 javascript:$('head').append("&lt;script src='https://xstarcd.github.io/wiki/files/ztreetoc/ldztree.js'&gt;&lt;script&gt;");void(0);
 </pre>
+
+<ul>
+<li>
+TOC效果图
+
+</ul>
+
+<p>
+<img src="../files/ztreetoc/img/ZtreeToc_ScreenShot.png" alt="zTreeToc ScreenShot">
+</p>
 
 <ul>
 <li>
@@ -116,7 +126,7 @@ javascript:$('head').append("&lt;script src='https://xstarcd.github.io/wiki/file
 
 <ul>
 <li>
-注入源码：<a href="gitlib_add_ztree_ldgitlabToc.html">ldztree.js</a>
+源码：<a href="gitlib_add_ztree_ldgitlabToc.html">ldztree.js</a>
 
 </ul>
 
