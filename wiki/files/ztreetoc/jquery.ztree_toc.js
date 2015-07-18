@@ -258,9 +258,11 @@ function factor(opts ,count,current) {
 					//	console.log('click root table of content');
 					//}
 					if($.fn.ztree_toc.defaults.is_highlight_selected_line == true) {
+						colorbak=$('#' + treeNode.id).css('color');
 						$('#' + treeNode.id).css('color' ,'red').fadeOut("slow" ,function() {
 						    // Animation complete.
-							$(this).show().css('color','black');
+							//$(this).show().css('color','black');
+							$(this).show().css('color',colorbak);
 						});
 					}
 				}	
