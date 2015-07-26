@@ -19,6 +19,10 @@
 <div class="toc">
 <ul>
 <li><a href="#toc_0.1">SecureCRT</a>
+<ul>
+<li><a href="#toc_0.1.1">Windows</a>
+<li><a href="#toc_0.1.2">MacOS</a>
+</ul>
 <li><a href="#toc_0.2">CygWin</a>
 <li><a href="#toc_0.3">调用putty</a>
 <li><a href="#toc_0.4">Linux桌面：gnome-terminal</a>
@@ -56,11 +60,7 @@ CRT的绝对路径是C:\SecureCRT\SecureCRT.exe，entry的title就是主机名(�
 详细说明可以查看crt的帮助文档的Using the Software--》Command-Line Options--》Table of Protocol-Specific Command-Line Options部分。
 </p>
 
-<ul>
-<li>
-ssh.cmd
-
-</ul>
+<h3 id="toc_0.1.1">Windows</h3>
 
 <p>
 用批处理将以上命令包装一下，简化KeepassX里的设置，又可方便统一进行入口参数检查和调整、以及更换其他ssh工具。放到C:\windows目录下，方便直接调用。
@@ -78,12 +78,14 @@ ssh.cmd
 另外，因KeepassX不把windows下的转义符<code>^</code>当作特殊字符，若密码中包含<code>^</code>字符，会因传参数时未加双引号而丢失<code>^</code>符，造成登录失败。
 </p>
 
+<ul>
+<li>
+C:\Windows\ssh.cmd
 <pre class="brush:bash">
 @ECHO OFF
 setlocal enabledelayedexpansion 
 @REM C:\Windows\ssh.cmd
-@REM KeepassXURL: cmd://ssh.cmd {TITLE} {USERNAME} {PASSWORD} PORTNumber
-@REM KeepassXURL: cmd://ssh.cmd {TITLE} {USERNAME} {PASSWORD} 22
+@REM KeepassXURL: cmd://ssh.cmd {TITLE} {USERNAME} {PASSWORD} SSHPort
 SET SSHTOOL=SecureCRT
 @REM SET SSHTOOL=FileZilla
 @REM SET SSHTOOL=PuTTY
@@ -142,6 +144,8 @@ GOTO END
 @REM PAUSE
 </pre>
 
+</ul>
+
 <ul>
 <li>
 sftp的url
@@ -156,7 +160,65 @@ cmd://"C:\SecureCRT\SecureFX.exe" sftp://{USERNAME}:{PASSWORD}@{TITLE}
 如果使用Keepass 2.0以上版本，则可以设置自定义属性。
 </p>
 
+<h3 id="toc_0.1.2">MacOS</h3>
+
+<ul>
+<li>
+/usr/bin/ssh.cmd
+<pre class="brush:bash">
+#!/bin/sh
+#/usr/bin/ssh.cmd
+# KeepassXURL: cmd://ssh.cmd {TITLE} {USERNAME} {PASSWORD} SSHPort
+SSHTOOL=SecureCRT
+#SSHTOOL=FileZilla
+#SSHTOOL=PuTTY
+SecureCRTBIN="/Applications/SecureCRT.app/Contents/MacOS/SecureCRT"
+FileZillaBIN="Todo"
+PuTTYBIN="Todo"
+#SSHFIREWALL=PX2223
+SSHFIREWALL=
+# -------------------------------------------------------------------------------
+LogFile=~/$(basename $0).log
+exec 1&gt;&gt;"$LogFile"
+exec 2&gt;&amp;1
+
+HOST=$1
+USER=$2
+PW=$3
+PORT=$4
+Usage(){
+    echo "Usage:"
+    echo "ssh.cmd HOST USER PASSWD"
+    exit 1
+}
+[ -z "$HOST" -o -z "$USER" -o -z "$PW" ] &amp;&amp; Usage
+[ -z "$PORT" ] &amp;&amp; PORT=22
+echo "$HOST"|grep "^10.224." &gt; /dev/null;[ "$?" = "0" ] &amp;&amp; SSHFIREWALL=
+ 
+case "$SSHTOOL" in
+SecureCRT)
+    #SecureCRT.exe /N {TITLE} /L {USERNAME} /PASSWORD {PASSWORD} /T /P 22 /FIREWALL PX2223 {TITLE}
+    $SecureCRTBIN /N $HOST /FIREWALL=$SSHFIREWALL /L $USER /PASSWORD $PW /T /P $PORT $HOST &gt; /dev/null 2&gt;&amp;1 &amp;
+    ;;
+FileZilla)
+    $FileZillaBIN "sftp://$USER:$PW@$HOST:$PORT" &amp;
+    ;;
+PuTTY)
+    PuTTYSession=
+    [ -n "$SSHFIREWALL" ] &amp;&amp; PuTTYSession="-load $SSHFIREWALL"
+    $PuTTYBIN -ssh -C $PuTTYSession -l $USER -pw $PW -P $PORT $HOST
+    ;;
+*)
+    Usage
+    ;;
+esac
+exit $?
+</pre>
+
+</ul>
+
 <h2 id="toc_0.2">CygWin</h2>
+
 <p>
 需要另外用except或pexcept写自动登录脚本才能完成自动登录。
 </p>
