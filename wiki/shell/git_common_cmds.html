@@ -603,7 +603,7 @@ git push origin :refs/tags/v0.9
 可以通过创建~/.gitignore_global并添加到git全局配置以减少每层目录的规则重复定义。
 
 <li>
-使用命令git <code>config --global core.excludesfile ~/.gitignore_global</code> 即可
+使用命令<code>git config --global core.excludesfile ~/.gitignore_global</code> 即可
 
 </ul>
 </ul>
@@ -612,49 +612,55 @@ git push origin :refs/tags/v0.9
 <li>
 .gitignore_global文件范例
 <pre class="brush:bash">
-# Compiled source #  
-###################  
-*.com  
-*.class  
-*.dll  
-*.exe  
-*.o  
-*.so  
-  
-# Packages #  
-############  
-# it's better to unpack these files and commit the raw source  
-# git has its own built in compression methods  
-*.7z  
-*.dmg  
-*.gz  
-*.iso  
-*.jar  
-*.rar  
-*.tar  
-*.zip  
-  
-# Logs and databases #  
-######################  
-*.log  
-*.sql  
-*.sqlite  
-  
-# OS generated files #  
-######################  
-.DS_Store  
-.DS_Store?  
-._*  
-.Spotlight-V100  
-.Trashes  
-Icon?  
-ehthumbs.db  
-Thumbs.db  
+git config --global push.default simple
+git config --global credential.helper store
+git config --global core.excludesfile ~/.gitignore_global
+cat &gt; ~/.gitignore_global &lt;&lt;EOF
+# Compiled source
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Packages
+# it's better to unpack these files and commit the raw source
+# git has its own built in compression methods
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# VIM tmp files #
+.*~             # vim临时文件
+.*un~           # vim undofile
 
 tmp.txt         # 忽略tmp.txt
 *.log           # 忽略所有log文件
 tmp/*           # 忽略tmp文件夹所有文件
 log/**/*.log    # 忽略log目录下的包括子目录下的所有log文件
+EOF
+
 </pre>
 
 </ul>
