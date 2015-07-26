@@ -201,12 +201,12 @@ SecureCRT)
     $SecureCRTBIN /N $HOST /FIREWALL=$SSHFIREWALL /L $USER /PASSWORD $PW /T /P $PORT $HOST &gt; /dev/null 2&gt;&amp;1 &amp;
     ;;
 FileZilla)
-    $FileZillaBIN "sftp://$USER:$PW@$HOST:$PORT" &amp;
+    $FileZillaBIN "sftp://$USER:$PW@$HOST:$PORT" &gt;/dev/null 2&gt;&amp;1 &amp;
     ;;
 PuTTY)
     PuTTYSession=
     [ -n "$SSHFIREWALL" ] &amp;&amp; PuTTYSession="-load $SSHFIREWALL"
-    $PuTTYBIN -ssh -C $PuTTYSession -l $USER -pw $PW -P $PORT $HOST
+    $PuTTYBIN -ssh -C $PuTTYSession -l $USER -pw $PW -P $PORT $HOST &gt;/dev/null 2&gt;&amp;1
     ;;
 *)
     Usage
