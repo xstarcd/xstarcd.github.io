@@ -2,15 +2,15 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <!--base href="wiki/" /-->
-    <link rel="Stylesheet" type="text/css" href="wiki/styles/style.css" />
+    <base href="wiki/" />
+    <link rel="Stylesheet" type="text/css" href="styles/style.css" />
     <title>XStar's Wiki</title>
 </head>
 <body>
 <div id="header">
     <ul id="top-nav">
-    <li><a href="wiki/index.html">首页</a></li>
-    <li><a href="wiki/index.html">分类首页</a></li>
+    <li><a href="index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
     </ul>
 </div>
 <div id="cse"></div>
@@ -29,7 +29,7 @@
 </ul>
 </div>
 
-<h1 id="toc_1">更换域名: <a href="http://xstarcd.github.io/wiki/">http://xstarcd.github.io</a></h1>
+<h1 id="toc_1">更换域名: <a href="http://xstarcd.github.io">http://xstarcd.github.io</a></h1>
 
 <p>
 搬家到GitHub上了，慢慢地vps、域名就都不用了。
@@ -38,23 +38,23 @@
 <h2 id="toc_1.1">Study</h2>
 
 <p>
-<a href="wiki/vim/index.html">Vim</a>
-<a href="wiki/cygwin/index.html">Cygwin</a>
-<a href="wiki/shell/index.html">Shell</a>
-<a href="wiki/Cloud/index.html">Cloud</a>
-<a href="wiki/sysadmin/index.html">SysSetup</a>
-<a href="wiki/Linux/index.html">Linux</a>
-<a href="wiki/MySQL/index.html">MySQL</a>
-<a href="wiki/Java/index.html">Java</a>
-<a href="wiki/FreeBSD/index.html">FreeBSD</a>
-<a href="wiki/Python/index.html">Python</a>
-<a href="wiki/windows/index.html">Windows</a>
-<a href="wiki/MacOS/index.html">MacOS</a>
+<a href="vim/index.html">Vim</a>
+<a href="cygwin/index.html">Cygwin</a>
+<a href="shell/index.html">Shell</a>
+<a href="Cloud/index.html">Cloud</a>
+<a href="sysadmin/index.html">SysSetup</a>
+<a href="Linux/index.html">Linux</a>
+<a href="MySQL/index.html">MySQL</a>
+<a href="Java/index.html">Java</a>
+<a href="FreeBSD/index.html">FreeBSD</a>
+<a href="Python/index.html">Python</a>
+<a href="windows/index.html">Windows</a>
+<a href="MacOS/index.html">MacOS</a>
 </p>
 
-<h2 id="toc_1.2"><a href="wiki/Others/index.html">Others</a></h2>
+<h2 id="toc_1.2"><a href="Others/index.html">Others</a></h2>
 
-<h2 id="toc_1.3"><a href="wiki/Bike/index.html">Bike</a></h2>
+<h2 id="toc_1.3"><a href="Bike/index.html">Bike</a></h2>
 
 <h2 id="toc_1.4">Links</h2>
 <p>
@@ -64,7 +64,7 @@
  | <a href="http://www.9wy.net">九王爷的府邸</a>
  | <a href="http://yysfire.github.io">幽谷奇峰</a>
  | <a href="http://coolshell.cn">酷壳</a>
- | <a href="wiki/SiteMap.html">SiteMap</a>
+ | <a href="SiteMap.html">SiteMap</a>
 </p>
 
 </div>
@@ -73,9 +73,9 @@
 &copy; 2012 - 2015 XStar
 &nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
 &nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
-&nbsp;|&nbsp;<a href="wiki/index.html">首页</a>
-&nbsp;|&nbsp;<a href="wiki/index.html">分类首页</a>
-&nbsp;|&nbsp;<a href="wiki/SiteMap.html">站点地图</a>
+&nbsp;|&nbsp;<a href="index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="SiteMap.html">站点地图</a>
 </p>
 </div>
 <script type="text/javascript">var vimwiki_rootpath="";</script>
