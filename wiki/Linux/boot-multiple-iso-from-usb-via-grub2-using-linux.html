@@ -25,6 +25,7 @@
 <li><a href="#toc_0.2.2">grub2+syslinux/memdisk</a>
 <li><a href="#toc_0.2.3">ntldr方式</a>
 </ul>
+<li><a href="#toc_0.3">编译syslinux</a>
 </ul>
 </ul>
 </div>
@@ -298,6 +299,37 @@ menuentry 'LDRXPE for WinCE'{
     # 这里的关键是：ntldr /WXPE/LDRXPE，而不是chainloader或者linux，我用后者尝试了一周都不得成功，最后才发现了可以直接用ntldr命令，强大啊！！
     ntldr /WXPE/LDRXPE
 }
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">编译syslinux</h2>
+
+<ul>
+<li>
+在Ubuntu环境中，打开终端，执行以下sudo命令，安装必须的软件:
+<pre class="brush:bash">
+sudo apt-get install mktemp perl install nasm
+sudo apt-get install mingw32 mingw32-binutils mingw32-runtime
+sudo apt-get install git-core 
+</pre>
+
+<li>
+下载Syslinux 源包：
+
+<ul>
+<li>
+git clone <a href="git://git.kernel.org/pub/scm/boot/syslinux/syslinux.git">git://git.kernel.org/pub/scm/boot/syslinux/syslinux.git</a> 
+
+<li>
+<a href="https://www.kernel.org/pub/linux/utils/boot/syslinux/">https://www.kernel.org/pub/linux/utils/boot/syslinux/</a>
+
+</ul>
+<li>
+编译
+<pre class="brush:bash">
+cd syslinux-6.03
+make
 </pre>
 
 </ul>
