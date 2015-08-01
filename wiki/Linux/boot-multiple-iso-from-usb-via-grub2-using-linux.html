@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>使用grub2制作U盘引导iso</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>使用grub2制作U盘引导iso</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">U盘安装grub2</a>
+<li><a href="#toc_0.2">U盘启动WinPE</a>
+<ul>
+<li><a href="#toc_0.2.1">GRUB2-&gt;grub4dos方式</a>
+<li><a href="#toc_0.2.2">grub2+syslinux/memdisk</a>
+<li><a href="#toc_0.2.3">ntldr方式</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+grub2基础教程-修订版: <a href="http://forum.ubuntu.org.cn/viewtopic.php?t=290405">http://forum.ubuntu.org.cn/viewtopic.php?t=290405</a>
+
+</ul>
+
+<h2 id="toc_0.1">U盘安装grub2</h2>
+
+<ul>
+<li>
+原文： Boot Multiple ISO from USB via Grub2 using Linux: <a href="http://www.pendrivelinux.com/boot-multiple-iso-from-usb-via-grub2-using-linux/">http://www.pendrivelinux.com/boot-multiple-iso-from-usb-via-grub2-using-linux/</a>
+
+</ul>
+
+<ul>
+<li>
+使用fidsk在U盘上创建分区
+
+<li>
+将创建的分区格式化为Fat32
+<pre class="brush:bash">
+mkfs.vfat -F 32 -n MULTIBOOT /dev/sdx1
+</pre>
+
+<li>
+安装grub2到U盘
+<pre class="brush:bash">
+# 旧版本grub使用：--root-directory=/mnt/USB (如:Ubuntu 10.04)
+# 新版本grub使用：--boot-directory=/mnt/USB/boot
+# 如果使用了错误的参数，会出现"Installation is impossible. Aborting"错误。
+# 将/dev/sdb替换为你实际的U盘分区
+mkdir /mnt/uboot &amp;&amp; mount /dev/sdb1 /mnt/uboot
+#grub-install --force --no-floppy --boot-directory=/mnt/uboot/boot --target=i386-pc --recheck /dev/sdb
+grub-install --force --no-floppy --boot-directory=/mnt/uboot/boot /dev/sdb
+
+# 增加unicode、ascii支持(可选)
+cp /usr/share/grub/{unicode.pf2,ascii.pf2} /mnt/uboot/boot/grub/
+
+# 使用grub-mkconfig可自动生成grub.cfg，并添加硬盘上的引导信息
+# grub-mkconfig -o /mnt/uboot/boot/grub/grub.cfg
+# GRUB_PREFIX="/mnt/uboot/boot/grub" grub-mkconfig -o /mnt/uboot/boot/grub/grub.cfg 
+</pre>
+
+<ul>
+<li>
+<a href="http://pendrivelinux.com/downloads/multibootlinux/grub.cfg">http://pendrivelinux.com/downloads/multibootlinux/grub.cfg</a>
+<pre class="brush:bash">
+# This grub.cfg file was created by Lance http://www.pendrivelinux.com
+# Suggested Entries and the suggestor, if available, will also be noted.
+
+set timeout=10
+set default=0
+
+menuentry "Ubuntu Desktop ISO" {
+ loopback loop /ubuntu.iso
+ linux (loop)/casper/vmlinuz boot=casper iso-scan/filename=/ubuntu.iso noeject noprompt splash --
+ initrd (loop)/casper/initrd.lz
+}
+
+# http://www.linuxmint.com
+# http://mirrors.ustc.edu.cn/linuxmint-cd/stable/
+# ftp://ftp.heanet.ie/pub/linuxmint.com/stable/15/linuxmint-15-cinnamon-dvd-32bit.iso
+menuentry "Linux Mint ISO" {
+ loopback loop /linuxmint.iso
+ linux (loop)/casper/vmlinuz file=/cdrom/preseed/mint.seed boot=casper initrd=/casper/initrd.lz iso-scan/filename=/linuxmint.iso noeject noprompt splash --
+ initrd (loop)/casper/initrd.lz
+}
+
+menuentry "DBAN ISO" {
+ loopback loop /dban.iso
+ linux (loop)/DBAN.BZI nuke="dwipe" iso-scan/filename=/dban.iso silent --
+} 
+
+menuentry "Tinycore ISO" {
+ loopback loop /tinycore.iso
+ linux (loop)/boot/bzImage --
+ initrd (loop)/boot/tinycore.gz
+}
+
+menuentry "Memtest 86+" {
+ linux16 /memtest86+.bin
+}
+
+menuentry "SystemRescueCd" {
+ loopback loop /systemrescuecd.iso
+ linux (loop)/isolinux/rescuecd isoloop=/systemrescuecd.iso setkmap=us docache dostartx
+ initrd (loop)/isolinux/initram.igz
+}
+</pre>
+<pre>
+Adding an Unlisted ISO: To try ISO Files that are not yet listed, use the existing menuentry examples in /boot/grub/grub.cfg and append any options normally found in the distributions syslinux.cfg file on the "append" line to the "linux" line of the menu entry.
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+grub.cfg多引导配置范例
+<pre class="brush:bash">
+# http://www.cnblogs.com/eshizhan/archive/2012/04/24/2467632.html
+set timeout=10
+set default=0
+
+menuentry "SystemRescueCd-x86-3.7.1.iso" {
+ set isofile="/boot/iso/systemrescuecd-x86-3.7.1.iso"
+ if cpuid; then set cputype="64"; else set cputype="32"; fi
+ loopback loop $isofile
+ linux (loop)/isolinux/rescue$cputype isoloop=$isofile setkmap=us
+ initrd (loop)/isolinux/initram.igz
+}
+
+menuentry "WinPE-2009.iso" {
+ set g4d_dir="/boot/grub4dos"
+ set cfgfile="find --set-root /boot/iso/winpe-2009.iso;map --mem /boot/iso/winpe-2009.iso (0xff);map --hook;chainloader (0xff);boot"
+ linux $g4d_dir/grub.exe --config-file=$cfgfile
+}
+
+menuentry "wowpc.iso" {
+ set g4d_dir="/boot/grub4dos"
+ set cfgfile="find --set-root /boot/iso/wowpc.iso;map --mem /boot/iso/wowpc.iso (0xff);map --hook;chainloader (0xff);boot"
+ linux $g4d_dir/grub.exe --config-file=$cfgfile
+}
+
+menuentry "Archlinux-2012.09.07-dual.iso" {
+ set isofile="/boot/iso/archlinux-2012.09.07-dual.iso"
+ set dev_label="MULTIBOOT"
+ if cpuid; then set cputype="x86_64"; else set cputype="i686"; fi
+ loopback loop $isofile
+ linux (loop)/arch/boot/$cputype/vmlinuz archisolabel=ARCH_201209 img_dev=/dev/disk/by-label/$dev_label img_loop=$isofile
+ initrd (loop)/arch/boot/$cputype/archiso.img
+}
+
+menuentry "SliTaz-4.0-grub.iso" {
+ set isofile="/boot/iso/slitaz-4.0-grub.iso"
+ loopback loop $isofile
+ linux (loop)/boot/bzImage rw root=/dev/null gfxpayload=vga=normal autologin lang=en kmap=us
+ initrd (loop)/boot/rootfs.gz
+}
+
+menuentry "TinyCore-current.iso" {
+ set isofile="/boot/iso/tinycore-current.iso"
+ loopback loop $isofile
+ linux (loop)/boot/vmlinuz quiet cde iso=/mnt/sdb1$isofile
+ initrd (loop)/boot/core.gz
+}
+
+menuentry "XiaoPan-0.4.6.1.iso" {
+ set isofile="/boot/iso/xiaopan-0.4.6.1.iso"
+ loopback loop $isofile
+ linux (loop)/boot/vmlinuz loglevel=3 cde waitusb=3 iso=/mnt/sdb1$isofile mydata=xiaopan restore=sdb1/boot/iso tz=CST-8 showapps lang=en_US.utf8
+ initrd (loop)/boot/core.gz
+}
+
+menuentry "GRUB4DOS" {
+ set g4d_dir="/boot/grub4dos"
+ linux $g4d_dir/grub.exe --config-file=$g4d_dir/menu.lst
+}
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">U盘启动WinPE</h2>
+
+<h3 id="toc_0.2.1">GRUB2-&gt;grub4dos方式</h3>
+
+<p>
+通过grub4dos提供的map功能引导WinPE.iso。
+</p>
+
+<pre class="brush:bash">
+menuentry "[iso] -- WinPE(g4d)" {
+    set g4d_dir="/boot/grub4dos"
+    set cfgfile="find --set-root /boot/iso/winpe.iso;map --mem /boot/iso/winpe.iso (0xff);map --hook;chainloader (0xff);boot"
+    linux $g4d_dir/grub.exe --config-file=$cfgfile
+}
+
+menuentry "[iso] -- WinPE(g4d)" --class windows --class os {
+    set cfgfile="map /image/winpe.iso (hd32) || map --mem /image/winpe.iso (hd32); map --hook; chainloader (hd32); rootnoverify (hd32)"
+    linux16 /grub4dos/grub.exe --config-file=$cfgfile
+    initrd16 /image/winpe.iso
+</pre>
+
+<h3 id="toc_0.2.2">grub2+syslinux/memdisk</h3>
+
+<ul>
+<li>
+syslinux: <a href="https://www.kernel.org/pub/linux/utils/boot/syslinux/">https://www.kernel.org/pub/linux/utils/boot/syslinux/</a>
+
+<li>
+memdisk说明: <a href="http://www.syslinux.org/wiki/index.php/MEMDISK">http://www.syslinux.org/wiki/index.php/MEMDISK</a>
+
+<li>
+GRUB2引导Windows PE等ISO文件的办法: <a href="http://www.librehat.com/grub2-boot-windows-pe-and-otheriso-file/">http://www.librehat.com/grub2-boot-windows-pe-and-otheriso-file/</a>
+
+</ul>
+
+<p>
+首先下载最新版的Syslinux，解开压缩包，memdisk文件夹下面有一个memdisk文件（没有任何扩展名），把memdisk文件复制到U盘boot文件夹下。
+</p>
+
+<p>
+GRUB2的memdisk是用来读取core.img的。和syslinux的MEMDISK完全不同……详见: <a href="http://wiki.xtronics.com/index.php/Grub2_howto">http://wiki.xtronics.com/index.php/Grub2_howto</a>
+</p>
+
+<p>
+借助MEMDISK（几十KB的文件），GRUB2就能加载几乎任意的镜像文件（ISO、IMG等）了，相当于是「虚拟光驱」的作用？不过引导速度比GRUB4DOS稍微慢一点。
+</p>
+
+<p>
+<strong>关键就是memdisk后面的raw参数</strong>
+</p>
+
+<pre class="brush:bash">
+menuentry 'Boot Windows 8 PE ISO'{
+    set root='(hd0,msdos1)'
+    echo 'Loading Memdisk...'
+    # 不需要insmod memdisk，因为用的是Syslinux的MEMDISK而不是GRUB2的memdisk模块。
+    #insmod memdisk
+    linux16 /boot/memdisk iso raw
+    echo 'Loading ISO...'
+    initrd16 /boot/Win8PE.iso
+}
+
+menuentry '[iso] -- /WinPE(memdisk) ' {
+    #insmod memdisk
+    insmod fat
+    set root='hd0,msdos1'
+    linux16 /boot/memdisk iso raw
+    initrd16 /winpe.iso
+</pre>
+
+<h3 id="toc_0.2.3">ntldr方式</h3>
+
+<ul>
+<li>
+打造自己的多功能USB启动盘——grub2引导WinPE、Archlinux安装镜像和Ubuntu liveCD:<a href="http://blog.chinaunix.net/uid-14735472-id-4210990.html">http://blog.chinaunix.net/uid-14735472-id-4210990.html</a>
+
+</ul>
+
+<ul>
+<li>
+U盘上建立WXPE目录，将WinPE文件放置入内：
+
+</ul>
+
+<p>
+目前网络上的WinPE到处都是，各种版本其实都差不多，主要需要如下5个文件：
+</p>
+<pre>
+LDRXPE  NTCOM  PE  SETUPLDR.BIN  WINPE.IS_
+</pre>
+<p>
+大致过程是：LDRXPE调用NTCOM和SETUPLDR.BIN读取PE找到WINPE.IS_镜像，加载WinPE。
+</p>
+
+<ul>
+<li>
+修改grub.cfg，加入winpe引导项：
+<pre class="brush:bash">
+menuentry 'LDRXPE for WinCE'{
+    insmod part_msdos
+    insmod fat
+    set root='hd0,msdos1'
+    # 说明：此处的696C-0B1C为U盘分区uuid，其实这一句也可以不要，因为上面已经set root了，主要为了双保险。
+    search --no-floppy --fs-uuid --set=root 696C-0B1C
+    # 这里的关键是：ntldr /WXPE/LDRXPE，而不是chainloader或者linux，我用后者尝试了一周都不得成功，最后才发现了可以直接用ntldr命令，强大啊！！
+    ntldr /WXPE/LDRXPE
+}
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
