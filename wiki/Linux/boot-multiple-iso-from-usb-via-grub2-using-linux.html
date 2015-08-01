@@ -70,7 +70,7 @@ cp /usr/share/grub/{unicode.pf2,ascii.pf2} /mnt/uboot/boot/grub/
 
 # 使用grub-mkconfig可自动生成grub.cfg，并添加硬盘上的引导信息
 # grub-mkconfig -o /mnt/uboot/boot/grub/grub.cfg
-# GRUB_PREFIX="/mnt/uboot/boot/grub" grub-mkconfig -o /mnt/uboot/boot/grub/grub.cfg 
+# GRUB_PREFIX="/mnt/uboot/boot/grub" grub-mkconfig -o /mnt/uboot/boot/grub/grub.cfg
 </pre>
 
 <ul>
@@ -101,7 +101,7 @@ menuentry "Linux Mint ISO" {
 menuentry "DBAN ISO" {
  loopback loop /dban.iso
  linux (loop)/DBAN.BZI nuke="dwipe" iso-scan/filename=/dban.iso silent --
-} 
+}
 
 menuentry "Tinycore ISO" {
  loopback loop /tinycore.iso
@@ -192,7 +192,163 @@ menuentry "GRUB4DOS" {
 
 </ul>
 
+<ul>
+<li>
+grub.cfg
+<pre class="brush:bash">
+#加载模块
+insmod cat
+insmod gzio
+insmod ext2
+insmod ntfs
+#insmod ntldr
+insmod font
+insmod fat
+insmod part_msdos
+insmod loopback
+insmod iso9660
+
+set default=0   #这里是默认选项，0就是第一个
+set timeout=5   #这里是默认等待时间
+
+#设置显示情况，包括中文字体
+
+#这里是设置字体文件，也就是前面我们拷贝的unicode.pf2
+loadfont /boot/grub/unicode.pf2
+
+# 这些是图形化设置的，加上更漂亮
+# ------------------------------------------------------------------------
+#set gfxmode=800x600          #设置分辨率
+#set gfxpayload=keep          #这一句不太清除，网上没有找到相关资料，加上保险
+#insmod gfxterm               #启用gfxterm模块，分辨率什么的，都靠它
+#insmod vbe                   #加载vbe模块
+#terminal_output gfxterm      #将终端设置为gfxterm模式，也就是使上面的分辨率什么的生效
+
+#以下是设置背景图片
+#set root='hd0,msdos1'
+#insmod jpeg                                #开启jpeg模块
+#background_image /boot/images/nature.jpg   #指定背景图片的路径
+#set menu_color_normal=white/black          #菜单中未选中项目的字体颜色
+#set menu_color_highlight=cyan/black        #选中项目的字体颜色
+# ------------------------------------------------------------------------
+
+#搜索ISO目录下有iso的硬盘设定为root分区，也可以改为在U盘根目录下放置的文件，但注意这个文件其他硬盘的根目录不能有
+#search --set -f /iso/CDlinux_mini-0.9.7.1.iso
+
+#menuentry 'Fedora LiveCD' {
+#    set iso_name=Fedora-Live-Desktop-i686-20-1
+#    set iso_path=/iso/Fedora-Live-Desktop-i686-20-1.iso
+#    loopback loop ${iso_path}
+#    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=${iso_name} rootfstype=auto ro rd.live.image quiet rhgb rd.luks=0 rd.md=0 rd.dm=0
+#    initrd (loop)/isolinux/initrd0.img
+#}
+
+#menuentry 'Fedora LiveCD X86_64' {
+#    set iso_name=Fedora-Live-Desktop-x86_64-20-1
+#    set iso_path=/iso/Fedora-Live-Desktop-x86_64-20-1.iso
+#    loopback loop ${iso_path}
+#    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=${iso_name} rootfstype=auto ro rd.live.image quiet rhgb rd.luks=0 rd.md=0 rd.dm=0
+#    initrd (loop)/isolinux/initrd0.img
+#}
+
+#menuentry 'Centos7 LiveCD' {
+#    set iso_name=CentOS-7.0-1406-x86_64-livecd
+#    set iso_path=/iso/CentOS-7.0-1406-x86_64-livecd.iso
+#    loopback loop ${iso_path}
+#    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=CentOS-7-livecd-x86_64 rootfstype=auto ro rd.live.image quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0
+#    initrd (loop)/isolinux/initrd0.img
+#}
+
+#menuentry "Install Ubuntu Server 12.04" {
+#    set isofile="/iso/ubuntu-12.04-server-amd64.iso"
+#    loopback loop $isofile
+#    set gfxpayload=keep
+#    linux   (loop)/install/vmlinuz  file=/cdrom/preseed/ubuntu-server.seed iso-scan/filename=$isofile quiet --
+#    initrd  (loop)/install/initrd.gz
+#}
+
+#menuentry "Install Ubuntu Server 14.04" {
+#    set isofile="/iso/ubuntu-14.04.1-server-amd64.iso"
+#    loopback loop $isofile
+#    set gfxpayload=keep
+#    linux   (loop)/install/vmlinuz  file=/cdrom/preseed/ubuntu-server.seed iso-scan/filename=$isofile quiet --
+#    initrd  (loop)/install/initrd.gz
+#}
+
+menuentry "boot WinPE--LMT--" {
+    search --set -f /iso/lmt7.iso
+    echo 'Loading Memdisk...'
+    linux16 /boot/grub/memdisk iso raw
+    echo 'Loading ISO...'
+    initrd16 /iso/lmt7.iso
+}
+
+menuentry "boot WinPE--LMT(grub4dos)--" {
+    search --set -f /iso/lmt7.iso
+    set g4d_dir="/boot/grub4dos"
+    set cfgfile="find --set-root /iso/lmt7.iso;map --mem /iso/lmt7.iso (0xff);map --hook;chainloader (0xff);boot"
+    echo 'Loading ISO via grub4dos...'
+    linux $g4d_dir/grub.exe --config-file=$cfgfile
+}
+
+menuentry "boot WinPE--Deepin_WinPE_4.2--" {
+    search --set -f /iso/Deepin_Windows_PE_4.2_Build_100910.iso
+    echo 'Loading Memdisk...'
+    linux16 /boot/grub/memdisk iso raw
+    echo 'Loading ISO...'
+    initrd16 /iso/Deepin_Windows_PE_4.2_Build_100910.iso
+}
+
+menuentry "boot WinPE--Deepin_WinPE_4.2(grub4dos)--" {
+    search --set -f /iso/Deepin_Windows_PE_4.2_Build_100910.iso
+    set g4d_dir="/boot/grub4dos"
+    set cfgfile="find --set-root /iso/Deepin_Windows_PE_4.2_Build_100910.iso;map --mem /iso/Deepin_Windows_PE_4.2_Build_100910.iso (0xff);map --hook;chainloader (0xff);boot"
+    echo 'Loading ISO via grub4dos...'
+    linux $g4d_dir/grub.exe --config-file=$cfgfile
+}
+
+menuentry "CDlinux (console only)" {
+    set gfxpayload=1280x1024x32,1024x768x32,800x600x32,800x600x16,800x600,640x480
+    set iso_path=/iso/CDlinux_mini-0.9.7.1.iso
+    loopback loop ${iso_path}
+    linux (loop)/CDlinux/bzImage iso-scan/filename=${iso_path} quiet CDL_LANG=en_US.UTF-8
+    initrd (loop)/CDlinux/initrd
+}
+
+menuentry "Linux Mint 17.2 ISO" {
+    set iso_path=/iso/linuxmint-17.2-cinnamon-32bit.iso
+    loopback loop ${iso_path}
+    linux (loop)/casper/vmlinuz file=/cdrom/preseed/linuxmint.seed boot=casper initrd=/casper/initrd.lz iso-scan/filename=${iso_path} noeject noprompt splash --
+    initrd (loop)/casper/initrd.lz
+}
+
+menuentry 'BOOT HD'{
+    insmod ntfs
+    search --set -f /bootmgr
+    chainloader +1
+}
+
+menuentry "reboot" --class windows --class os {
+    reboot
+}
+
+</pre>
+
+</ul>
+
 <h2 id="toc_0.2">U盘启动WinPE</h2>
+
+<ul>
+<li>
+grub4dos: <a href="../files/grub/grub4dos-0.4.6a-2015-07-24.7z">grub4dos-0.4.6a-2015-07-24.7z</a>
+
+<li>
+memdisk_4.02: <a href="../files/grub/memdisk_4.02">memdisk_4.02</a>
+
+<li>
+memdisk_5.10: <a href="../files/grub/memdisk_5.10">memdisk_5.10</a>
+
+</ul>
 
 <h3 id="toc_0.2.1">GRUB2-&gt;grub4dos方式</h3>
 
@@ -311,7 +467,7 @@ menuentry 'LDRXPE for WinCE'{
 <pre class="brush:bash">
 sudo apt-get install mktemp perl install nasm
 sudo apt-get install mingw32 mingw32-binutils mingw32-runtime
-sudo apt-get install git-core 
+sudo apt-get install git-core
 </pre>
 
 <li>
@@ -319,7 +475,7 @@ sudo apt-get install git-core
 
 <ul>
 <li>
-git clone <a href="git://git.kernel.org/pub/scm/boot/syslinux/syslinux.git">git://git.kernel.org/pub/scm/boot/syslinux/syslinux.git</a> 
+git clone <a href="git://git.kernel.org/pub/scm/boot/syslinux/syslinux.git">git://git.kernel.org/pub/scm/boot/syslinux/syslinux.git</a>
 
 <li>
 <a href="https://www.kernel.org/pub/linux/utils/boot/syslinux/">https://www.kernel.org/pub/linux/utils/boot/syslinux/</a>
