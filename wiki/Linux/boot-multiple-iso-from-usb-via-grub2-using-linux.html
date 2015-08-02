@@ -251,13 +251,13 @@ loadfont /boot/grub/unicode.pf2
 #    initrd (loop)/isolinux/initrd0.img
 #}
 
-#menuentry 'Centos7 LiveCD' {
-#    set iso_name=CentOS-7.0-1406-x86_64-livecd
-#    set iso_path=/iso/CentOS-7.0-1406-x86_64-livecd.iso
-#    loopback loop ${iso_path}
-#    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=CentOS-7-livecd-x86_64 rootfstype=auto ro rd.live.image quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0
-#    initrd (loop)/isolinux/initrd0.img
-#}
+menuentry 'CentOS Linux 7 1503 Live' {
+    set iso_name=CentOS-7-livecd-x86_64
+    set iso_path=/iso/CentOS-7-x86_64-LiveCD-1503.iso
+    loopback loop ${iso_path}
+    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=${iso_name} rootfstype=auto ro rd.live.image quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0
+    initrd (loop)/isolinux/initrd0.img
+}
 
 #menuentry "Install Ubuntu Server 12.04" {
 #    set isofile="/iso/ubuntu-12.04-server-amd64.iso"
@@ -331,7 +331,6 @@ menuentry 'BOOT HD'{
 menuentry "reboot" --class windows --class os {
     reboot
 }
-
 </pre>
 
 </ul>
