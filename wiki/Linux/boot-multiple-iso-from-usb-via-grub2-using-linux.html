@@ -19,13 +19,19 @@
 <div class="toc">
 <ul>
 <li><a href="#toc_0.1">U盘安装grub2</a>
-<li><a href="#toc_0.2">U盘启动WinPE</a>
+<li><a href="#toc_0.2">grub.cfg</a>
 <ul>
-<li><a href="#toc_0.2.1">GRUB2-&gt;grub4dos方式</a>
-<li><a href="#toc_0.2.2">grub2+syslinux/memdisk</a>
-<li><a href="#toc_0.2.3">ntldr方式</a>
+<li><a href="#toc_0.2.1">pendrivelinux范例</a>
+<li><a href="#toc_0.2.2">多引导配置范例</a>
+<li><a href="#toc_0.2.3">我的grub.cfg</a>
 </ul>
-<li><a href="#toc_0.3">编译syslinux</a>
+<li><a href="#toc_0.3">U盘启动WinPE</a>
+<ul>
+<li><a href="#toc_0.3.1">GRUB2-&gt;grub4dos方式</a>
+<li><a href="#toc_0.3.2">grub2+syslinux/memdisk</a>
+<li><a href="#toc_0.3.3">ntldr方式</a>
+</ul>
+<li><a href="#toc_0.4">编译syslinux</a>
 </ul>
 </ul>
 </div>
@@ -73,12 +79,16 @@ cp /usr/share/grub/{unicode.pf2,ascii.pf2} /mnt/uboot/boot/grub/
 # GRUB_PREFIX="/mnt/uboot/boot/grub" grub-mkconfig -o /mnt/uboot/boot/grub/grub.cfg
 </pre>
 
-<ul>
-<li>
-<a href="http://pendrivelinux.com/downloads/multibootlinux/grub.cfg">http://pendrivelinux.com/downloads/multibootlinux/grub.cfg</a>
+</ul>
+
+<h2 id="toc_0.2">grub.cfg</h2>
+
+<h3 id="toc_0.2.1">pendrivelinux范例</h3>
+
 <pre class="brush:bash">
 # This grub.cfg file was created by Lance http://www.pendrivelinux.com
 # Suggested Entries and the suggestor, if available, will also be noted.
+# http://pendrivelinux.com/downloads/multibootlinux/grub.cfg
 
 set timeout=10
 set default=0
@@ -123,12 +133,8 @@ menuentry "SystemRescueCd" {
 Adding an Unlisted ISO: To try ISO Files that are not yet listed, use the existing menuentry examples in /boot/grub/grub.cfg and append any options normally found in the distributions syslinux.cfg file on the "append" line to the "linux" line of the menu entry.
 </pre>
 
-</ul>
-</ul>
+<h3 id="toc_0.2.2">多引导配置范例</h3>
 
-<ul>
-<li>
-grub.cfg多引导配置范例
 <pre class="brush:bash">
 # http://www.cnblogs.com/eshizhan/archive/2012/04/24/2467632.html
 set timeout=10
@@ -190,11 +196,8 @@ menuentry "GRUB4DOS" {
 }
 </pre>
 
-</ul>
+<h3 id="toc_0.2.3">我的grub.cfg</h3>
 
-<ul>
-<li>
-grub.cfg
 <pre class="brush:bash">
 #加载模块
 insmod cat
@@ -235,76 +238,40 @@ loadfont /boot/grub/unicode.pf2
 #搜索ISO目录下有iso的硬盘设定为root分区，也可以改为在U盘根目录下放置的文件，但注意这个文件其他硬盘的根目录不能有
 #search --set -f /iso/CDlinux_mini-0.9.7.1.iso
 
-#menuentry 'Fedora LiveCD' {
-#    set iso_name=Fedora-Live-Desktop-i686-20-1
-#    set iso_path=/iso/Fedora-Live-Desktop-i686-20-1.iso
-#    loopback loop ${iso_path}
-#    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=${iso_name} rootfstype=auto ro rd.live.image quiet rhgb rd.luks=0 rd.md=0 rd.dm=0
-#    initrd (loop)/isolinux/initrd0.img
-#}
-
-#menuentry 'Fedora LiveCD X86_64' {
-#    set iso_name=Fedora-Live-Desktop-x86_64-20-1
-#    set iso_path=/iso/Fedora-Live-Desktop-x86_64-20-1.iso
-#    loopback loop ${iso_path}
-#    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=${iso_name} rootfstype=auto ro rd.live.image quiet rhgb rd.luks=0 rd.md=0 rd.dm=0
-#    initrd (loop)/isolinux/initrd0.img
-#}
-
-menuentry 'CentOS Linux 7 1503 Live' {
-    set iso_name=CentOS-7-livecd-x86_64
-    set iso_path=/iso/CentOS-7-x86_64-LiveCD-1503.iso
-    loopback loop ${iso_path}
-    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=${iso_name} rootfstype=auto ro rd.live.image quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0
-    initrd (loop)/isolinux/initrd0.img
-}
-
-#menuentry "Install Ubuntu Server 12.04" {
-#    set isofile="/iso/ubuntu-12.04-server-amd64.iso"
-#    loopback loop $isofile
-#    set gfxpayload=keep
-#    linux   (loop)/install/vmlinuz  file=/cdrom/preseed/ubuntu-server.seed iso-scan/filename=$isofile quiet --
-#    initrd  (loop)/install/initrd.gz
-#}
-
-#menuentry "Install Ubuntu Server 14.04" {
-#    set isofile="/iso/ubuntu-14.04.1-server-amd64.iso"
-#    loopback loop $isofile
-#    set gfxpayload=keep
-#    linux   (loop)/install/vmlinuz  file=/cdrom/preseed/ubuntu-server.seed iso-scan/filename=$isofile quiet --
-#    initrd  (loop)/install/initrd.gz
-#}
-
-menuentry "boot WinPE--LMT--" {
-    search --set -f /iso/lmt7.iso
-    echo 'Loading Memdisk...'
-    linux16 /boot/grub/memdisk iso raw
-    echo 'Loading ISO...'
-    initrd16 /iso/lmt7.iso
-}
-
-menuentry "boot WinPE--LMT(grub4dos)--" {
-    search --set -f /iso/lmt7.iso
+menuentry "WinPE--LMT(grub4dos)" {
+    set iso_path=/iso/lmt7.iso
+    search --set -f ${iso_path}
     set g4d_dir="/boot/grub4dos"
-    set cfgfile="find --set-root /iso/lmt7.iso;map --mem /iso/lmt7.iso (0xff);map --hook;chainloader (0xff);boot"
+    set cfgfile="find --set-root ${iso_path};map --mem ${iso_path} (0xff);map --hook;chainloader (0xff);boot"
     echo 'Loading ISO via grub4dos...'
     linux $g4d_dir/grub.exe --config-file=$cfgfile
 }
 
-menuentry "boot WinPE--Deepin_WinPE_4.2--" {
-    search --set -f /iso/Deepin_Windows_PE_4.2_Build_100910.iso
+menuentry "WinPE--LMT(memdisk)" {
+    set iso_path=/iso/lmt7.iso
+    search --set -f ${iso_path}
     echo 'Loading Memdisk...'
     linux16 /boot/grub/memdisk iso raw
     echo 'Loading ISO...'
-    initrd16 /iso/Deepin_Windows_PE_4.2_Build_100910.iso
+    initrd16 ${iso_path}
 }
 
-menuentry "boot WinPE--Deepin_WinPE_4.2(grub4dos)--" {
-    search --set -f /iso/Deepin_Windows_PE_4.2_Build_100910.iso
+menuentry "WinPE--Deepin WinPE 4.2(grub4dos)" {
+    set iso_path=/iso/Deepin_Windows_PE_4.2_Build_100910.iso
+    search --set -f ${iso_path}
     set g4d_dir="/boot/grub4dos"
-    set cfgfile="find --set-root /iso/Deepin_Windows_PE_4.2_Build_100910.iso;map --mem /iso/Deepin_Windows_PE_4.2_Build_100910.iso (0xff);map --hook;chainloader (0xff);boot"
+    set cfgfile="find --set-root ${iso_path};map --mem ${iso_path} (0xff);map --hook;chainloader (0xff);boot"
     echo 'Loading ISO via grub4dos...'
     linux $g4d_dir/grub.exe --config-file=$cfgfile
+}
+
+menuentry "WinPE--Deepin WinPE 4.2(memdisk)" {
+    set iso_path=/iso/Deepin_Windows_PE_4.2_Build_100910.iso
+    search --set -f ${iso_path}
+    echo 'Loading Memdisk...'
+    linux16 /boot/grub/memdisk iso raw
+    echo 'Loading ISO...'
+    initrd16 ${iso_path}
 }
 
 menuentry "CDlinux (console only)" {
@@ -322,20 +289,60 @@ menuentry "Linux Mint 17.2 ISO" {
     initrd (loop)/casper/initrd.lz
 }
 
-menuentry 'BOOT HD'{
+menuentry 'CentOS Linux 7 1503 Live' {
+    set iso_name=CentOS-7-livecd-x86_64
+    set iso_path=/iso/CentOS-7-x86_64-LiveCD-1503.iso
+    loopback loop ${iso_path}
+    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=${iso_name} rootfstype=auto ro rd.live.image quiet rhgb rd.luks=0 rd.md=0 rd.dm=0
+    initrd (loop)/isolinux/initrd0.img
+}
+
+menuentry 'BOOT HDisk'{
     insmod ntfs
     search --set -f /bootmgr
     chainloader +1
 }
 
-menuentry "reboot" --class windows --class os {
+menuentry "Reboot" --class windows --class os {
     reboot
 }
+
+#menuentry 'Fedora LiveCD' {
+#    set iso_name=Fedora-Live-Desktop-i686-20-1
+#    set iso_path=/iso/Fedora-Live-Desktop-i686-20-1.iso
+#    loopback loop ${iso_path}
+#    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=${iso_name} rootfstype=auto ro rd.live.image quiet rhgb rd.luks=0 rd.md=0 rd.dm=0
+#    initrd (loop)/isolinux/initrd0.img
+#}
+
+#menuentry 'Fedora LiveCD X86_64' {
+#    set iso_name=Fedora-Live-Desktop-x86_64-20-1
+#    set iso_path=/iso/Fedora-Live-Desktop-x86_64-20-1.iso
+#    loopback loop ${iso_path}
+#    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=${iso_name} rootfstype=auto ro rd.live.image quiet rhgb rd.luks=0 rd.md=0 rd.dm=0
+#    initrd (loop)/isolinux/initrd0.img
+#}
+
+#menuentry "Install Ubuntu Server 12.04" {
+#    set isofile="/iso/ubuntu-12.04-server-amd64.iso"
+#    loopback loop $isofile
+#    set gfxpayload=keep
+#    linux   (loop)/install/vmlinuz  file=/cdrom/preseed/ubuntu-server.seed iso-scan/filename=$isofile quiet --
+#    initrd  (loop)/install/initrd.gz
+#}
+
+#menuentry "Install Ubuntu Server 14.04" {
+#    set isofile="/iso/ubuntu-14.04.1-server-amd64.iso"
+#    loopback loop $isofile
+#    set gfxpayload=keep
+#    linux   (loop)/install/vmlinuz  file=/cdrom/preseed/ubuntu-server.seed iso-scan/filename=$isofile quiet --
+#    initrd  (loop)/install/initrd.gz
+#}
+
+
 </pre>
 
-</ul>
-
-<h2 id="toc_0.2">U盘启动WinPE</h2>
+<h2 id="toc_0.3">U盘启动WinPE</h2>
 
 <ul>
 <li>
@@ -349,7 +356,7 @@ memdisk_5.10: <a href="../files/grub/memdisk_5.10">memdisk_5.10</a>
 
 </ul>
 
-<h3 id="toc_0.2.1">GRUB2-&gt;grub4dos方式</h3>
+<h3 id="toc_0.3.1">GRUB2-&gt;grub4dos方式</h3>
 
 <p>
 通过grub4dos提供的map功能引导WinPE.iso。
@@ -368,7 +375,7 @@ menuentry "[iso] -- WinPE(g4d)" --class windows --class os {
     initrd16 /image/winpe.iso
 </pre>
 
-<h3 id="toc_0.2.2">grub2+syslinux/memdisk</h3>
+<h3 id="toc_0.3.2">grub2+syslinux/memdisk</h3>
 
 <ul>
 <li>
@@ -417,7 +424,7 @@ menuentry '[iso] -- /WinPE(memdisk) ' {
     initrd16 /winpe.iso
 </pre>
 
-<h3 id="toc_0.2.3">ntldr方式</h3>
+<h3 id="toc_0.3.3">ntldr方式</h3>
 
 <ul>
 <li>
@@ -458,7 +465,7 @@ menuentry 'LDRXPE for WinCE'{
 
 </ul>
 
-<h2 id="toc_0.3">编译syslinux</h2>
+<h2 id="toc_0.4">编译syslinux</h2>
 
 <ul>
 <li>
