@@ -32,6 +32,8 @@
 <li><a href="#toc_0.3.3">ntldr方式</a>
 </ul>
 <li><a href="#toc_0.4">编译syslinux</a>
+<li><a href="#toc_0.5">工具下载</a>
+<li><a href="#toc_0.6">本机C盘启动grub4dos</a>
 </ul>
 </ul>
 </div>
@@ -265,6 +267,16 @@ menuentry "WinPE--Deepin WinPE 4.2(grub4dos)" {
     linux $g4d_dir/grub.exe --config-file=$cfgfile
 }
 
+menuentry "WinPE--Deepin WinPE 4.2(grub4dos+firadisk)" {
+    set iso_path=/iso/Deepin_Windows_PE_4.2_Build_100910.iso
+    set firadisk=/iso/firadisk.ima
+    search --set -f ${iso_path}
+    set g4d_dir="/boot/grub4dos"
+    set cfgfile="find --set-root ${iso_path};map --mem ${firadisk} (fd0);map --mem ${iso_path} (0xff);map --hook;chainloader (0xff);boot"
+    echo 'Loading ISO via grub4dos...'
+    linux $g4d_dir/grub.exe --config-file=$cfgfile
+}
+
 menuentry "WinPE--Deepin WinPE 4.2(memdisk)" {
     set iso_path=/iso/Deepin_Windows_PE_4.2_Build_100910.iso
     search --set -f ${iso_path}
@@ -343,18 +355,6 @@ menuentry "Reboot" --class windows --class os {
 </pre>
 
 <h2 id="toc_0.3">U盘启动WinPE</h2>
-
-<ul>
-<li>
-grub4dos: <a href="../files/grub/grub4dos-0.4.6a-2015-07-24.7z">grub4dos-0.4.6a-2015-07-24.7z</a>
-
-<li>
-memdisk_4.02: <a href="../files/grub/memdisk_4.02">memdisk_4.02</a>
-
-<li>
-memdisk_5.10: <a href="../files/grub/memdisk_5.10">memdisk_5.10</a>
-
-</ul>
 
 <h3 id="toc_0.3.1">GRUB2-&gt;grub4dos方式</h3>
 
@@ -499,6 +499,178 @@ make
 <p>
 <strong>测试编译报错，以后再来查找原因。</strong>
 </p>
+
+<h2 id="toc_0.5">工具下载</h2>
+
+<ul>
+<li>
+grub4dos: <a href="../files/grub/grub4dos-0.4.6a-2015-07-24.7z">grub4dos-0.4.6a-2015-07-24.7z</a>
+
+<li>
+memdisk_4.02: <a href="../files/grub/memdisk_4.02">memdisk_4.02</a>
+
+<li>
+memdisk_5.10: <a href="../files/grub/memdisk_5.10">memdisk_5.10</a>
+
+<li>
+firadisk.ima: <a href="../files/grub/firadisk.ima">firadisk.ima</a>
+
+<ul>
+<li>
+Grub4DOS仿真盘驱动--FiraDisk&amp;WinVBlock:可以支持grub4dos map--mem出来的光驱，软驱，硬盘，支持多个虚拟驱动器。并从仿真盘启动。
+
+<li>
+现在支持grub4dos map（非载入内存方式）出来的硬盘，并从仿真硬盘启动。
+
+<li>
+Firadisk、WinVBlock驱动的最新版本支持 map（非载入内存方式）出来的光驱，并从仿真光驱启动。
+
+</ul>
+<li>
+Bootice:
+
+<ul>
+<li>
+BOOTICE 是一个启动相关的维护的小工具，主要用于安装、修复、备份和恢复磁盘或磁盘镜像（.IMG;.IMA;.VHD）的 MBR（Master Boot Record）或分区上的 PBR（Partition Boot Record），以及对 Windows Vista/7/2008 启动配置文件 BCD 的编辑功能。此外还具有磁盘分区管理，对可移动磁盘的重新分区和格式化功能。
+
+<li>
+可用于将grub4dos引起安装到U盘。
+
+</ul>
+</ul>
+
+<h2 id="toc_0.6">本机C盘启动grub4dos</h2>
+
+<ul>
+<li>
+原文：用grub4dos引导ISO，不解开ISO利用grub4dos磁盘仿真来引导WINPE启动: <a href="http://blog.sina.com.cn/s/blog_4ad042e50102e8sv.html">http://blog.sina.com.cn/s/blog_4ad042e50102e8sv.html</a>
+
+</ul>
+
+<ul>
+<li>
+WinXP
+
+<ul>
+<li>
+把grub4dos的grldr,menu.lst拷贝到C:\，在/boot/imgs目录中放入firadisk.img和各种不解开的PE的ISO文件。
+
+<li>
+C:\boot.ini里面最后加上一句：<code>C:\GRLDR=GRUB4DOS</code>，配合grub4dos的menu.lst菜单就能够引导PE。
+
+</ul>
+<li>
+Win7 
+
+<ul>
+<li>
+拷贝grldr.mbr到C:\;
+
+<li>
+C:\boot.ini里面最后加上一句：<code>C:\GRLDR.MBR=GRUB4DOS</code>，就可以加载grub4dos。
+
+</ul>
+<li>
+grub4dos:menu.lst菜单参考
+<pre class="brush:bash">
+#menu.lst采用utf-8编码
+#font (bd)/boot/grub/unifont.hex
+#graphicsmode -1
+color white/blue blue/yellow light-red/blue 10
+foreground FFFFFF
+background 0000AD
+timeout 3
+default 0
+
+title tongyong WINPE by Uepon (TonPE.iso)
+    map --mem  (bd)/boot/imgs/firadisk.img (fd0)
+    map --mem  (bd)/boot/imgs/TonPE.iso (0xff)
+    #map --e820cycles=1
+    map --hook
+    chainloader (0xff)
+
+title tongyong WINPE by Uepon (TonPE_net.iso+firadisk)
+    map --mem  (bd)/boot/imgs/TonPE_net.iso (0xff)
+    #map --e820cycles=1
+    map --hook
+    chainloader (0xff)
+
+title Sky123_Mini_PE by Chinanet (Sky123_Mini_PE.iso+winvblock)
+    #map --mem  (bd)/boot/imgs/firadisk.img (fd0)
+    map --mem  (bd)/boot/imgs/Sky123_Mini_PE.iso (0xff)
+    #map --e820cycles=2
+    map --hook
+    chainloader (0xff)
+
+title WINPE by lrbin50 (PE20090727_net.iso+firadisk)
+    map --mem  (bd)/boot/imgs/PE20090727_net.iso (0xff)
+    map --hook
+    chainloader (0xff)
+
+title WINPE by xuxinhero (PE20100528_net.iso+winvblock)
+    map --mem  (bd)/boot/imgs/PE20100528_net.iso (0xff)
+    map --hook
+    chainloader (0xff)
+
+title WINPE by diy_xxq (20101220_net.iso+winvblock)
+    map --mem  (bd)/boot/imgs/20101220_net.iso (0xff)
+    map --hook
+    chainloader (0xff)
+
+title WINPE by uepon (TonPE_V3.3.iso+firadisk)
+    map --mem  (bd)/boot/imgs/TonPE_V3.3.iso (0xff)
+    map --hook
+    chainloader (0xff)
+
+title ghost by doshome
+    map --mem (bd)/boot/imgs/ghost.img (fd0)
+    map --hook
+    chainloader (fd0)+1
+    root (fd0)
+
+title run mem automenu by sratlf
+    command run --mem --show.iso
+
+title run fira automenu by sratlf
+    command run --mem --fira --show.iso
+
+title Boot from pxelinux
+    pxe keep
+    chainloader --raw (bd)/pxelinux.0
+    #chainloader --force (bd)/pxelinux.0
+
+title WINPE (startrom.0)
+    pxe keep
+    chainloader --force (bd)/startrom.0
+
+title boot from hard disk
+    checkrange 0x80 read 0x8280 &amp;&amp; map (hd1) (hd0)
+    checkrange 0x80 read 0x8280 &amp;&amp; map --hook
+    chainloader (hd0)+1
+
+title boot Windows by zhaohj
+    find --set-root --devices=h /ntldr || find --set-root --devices=h /bootmgr
+    map () (hd0)
+    map (hd0) ()
+    map --rehook
+    find --set-root --devices=h /ntldr || find --set-root --devices=h /bootmgr
+    #rootnoverify (hd0,0)
+    chainloader /ntldr || chainloader /bootmgr
+
+title plpbt.bin
+    kernel (bd)/boot/grub/plpbt.bin
+
+title command line
+    commandline
+
+title reboot
+    reboot
+
+title halt
+    halt
+</pre>
+
+</ul>
 
 </div>
 <div id="footer">
