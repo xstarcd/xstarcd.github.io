@@ -33,7 +33,11 @@
 </ul>
 <li><a href="#toc_0.4">编译syslinux</a>
 <li><a href="#toc_0.5">工具下载</a>
-<li><a href="#toc_0.6">本机C盘启动grub4dos</a>
+<li><a href="#toc_0.6">在boot.ini中添加grub4dos</a>
+<ul>
+<li><a href="#toc_0.6.1">WinXP</a>
+<li><a href="#toc_0.6.2">Win7</a>
+</ul>
 </ul>
 </ul>
 </div>
@@ -504,8 +508,19 @@ make
 
 <ul>
 <li>
-grub4dos: <a href="../files/grub/grub4dos-0.4.6a-2015-07-24.7z">grub4dos-0.4.6a-2015-07-24.7z</a>
+grub4dos: 
 
+<ul>
+<li>
+<a href="../files/grub/grub4dos-0.4.6a-2015-07-24.7z">grub4dos-0.4.6a-2015-07-24.7z</a>
+
+<li>
+Grub4DOS官方下载: <a href="http://download.gna.org/grub4dos/">http://download.gna.org/grub4dos/</a>
+
+<li>
+<a href="http://grub4dos.chenall.net/">http://grub4dos.chenall.net/</a>
+
+</ul>
 <li>
 memdisk_4.02: <a href="../files/grub/memdisk_4.02">memdisk_4.02</a>
 
@@ -539,17 +554,9 @@ BOOTICE 是一个启动相关的维护的小工具，主要用于安装、修复
 </ul>
 </ul>
 
-<h2 id="toc_0.6">本机C盘启动grub4dos</h2>
+<h2 id="toc_0.6">在boot.ini中添加grub4dos</h2>
 
-<ul>
-<li>
-原文：用grub4dos引导ISO，不解开ISO利用grub4dos磁盘仿真来引导WINPE启动: <a href="http://blog.sina.com.cn/s/blog_4ad042e50102e8sv.html">http://blog.sina.com.cn/s/blog_4ad042e50102e8sv.html</a>
-
-</ul>
-
-<ul>
-<li>
-WinXP
+<h3 id="toc_0.6.1">WinXP</h3>
 
 <ul>
 <li>
@@ -559,19 +566,186 @@ WinXP
 C:\boot.ini里面最后加上一句：<code>C:\GRLDR=GRUB4DOS</code>，配合grub4dos的menu.lst菜单就能够引导PE。
 
 </ul>
-<li>
-Win7 
+
+<h3 id="toc_0.6.2">Win7</h3>
 
 <ul>
 <li>
-拷贝grldr.mbr到C:\;
+Windows 7上使用Grub4DOS:
+
+<ul>
+<li>
+<a href="http://www.kisa747.com/windows7-grub4dos.html">http://www.kisa747.com/windows7-grub4dos.html</a>
 
 <li>
-C:\boot.ini里面最后加上一句：<code>C:\GRLDR.MBR=GRUB4DOS</code>，就可以加载grub4dos。
+<a href="http://blog.sina.com.cn/s/blog_53918a450100wsie.html">http://blog.sina.com.cn/s/blog_53918a450100wsie.html</a>
 
 </ul>
+</ul>
+
+<p>
+Windows7上使用Grub4DOS有两种方法实现（除了直接将Grub安装至MBR）：
+</p>
+<ol>
+<li>
+通过创建boot.ini添加启动启动项。
+
+<li>
+通过windows 7的BOOTMGR启动管理器添加启动项。
+
+</ol>
+
+<ul>
+<li>
+通过boot.ini添加启动项
+
+<ul>
+<li>
+拷贝grldr、grldr.mbr、menu.lst到系统盘根目录;
+
+<li>
+在系统盘根目录创建boot.ini文件，添加如下内容("Grub4Dos"要加引号)，就可以加载grub4dos。
+<pre>
+[boot loader]
+[operating systems]
+c:grldr.mbr="Grub4Dos"
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+通过win7的BOOTMGR启动管理器添加启动项
+
+<ul>
+<li>
+注意：所有BCDEDIT的命令操作都必须以管理员身份运行。
+
+<li>
+使用BCDEdit备份与恢复启动选项
+<pre class="brush:bash">
+# 为了避免误操作，最好先对BCD进行备份。使用下面的命令进行备份和恢复。
+bcdedit /export "D:BCD-Backup" # 将BCD备份到"D:BCD-Backup"目录。
+bcdedit /import "D:BCD-Backup" # 恢复之前的BCD备份。
+</pre>
+
+<li>
+将grub4dos的三个文件复制到C盘根目录下；
+
+<li>
+添加BOOTMGR启动菜单:以管理员身份运行下面的批处理命令。
+<pre class="brush:bash">
+@echo off
+cls
+echo.
+echo 必须以管理员运行
+echo.
+pause
+set title=Windows 7添加Grub4DOS启动菜单
+set vid=
+bcdedit /create /d "%title%" /application bootsector &gt;vid.ini
+for,/f,"tokens=2 delims={",%%i,In (vid.ini) Do (
+    set vida=%%i
+)
+for,/f,"tokens=1 delims=}",%%i,In ("%vida%") Do (
+    set vid={%%i}
+)
+echo %title% created as %vid%
+bcdedit /set %vid% device partition=c: &gt;nul
+bcdedit /set %vid% path grldr.mbr &gt;nul
+bcdedit /displayorder %vid% /addlast &gt;nul
+echo.
+pause
+bcdedit /enum
+pause
+:exit
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+附：BCDEdit命令的常见用法
+
+</ul>
+
+<p>
+使用<code>bcdedit</code>或<code>bcdedit /enum all</code>来查看系统中硬盘或分区的GUID 标识，例如{dc0a0dea-4a4e-11df-900b-d0c518f1f5f1}。其中{legacy}表示上一代操作系统，{current} 表示当前启动硬盘上的操作系统（Windows 7），下面均以{GUID}表示。
+</p>
+
+<p>
+BCDEdit修改启动选项的常用命令格式：
+</p>
+
+<table>
+<tr>
+<th>
+命令
+</th>
+<th>
+说明
+</th>
+</tr>
+<tr>
+<td>
+bcdedit 或 bcdedit /enum all
+</td>
+<td>
+查看系统中硬盘或分区的GUID 标识
+</td>
+</tr>
+<tr>
+<td>
+bcdedit /set {GUID} Description "Windows XP Professional SP3"
+</td>
+<td>
+修改{GUID}在启动菜单中的显示内容
+</td>
+</tr>
+<tr>
+<td>
+bcdedit /default {GUID}
+</td>
+<td>
+设置指定GUID上的操作系统为默认启动的系统
+</td>
+</tr>
+<tr>
+<td>
+bcdedit /timeout 3
+</td>
+<td>
+将默认的启动菜单显示时间更改为3秒
+</td>
+</tr>
+<tr>
+<td>
+bcdedit /displayorder {current} {legacy}
+</td>
+<td>
+将首先显示默认启动的Windows 7，然后再显示Windows XP，
+</td>
+</tr>
+<tr>
+<td>
+bcdedit /delete {GUID}
+</td>
+<td>
+删除GUID上的启动菜单
+</td>
+</tr>
+</table>
+
+
+<ul>
 <li>
 grub4dos:menu.lst菜单参考
+
+<ul>
+<li>
+原文：用grub4dos引导ISO，不解开ISO利用grub4dos磁盘仿真来引导WINPE启动: <a href="http://blog.sina.com.cn/s/blog_4ad042e50102e8sv.html">http://blog.sina.com.cn/s/blog_4ad042e50102e8sv.html</a>
 <pre class="brush:bash">
 #menu.lst采用utf-8编码
 #font (bd)/boot/grub/unifont.hex
@@ -670,6 +844,7 @@ title halt
     halt
 </pre>
 
+</ul>
 </ul>
 
 </div>
