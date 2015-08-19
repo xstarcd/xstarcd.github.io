@@ -18,12 +18,13 @@
 <h1>Git中文显示问题解决</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">ls显示中文文件名</a>
-<li><a href="#toc_0.2">输入中文</a>
-<li><a href="#toc_0.3">中文commit log</a>
-<li><a href="#toc_0.4">git gui显示中文</a>
-<li><a href="#toc_0.5">转换编码</a>
-<li><a href="#toc_0.6">修改显示编辑器</a>
+<li><a href="#toc_0.1">中文文件名乱码</a>
+<li><a href="#toc_0.2">ls显示中文文件名</a>
+<li><a href="#toc_0.3">输入中文</a>
+<li><a href="#toc_0.4">中文commit log</a>
+<li><a href="#toc_0.5">git gui显示中文</a>
+<li><a href="#toc_0.6">转换编码</a>
+<li><a href="#toc_0.7">修改显示编辑器</a>
 </ul>
 </ul>
 </div>
@@ -37,6 +38,8 @@
 <p>
 git bash很多中文显示问题解决方法与CygWin一样。
 </p>
+
+<h2 id="toc_0.1">中文文件名乱码</h2>
 
 <p>
 参考以下的设置，在CygWin中git log内容已可正常使用、显示中文，但git status和push、pull时，中文文件名仍然乱码，不知如何解决，如:
@@ -54,7 +57,15 @@ git bash很多中文显示问题解决方法与CygWin一样。
 提交为空，但是存在尚未跟踪的文件（使用 "git add" 建立跟踪）
 </pre>
 
-<h2 id="toc_0.1">ls显示中文文件名</h2>
+<p>
+解决方式：
+</p>
+<pre class="brush:bash">
+#不对0x80以上的字符进行quote，解决git status/commit时中文文件名乱码
+git config --global core.quotepath false
+</pre>
+
+<h2 id="toc_0.2">ls显示中文文件名</h2>
 
 <ul>
 <li>
@@ -73,7 +84,7 @@ alias ls='ls --show-control-chars --color=auto'
 注：Cygwin 1.7.1版本中无此问题。
 </p>
 
-<h2 id="toc_0.2">输入中文</h2>
+<h2 id="toc_0.3">输入中文</h2>
 
 <ul>
 <li>
@@ -93,7 +104,7 @@ set convert-meta off
 注：Cygwin 1.7.1版本中无此问题。
 </p>
 
-<h2 id="toc_0.3">中文commit log</h2>
+<h2 id="toc_0.4">中文commit log</h2>
 
 <ul>
 <li>
@@ -112,7 +123,7 @@ export LESSCHARSET=utf-8
 其实，它的值不一定要设置为 utf-8，比如 latin1 也可以……(在Cgywin中测试utf-8可以，latin1仍是乱码)。还有个办法是 git –no-pager log，在选项里禁止分页，则无需设置上面的选项。
 </p>
 
-<h2 id="toc_0.4">git gui显示中文</h2>
+<h2 id="toc_0.5">git gui显示中文</h2>
 
 <ul>
 <li>
@@ -128,7 +139,7 @@ encoding = utf-8
 说明：我们的代码库是统一用的 utf-8，这样设置可以在 git gui 中正常显示代码中的中文。
 </p>
 
-<h2 id="toc_0.5">转换编码</h2>
+<h2 id="toc_0.6">转换编码</h2>
 
 <ul>
 <li>
@@ -149,13 +160,13 @@ commitencoding = GB2312
 注：我在Cygwin中使用的UTF-8，所以不存在上面的问题。
 </p>
 
-<h2 id="toc_0.6">修改显示编辑器</h2>
+<h2 id="toc_0.7">修改显示编辑器</h2>
 
 <p>
 可以设置git默认为其它编辑器：
 </p>
 <pre class="brush:bash">
-git config --global core.editor "notepad"
+git config --global core.editor "vim"
 </pre>
 
 <p>
