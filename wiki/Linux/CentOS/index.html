@@ -40,6 +40,9 @@ CentOS Howto: <a href="http://wiki.centos.org/zh/HowTos">http://wiki.centos.org/
 <li>
 <a href="CentOS_Kickstart.html">使用Kickstart自动部署CentOS</a>
 
+<li>
+<a href="CentOS_Services_close.html">CentOS系统服务</a>
+
 </ul>
 
 <h1 id="toc_2">CentOS 7</h1>
@@ -67,6 +70,24 @@ cp /usr/share/mysql/my-huge.cnf /etc/my.cnf #拷贝配置文件（注意：如�
 # 为root账户设置密码
 mysql_secure_installation
 systemctl restart mariadb.service  #重启MariaDB
+</pre>
+
+<li>
+linux下创建具有root权限的帐号
+<pre class="brush:bash">
+# http://blog.chinaunix.net/uid-22166872-id-3551122.html
+useradd -u 0 -o -g root -G root -d /home/user1 user1
+usermod -u 0 -o -g root -G root user1
+
+# -u 0：指将uid指定为0(零)与root相同,登录后的提示符为#而非$。
+# -o：指因为重复了uid(与root帐号的uid重复)必须指定这个参数。
+# -g root：初始化组的组名，当用户属于多个组时，(在-G参数中指定），登录时所在组。缺省该项时，系统新建一个与用户名同名的组，并且初始化时设为该组名。而不论-G指定为哪些组。
+# -G root：指定用户名所属的组列表，一个用户可以属于多个组，组名间用逗号分隔，组名必须已经存在。
+# -d /home/user1：指定用户的属主目录
+# user1 新建的用户名为user1
+# 测试:可以用id user1命令测试用户名user1的属性,显示为:
+# uid=0(root),gid=0(root),group=0(root)
+# 说明:gid指明的即为初始化GID号。
 </pre>
 
 </ul>
