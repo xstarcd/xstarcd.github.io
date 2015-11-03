@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Python web logview</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Python web logview</h1>
+
+<p>
+原文：<a href="http://my.oschina.net/waterbear/blog/149857">http://my.oschina.net/waterbear/blog/149857</a>
+</p>
+
+<p>
+用web方式查看日志的一个小东西，用python的popen执行了linux的tail命令来实现。
+</p>
+
+<p>
+注意：需要<a href="http://webpy.org/">web.py</a>环境 
+</p>
+
+<pre class="python">
+#coding=utf8
+import web
+import os
+ 
+urls = (
+    '/', 'index'
+)
+ 
+class index:
+    def GET(self):
+        command = 'tail -n100 /var/log/tomcat6/catalina.out'
+        textlist = os.popen(command).readlines()#执行linux命令的哦
+        result = '&lt;h1&gt;Last 100 lines log&lt;/h1&gt;'
+        for line in textlist:
+                result = '%s\n%s'%(result,line)
+        return result#其实直接return textline也是可以哦
+ 
+if __name__ == "__main__":
+    app = web.application(urls, globals())
+    app.run()
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
