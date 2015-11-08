@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>OpenResty</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>OpenResty</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">编译环境</a>
+<li><a href="#toc_0.2">编译安装</a>
+<li><a href="#toc_0.3">基本配置</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="http://openresty.org/cn/">http://openresty.org/cn/</a>
+
+</ul>
+
+<h2 id="toc_0.1">编译环境</h2>
+
+<pre class="brush:bash">
+# yum groupinstall "Development Tools"
+yum -y install gcc gcc-c++ autoconf automake make
+yum -y install zlib zlib-devel openssl pcre libxml2 libxml2-devel
+yum -y install readline-devel pcre-devel openssl-devel
+</pre>
+
+<h2 id="toc_0.2">编译安装</h2>
+
+<pre class="brush:bash">
+V=1.9.3.1 \
+&amp;&amp; cd /usr/share/src \
+&amp;&amp; ( [ -f "ngx_openresty-$V.tar.gz" ] || wget https://openresty.org/download/ngx_openresty-$V.tar.gz ) \
+&amp;&amp; tar zxvf ngx_openresty-$V.tar.gz \
+&amp;&amp; cd ngx_openresty-$V \
+&amp;&amp; ./configure \
+--prefix=/usr/local/openresty \
+--http-log-path=/var/log/openresty/access.log \
+--error-log-path=/var/log/openresty/error.log \
+--http-client-body-temp-path=/var/cache/openresty/client_temp \
+--http-proxy-temp-path=/var/cache/openresty/proxy_temp \
+--http-fastcgi-temp-path=/var/cache/openresty/fastcgi_temp \
+--http-uwsgi-temp-path=/var/cache/openresty/uwsgi_temp \
+--http-scgi-temp-path=/var/cache/openresty/scgi_temp \
+--pid-path=/var/run/openresty.pid \
+--with-http_realip_module \
+--with-http_stub_status_module \
+--with-http_gzip_static_module \
+--with-http_ssl_module \
+--with-cc-opt='-O2 -g' \
+--with-luajit \
+--without-lua_redis_parser \
+--without-lua_rds_parser \
+--without-lua_resty_dns \
+--without-lua_resty_memcached \
+--without-lua_resty_redis \
+--without-lua_resty_mysql \
+--without-lua_resty_upload \
+--without-lua_resty_upstream_healthcheck \
+--without-lua_resty_string \
+--without-lua_resty_websocket \
+--without-lua_resty_lock \
+--without-lua_resty_lrucache \
+--without-lua_resty_core \
+&amp;&amp; make -j2 \
+&amp;&amp; make install
+</pre>
+
+<h2 id="toc_0.3">基本配置</h2>
+
+
+<pre class="brush:bash">
+[ -f /usr/sbin/nginx ] &amp;&amp; mv /usr/sbin/nginx{,.backup}
+ln -sfT /usr/local/openresty/nginx/sbin/nginx /usr/sbin/nginx
+
+mkdir -p /usr/local/openresty/nginx/conf/{sites-available,sites-enabled}
+mkdir -p /var/cache/openresty/
+
+cat &gt; /etc/logrotate.d/openresty &lt;&lt;EOF
+/var/log/openresty/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    notifempty
+    dateext
+    sharedscripts
+    postrotate
+        [ -f /var/run/openresty.pid ] &amp;&amp; kill -USR1 \`cat /var/run/openresty.pid\`
+    endscript
+} 
+EOF
+
+cd /usr/local/openresty/nginx/conf/sites-available \
+&amp;&amp; cat &gt; default.conf &lt;&lt;EOF
+#default site
+server {
+    listen 80 default;
+    #server_name default;
+    root /usr/local/nginx/html;
+    index index.html index.htm;
+ 
+    #charset gb2312,utf-8,gbk;
+ 
+    #autoindex on;
+    #autoindex_exact_size off;
+    #autoindex_localtime on;
+ 
+    access_log /var/log/openresty/access.log main;
+    error_log /var/log/openresty/error.log warn;
+
+    location /nginx_status {
+        stub_status on;
+        access_log off;
+        #allow 127.0.0.1;
+        #allow 172.17.10.0/24;
+        #deny all;
+    }
+
+} #end server
+EOF
+cd /usr/local/openresty/nginx/conf/sites-enabled \
+&amp;&amp; ln -sfT ../sites-available/default.conf default.conf
+</pre>
+
+
+<ul>
+<li>
+/usr/local/openresty/nginx/conf/nginx.conf
+<pre class="brush:bash">
+#nginx.conf(openresty)
+user nobody;
+worker_processes  2;
+
+error_log  /var/log/openresty/error.log;
+pid        /var/run/openresty.pid;
+worker_rlimit_nofile 10240;
+
+events {
+	use epoll;
+	worker_connections  10240;
+}
+http {
+	include       mime.types;
+	default_type  application/octet-stream;
+	
+	access_log    /var/log/openresty/access.log;
+
+	log_format main
+          '$remote_addr - $remote_user [$time_local] '
+          '"$request" $status $bytes_sent '
+          '"$http_referer" "$http_user_agent" '
+          '"$gzip_ratio" "$connection" "$request_time"';
+
+	#server_names_hash_bucket_size 64
+	#proxy_read_timeout 200;
+	keepalive_timeout 65;
+	sendfile on;
+	#tcp_nopush on;
+	tcp_nodelay on;
+	server_tokens off;
+
+	#gzip on;
+	#gzip_min_length 1k;
+	#gzip_proxied any;
+	#gzip_buffers 4 32k;
+	#gzip_types text/plain text/css text/xml application/xml application/atom+xml;
+	#gzip_types text/plain text/css text/xml;
+	#gzip_disable "MSIE [1-6]\.";
+
+	ignore_invalid_headers    on;
+	client_header_buffer_size 32k;
+	large_client_header_buffers 4 128k;
+
+	include sites-enabled/*.conf;
+} #end http
+</pre>
+
+</ul>
+
+<ul>
+<li>
+/etc/init.d/openresty
+<pre class="brush:bash">
+#!/bin/sh
+#
+# openresty     Startup script for openresty/nginx
+#
+# chkconfig: - 85 15
+# processname: nginx
+# config: /usr/local/openresty/nginx/conf/nginx.conf
+# config: /etc/sysconfig/openresty
+# pidfile: /var/run/openresty.pid
+# description: nginx(openresty) is a HTTP and reverse proxy server
+#
+### BEGIN INIT INFO
+# Provides: nginx
+# Required-Start: $local_fs $remote_fs $network
+# Required-Stop: $local_fs $remote_fs $network
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: start and stop nginx/openresty
+### END INIT INFO
+ 
+# Source function library.
+. /etc/rc.d/init.d/functions
+ 
+if [ -f /etc/sysconfig/openresty ]; then
+    . /etc/sysconfig/openresty
+fi
+ 
+prog=nginx
+nginx=${NGINX-/usr/local/openresty/nginx/sbin/nginx}
+conffile=${CONFFILE-/usr/local/openresty/nginx/conf/nginx.conf}
+lockfile=${LOCKFILE-/var/lock/subsys/openresty}
+pidfile=${PIDFILE-/var/run/openresty.pid}
+SLEEPMSEC=100000
+RETVAL=0
+ 
+start() {
+    echo -n $"Starting $prog: "
+ 
+    daemon --pidfile=${pidfile} ${nginx} -c ${conffile}
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] &amp;&amp; touch ${lockfile}
+    return $RETVAL
+}
+ 
+stop() {
+    echo -n $"Stopping $prog: "
+    killproc -p ${pidfile} ${prog}
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] &amp;&amp; rm -f ${lockfile} ${pidfile}
+}
+ 
+reload() {
+    echo -n $"Reloading $prog: "
+    killproc -p ${pidfile} ${prog} -HUP
+    RETVAL=$?
+    echo
+}
+ 
+upgrade() {
+    oldbinpidfile=${pidfile}.oldbin
+ 
+    configtest -q || return 6
+    echo -n $"Staring new master $prog: "
+    killproc -p ${pidfile} ${prog} -USR2
+    RETVAL=$?
+    echo
+    /bin/usleep $SLEEPMSEC
+    if [ -f ${oldbinpidfile} -a -f ${pidfile} ]; then
+        echo -n $"Graceful shutdown of old $prog: "
+        killproc -p ${oldbinpidfile} ${prog} -QUIT
+        RETVAL=$?
+        echo
+    else
+        echo $"Upgrade failed!"
+        return 1
+    fi
+}
+ 
+configtest() {
+    if [ "$#" -ne 0 ] ; then
+        case "$1" in
+            -q)
+                FLAG=$1
+                ;;
+            *)
+                ;;
+        esac
+        shift
+    fi
+    ${nginx} -t -c ${conffile} $FLAG
+    RETVAL=$?
+    return $RETVAL
+}
+ 
+rh_status() {
+    status -p ${pidfile} ${nginx}
+}
+ 
+# See how we were called.
+case "$1" in
+    start)
+        rh_status &gt;/dev/null 2&gt;&amp;1 &amp;&amp; exit 0
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        rh_status
+        RETVAL=$?
+        ;;
+    restart)
+        configtest -q || exit $RETVAL
+        stop
+        start
+        ;;
+    upgrade)
+        upgrade
+        ;;
+    condrestart|try-restart)
+        if rh_status &gt;/dev/null 2&gt;&amp;1; then
+            stop
+            start
+        fi
+        ;;
+    force-reload|reload)
+        reload
+        ;;
+    configtest)
+        configtest
+        ;;
+    *)
+        echo $"Usage: $prog {start|stop|restart|condrestart|try-restart|force-reload|upgrade|reload|status|help|configtest}"
+        RETVAL=2
+esac
+ 
+exit $RETVAL
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
