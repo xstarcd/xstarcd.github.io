@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>nodejs安装</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>nodejs安装</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">直接下载二进制包</a>
+<li><a href="#toc_0.2">编译安装nodejs</a>
+<li><a href="#toc_0.3">服务管理</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="https://nodejs.org/en/">https://nodejs.org/en/</a>
+
+</ul>
+
+<h2 id="toc_0.1">直接下载二进制包</h2>
+
+<ul>
+<li>
+Linux x64:<a href="https://nodejs.org/download/release/v0.12.7/node-v0.12.7-linux-x64.tar.gz">https://nodejs.org/download/release/v0.12.7/node-v0.12.7-linux-x64.tar.gz</a>
+
+<li>
+Linux x86:<a href="https://nodejs.org/download/release/v0.12.7/node-v0.12.7-linux-x86.tar.gz">https://nodejs.org/download/release/v0.12.7/node-v0.12.7-linux-x86.tar.gz</a>
+
+</ul>
+
+<pre class="brush:bash">
+V="v0.12.7" \
+&amp;&amp; ARCH=x64 \
+&amp;&amp; cd /usr/local/ \
+&amp;&amp; ( [ -f "node-$V-linux-$ARCH.tar.gz" ] || wget https://nodejs.org/download/release/$V/node-$V-linux-$ARCH.tar.gz ) \
+&amp;&amp; tar zxvf node-$V-linux-$ARCH.tar.gz \
+&amp;&amp; ln -sfT node-$V-linux-$ARCH nodejs
+
+cat &gt; /etc/profile.d/nodejs.sh &lt;&lt;EOF
+echo "\$PATH"|grep "/usr/local/nodejs/bin" &gt; /dev/null || export PATH="/usr/local/nodejs/bin:\$PATH"
+EOF
+
+</pre>
+
+<h2 id="toc_0.2">编译安装nodejs</h2>
+
+<pre class="brush:bash">
+yum -y install gcc-c++ make
+# or: yum groupinstall 'Development Tools'
+V="v0.12.7" \
+&amp;&amp; cd /usr/local/src \
+&amp;&amp; ( [ -f "node-$V.tar.gz" ] || wget https://nodejs.org/download/release/$V/node-$V.tar.gz ) \
+&amp;&amp; rm -rf node-$V \
+&amp;&amp; tar zxvf node-$V.tar.gz \
+&amp;&amp; cd node-$V \
+&amp;&amp; ./configure --prefix=/usr/local/nodejs \
+&amp;&amp; make &amp;&amp; make install \
+&amp;&amp; export PATH=/usr/local/nodejs/bin:$PATH \
+&amp;&amp; node -v &amp;&amp; npm -v \
+&amp;&amp; npm config set registry http://registry.cnpmjs.org \
+&amp;&amp; npm install -g forever
+
+cat &gt; /etc/profile.d/nodejs.sh &lt;&lt;EOF
+echo "\$PATH"|grep "/usr/local/nodejs/bin" &gt; /dev/null || export PATH="/usr/local/nodejs/bin:\$PATH"
+EOF
+</pre>
+
+
+<p>
+}}}
+</p>
+
+<h2 id="toc_0.3">服务管理</h2>
+
+<ul>
+<li>
+forever: <a href="https://github.com/foreverjs/forever">https://github.com/foreverjs/forever</a>
+
+<li>
+使用forever管理nodejs应用教程: <a href="http://www.jb51.net/article/50576.htm">http://www.jb51.net/article/50576.htm</a>
+
+</ul>
+
+<ul>
+<li>
+启动脚本范例
+<pre class="brush:bash">
+#!/bin/bash
+# chkconfig: 345 88 08
+# description: Forever for Node.js
+
+DEAMON=/home/www/jsgen/app.js
+LOG=/home/www/jsgen/mylogs/forever.log
+PID=/root/.forever/pids/forever.pid
+
+export PATH=$PATH:/usr/bin/node/bin
+export NODE_PATH=$NODE_PATH:/usr/bin/node/lib/node_modules
+
+node=node
+forever=forever
+
+case "$1" in
+    start)
+        $forever start -l $LOG --pidFile $PID -a $DEAMON
+        ;;
+    stop)
+        $forever stop --pidFile $PID $DEAMON
+        ;;
+    stopall)
+        $forever stopall --pidFile $PID
+        ;;
+    restartall)
+        $forever restartall --pidFile $PID
+        ;;
+    reload|restart)
+        $forever restart -l $LOG --pidFile $PID -a $DEAMON
+        ;;
+    list)
+        $forever list
+        ;;
+    *)
+        echo "Usage: /etc.init.d/node {start|stop|restart|reload|stopall|restartall|list}"
+        exit 1
+        ;;
+esac
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
