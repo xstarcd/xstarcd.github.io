@@ -21,7 +21,6 @@
 <li><a href="#toc_0.1">编译环境</a>
 <li><a href="#toc_0.2">编译安装</a>
 <li><a href="#toc_0.3">基本配置</a>
-<li><a href="#toc_0.4">lua</a>
 </ul>
 </ul>
 </div>
@@ -45,8 +44,9 @@ yum -y install readline-devel pcre-devel openssl-devel
 
 <pre class="brush:bash">
 V=1.9.3.1 \
-&amp;&amp; cd /usr/share/src \
+&amp;&amp; cd /usr/local/src \
 &amp;&amp; ( [ -f "ngx_openresty-$V.tar.gz" ] || wget https://openresty.org/download/ngx_openresty-$V.tar.gz ) \
+&amp;&amp; rm -rf ngx_openresty-$V \
 &amp;&amp; tar zxvf ngx_openresty-$V.tar.gz \
 &amp;&amp; cd ngx_openresty-$V \
 &amp;&amp; ./configure \
@@ -78,6 +78,19 @@ V=1.9.3.1 \
 --without-lua_resty_lock \
 --without-lua_resty_lrucache \
 --without-lua_resty_core \
+--without-http_xss_module \
+--without-http_coolkit_module \
+--without-http_set_misc_module \
+--without-http_form_input_module \
+--without-http_encrypted_session_module \
+--without-http_srcache_module \
+--without-http_headers_more_module \
+--without-http_array_var_module \
+--without-http_memc_module \
+--without-http_redis2_module \
+--without-http_redis_module \
+--without-http_rds_json_module \
+--without-http_rds_csv_module \
 &amp;&amp; make -j2 \
 &amp;&amp; make install
 </pre>
@@ -176,13 +189,13 @@ http {
     tcp_nodelay on;
     server_tokens off;
 
-    #gzip on;
-    #gzip_min_length 1k;
-    #gzip_proxied any;
-    #gzip_buffers 4 32k;
-    #gzip_types text/plain text/css text/xml application/xml application/atom+xml;
+    gzip on;
+    gzip_min_length 1k;
+    gzip_proxied any;
+    gzip_buffers 4 32k;
+    gzip_types text/plain text/css text/xml application/xml application/atom+xml;
     #gzip_types text/plain text/css text/xml;
-    #gzip_disable "MSIE [1-6]\.";
+    gzip_disable "MSIE [1-6]\.";
 
     ignore_invalid_headers    on;
     client_header_buffer_size 32k;
@@ -337,83 +350,6 @@ case "$1" in
 esac
  
 exit $RETVAL
-</pre>
-
-</ul>
-
-<h2 id="toc_0.4">lua</h2>
-
-<ul>
-<li>
-pic_cut.lua
-<pre class="brush:bash">
-local cur_uri_reg="_[0-9]+x[0-9]+";
-local img_original_uri = string.gsub(ngx.var.uri, cur_uri_reg, '')
-local img_exist=io.open(ngx.var.image_root .. img_original_uri);
-
-if not img_exist then
-    ngx.exit(404);
-end
-
-local _,_,img_width,img_height = string.find(ngx.var.uri,'_([0-9]+)x([0-9]+)');
-local img_size=img_width.."x"..img_height;
-local command = "gm convert "..ngx.var.image_root..img_original_uri.." -thumbnail "..img_size.." -background white -gravity center -extent "..img_size.." "..ngx.var.file;
-local _,_,img_thumbnail_dir,img__thumbnail_filename=string.find(ngx.var.file,'(.-)([^/]*)$')
-local dir_exists=io.open(img_thumbnail_dir);
-
-if not dir_exists then
-    os.execute("mkdir -p "..img_thumbnail_dir);
-end
-os.execute(command);
-ngx.req.set_uri("/thumbnail"..ngx.var.uri,true);
-</pre>
-
-</ul>
-
-<ul>
-<li>
-site.conf
-<pre class="brush:bash">
-server {
-    listen       80;
-    server_name  localhost;
-
-    #charset koi8-r;
-    #access_log  logs/host.access.log  main;
-    #index  index.html index.htm;
-    location / {
-        root /var/www;
-        index on;
-    }
-    location ^~ /thumbnail/ {
-        root /var/www;
-    }
-    location /resource {
-        root /var/www;
-        expires 7d;
-    }
-    location ~* _([0-9]+)x([0-9]+)\.(gif|jpg|png|jpeg)$ {
-        set $image_root /var/www;
-        set $thumbnail_root /var/www/thumbnail;
-        set $file "$thumbnail_root$uri";
-        if (-f $file) {
-            rewrite ^/(.*)$ /thumbnail/$1 last;
-        }
-        if (!-f $file) {
-            rewrite_by_lua_file 'conf/lua/pic_cut.lua';
-        }
-    }
-    location /echo {
-        default_type 'text/plain';
-        echo 'hello world';
-    }
-    #error_page  404              /404.html;
-    # redirect server error pages to the static page /50x.html       
-    error_page   500 502 503 504  /50x.html;
-    location = /50x.html {
-        root   html;
-    }
-}
 </pre>
 
 </ul>
