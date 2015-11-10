@@ -21,6 +21,7 @@
 <li><a href="#toc_0.1">直接下载二进制包</a>
 <li><a href="#toc_0.2">编译安装nodejs</a>
 <li><a href="#toc_0.3">服务管理</a>
+<li><a href="#toc_0.4">项目构建</a>
 </ul>
 </ul>
 </div>
@@ -137,6 +138,34 @@ case "$1" in
         exit 1
         ;;
 esac
+</pre>
+
+</ul>
+
+<h2 id="toc_0.4">项目构建</h2>
+
+<ul>
+<li>
+环境配置
+<pre class="brush:bash">
+# 安装nodejs
+# 设置npm镜像地址:
+npm config set registry http://registry.cnpmjs.org
+# 安装基于任务的命令行构建工具
+npm install -g grunt-cli
+npm install -g bower
+</pre>
+
+</ul>
+
+<ul>
+<li>
+项目构建
+<pre class="brush:bash">
+# 从git仓库clone源代码，进入项目目录下，运行：
+npm install    # 自动下载相对应的Grunt插件
+bower install  # 依赖git
+grunt package
 </pre>
 
 </ul>
