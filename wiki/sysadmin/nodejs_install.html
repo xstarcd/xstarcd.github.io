@@ -146,10 +146,29 @@ esac
 
 <ul>
 <li>
+grunt: 基于任务的命令行构建工具。 类似Java业界的Ant工具一样。
+
+<ul>
+<li>
+<a href="http://www.gruntjs.net/">http://www.gruntjs.net/</a>
+
+</ul>
+<li>
+Bower: 管理bootstrap、JQuery、CSS等前端框架
+
+<ul>
+<li>
+<a href="http://bower.io/">http://bower.io/</a>
+
+</ul>
+</ul>
+
+<ul>
+<li>
 环境配置
 <pre class="brush:bash">
 # 安装nodejs
-# 设置npm镜像地址:
+# 设置npm镜像地址
 npm config set registry http://registry.cnpmjs.org
 # 安装基于任务的命令行构建工具
 npm install -g grunt-cli
@@ -164,7 +183,7 @@ npm install -g bower
 <pre class="brush:bash">
 # 从git仓库clone源代码，进入项目目录下，运行：
 npm install    # 自动下载相对应的Grunt插件
-bower install  # 依赖git
+bower install  # 安装依赖
 grunt package
 </pre>
 
