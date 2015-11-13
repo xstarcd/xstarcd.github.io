@@ -16,10 +16,181 @@
 <div id="main">
 
 <h1>pssh批量管理服务器</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">安装</a>
+<li><a href="#toc_0.2">使用pssh</a>
+<ul>
+<li><a href="#toc_0.2.1">简要范例</a>
+<li><a href="#toc_0.2.2">pssh --help</a>
+</ul>
+</ul>
+</ul>
+</div>
 
 <p>
 pssh是一个python编写可以在多台服务器上执行命令的工具，同时支持拷贝文件，是同类工具中很出色的，类似pdsh。
 </p>
+
+<ul>
+<li>
+parallel-ssh: <a href="https://code.google.com/p/parallel-ssh/">https://code.google.com/p/parallel-ssh/</a>
+
+</ul>
+
+<h2 id="toc_0.1">安装</h2>
+
+<ul>
+<li>
+编译安装
+
+</ul>
+
+<pre class="brush:bash">
+wget http://parallel-ssh.googlecode.com/files/pssh-2.3.1.tar.gz
+tar zxvf pssh-2.3.1.tar.gz
+cd pssh-2.3.1/
+python setup.py install
+</pre>
+
+<ul>
+<li>
+yum安装
+
+</ul>
+
+<pre class="brush:bash">
+yum -y install epel-release
+yum -y install pssh
+</pre>
+
+<ul>
+<li>
+cygwin下安装
+
+</ul>
+
+<pre class="brush:bash">
+apt-cyg install python-setuptools
+easy_install pip
+pip install pssh
+</pre>
+
+<h2 id="toc_0.2">使用pssh</h2>
+
+<h3 id="toc_0.2.1">简要范例</h3>
+
+<ul>
+<li>
+pssh 在多个主机上并行地运行命令。
+
+<ul>
+<li>
+<code>pssh -h hosts.txt -l irb2 -o /tmp/foo uptime</code>
+
+</ul>
+<li>
+pscp 传输文件到多个主机，类似scp。
+
+<ul>
+<li>
+<code>pscp -h hosts.txt -l irb2 foo.txt /home/irb2/foo.txt</code>
+
+</ul>
+<li>
+pslurp 从多个主机拷贝到本地。
+
+<ul>
+<li>
+<code>Example: pslurp -h hosts.txt -L /tmp/outdir -l irb2 /home/irb2/foo.txt foo.txt</code>
+
+</ul>
+<li>
+pnuke 在多个主机并行地杀进程。
+
+<ul>
+<li>
+<code>pnuke -h hosts.txt -l irb2 java</code>
+
+</ul>
+<li>
+prsync 使用rsync协议从本地同步到远程主机。 
+
+<ul>
+<li>
+<code>prsync -r -h hosts.txt -l irb2 foo /home/irb2/foo</code>
+
+</ul>
+<li>
+避免ssh检查host keys：
+<pre class="brush:bash">
+pssh -i -H host1 -H host2 \
+-x "-O StrictHostKeyChecking=no -O UserKnownHostsFile=/dev/null -O GlobalKnownHostsFile=/dev/null" \
+echo hi
+</pre>
+
+<ul>
+<li>
+也可以加到.ssh/config
+<pre class="brush:bash">
+cat &gt;&gt;~/.ssh/config &lt;&lt;EOF
+StrictHostKeyChecking=no
+UserKnownHostsFile=/dev/null
+GlobalKnownHostsFile=/dev/null
+EOF
+</pre>
+
+</ul>
+<li>
+host文件格式
+<pre class="brush:bash">
+# 可以有空行，#开头的是注释行
+# 每行一个主机，格式： [user@]host[:port]
+192.168.1.4
+root@192.168.1.5
+root@192.168.1.7:2203
+</pre>
+
+</ul>
+
+<h3 id="toc_0.2.2">pssh --help</h3>
+
+<pre class="brush:bash">
+Usage: pssh [OPTIONS] command [...]
+
+Options:
+  --version             show programs version number and exit
+  --help                show this help message and exit
+  -h HOST_FILE, --hosts=HOST_FILE
+                        hosts file (each line "[user@]host[:port]") 
+                        #如果指定了多个host文件(多次使用-h选择)，pssh将它们连接在一起使用；
+                        #如果同一主机出现多次，pssh将会多次连接。
+  -H HOST_STRING, --host=HOST_STRING
+                        additional host entries ("[user@]host[:port]")
+  -l USER, --user=USER  username (OPTIONAL)
+  -p PAR, --par=PAR     max number of parallel threads (OPTIONAL)
+  -o OUTDIR, --outdir=OUTDIR
+                        output directory for stdout files (OPTIONAL)
+  -e ERRDIR, --errdir=ERRDIR
+                        output directory for stderr files (OPTIONAL)
+  -t TIMEOUT, --timeout=TIMEOUT
+                        timeout (secs) (0 = no timeout) per host (OPTIONAL)
+  -O OPTION, --option=OPTION
+                        SSH option (OPTIONAL)
+  -v, --verbose         turn on warning and diagnostic messages (OPTIONAL)
+  -A, --askpass         Ask for a password (OPTIONAL)
+  -x ARGS, --extra-args=ARGS
+                        Extra command-line arguments, with processing for
+                        spaces, quotes, and backslashes
+  -X ARG, --extra-arg=ARG
+                        Extra command-line argument
+  -i, --inline          inline aggregated output and error for each server
+  --inline-stdout       inline standard output for each server
+  -I, --send-input      read from standard input and send as input to ssh
+  -P, --print           print output as we get it
+
+Example: pssh -h hosts.txt -l irb2 -o /tmp/foo uptime
+</pre>
 
 </div>
 <div id="footer">
