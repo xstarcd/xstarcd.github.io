@@ -19,16 +19,17 @@
 <ul>
 <li><a href="#toc_1">自动化部署</a>
 <ul>
-<li><a href="#toc_1.1">Ansible</a>
-<li><a href="#toc_1.2">SaltStack</a>
-<li><a href="#toc_1.3">DevOps</a>
-<li><a href="#toc_1.4">chef</a>
-<li><a href="#toc_1.5">puppet</a>
-<li><a href="#toc_1.6">CFengine</a>
-<li><a href="#toc_1.7">Juju</a>
-<li><a href="#toc_1.8">Cobbler</a>
-<li><a href="#toc_1.9">Razor</a>
-<li><a href="#toc_1.10">Docker</a>
+<li><a href="#toc_1.1">pssh</a>
+<li><a href="#toc_1.2">Ansible</a>
+<li><a href="#toc_1.3">SaltStack</a>
+<li><a href="#toc_1.4">DevOps</a>
+<li><a href="#toc_1.5">chef</a>
+<li><a href="#toc_1.6">puppet</a>
+<li><a href="#toc_1.7">CFengine</a>
+<li><a href="#toc_1.8">Juju</a>
+<li><a href="#toc_1.9">Cobbler</a>
+<li><a href="#toc_1.10">Razor</a>
+<li><a href="#toc_1.11">Docker</a>
 </ul>
 </ul>
 </div>
@@ -45,7 +46,13 @@ openstack部署工具: <a href="http://www.chenshake.com/openstack-deployment-to
 
 </ul>
 
-<h2 id="toc_1.1"><a href="Ansible.html">Ansible</a></h2>
+<h2 id="toc_1.1"><a href="pssh.html">pssh</a></h2>
+
+<p>
+pssh是一个python编写可以在多台服务器上执行命令的工具，同时支持拷贝文件，是同类工具中很出色的，类似pdsh。
+</p>
+
+<h2 id="toc_1.2"><a href="Ansible.html">Ansible</a></h2>
 
 <ul>
 <li>
@@ -56,7 +63,7 @@ ansible来了: <a href="http://ju.outofmemory.cn/entry/67581">http://ju.outofmem
 
 </ul>
 
-<h2 id="toc_1.2">SaltStack</h2>
+<h2 id="toc_1.3">SaltStack</h2>
 
 <p>
 Puppet注重于最终状态，SaltStack注重于实时命令的运行，SaltStack=Puppet+Func，且SaltStack还是使用Python开发的，入手以及后续的功能自定义开发都是非常方便的。
@@ -74,7 +81,7 @@ SaltStack自动化运维初涉--安装简用篇:<a href="http://clovemfong.blog.
 
 </ul>
 
-<h2 id="toc_1.3">DevOps</h2>
+<h2 id="toc_1.4">DevOps</h2>
 
 <ul>
 <li>
@@ -86,7 +93,7 @@ SaltStack自动化运维初涉--安装简用篇:<a href="http://clovemfong.blog.
 DevOps（英文Development和Operations的组合）是一组过程、方法与系统的统称，用于促进开发（应用程序/软件工程）、技术运营和质量保障（QA）部门之间的沟通、协作与整合。
 </p>
 
-<h2 id="toc_1.4">chef</h2>
+<h2 id="toc_1.5">chef</h2>
 
 <ul>
 <li>
@@ -274,7 +281,7 @@ Chef
 </table>
 
 
-<h2 id="toc_1.5">puppet</h2>
+<h2 id="toc_1.6">puppet</h2>
 
 <p>
 Puppet是Puppet Labs 开发的自动化系统配置工具,是一个类似于Cfengine一样的工具,但是比Cfengine更简单,更容易使用…
@@ -297,7 +304,7 @@ Puppet使用方法总结: <a href="http://dongxicheng.org/cluster-managemant/pup
 </p>
 
 
-<h2 id="toc_1.6">CFengine</h2>
+<h2 id="toc_1.7">CFengine</h2>
 
 <ul>
 <li>
@@ -376,7 +383,7 @@ cfkey 密匙生成工具(每台主机运行一次)。
 </ul>
 
 
-<h2 id="toc_1.7">Juju</h2>
+<h2 id="toc_1.8">Juju</h2>
 
 <p>
 <a href="http://www.chenshake.com/design-of-the-razor/">http://www.chenshake.com/design-of-the-razor/</a>
@@ -390,7 +397,7 @@ Ubuntu的Maas，其实问题就更多。投入很大的力量去定制cobbler，
 昨天刚看到juju邮件列表，提到Orchestra，未来很快就要去掉juju的支持，因为没几个人玩，我本来一直都比较欣赏Orchestra的理念，不重复造轮。不过现在看来，ubuntu是希望自己搞一套。
 </p>
 
-<h2 id="toc_1.8">Cobbler</h2>
+<h2 id="toc_1.9">Cobbler</h2>
 
 <p>
 运维自动化安装方面，早期一般使用人工配置pxe+dhcp+tftp配合kickstart，现在开源工具就多了，如cobbler，OpenQRM和Spacewalk。
@@ -408,7 +415,7 @@ Cobbler支持命令行管理，web界面管理，还提供了API接口，可以�
 和Kickstart不同的是，使用cobbler不会因为在局域网中启动了dhcp而导致有些机器因为默认从pxe启动在重启服务器后加载tftp内容导致启动终止。
 </p>
 
-<h2 id="toc_1.9">Razor</h2>
+<h2 id="toc_1.10">Razor</h2>
 
 <p>
 Razor 是一个很高级的部署程序，注意，是高级哦。它可以在裸机上和虚拟机上自动安装操作系统。它的目标是解决如何把新的机器添加到已有的管理系统中。然后让集中化管理来接管它。
@@ -419,7 +426,7 @@ Razor的工作流程是，新加的机器通过Razor提供的网络启动，加�
 </p>
 
 
-<h2 id="toc_1.10">Docker</h2>
+<h2 id="toc_1.11">Docker</h2>
 
 <ul>
 <li>

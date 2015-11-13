@@ -64,6 +64,7 @@ http://xstarcd.github.io/wiki/Cloud/OpenStack.html
 http://xstarcd.github.io/wiki/Cloud/Openstack_modeule_introduce.html
 http://xstarcd.github.io/wiki/Cloud/Opentsdb.html
 http://xstarcd.github.io/wiki/Cloud/openvz.html
+http://xstarcd.github.io/wiki/Cloud/pssh.html
 http://xstarcd.github.io/wiki/Cloud/qcow2_raw_vmdk.html
 http://xstarcd.github.io/wiki/Cloud/redhat_libvirt_kvm.html
 http://xstarcd.github.io/wiki/Cloud/SinglePort_VirtualMultiVlan_in_Xen.html
@@ -107,6 +108,7 @@ http://xstarcd.github.io/wiki/Java/tomcat_session_timeout.html
 http://xstarcd.github.io/wiki/Java/tomcat7_vhost.html
 http://xstarcd.github.io/wiki/Java/tomcat7Install.html
 http://xstarcd.github.io/wiki/Linux/index.html
+http://xstarcd.github.io/wiki/Linux/boot-multiple-iso-from-usb-via-grub2-using-linux.html
 http://xstarcd.github.io/wiki/Linux/du_df_disaccord_test.html
 http://xstarcd.github.io/wiki/Linux/Gnu_Development_Tools.html
 http://xstarcd.github.io/wiki/Linux/grub.html
@@ -142,6 +144,7 @@ http://xstarcd.github.io/wiki/Linux/CentOS/index.html
 http://xstarcd.github.io/wiki/Linux/CentOS/CentOS_disIPv6.html
 http://xstarcd.github.io/wiki/Linux/CentOS/CentOS_Kickstart.html
 http://xstarcd.github.io/wiki/Linux/CentOS/CentOS_SELinux_Howto_study.html
+http://xstarcd.github.io/wiki/Linux/CentOS/CentOS_Services_close.html
 http://xstarcd.github.io/wiki/Linux/CentOS/CentOS_tips.html
 http://xstarcd.github.io/wiki/Linux/CentOS/CEntOS6newsysInit.html
 http://xstarcd.github.io/wiki/Linux/CentOS/ifcfg.html
@@ -188,6 +191,7 @@ http://xstarcd.github.io/wiki/Python/Python_IPy.html
 http://xstarcd.github.io/wiki/Python/Python_socket.html
 http://xstarcd.github.io/wiki/Python/python_subprocess_study.html
 http://xstarcd.github.io/wiki/Python/python_system_command.html
+http://xstarcd.github.io/wiki/Python/python_weblogview.html
 http://xstarcd.github.io/wiki/Python/tornado.html
 http://xstarcd.github.io/wiki/shell/index.html
 http://xstarcd.github.io/wiki/shell/alias.html
@@ -221,6 +225,7 @@ http://xstarcd.github.io/wiki/shell/git_chinese.html
 http://xstarcd.github.io/wiki/shell/git_common_cmds.html
 http://xstarcd.github.io/wiki/shell/grep.html
 http://xstarcd.github.io/wiki/shell/gzip.html
+http://xstarcd.github.io/wiki/shell/history.html
 http://xstarcd.github.io/wiki/shell/htop.html
 http://xstarcd.github.io/wiki/shell/hydra.html
 http://xstarcd.github.io/wiki/shell/IFS.html
@@ -281,6 +286,7 @@ http://xstarcd.github.io/wiki/sysadmin/ftp_active_passive_mode.html
 http://xstarcd.github.io/wiki/sysadmin/gen_htpasswd.html
 http://xstarcd.github.io/wiki/sysadmin/gitlab.html
 http://xstarcd.github.io/wiki/sysadmin/gitlib_add_ztree.html
+http://xstarcd.github.io/wiki/sysadmin/gitlib_add_ztree_ldgitlabToc.html
 http://xstarcd.github.io/wiki/sysadmin/HAProxy.html
 http://xstarcd.github.io/wiki/sysadmin/Haproxy_configuration_manual.html
 http://xstarcd.github.io/wiki/sysadmin/haproxy_confs.html
@@ -320,10 +326,12 @@ http://xstarcd.github.io/wiki/sysadmin/nginx_ssl.html
 http://xstarcd.github.io/wiki/sysadmin/nginx_stub_status.html
 http://xstarcd.github.io/wiki/sysadmin/nginx_upstream.html
 http://xstarcd.github.io/wiki/sysadmin/nginx_WebSocket.html
+http://xstarcd.github.io/wiki/sysadmin/nodejs_install.html
 http://xstarcd.github.io/wiki/sysadmin/ntpd.html
 http://xstarcd.github.io/wiki/sysadmin/OpenLDAP.html
 http://xstarcd.github.io/wiki/sysadmin/OpenLDAP_HowTo_Fedora.html
 http://xstarcd.github.io/wiki/sysadmin/OpenLDAPconfig.html
+http://xstarcd.github.io/wiki/sysadmin/openresty.html
 http://xstarcd.github.io/wiki/sysadmin/OpenSSL.html
 http://xstarcd.github.io/wiki/sysadmin/openssl_genrsa_req_sign.html
 http://xstarcd.github.io/wiki/sysadmin/OSbaseconfig.html
@@ -365,6 +373,7 @@ http://xstarcd.github.io/wiki/windows/MobaXterm.html
 http://xstarcd.github.io/wiki/windows/PuTTY.html
 http://xstarcd.github.io/wiki/windows/SecureCRT_confs.html
 http://xstarcd.github.io/wiki/windows/Sublime_Text.html
+http://xstarcd.github.io/wiki/windows/Win7Srv_optimize.html
 http://xstarcd.github.io/wiki/windows/windows_cmd_special_character.html
 http://xstarcd.github.io/wiki/windows/windows_cmd_summary.html
 http://xstarcd.github.io/wiki/windows/windows_cmd_summary_commands.html

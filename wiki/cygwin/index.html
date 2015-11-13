@@ -144,10 +144,13 @@ apt-cyg install python python-crypto
 #sh setuptools-0.6c11-py2.6.egg
 
 apt-cyg install python-setuptools
-
 easy_install pip
-pip install moin
 
+pip install pssh
+# ansible
+apt-cyg python-crypto
+pip install ansible
+#pip install moin
 </pre>
 
 </ul>
@@ -538,46 +541,6 @@ d=$(cd "$d" &gt; /dev/null 2&gt;&amp;1;pwd)
 Explorer /e,"$(cygpath -d -w $d)"
 </pre>
 
-<li>
-将Cygwin加到右资源管理器右键菜单
-<pre class="brush:bash">
-Windows Registry Editor Version 5.00
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Directory\shell\RunCygwin]
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Directory\shell\RunCygwin\command]
-@="D:\\cygwin64\\bin\\mintty.exe -i /Cygwin-Terminal.ico -e /bin/bash --login -i -c \"cd '%1';exec bash\""
-</pre>
-
-<li>
-将Cygwin加到右资源管理器右键菜单(传参方法)
-
-<ul>
-<li>
-CygwinHere.cmd
-<pre class="brsuh:bash">
-@echo off
-set _T=%cd%
-set _V=%1
-D:\cygwin64\bin\mintty.exe -i /Cygwin-Terminal.ico -
-</pre>
-
-<li>
-~/.bash_profile
-<pre class="brsuh:bash">
-[ -n "$_T" ] &amp;&amp; cd "$(cygpath -u "$_T")"
-[ -n "$_V" ] &amp;&amp; _F=$(cygpath "$_V"); [ -f "$_F" ] &amp;&amp; vim "$_F"
-unset _T _V _F
-</pre>
-
-<li>
-注册表
-<pre class="brsuh:bash">
-Windows Registry Editor Version 5.00
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Directory\shell\RunCygwin]
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Directory\shell\RunCygwin\command]
-@="d:\\CygwinHere.cmd"
-</pre>
-
-</ul>
 <li>
 Cygwin error: <code>-bash: fork: retry: Resource temporarily unavailable</code>
 
