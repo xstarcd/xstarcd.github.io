@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Python Paramiko模块安装和使用</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Python Paramiko模块安装和使用</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">简介</a>
+<li><a href="#toc_0.2">安装</a>
+<ul>
+<li><a href="#toc_0.2.1">PyCrypto安装</a>
+<li><a href="#toc_0.2.2">paramiko安装</a>
+</ul>
+<li><a href="#toc_0.3">使用</a>
+<ul>
+<li><a href="#toc_0.3.1">执行远程命令</a>
+<li><a href="#toc_0.3.2">上传文件到远程</a>
+<li><a href="#toc_0.3.3">从远程下载文件</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+原文: <a href="http://www.cnblogs.com/xia520pi/p/3805043.html">http://www.cnblogs.com/xia520pi/p/3805043.html</a>
+<pre>
+本文版权归作者(虾皮)和博客园共有，欢迎转载，但未经作者同意必须保留此段声明，且在文章页面明显位置给出原文连接，否则保留追究法律责任的权利。
+</pre>
+
+</ul>
+
+<h2 id="toc_0.1">简介</h2>
+
+<p>
+大家会发现，常见的解决方法都会需要对远程服务器必要的配置，如果远程服务器只有一两台还好说，如果有N台，还需要逐台进行配置，或者需要使用代码进行以上操作时，上面的办法就不太方便了。
+</p>
+
+<p>
+使用paramiko可以很好的解决以上问题，比起前面的方法，它仅需要在本地上安装相应的软件（python以及PyCrypto），对远程服务器没有配置要求，对于连接多台服务器，进行复杂的连接操作特别有帮助。
+</p>
+
+<h2 id="toc_0.2">安装</h2>
+
+<p>
+安装paramiko有两个先决条件，python和另外一个名为PyCrypto的模块。
+</p>
+
+<p>
+通常安装标准的python模块，只需要在模块的根目录下运行：
+</p>
+
+<pre>
+python setup.py build
+python setup.py install
+</pre>
+
+<p>
+备注：安装前先检查是否安装gcc（yum -y install gcc）
+</p>
+
+<h3 id="toc_0.2.1">PyCrypto安装</h3>
+
+<pre class="brush:bash">
+wget http://ftp.dlitz.net/pub/dlitz/crypto/pycrypto/pycrypto-2.6.tar.gz
+tar -zxvf pycrypto-2.6.tar.gz
+cd pycrypto-2.6/
+python setup.py build &amp;&amp; python setup.py install
+</pre>
+
+<p>
+测试：
+</p>
+
+<pre>
+python&gt;&gt; import Crypto
+</pre>
+
+<p>
+(编译时报错：error: command 'gcc' failed with exit status 1；这是因为缺少python-dev的软件包，所yum -y install python-devel)
+</p>
+
+<h3 id="toc_0.2.2">paramiko安装</h3>
+
+<pre class="brush:bash">
+wget http://www.lag.net/paramiko/download/paramiko-1.7.7.1.tar.gz
+tar xvzf paramiko-1.7.7.1.tar.gz
+cd paramiko-1.7.7.1/
+python setup.py build &amp;&amp; python setup.py install
+</pre>
+
+<ul>
+<li>
+测试：
+
+</ul>
+
+<pre>
+python&gt;&gt; import paramiko
+</pre>
+
+<ul>
+<li>
+Crypto error: 'module' object has no attribute 'HAVE_DECL_MPZ_POWM_SEC'
+
+</ul>
+
+<pre>
+找到 /usr/lib/python2.7/site-packages/Crypto/Util/number.py
+把if _fastmath is not None and not _fastmath.HAVE_DECL_MPZ_POWM_SEC:
+注释了
+#if _fastmath is not None and not _fastmath.HAVE_DECL_MPZ_POWM_SEC:
+</pre>
+
+<h2 id="toc_0.3">使用</h2>
+
+<h3 id="toc_0.3.1">执行远程命令</h3>
+
+<pre class="brush:python">
+#!/usr/bin/python
+import paramiko
+
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect("某IP地址",22,"用户名", "口令")
+stdin, stdout, stderr = ssh.exec_command("你的命令")
+print stdout.readlines()
+ssh.close()
+</pre>
+
+<h3 id="toc_0.3.2">上传文件到远程</h3>
+
+<pre class="brush:python">
+#!/usr/bin/python
+import paramiko
+
+t = paramiko.Transport(("某IP地址",22))
+t.connect(username = "用户名", password = "口令")
+sftp = paramiko.SFTPClient.from_transport(t)
+remotepath='/tmp/test.txt'
+localpath='/tmp/test.txt'
+sftp.put(localpath,remotepath)
+t.close()
+</pre>
+
+<h3 id="toc_0.3.3">从远程下载文件</h3>
+
+<pre class="brush:python">
+#!/usr/bin/python
+import paramiko
+
+t = paramiko.Transport(("某IP地址",22))
+t.connect(username = "用户名", password = "口令")
+sftp = paramiko.SFTPClient.from_transport(t)
+remotepath='/tmp/test.txt'
+localpath='/tmp/test.txt'
+sftp.get(remotepath, localpath)
+t.close()
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
