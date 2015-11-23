@@ -87,7 +87,7 @@ VMware ESXi 5.0启用snmpd服务
 ssh root@172.16.16.10                          #ssh登录vmware主机
 #修改snmp.xml配置
 cp /etc/vmware/snmp.xml /etc/vmware/snmp.xml.bak
-echo "&lt;config&gt;&lt;snmpSettings&gt;&lt;enable&gt;true&lt;/enable&gt;&lt;communities&gt;timasnmpd&lt;/communities&gt;&lt;targets&gt;&lt;/targets&gt;&lt;/snmpSettings&gt;&lt;/config&gt;"&gt;/etc/vmware/snmp.xml
+echo "&lt;config&gt;&lt;snmpSettings&gt;&lt;enable&gt;true&lt;/enable&gt;&lt;communities&gt;mysnmpd&lt;/communities&gt;&lt;targets&gt;&lt;/targets&gt;&lt;/snmpSettings&gt;&lt;/config&gt;"&gt;/etc/vmware/snmp.xml
 /sbin/services.sh restart
 exit                                           # 退出登录
 </pre>
@@ -100,7 +100,7 @@ VMware ESXi 5.1启用snmpd服务
 <pre class="brush:bash">
 ssh root@172.16.16.10                          #ssh登录vmware主机
 esxcli system snmp set --enable true           #允许启用snmp服务
-esxcli system snmp set --communities timasnmpd #设置snmp 服务团体字，建议设置复杂些。
+esxcli system snmp set --communities mysnmpd #设置snmp 服务团体字，建议设置复杂些。
 exit                                           # 退出登录
 
 # http://blogs.vmware.com/vsphere/2012/11/configuring-snmp-v1v2cv3-using-esxcli-5-1.html
@@ -126,7 +126,7 @@ vSphere中设置
 <li>
 测试snmp访问
 <pre class="brush:bash">
-snmpwalk -v 2c -c timasnmpd 192.168.0.180 system
+snmpwalk -v 2c -c mysnmpd 192.168.0.180 system
 </pre>
 
 </ul>

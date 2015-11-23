@@ -937,7 +937,7 @@ insecure 允许从这台机器过来的非授权访问。
 
 # 给不同网段授权
 # 使用all_squash，读写入文件均使用nobody权限。
-/dfs/TimaEyeTest 172.17.23.11(rw,all_squash) *(ro,all_squash)
+/dfs/Test 172.17.23.11(rw,all_squash) *(ro,all_squash)
 
 # 允许任何挂载的用户写入
 /data/share 10.224.17.20(rw,root_squash,all_squash,anonuid=99,anongid=99)

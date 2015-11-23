@@ -71,7 +71,7 @@ TCP:514,UDP:514
 192.168.0.33/34:514
 </td>
 <td>
-测试环境
+test
 </td>
 </tr>
 <tr>
@@ -85,7 +85,7 @@ TCP:514,UDP:514
 192.168.0.33/34:1514
 </td>
 <td>
-预生产
+pre
 </td>
 </tr>
 </table>
@@ -105,10 +105,10 @@ rsyslogd服务：tcp/udp: 192.168.0.35:514
 
 global_defs {
 #   notification_email {
-#     cave.zhao@timanetworks.com
+#     my@gdu.me
 #   }
-#   notification_email_from xing.yuan@timanetworks.com
-#   smtp_server smtp.timanetworks.com
+#   notification_email_from my.gdu.me
+#   smtp_server smtp.gdu.me
 #   smtp_connect_timeout 30
    router_id RSYSLOG_LVS1
 }
@@ -269,12 +269,12 @@ rsyslog_v7.conf
 
 #### TEMPLATE ###
 
-template (name="MobileDynFile" type="string" string="/var/log/timaSync/%syslogtag:F,44:2%/ap/%syslogtag:F,44:2%_behavioralForMobile_%$year%_%$month%_%$day%_%$myhostname%.log")
+template (name="MobileDynFile" type="string" string="/var/log/mySync/%syslogtag:F,44:2%/ap/%syslogtag:F,44:2%_behavioralForMobile_%$year%_%$month%_%$day%_%$myhostname%.log")
 
 template (
 name="PREMobileDynFile"
 type="string"
-string="/var/log/PREtimaSync/%syslogtag:F,44:2%/ap/%syslogtag:F,44:2%_behavioralForMobile_%$year%_%$month%_%$day%_%$myhostname%.log")
+string="/var/log/PREmySync/%syslogtag:F,44:2%/ap/%syslogtag:F,44:2%_behavioralForMobile_%$year%_%$month%_%$day%_%$myhostname%.log")
 
 
 #### OUT TEMPLATE ####
@@ -369,7 +369,7 @@ uucp,news.crit                                          /var/log/spooler
 # Save boot messages also to boot.log
 local7.*                                                /var/log/boot.log
 
-#Tima log message
+#log message
 #Module (path="builtin:omfile")
 #local5.* action(type="omfile",ruleset="mobileAction")
 #local6.* action(type="omfile",ruleset="mobileAction")

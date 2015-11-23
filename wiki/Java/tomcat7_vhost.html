@@ -239,15 +239,15 @@ Tomcat的文档中和网上都无法找到基于端口的虚拟主机的配法�
 </p>
 
 <pre class="brush:xml">
-&lt;Service name="Timaweb"&gt;
+&lt;Service name="myweb"&gt;
     &lt;Connector port="8081" protocol="HTTP/1.1" connectionTimeout="20000" /&gt;
-    &lt;Engine name="Timaweb" defaultHost="localhost"&gt;
+    &lt;Engine name="myweb" defaultHost="localhost"&gt;
         &lt;Realm className="org.apache.catalina.realm.LockOutRealm"&gt;
         &lt;Realm className="org.apache.catalina.realm.UserDatabaseRealm" resourceName="UserDatabase"/&gt;
         &lt;/Realm&gt;
-        &lt;Host name="localhost" appBase="Timaweb" unpackWARs="true" autoDeploy="true"&gt;
-            &lt;Valve className="org.apache.catalina.valves.AccessLogValve" directory="/var/log/tima"
-                prefix="Timaweb_access_log." suffix=".txt"
+        &lt;Host name="localhost" appBase="myweb" unpackWARs="true" autoDeploy="true"&gt;
+            &lt;Valve className="org.apache.catalina.valves.AccessLogValve" directory="/var/log/tomcat"
+                prefix="myweb_access_log." suffix=".txt"
                 pattern="%h %l %u %t &amp;quot;%r&amp;quot; %s %b %{Referer}i %{User-Agent}i %D" /&gt;
                 &lt;!-- for ev --&gt;
             &lt;Context path="/gaei/ev" docBase="b2c-admin" debug="0"/&gt;

@@ -96,7 +96,7 @@ sudo mount -t cifs -o user=Administrator,pass=123456 //192.168.1.2/d smb
 sudo mount -t cifs -o user=xing.yuan,pass=mypasswd,domain=mydomain //192.168.0.88/c$ /mnt/smbc
 
 #/etc/fstab
-//192.168.0.88/tima-share /home/yuanxing/smb88 cifs user=xing.yuan,pass=mypasswd,domain=tima 0 0
+//192.168.0.88/myshare /home/yuanxing/smb88 cifs user=xing.yuan,pass=mypasswd,domain=myhome 0 0
 
 # smbmount以后中文乱码:
 sudo mount -t smbfs -o unicode,codepage=unicode,iocharset=utf8,uid=dubuntu,username=knoppix,password=knoppix //192.168.0.1/knoppix /mnt/knoppix

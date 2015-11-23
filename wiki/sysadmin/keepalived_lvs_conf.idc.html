@@ -29,16 +29,16 @@
 <pre class="brush:bash">
 ! Configuration File for keepalived
  
-# Update: 2013-09-10 TimasyncLBIDC
+# Update: 2013-09-10 mysyncLBIDC
  
 global_defs {
 #   notification_email {
 #     longber@gmail.com
 #   }
 #   notification_email_from longber@gmail.com
-#   smtp_server smtp.timanetworks.com
+#   smtp_server smtp.google.com
 #   smtp_connect_timeout 30
-    router_id TimasyncLB1IDC
+    router_id mysyncLB1IDC
 }
  
 # instance VI_1
@@ -55,20 +55,20 @@ vrrp_instance VI_1 {
     advert_int 1
     authentication {
         auth_type PASS
-        auth_pass TimasyncLVSidc
+        auth_pass mysyncLVSidc
     }
     virtual_ipaddress {
-        172.16.17.53/24 dev eth0 label eth0:0
-        172.16.17.54/24 dev eth0 label eth0:1
-        172.16.17.55/24 dev eth0 label eth0:2
-        172.16.17.56/24 dev eth0 label eth0:3
-        172.16.17.57/24 dev eth0 label eth0:4
-        172.16.17.58/24 dev eth0 label eth0:5
-        172.16.17.59/24 dev eth0 label eth0:6
-        172.16.17.60/24 dev eth0 label eth0:7
-        172.16.17.61/24 dev eth0 label eth0:8
-        172.16.17.62/24 dev eth0 label eth0:9
-        172.16.17.63/24 dev eth0 label eth0:10
+        192.168.17.53/24 dev eth0 label eth0:0
+        192.168.17.54/24 dev eth0 label eth0:1
+        192.168.17.55/24 dev eth0 label eth0:2
+        192.168.17.56/24 dev eth0 label eth0:3
+        192.168.17.57/24 dev eth0 label eth0:4
+        192.168.17.58/24 dev eth0 label eth0:5
+        192.168.17.59/24 dev eth0 label eth0:6
+        192.168.17.60/24 dev eth0 label eth0:7
+        192.168.17.61/24 dev eth0 label eth0:8
+        192.168.17.62/24 dev eth0 label eth0:9
+        192.168.17.63/24 dev eth0 label eth0:10
     }
     nopreempt
 }
@@ -82,7 +82,7 @@ include enabled/*.conf
 # HTTPsession
 # ------------------------------------------------------------------------------
 virtual_server_group VSG_HTTPsession {
-    172.16.17.53 80
+    192.168.17.53 80
 }
 virtual_server group VSG_HTTPsession {
     delay_loop 6
@@ -91,9 +91,9 @@ virtual_server group VSG_HTTPsession {
     persistence_timeout 65
     protocol TCP
     ha_suspend
-    #virtualhost 172.16.17.45
-    sorry_server 172.16.17.46 80
-    real_server 172.16.17.45 80 {
+    #virtualhost 192.168.17.45
+    sorry_server 192.168.17.46 80
+    real_server 192.168.17.45 80 {
         weight 1
         TCP_CHECK {
             connect_port 80
@@ -108,9 +108,9 @@ virtual_server group VSG_HTTPsession {
 # HTTP
 # ------------------------------------------------------------------------------
 virtual_server_group VSG_HTTP {
-    172.16.17.54 80
-    172.16.17.55 80
-    172.16.17.56 80
+    192.168.17.54 80
+    192.168.17.55 80
+    192.168.17.56 80
 }
 virtual_server group VSG_HTTP {
     delay_loop 6
@@ -119,9 +119,9 @@ virtual_server group VSG_HTTP {
     persistence_timeout 65
     protocol TCP
     ha_suspend
-    #virtualhost 172.16.17.45
-    sorry_server 172.16.17.46 80
-    real_server 172.16.17.45 80 {
+    #virtualhost 192.168.17.45
+    sorry_server 192.168.17.46 80
+    real_server 192.168.17.45 80 {
         weight 1
         TCP_CHECK {
             connect_port 80
@@ -131,7 +131,7 @@ virtual_server group VSG_HTTP {
         }
     } # end real_server
  
-    real_server 172.16.17.46 80 {
+    real_server 192.168.17.46 80 {
         weight 1
         TCP_CHECK {
             connect_port 80
@@ -149,16 +149,16 @@ virtual_server group VSG_HTTP {
 # Update: 2013-11-19
 # 5500-VT(HTTP),x.x.x.191:5500
 # ------------------------------------------------------------------------------
-virtual_server 172.16.17.54 5500 {
+virtual_server 192.168.17.54 5500 {
     delay_loop 6
     lb_algo wlc
     lb_kind DR
     persistence_timeout 65
     protocol TCP
     ha_suspend
-    #virtualhost 172.16.17.54
-    sorry_server 172.16.17.46 5500
-    real_server 172.16.17.45 5500 {
+    #virtualhost 192.168.17.54
+    sorry_server 192.168.17.46 5500
+    real_server 192.168.17.45 5500 {
         weight 1
         TCP_CHECK {
             connect_port 5500
@@ -168,7 +168,7 @@ virtual_server 172.16.17.54 5500 {
         }
     } # end real_server
   
-    real_server 172.16.17.46 5500 {
+    real_server 192.168.17.46 5500 {
         weight 1
         TCP_CHECK {
             connect_port 5500
@@ -177,22 +177,22 @@ virtual_server 172.16.17.54 5500 {
             delay_before_retry 3
         }
     } # end real_server
-} # end virtual_server 172.16.17.54:5500
+} # end virtual_server 192.168.17.54:5500
 
 # 5500-websocket(TCP)
-# x.x.x.190:5500-&gt;172.16.17.60:8080-&gt;172.16.19.150/151:8080
+# x.x.x.190:5500-&gt;192.168.17.60:8080-&gt;192.168.19.150/151:8080
 # ------------------------------------------------------------------------------
-virtual_server 172.16.17.60 8080 {
+virtual_server 192.168.17.60 8080 {
     delay_loop 6
     lb_algo rr
     lb_kind TUN
     persistence_timeout 120
     protocol TCP
     ha_suspend
-    #virtualhost 172.16.17.60
-    sorry_server 172.16.19.150 8080
+    #virtualhost 192.168.17.60
+    sorry_server 192.168.19.150 8080
 
-    real_server 172.16.19.150 8080 {
+    real_server 192.168.19.150 8080 {
         weight 1
         TCP_CHECK {
             connect_port 8080
@@ -201,7 +201,7 @@ virtual_server 172.16.17.60 8080 {
             delay_before_retry 3
         }
     } # end real_server
-    real_server 172.16.19.151 8080 {
+    real_server 192.168.19.151 8080 {
         weight 1
         TCP_CHECK {
             connect_port 8080
@@ -210,7 +210,7 @@ virtual_server 172.16.17.60 8080 {
             delay_before_retry 3
         }
     } # end real_server
-} # end virtual_server 172.16.17.60:8080
+} # end virtual_server 192.168.17.60:8080
 # ------------------------------------------------------------------------------
 </pre>
 

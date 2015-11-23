@@ -496,12 +496,12 @@ tomcat中server.xml设置修改:
 </p>
 
 <pre class="brush:xml">
-        &lt;Valve className="org.apache.catalina.valves.AccessLogValve" directory="/var/log/tima" 
+        &lt;Valve className="org.apache.catalina.valves.AccessLogValve" directory="/var/log/tomcat" 
                prefix="tomcat_access_log." suffix=".txt"
                pattern="%a %l %u %t &amp;quot;%r&amp;quot; %s %b %{Referer}i %{User-Agent}i %D"
                resolveHosts="false"/&gt;
 
-        &lt;Valve className="org.apache.catalina.valves.AccessLogValve" directory="/var/log/tima" 
+        &lt;Valve className="org.apache.catalina.valves.AccessLogValve" directory="/var/log/tomcat" 
                prefix="tomcat_access_log." suffix=".txt"
                pattern="%{X-Real-IP}i %l %u %t &amp;quot;%r&amp;quot; %s %b %{Referer}i %{User-Agent}i %D %a"
                resolveHosts="false"/&gt;

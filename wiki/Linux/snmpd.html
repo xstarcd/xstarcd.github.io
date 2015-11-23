@@ -38,9 +38,9 @@ yum install -y net-snmp
 
 # 配置: /etc/snmp/snmpd.conf
 # v2c验证方式
-# rocommunity timasnmpd
+# rocommunity mytestsnmpd
 # rocommunity : 只读访问权限
-# timasnmpd : v2c的帐号
+# mytestsnmpd : v2c的帐号
 # 后面的IP表示授权访问的IP
 
 # v3验证方式
@@ -48,7 +48,7 @@ yum install -y net-snmp
 # 1.密码要8个字节以上，否则会失败。
 # 2.由于安全的原因，snmpd启动后，以上两行会被删除，其内容以密文的形式记录在其它文件中。
 # rouser myuser auth               # 设定只读帐号类型，auth指明连接时需要验证
-# createUser myuser MD5 mypassword # 创建一个名为tima的用户，密码为mypassword，并用MD5进行加密传输
+# createUser myuser MD5 mypassword # 创建一个名为mytest的用户，密码为mypassword，并用MD5进行加密传输
 cat &gt;&gt; /etc/snmp/snmpd.conf &lt;&lt;EOF
 rocommunity mysnmpd
 rouser myuser auth
@@ -57,7 +57,7 @@ EOF
 
 # 取消默认community:public、删除rocomnunity
 sed -i -e 's/^com2sec /#&amp;/g' -e 's/^rocommunity/#&amp;/g' -e '/^# My CONFIG START/,/^# My CONFIG END/d' /etc/snmp/snmpd.conf
-#增加timasnmpd授权(com2sec中的source默认是default 可以根据需要访问的主机IP做限制)
+#增加mytestsnmpd授权(com2sec中的source默认是default 可以根据需要访问的主机IP做限制)
 cat &gt;&gt; /etc/snmp/snmpd.conf &lt;&lt;EOF
 # My CONFIG START
 com2sec  myuser       default       mysnmpd

@@ -99,11 +99,11 @@ LoadModule authz_svn_module   modules/mod_authz_svn.so
       AuthBasicProvider ldap
       SVNListParentPath On
       AuthzLDAPAuthoritative off
-      AuthLDAPURL "ldap://192.168.101.51:389/dc=tima,dc=local?sAMAccountName?sub?(objectClass=*)"
-      AuthLDAPBindDN "CN=ldap,OU=Timauser,DC=tima,DC=local"
+      AuthLDAPURL "ldap://192.168.101.51:389/dc=mydc,dc=local?sAMAccountName?sub?(objectClass=*)"
+      AuthLDAPBindDN "CN=ldap,OU=myuser,DC=mydc,DC=local"
       AuthLDAPBindPassword xxxxxx
 
-      AuthName "TimaNetworks Subversion Authorization Realm"
+      AuthName "Subversion Authorization Realm"
       # AuthUserFile /data/svn/repos/conf/passwd
       Require valid-user
    #&lt;/LimitExcept&gt;
@@ -132,7 +132,7 @@ SSLRandomSeed connect builtin
 SSLCryptoDevice builtin
 
 &lt;VirtualHost _default_:8443&gt;
-    ServerName dev.timanetworks.com:8443
+    ServerName svn.gdu.me:8443
     ErrorLog logs/ssl_error_log
     TransferLog logs/ssl_access_log
     LogLevel warn

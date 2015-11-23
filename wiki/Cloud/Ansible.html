@@ -196,7 +196,7 @@ ansible all -m shell -a 'date'
 ansible all -m user -a 'name=hadoop comment="ansible add user" uid=1000 passwd="crypted-passwords"'
 
 # 设置挂载NFS共享
-ansible all -m shell -a 'mkdir -p /mnt/Tima;mount -t nfs -o ro 10.224.8.2:/data/share/Tima /mnt/Tima'
+ansible all -m shell -a 'mkdir -p /mnt/data;mount -t nfs -o ro 10.224.8.2:/data/share/data /mnt/data'
 
 # yum安装
 ansible all -m yum -a 'name=rsync state=present'

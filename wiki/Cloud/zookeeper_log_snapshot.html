@@ -40,7 +40,7 @@
 if [ -z "$1" -o "$1" = "-h" ];then
     echo "Useage: $0 &lt;LogFile&gt; [zkDir]"
     echo "eg:
-$0 /opt/zpdata/version-2/log.3000002c7 /opt/Timasync/zookeeper \\
+$0 /opt/zpdata/version-2/log.3000002c7 /opt/zookeeper \\
 |grep '^7/24/13'|grep -A 10 -B 10 GAEI_AF_NotifyServer|more"
     exit 0
 fi
