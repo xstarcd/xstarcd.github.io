@@ -20,7 +20,7 @@
 <ul>
 <li><a href="#toc_0.1">直接下载二进制包</a>
 <li><a href="#toc_0.2">编译安装nodejs</a>
-<li><a href="#toc_0.3">服务管理</a>
+<li><a href="#toc_0.3">forever</a>
 <li><a href="#toc_0.4">启动脚本范例</a>
 <ul>
 <li><a href="#toc_0.4.1">使用方法</a>
@@ -58,7 +58,6 @@ V="v0.12.7" \
 cat &gt; /etc/profile.d/nodejs.sh &lt;&lt;EOF
 echo "\$PATH"|grep "/usr/local/nodejs/bin" &gt; /dev/null || export PATH="/usr/local/nodejs/bin:\$PATH"
 EOF
-
 </pre>
 
 <h2 id="toc_0.2">编译安装nodejs</h2>
@@ -84,12 +83,7 @@ echo "\$PATH"|grep "/usr/local/nodejs/bin" &gt; /dev/null || export PATH="/usr/l
 EOF
 </pre>
 
-
-<p>
-}}}
-</p>
-
-<h2 id="toc_0.3">服务管理</h2>
+<h2 id="toc_0.3">forever</h2>
 
 <ul>
 <li>
@@ -97,20 +91,6 @@ forever: <a href="https://github.com/foreverjs/forever">https://github.com/forev
 
 <li>
 使用forever管理nodejs应用教程: <a href="http://www.jb51.net/article/50576.htm">http://www.jb51.net/article/50576.htm</a>
-
-<li>
-范例
-<pre class="brush:bash">
-#!/bin/sh
-dir=/opt/poicall
-foreverlog=poicall-forever.log
-consoleLog=poicall.log
-consoleErrLog=poicall-err.log
-main_file=app.js
-export NODE_ENV=dev \
-&amp;&amp; forever start -m 5 -l $foreverlog -o $consoleLog -e $consoleErrLog -a -p $dir --sourceDir $dir --workingDir $dir \
--c "node" $main_file -watchDirectory -colors
-</pre>
 
 <li>
 help
