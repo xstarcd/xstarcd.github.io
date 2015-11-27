@@ -21,7 +21,11 @@
 <li><a href="#toc_0.1">直接下载二进制包</a>
 <li><a href="#toc_0.2">编译安装nodejs</a>
 <li><a href="#toc_0.3">服务管理</a>
-<li><a href="#toc_0.4">项目构建</a>
+<li><a href="#toc_0.4">启动脚本范例</a>
+<ul>
+<li><a href="#toc_0.4.1">使用方法</a>
+</ul>
+<li><a href="#toc_0.5">项目构建</a>
 </ul>
 </ul>
 </div>
@@ -177,45 +181,94 @@ options:
 
 </ul>
 
+<h2 id="toc_0.4">启动脚本范例</h2>
+
 <ul>
 <li>
-启动脚本范例
+通过forever或脚本来管理站点服务的启动和停止，并设置服务自启动；
+
+<li>
+日志统一输出至/var/log/，设置日志回滚；
+
+<li>
+避免重复启动。
+
+<li>
+以下待完成：
+
+<ul>
+<li>
+使用非root用户启动nodejs，降低安全风险
+
+</ul>
+</ul>
+
+<ul>
+<li>
+nodejs_start.sh
 <pre class="brush:bash">
 #!/bin/bash
 # chkconfig: 345 88 08
 # description: Forever for Node.js
 
-DEAMON=/home/www/jsgen/app.js
-LOG=/home/www/jsgen/mylogs/forever.log
-PID=/root/.forever/pids/forever.pid
+LOGDIR=/var/log/
+#NODEJS=/usr/local/nodejs
+NODEJS=/opt/nodejs
+#export NODE_ENV=development
+#export NODE_ENV=production
+export NODE_ENV=testing
+export brand=foton
 
-export PATH=$PATH:/usr/bin/node/bin
-export NODE_PATH=$NODE_PATH:/usr/bin/node/lib/node_modules
+NAME=$(echo $(basename $0)|sed -e 's/\.sh$//g' -e 's/^nodejs-//g')
+APPDIR=/opt/$NAME
 
-node=node
-forever=forever
+if [ -f "$APPDIR/server/server.js" ];then
+    DEAMON=/server/server.js
+else
+    DEAMON=/app/server.js
+fi
+MAXTIME=5
+minUptime=1000
+PID=/var/run/forever_$NAME.pid
+LOG=$LOGDIR/nodejs_${NAME}.log
+echo "$PATH" | grep "node" &gt;/dev/null 2&gt;&amp;1 || export PATH=$NODEJS/bin:$PATH
+export NODE_PATH=$NODEJS/lib/node_modules
+
+[ ! -d "$APPDIR" -o ! -f "$APPDIR/$DEAMON" ] &amp;&amp; echo $APPDIR$DEAMON not exist! &amp;&amp; exit 1
 
 case "$1" in
     start)
-        $forever start -l $LOG --pidFile $PID -a $DEAMON
+        forever list|grep $NAME &gt;/dev/null 2&gt;&amp;1
+        if [ "$?" != "0" ];then
+	    forever start -p $LOGDIR -m $MAXTIME -l $LOG -o $LOG -e $LOG -a --sourceDir $APPDIR --workingDir $APPDIR \
+            --watchDirectory --colors --pidFile $PID --uid $NAME --minUptime $minUptime --spinSleepTime 2000 \
+            -c 'node --harmony' $DEAMON
+            tail -n 20 "$LOG"|grep 'is listening on'
+        else
+            echo "$NAME is already running!"
+        fi
         ;;
-    stop)
-        $forever stop --pidFile $PID $DEAMON
+    stop|restart)
+        if [ -z "$2" ];then
+            forever $1 $NAME
+        else
+            forever $1 $2
+        fi
         ;;
-    stopall)
-        $forever stopall --pidFile $PID
+    list|logs|stopall|restartall)
+        forever $1
         ;;
-    restartall)
-        $forever restartall --pidFile $PID
-        ;;
-    reload|restart)
-        $forever restart -l $LOG --pidFile $PID -a $DEAMON
-        ;;
-    list)
-        $forever list
+   status)
+        forever list|grep $NAME &gt;/dev/null 2&gt;&amp;1
+        if [ "$?" != "0" ];then
+            echo "$NAME is not running!"
+        else
+            echo "$NAME is running!"
+        fi
         ;;
     *)
-        echo "Usage: /etc.init.d/node {start|stop|restart|reload|stopall|restartall|list}"
+        #echo "Usage: $0 {start|stop|restart|stopall|restartall|list|logs|status}"
+        echo "Usage: $0 {start|stop|restart|list|logs|status}"
         exit 1
         ;;
 esac
@@ -223,7 +276,86 @@ esac
 
 </ul>
 
-<h2 id="toc_0.4">项目构建</h2>
+<h3 id="toc_0.4.1">使用方法</h3>
+
+<ul>
+<li>
+将公共启动脚本放到/usr/local/bin目录中
+
+</ul>
+
+<pre class="brush:bash">
+cp nodejs_startup.sh /usr/local/bin/
+chmod 755 /usr/local/bin/nodejs_startup.sh
+</pre>
+
+<ul>
+<li>
+编辑nodejs_startup.sh设置环境参数
+
+</ul>
+
+<pre class="brush:bash">
+LOGDIR=/var/log/           #统一日志目录
+NODEJS=/usr/local/nodejs   #nodejs路径
+#NODEJS=/opt/nodejs
+
+#启动环境参数
+#export NODE_ENV=development
+#export NODE_ENV=production
+export NODE_ENV=testing
+export brand=foton
+</pre>
+
+<ul>
+<li>
+放置项目工程文件到/opt/
+
+</ul>
+
+<pre class="brush:bash">
+# 将App放到/opt/目录下，如：/opt/myportal
+cp -R myportal /opt/
+</pre>
+
+<ul>
+<li>
+设置启动脚本及开机自启动 
+
+</ul>
+
+<pre class="brush:bash">
+# 创建启动脚本软链接，使用nodejs-AppName命名(其中AppName为/opt/下的目录名称)，如：
+cd /etc/init.d &amp;&amp; ln -sfT /usr/local/bin/nodejs_startup.sh nodejs-myportal
+
+# 设置开机自启动
+chkconfig --add nodejs-myportal
+
+# 服务进程管理
+/etc/init.d/nodejs-myportal {start|stop|restart|list|logs|status}
+</pre>
+
+<ul>
+<li>
+设置日志自动回滚
+
+</ul>
+
+<pre class="brush:bash">
+cat &gt; /etc/logrotate.d/nodejs &lt;&lt;EOF
+/var/log/tima/nodejs_*.log {
+    copytruncate
+    weekly
+    rotate 20
+    compress
+    missingok
+    size 100M
+}
+EOF
+</pre>
+
+
+<h2 id="toc_0.5">项目构建</h2>
 
 <ul>
 <li>
