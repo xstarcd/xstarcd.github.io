@@ -185,15 +185,15 @@ options:
 
 <ul>
 <li>
-nodejs_start.sh
+nodejs_startup.sh
 <pre class="brush:bash">
 #!/bin/bash
 # chkconfig: 345 88 08
 # description: Forever for Node.js
 
 LOGDIR=/var/log/
-#NODEJS=/usr/local/nodejs
-NODEJS=/opt/nodejs
+NODEJS=/usr/local/nodejs
+#NODEJS=/opt/nodejs
 #export NODE_ENV=development
 #export NODE_ENV=production
 export NODE_ENV=testing
@@ -214,10 +214,10 @@ LOG=$LOGDIR/nodejs_${NAME}.log
 echo "$PATH" | grep "node" &gt;/dev/null 2&gt;&amp;1 || export PATH=$NODEJS/bin:$PATH
 export NODE_PATH=$NODEJS/lib/node_modules
 
-[ ! -d "$APPDIR" -o ! -f "$APPDIR/$DEAMON" ] &amp;&amp; echo $APPDIR$DEAMON not exist! &amp;&amp; exit 1
 
 case "$1" in
     start)
+        [ ! -d "$APPDIR" -o ! -f "$APPDIR/$DEAMON" ] &amp;&amp; echo $APPDIR$DEAMON not exist! &amp;&amp; exit 1
         forever list|grep $NAME &gt;/dev/null 2&gt;&amp;1
         if [ "$?" != "0" ];then
 	    forever start -p $LOGDIR -m $MAXTIME -l $LOG -o $LOG -e $LOG -a --sourceDir $APPDIR --workingDir $APPDIR \
@@ -228,7 +228,15 @@ case "$1" in
             echo "$NAME is already running!"
         fi
         ;;
-    stop|restart)
+    restart)
+        [ ! -d "$APPDIR" -o ! -f "$APPDIR/$DEAMON" ] &amp;&amp; echo $APPDIR$DEAMON not exist! &amp;&amp; exit 1
+        if [ -z "$2" ];then
+            forever $1 $NAME
+        else
+            forever $1 $2
+        fi
+        ;;
+    stop)
         if [ -z "$2" ];then
             forever $1 $NAME
         else
