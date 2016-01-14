@@ -71,6 +71,32 @@ HAProxy Configuration Manual:<a href="http://cbonte.github.io/haproxy-dconv/conf
 <li>
 最大化的利用 HAProxy:<a href="http://www.oschina.net/translate/getting-the-most-of-haproxy?print">http://www.oschina.net/translate/getting-the-most-of-haproxy?print</a>
 
+<li>
+timeout
+<pre class="brush:bash">
+timeout client          # 客户端数据传输超时时间
+timeout server          # 后端服务器数据传输超时时间
+timeout http-request    # 返回http头超时时间，未设置，默认timeout client
+timeout http-keep-alive # keepalive超时时间，未设置，默认timeout http-request
+timeout connect         # 连接超时时间
+timeout check           # 未设置使用测试间隔时间(inter)作为测试的timeout(connect+read),
+                        # 如果设置了:
+                        #   使用测试间隔时间(inter)和连接超时(timeout connect)中最小的作为连接超时时间，
+                        #   timeout check的时间作为读取时间
+
+    option forwardfor       except 127.0.0.0/8；传递客户端ip
+    option                  redispatch ；当服务器组中的某台设备故障后，自动将请求重定向到组内其他主机。
+    retries                 3  ；请求重试的次数
+    timeout http-request    10s；http请求超时时间
+    timeout queue           1m；一个请求在队列里的超时时间·
+    timeout connect         10s；连接服务器超时时间
+    timeout client          1m；设置客户端侧最大非活动时间
+    timeout server          1m；设置服务器侧最大非活动时间
+    timeout http-keep-alive 10s；设置http-keep-alive的超时时间
+    timeout check           10s；当一个连接建立之后，
+    maxconn                 3000；同时处理的最大连接数
+</pre>
+
 </ul>
 
 </div>
