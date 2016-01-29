@@ -50,31 +50,31 @@ vrrp_instance VI_1 {
         auth_pass mysynctestLVS
     }
     virtual_ipaddress {
-        192.168.19.2/24 dev eth0 label eth0:0
-        192.168.19.3/24 dev eth0 label eth0:1
-        192.168.19.4/24 dev eth0 label eth0:2
-        192.168.19.5/24 dev eth0 label eth0:3
-        192.168.19.6/24 dev eth0 label eth0:4
-        192.168.19.7/24 dev eth0 label eth0:5
-        192.168.19.8/24 dev eth0 label eth0:6
-        192.168.19.9/24 dev eth0 label eth0:7
-        192.168.19.59/24 dev eth0 label eth0:8
+        192.168.0.2/24 dev eth0 label eth0:0
+        192.168.0.3/24 dev eth0 label eth0:1
+        192.168.0.4/24 dev eth0 label eth0:2
+        192.168.0.5/24 dev eth0 label eth0:3
+        192.168.0.6/24 dev eth0 label eth0:4
+        192.168.0.7/24 dev eth0 label eth0:5
+        192.168.0.8/24 dev eth0 label eth0:6
+        192.168.0.9/24 dev eth0 label eth0:7
+        192.168.0.59/24 dev eth0 label eth0:8
     }
     nopreempt
 }
 
 # WEB_session-pre
 # ------------------------------------------------------------------------------
-virtual_server 192.168.19.2 80 {
+virtual_server 192.168.0.2 80 {
     delay_loop 6
     lb_algo wlc
     lb_kind DR
     persistence_timeout 65
     protocol TCP
     ha_suspend
-    #virtualhost 192.168.19.2
-    sorry_server 192.168.19.37 80
-    real_server 192.168.19.36 80 {
+    #virtualhost 192.168.0.2
+    sorry_server 192.168.0.37 80
+    real_server 192.168.0.36 80 {
         weight 1
 
         TCP_CHECK {
@@ -84,21 +84,21 @@ virtual_server 192.168.19.2 80 {
             delay_before_retry 3
         }
     } # end real_server
-} # end virtual_server 192.168.19.2:80
+} # end virtual_server 192.168.0.2:80
 # ------------------------------------------------------------------------------
 
 # xmxd-pre-3200
 # ------------------------------------------------------------------------------
-virtual_server 192.168.19.2 3200 {
+virtual_server 192.168.0.2 3200 {
     delay_loop 6
     lb_algo wlc
     lb_kind DR
     persistence_timeout 65
     protocol TCP
     ha_suspend
-    #virtualhost 192.168.19.2
-    sorry_server 192.168.19.37 3200
-    real_server 192.168.19.36 3200 {
+    #virtualhost 192.168.0.2
+    sorry_server 192.168.0.37 3200
+    real_server 192.168.0.36 3200 {
         weight 1
 
         TCP_CHECK {
@@ -109,7 +109,7 @@ virtual_server 192.168.19.2 3200 {
         }
     } # end real_server
     
-    real_server 192.168.19.37 3200 {
+    real_server 192.168.0.37 3200 {
         weight 1
 
         TCP_CHECK {
@@ -119,21 +119,21 @@ virtual_server 192.168.19.2 3200 {
             delay_before_retry 3
         }
     } # end real_server
-} # end virtual_server 192.168.19.2:3200
+} # end virtual_server 192.168.0.2:3200
 # ------------------------------------------------------------------------------
 
 # WEB-pre
 # ------------------------------------------------------------------------------
-virtual_server 192.168.19.3 80 {
+virtual_server 192.168.0.3 80 {
     delay_loop 6
     lb_algo wlc
     lb_kind DR
     persistence_timeout 65
     protocol TCP
     ha_suspend
-    #virtualhost 192.168.19.3
-    sorry_server 192.168.19.37 80
-    real_server 192.168.19.36 80 {
+    #virtualhost 192.168.0.3
+    sorry_server 192.168.0.37 80
+    real_server 192.168.0.36 80 {
         weight 1
         TCP_CHECK {
             connect_port 80
@@ -143,7 +143,7 @@ virtual_server 192.168.19.3 80 {
         }
     } # end real_server
 
-    real_server 192.168.19.37 80 {
+    real_server 192.168.0.37 80 {
         weight 1
         TCP_CHECK {
             connect_port 80
@@ -152,22 +152,22 @@ virtual_server 192.168.19.3 80 {
             delay_before_retry 3
         }
     } # end real_server
-} # end virtual_server 192.168.19.3:80
+} # end virtual_server 192.168.0.3:80
 # ------------------------------------------------------------------------------
 
 
 # WEB-pre
 # ------------------------------------------------------------------------------
-virtual_server 192.168.19.59 8480 {
+virtual_server 192.168.0.59 8480 {
     delay_loop 6
     lb_algo wlc
     lb_kind DR
     persistence_timeout 65
     protocol TCP
     ha_suspend
-    #virtualhost 192.168.19.3
-    sorry_server 192.168.19.37 8480
-    real_server 192.168.19.36 8480 {
+    #virtualhost 192.168.0.3
+    sorry_server 192.168.0.37 8480
+    real_server 192.168.0.36 8480 {
         weight 1
         TCP_CHECK {
             connect_port 8480
@@ -177,7 +177,7 @@ virtual_server 192.168.19.59 8480 {
         }
     } # end real_server
 
-    real_server 192.168.19.37 8480 {
+    real_server 192.168.0.37 8480 {
         weight 1
         TCP_CHECK {
             connect_port 8480
@@ -186,13 +186,13 @@ virtual_server 192.168.19.59 8480 {
             delay_before_retry 3
         }
     } # end real_server
-} # end virtual_server 192.168.19.59:8480
+} # end virtual_server 192.168.0.59:8480
 # ------------------------------------------------------------------------------
 
 
-# GAC_EVpre_TCP: 192.168.19.4:9090 -&gt; 192.168.19.52/53:9090
+# GAC_EVpre_TCP: 192.168.0.4:9090 -&gt; 192.168.0.52/53:9090
 # ------------------------------------------------------------------------------
-virtual_server 192.168.19.4 9090 {
+virtual_server 192.168.0.4 9090 {
     delay_loop 6
     lb_algo wlc
     lb_kind DR
@@ -200,7 +200,7 @@ virtual_server 192.168.19.4 9090 {
     protocol TCP
     ha_suspend
 
-    real_server 192.168.19.52 9090 {
+    real_server 192.168.0.52 9090 {
         weight 1
 
         TCP_CHECK {
@@ -211,7 +211,7 @@ virtual_server 192.168.19.4 9090 {
         }
     } # end real_server
 
-    real_server 192.168.19.53 9090 {
+    real_server 192.168.0.53 9090 {
         weight 1
 
         TCP_CHECK {
@@ -222,12 +222,12 @@ virtual_server 192.168.19.4 9090 {
         }
     } # end real_server
 
-} # end virtual_server 192.168.19.4:9090
+} # end virtual_server 192.168.0.4:9090
 
 
-# GAC_AFpre_TCP: 192.168.19.4:9099 -&gt; 192.168.19.52/53:9099
+# GAC_AFpre_TCP: 192.168.0.4:9099 -&gt; 192.168.0.52/53:9099
 # ------------------------------------------------------------------------------
-virtual_server 192.168.19.4 9099 {
+virtual_server 192.168.0.4 9099 {
     delay_loop 6
     lb_algo wlc
     lb_kind DR
@@ -235,7 +235,7 @@ virtual_server 192.168.19.4 9099 {
     protocol TCP
     ha_suspend
 
-    real_server 192.168.19.52 9099 {
+    real_server 192.168.0.52 9099 {
         weight 1
 
         TCP_CHECK {
@@ -246,7 +246,7 @@ virtual_server 192.168.19.4 9099 {
         }
     } # end real_server
 
-    real_server 192.168.19.53 9099 {
+    real_server 192.168.0.53 9099 {
         weight 1
 
         TCP_CHECK {
@@ -257,13 +257,13 @@ virtual_server 192.168.19.4 9099 {
         }
     } # end real_server
 
-} # end virtual_server 192.168.19.4:9099
+} # end virtual_server 192.168.0.4:9099
 # ------------------------------------------------------------------------------
 
 
-# GAC_EVtest_TCP: 192.168.19.5:9091 -&gt; 192.168.19.25/26:9091
+# GAC_EVtest_TCP: 192.168.0.5:9091 -&gt; 192.168.0.25/26:9091
 # ------------------------------------------------------------------------------
-virtual_server 192.168.19.5 9091 {
+virtual_server 192.168.0.5 9091 {
     delay_loop 6
     lb_algo wlc
     lb_kind DR
@@ -271,7 +271,7 @@ virtual_server 192.168.19.5 9091 {
     protocol TCP
     ha_suspend
 
-    real_server 192.168.19.25 9091 {
+    real_server 192.168.0.25 9091 {
         weight 1
 
         TCP_CHECK {
@@ -282,7 +282,7 @@ virtual_server 192.168.19.5 9091 {
         }
     } # end real_server
 
-    real_server 192.168.19.26 9091 {
+    real_server 192.168.0.26 9091 {
         weight 1
 
         TCP_CHECK {
@@ -293,13 +293,13 @@ virtual_server 192.168.19.5 9091 {
         }
     } # end real_server
 
-} # end virtual_server 192.168.19.5:9091
+} # end virtual_server 192.168.0.5:9091
 # ------------------------------------------------------------------------------
 
 
-# GAC_AFtest_TCP: 192.168.19.5:9092 -&gt; 192.168.19.38/39:9092
+# GAC_AFtest_TCP: 192.168.0.5:9092 -&gt; 192.168.0.38/39:9092
 # ------------------------------------------------------------------------------
-virtual_server 192.168.19.5 9092 {
+virtual_server 192.168.0.5 9092 {
     delay_loop 6
     lb_algo wlc
     lb_kind DR
@@ -307,7 +307,7 @@ virtual_server 192.168.19.5 9092 {
     protocol TCP
     ha_suspend
 
-    real_server 192.168.19.38 9092 {
+    real_server 192.168.0.38 9092 {
         weight 1
 
         TCP_CHECK {
@@ -319,7 +319,7 @@ virtual_server 192.168.19.5 9092 {
         }
     } # end real_server
 
-    real_server 192.168.19.39 9092 {
+    real_server 192.168.0.39 9092 {
         weight 1
 
         TCP_CHECK {
@@ -331,12 +331,12 @@ virtual_server 192.168.19.5 9092 {
         }
     } # end real_server
 
-} # end virtual_server 192.168.19.5:9092
+} # end virtual_server 192.168.0.5:9092
 # ------------------------------------------------------------------------------
 
-## GAC_michael_test_TCP: 192.168.19.5:19090 -&gt; 192.168.11.174:19090
+## GAC_michael_test_TCP: 192.168.0.5:19090 -&gt; 192.168.11.174:19090
 ## ------------------------------------------------------------------------------
-#virtual_server 192.168.19.5 19090 {
+#virtual_server 192.168.0.5 19090 {
 #    delay_loop 6
 #    lb_algo wlc
 #    lb_kind NAT
@@ -355,7 +355,7 @@ virtual_server 192.168.19.5 9092 {
 #        }
 #    } # end real_server
 #
-#} # end virtual_server 192.168.19.5:19090
+#} # end virtual_server 192.168.0.5:19090
 ## ------------------------------------------------------------------------------
 
 </pre>

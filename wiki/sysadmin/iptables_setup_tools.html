@@ -102,8 +102,8 @@ ACTIVE_CONFs="LAN BAN CONNLIMIT WAN MNG"
 
 WAN_IPs=0.0.0.0/0
 LAN_IPs=192.168.0.0/24
-MNG_IPs=172.17.0.0/16,172.16.16.224/27,192.168.0.240/28
-NMC_IPs=172.16.16.180,172.16.16.150
+MNG_IPs=192.168.0.0/16,192.168.0.224/27,192.168.0.240/28
+NMC_IPs=192.168.0.180,192.168.0.150
 BAN_IPs=
 
 # Policy Desc:
@@ -141,8 +141,8 @@ ACTIVE_CONFs="LAN CONNLIMIT BAN WAN SPECIAL MNG KNOCK"
 
 WAN_IPs=0.0.0.0/0
 LAN_IPs=192.168.0.0/24
-MNG_IPs=172.17.0.0/16,172.16.16.224/27,192.168.0.240/28
-NMC_IPs=172.16.16.180,172.16.16.150
+MNG_IPs=192.168.0.0/16,192.168.0.224/27,192.168.0.240/28
+NMC_IPs=192.168.0.180,192.168.0.150
 BAN_IPs=
 
 # Policy Desc:
@@ -323,7 +323,7 @@ setRule(){
     # setRule Proto Iface srcIPs dstPort Target
     #    Proto: tcp,udp,all or icmp
     #    Iface: eth0,eth1 or all
-    #    srcIPs: 192.168.0.0/24,172.16.16.2
+    #    srcIPs: 192.168.0.0/24,192.168.0.2
     #    dstPort: 22,80,50000:50006
     #    Target: ACCEPT|DROP|REJECT
     local iface_opt proto_opt dport_opt Proto Iface srcIPs dstPort Target
