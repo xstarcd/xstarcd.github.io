@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>MySQL 5.5 cnf</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>MySQL 5.5 cnf</h1>
+
+<pre class="brush:bash">
+[mysqld]
+#**********************Server**************************
+#******server start related
+user=                  #Run the mysqld server as the user having the name user_name or the numeric user ID user_id. 
+bind-address=          #Default 0.0.0.0;server listens on a single network socket which bound to a single address.
+port=                  #The port number to listen for TCP/IP connections,must be 1024 or higher unless run as root. 
+port-open-timeout=     #Default 0;indicates how many seconds the server should wait for the TCP/IP port to become free.
+server-id=             #used in replication to enable master and slave servers to identify themselves uniquely.
+chroot                 #Put the mysqld server in a closed environment during startup by using the chroot() system call.
+init-file=             #a file containing SQL statements that you want the server to execute when it starts.
+core-file=             #Default OFF;Write a core file if mysqld dies.
+skip-grant-tables      #This option causes the server to start without using the privilege system at all
+
+#******location
+basedir=               #Default /;mysql installation directory
+pid-file=              #Default creates in data directory;The path name of the process ID file.
+socket=                #Default /tmp/mysql.sock;specifies the Unix socket file to use when listening for local connections.
+datadir=               #Default /var/lib/mysql;The path to the data directory
+tmpdir=                #Default /tmp;The path of the directory to use for creating temporary files.
+
+#******security
+secure-auth                #prevent old format password client connect
+safe-user-create           #This ensures that the user cannot change any privilege columns directly, but has to use the GRANT statement to give privileges to other users.
+skip-show-database         #With this,SHOW DATABASES is permitted only to users have SHOW DATABASES privilege
+max_user_connections           #Default 0;Range 0 .. 4294967295;The maximum number of simultaneous connections permitted to any given MyS                                        QL user account.
+max_connect_errors=            #If more than this many connection requests interrupted,the server blocks that host.
+secure-file-priv=          #limits LOAD_FILE() and LOAD DATA and SELECT ... INTO OUTFILE statements to specified directory
+max_prepared_stmt_count=       #Default 16382;Range 0 .. 1048576;limits the total number of prepared statements in the server.
+skip-ssl               #indicate that SSL should not be used
+ssl-ca=                #The path to a file in PEM format
+ssl-capath=                #The path to a directory that contains trusted SSL certificate authority certificates in PEM format
+ssl-cert=              #The name of the SSL certificate file 
+ssl-cipher=                #A list of permissible ciphers to use for SSL encryption
+ssl-key=               #The name of the SSL key file
+
+#******features
+default-storage-engine=        #Default InnoDB since 5.5.5.The default storage engine.
+ansi                   #Use standard (ANSI) SQL syntax instead of MySQL syntax;is the same as --transaction-isolation=SERIALIZABLE --sql-mode=ANSI
+sql-mode=                  #Default '';Valid Values ALLOW_INVALID_DATES,ANSI_QUOTES,ERROR_FOR_DIVISION_BY_ZERO,HIGH_NOT_PRECEDENCE,IGNORE_SPACE,NO_AUTO_CREATE_USER,NO_AUTO_VALUE_ON_ZERO,NO_BACKSLASH_ESCAPES,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_FIELD_OPTIONS,NO_KEY_OPTIONS,NO_TABLE_OPTIONS,NO_UNSIGNED_SUBTRACTION,NO_ZERO_DATE,NO_ZERO_IN_DATE,ONLY_FULL_GROUP_BY,PAD_CHAR_TO_FULL_LENGTH,PIPES_AS_CONCAT,REAL_AS_FLOAT,STRICT_ALL_TABLES,STRICT_TRANS_TABLES
+auto_increment_increment=      #Default 1;Range 1 .. 65535;control the operation of AUTO_INCREMENT columns.
+auto_increment_offset=         #Default 1;Range 1 .. 65535;control the operation of AUTO_INCREMENT columns.
+div_precision_increment=       #Default 4;Range 0-30;This variable indicates the number of digits by which to increase the scale of the result of division operations performed with the / operator.
+event-scheduler=           #Default OFF;Valid Values ON OFF DISABLED;This variable indicates the status of the Event Scheduler; 
+skip-event-scheduler           #Turns the Event Scheduler OFF. 
+flush                  #Default off;after each SQL statement,server flushes all changes.when off,to filesystem,when on to disk. 
+flush_time=                #Default 1800;Min Value 0.If this is set to a nonzero value, all tables are closed every flush_time seconds to free up resources and synchronize unflushed data to disk.
+old                    #when old is enabled, it changes the default scope of index hints to that used prior to MySQL 5.1.17.
+old-alter-table            #Default OFF;If given,server does not use optimized method of processing an ALTER TABLE.
+old-style-user-limits          #Default FALSE ;Enable old-style user limits.Before MySQL 5.0.3, account resource limits were counted separately for each host.
+partition              #Default ON ;Enables or disables user-defined partitioning support in the MySQL Server.
+skip-partition             #Disables user-defined partitioning.www.mysqlops.com
+plugin_dir=                #Default BASEDIR/lib/plugin ;The path name of the plugin directory. 
+plugin-load=       #plugin-load=myplug1=myplug1.so;myplug2=myplug2.so;This option tells the server to load the named plugins at startup. 
+symbolic-links     #you can link a MyISAM index file or data file to another directory with the INDEX DIRECTORY or DATA DIRECTORY options 
+skip-symbolic-links    #you can't link a MyISAM index file or data file to another directory with the INDEX DIRECTORY or DATA DIRECTORY options 
+lock_wait_timeout=    #Default 31536000;Range 1 .. 31536000;This variable specifies the timeout in seconds for attempts to acquire metadata locks.
+sync_frm               #Default TRUE;when any nontemporary table is created its .frm file is synchronized to disk
+temp-pool              #Default TRUE;causes temporary files use a small set of names
+updatable_views_with_limit     #Default 1;controls whether updates to a view can be made when view does not contain all columns of the primary key and update statement contains a LIMIT clause.
+
+#******function
+allow-suspicious-udfs          #Default FALSE; whether udf that have only an xxx symbol for the main function can be loaded
+des-key-file=              #These keys are used by the DES_ENCRYPT() and DES_DECRYPT() functions. 
+group_concat_max_len=                  #Default 1024;Range 4 .. 18446744073709547520;The maximum permitted result length in bytes for the GROUP_CONCAT() function.
+max_long_data_size=            #Default 1048576;Range 1024 .. 4294967295;The maximum size of parameter values that can be sent with the mysql_stmt_send_long_data() C API function. 
+sysdate-is-now             #by default SYSDATE() returns the time it executes,not the time the statement begins executing.This differs from the behavior of NOW()
+default_week_format=           #Default 0;Range 0 .. 7;The default mode value to use for the WEEK() function.
+
+#******character set&amp;time zone etc..
+character-set-server=          #The server's default character set. default-character-set is deprecated,use this.
+collation-server=          #The server's default collation.collation is deprecated,use this.
+character-set-client-handshake     #Default TRUE;Do not ignore character set information sent by the client.
+skip-character-set-client-handshake    #this makes MySQL behave like MySQL 4.0. 
+character-set-filesystem=      #Default binary;The file system character set.set the same as system's character set.
+character-sets-dir=            #The directory where character sets are installed.
+lower_case_file_system         #On Linx OFF;On Windows ON;describes the case sensitivity of file names
+lower_case_table_names=        #Default 0;Range 0 .. 2;0 table name case sensitive,1 table name lowercase on disk and comparisons are not case sensitive,2 table name as given but compared in lowercase
+lc-messages=               #The locale to use for error messages. 
+lc-messages-dir=           #The directory where error messages are located.
+default-time-zone=         #default system time zone;Set the default server time zone.
+
+#******buffer&amp;cache
+memlock                #Default FALSE;Lock the mysqld process in memory.require root,or changing the limits.conf file
+large-pages            #Default FALSE;On Linux,due to reduced TLB misses,applications may obtain performance improvements by using large pages
+join_buffer_size=      #Default The minimum size of the buffer that is used for plain index scans, range index scans, and joins that do not use indexes and thus perform full table scans.
+sort_buffer_size=       #Default 2097144;Max Value 18446744073709547520;Each session that needs to do a sort allocates a buffer of this size.
+table_open_cache=      #Default 400;Range 400-524288;The number of open tables for all threads,it requires file descriptors. 
+table_definition_cache=    #Default 400,Range 400-524288;The number of table definitions can be cache,it does not use file descriptors.
+range_alloc_block_size=    #Default 4096;Range 4096-4294967295;The size of blocks that are allocated when doing range optimization. 
+query_prealloc_size=       #Default 8192;Range 8192 .. 18446744073709547520;Block Size 1024;The size of the persistent buffer used for statement parsing and execution.
+query_alloc_block_size=    #Default 8192;Range 1024 .. 18446744073709547520;Block Size 1024;The allocation size of memory blocks that are allocated for objects created during statement parsing and execution.
+stored_program_cache=      #Default 256;Range 256 .. 524288;Sets a soft upper limit for the number of cached stored routines per connection.
+
+#*****query cache
+query_cache_type=      #Default 1;Valid Values 0 1 2 OFF ON DEMAND;Set the query cache type.
+query_cache_size=      #Default 0;Range 0 .. 18446744073709547520;The amount of memory allocated for caching query results.
+query_cache_min_res_unit=    #Default 4096;Range 512 .. 18446744073709547520;The minimum size (in bytes) for blocks allocated by the query cache.
+query_cache_limit=     #Default 1048576;Range 0 .. 18446744073709547520;Do not cache results that are larger than this number of bytes. 
+query_cache_wlock_invalidate   #Default FALSE;Setting this variable to 1 causes acquisition of a WRITE lock for a table to invalidate any queries in the query cache that refer to the table.
+
+#******thread&amp;connection
+thread_handling=               #default one-thread-per-connection;The thread-handling model used by the server for connection threads.no-threads is useful for debugging.
+slow_launch_time=              #Default 2;If creating a thread takes longer than this many seconds, the server increments the Slow_launch_threads status variable. 
+init_connect=                  #A string to be executed by the server for each client that connects.
+back_log=                  #Default 50;Range 1-65535;The number of outstanding connection requests MySQL can have
+thread_cache_size=             #Default 0;Range 0-16384;How many threads the server should cache for reuse.
+max_connections=               #Default 151;Range 1-100000;The maximum permitted number of simultaneous client connections.
+
+#******temptable
+big-tables                 #Enable large result sets by saving all temporary sets in files
+tmp_table_size=                #Default system dependent;Range 1024-4294967295;The maximum size of internal in-memory temporary tables.max_tmp_tables is unused.
+max_heap_table_size=                       #Default 16777216;Range 16384-1844674407370954752; the maximum size user-created MEMORY tables are permitted to grow.
+
+#******network
+skip-networking                #Do not listen for TCP/IP connections at all. 
+skip-name-resolve              #Do not resolve host names when checking client connections.
+skip-host-cache                #Disable internal host cache,server performs a DNS lookup every time a client connects. 
+net_buffer_length=             #Default 16384;Range 1024-1048576;connection buffer and result buffer begin with a size given by net_buffer_length,dynamically enlarged up to max_allowed_packet bytes as needed.The result buffer shrinks to net_buffer_length after each SQL statement. 
+max_allowed_packet=        #Default 1048576;Range 1024-1073741824;The maximum size of one packet or any generated/intermediate string.
+connect_timeout=       #Default 10;The number of seconds that the mysqld server waits for a connect packet before responding with Bad handshake.
+wait_timeout=          #Default 28800;Range 1 .. 2147483; waits for activity on a noninteractive connection before closing it
+interactive_timeout=       #Default 28800;fits client that uses the CLIENT_INTERACTIVE;
+net_read_timeout=      #Default 30;Min Value 1;The number of seconds to wait for more data from a connection before aborting the read.
+net_write_timeout=     #Default 60;Min Value 1;The number of seconds to wait for a block to be written to a connection before aborting the write. 
+net_retry_count=       #Default 10;Range 1 .. 18446744073709547520;If a read or write on a communication port is interrupted, retry this many times before giving up.
+
+#*****profile&amp;optimizer
+profiling                  #Default OFF;statement profiling,you can use SHOW PROFILES and SHOW PROFILE if this enabled.
+profiling_history_size=            #Default 15;Maximum 100;The number of statements for which to maintain profiling information.
+optimizer_prune_level=             #Default 1;Controls the heuristics applied during query optimization.
+optimizer_search_depth=            #Default 62;Range 0 .. 63;The maximum depth of search performed by the query optimizer.If set to 63, the optimizer switches to the algorithm used in MySQL 5.0.0.
+optimizer_switch=              #Valid Values engine_condition_pushdown={on|off} index_merge={on|off} index_merge_intersection={on|off} index_merge_sort_union={on|off} index_merge_union={on|off}
+max_seeks_for_key=             #Default 18446744073709547520;Range 1 .. 18446744073709547520;Limit the assumed maximum number of seeks when looking up rows based on a key.
+max_length_for_sort_data=          #Default 1024;Range 4-8388608;determines which filesort algorithm to use.
+
+#******limitation
+max_error_count=               #Default 64;Range 0 .. 65535;The maximum number of  messages to be stored for display by the SHOW ERRORS and SHOW WARNINGS statements. 
+max_join_size=                 #Default 18446744073709551615;Range 1 .. 18446744073709551615;Do not permit SELECT statements that probably need to examine many rows.
+max_sort_length=           #Default 1024;Range 4 .. 8388608; use when sorting data values. Only the first max_sort_length bytes are used
+max_sp_recursion_depth=            #Default 0;Max Value 255;The number of times that any given stored procedure may be called recursively.
+open-files-limit=              #Default 0;Range 0 .. 65535;the number of file descriptors available to mysqld
+thread_stack=              #Default 262144;Range 131072-18446744073709547520;The stack size for each thread.
+
+#**********************Logs****************************
+log-output=                #Default FILE;Valid Values TABLE FILE NONE;This option determines the destination for general query log and slow query log output.
+
+#*****error log
+log-error=             #Default host_name.err;Log errors and startup messages to this file.
+log-warnings               #Default 1;Range 0,1,greater than 1;Whether to produce additional warning messages to the error log. 
+skip-log-warnings                      #Disable log-warnings
+
+#*****slow log
+slow-query-log             #Default OFF;Whether the slow query log is enabled
+slow_query_log_file=           #default value host_name-slow.log;The name of the slow query log file.
+long_query_time=           #Default 10;query longer than long_query_time seconds will be log to slow log and slow_queries status variable.
+log-queries-not-using-indexes      #Default OFF;queries that are expected to retrieve all rows are logged.
+log-slow-admin-statements      #Default FALSE;Log slow administrative statements such as OPTIMIZE TABLE, ANALYZE TABLE, and ALTER TABLE to the slow query log. 
+log-slow-slave-statements      #Default off;enables logging for queries that have taken more than long_query_time seconds to execute on the slave.
+min-examined-row-limit=        #Default 0;Range 0-18446744073709547520;Queries that examine fewer than this number of rows are not logged to the slow query log.
+
+#*****general log
+general-log                #Default OFF;Specify the initial general query log state.
+general_log_file=          #Default host_name.log;The name of the general query log file.
+
+#**********************Replication*********************
+skip-slave-start       #Default FALSE;Tells the slave server not to start the slave threads when the server starts
+read_only      #Default false;When it is enabled, the server permits no updates except from users have SUPER privilege or slave threads.
+init_slave=            #a string to be executed by a slave server each time the SQL thread starts. 
+master-info-file=      #Default master.info；The name to use for the file in which the slave records information about the master.
+sync_master_info=      #default 0;If greater than 0,slave synchronizes master.info file to disk after every sync_master_info events
+slave_type_conversions=        #Valid Values ALL_LOSSY ALL_NON_LOSSY ALL_LOSSY,ALL_NON_LOSSY; when using row-based replication
+slave_transaction_retries=     #Default 10;Range 0 .. 18446744073709547520;If a replication slave SQL thread fails to execute a transaction because of lock block, it automatically retries slave_transaction_retries times before stopping with an error. 
+slave_exec_mode=           #Default STRICT (ALL);Default IDEMPOTENT (NDB);Controls IDEMPOTENT or STRICT mode in replication conflict resolution and error checking.
+slave-skip-errors=         #Default OFF;Valid Values [list of error codes] all ddl_exist_errors;tells the slave SQL thread to continue replication when a statement returns any of the errors listed in the variable value
+slave-load-tmpdir=         #Default /tmp;by default equal to tmpdir system variable;directory where slave creates temporary files for replicating LOAD DATA INFILE statements. 
+
+#******network
+slave_compressed_protocol      #Default OFF;Whether to use compression of the slave/master protocol 
+slave-max-allowed-packet=      #Default 1073741824;Range 1024 .. 1073741824;In MySQL 5.5.26 and later,this option sets the maximum packet size in bytes for the slave SQL and I/O threads
+slave-net-timeout=  #Default 3600;The number of seconds to wait for more data from a master/slave connection before aborting the read. 
+master-retry-count=            #Default 86400;Range 0 .. 18446744073709551615;The number of times that the slave tries to connect to the master before giving up.
+
+#******report
+show-slave-auth-info       #Default FALSE;Display slave user names and passwords in the output of SHOW SLAVE HOSTS on the master server 
+report-host=                           #host name or IP address to be reported to the master
+report-password=                       #account password to be reported to the master 
+report-port=                           #TCP/IP port number to be reported to the master 
+report-user=                           #account user name to be reported to the master 
+
+#*****binlog
+log-bin=           #Default OFF;The option value, if given, is the basename for the log sequence.Otherwise, MySQL uses host_name-bin as the basename. 
+log-bin-index=         #Default OFF;The index file for binary log file names.If you omit the file name, and if you did not specify one with --log-bin, MySQL uses host_name-bin.index as the file name. 
+sync_binlog=           #Default 0;Range 0-18446744073709547520;If greater than 0,server synchronizes binary log to disk after every sync_binlog writes to the binary log.
+binlog-format=         #Default STATEMENT;Valid Values ROW,STATEMENT,MIXED;sets the binary logging format,this option affect many other behavior,be cautious.
+max_binlog_size=       #Default 1073741824;If a write causes current log file size exceed this value, the server rotates the binary logs 
+expire_logs_days=      #Default 0;Range 0-99;The number of days for automatic binary log file removal. 
+binlog_cache_size=     #Default 32768;Range 4096-18446744073709547520;The size of the cache to hold changes to the binary log during a transaction.
+max_binlog_cache_size=     #Default 18446744073709547520;Range 4096 .. 18446744073709547520;If a transaction requires more than this many bytes of memory, the server generates a error
+binlog_stmt_cache_size=    #Default 32768;Range 4096-18446744073709547520.It is a binary log statement cache for non-transaction table since 5.5.9.
+max_binlog_stmt_cache_size=    #Default 18446744073709547520;Range 4096 .. 18446744073709547520;If nontransactional statements within a transaction require more than this many bytes of memory, the server generates an error.
+binlog-row-event-max-size= #default is 1024;maximum size of a row-based binary log event, in bytes.The value should be a multiple of 256.
+log-short-format       #Default FALSE;Log less information to the binary log and slow query log;www.mysqlops.com
+log_slave_updates      #Default FALSE:tells the slave to log the updates performed by its SQL thread to its own binary log
+log-bin-trust-function-creators        #Default FALSE;affects how MySQL enforces restrictions on stored function and trigger creation.
+log-bin-trust-routine-creators         #no official description found,may be similar to log-bin-trust-function-creators;Default FALSE;affects how MySQL enforces restrictions on stored procedure creation.
+binlog_direct_non_transactional_updates    #Default OFF;About transaction on non transaction table problem.
+
+#*****relaylog
+relay-log=         #default basename is host_name-relay-bin.;The basename for the relay log.
+relay-log-index=       #The default name is host_name-relay-bin.index;The name to use for the relay log index file.
+relay-log-info-file=       #Default relay-log.info;The name to use for the file in which the slave records information about the relay logs.
+sync_relay_log=      #Default 0;If greater than 0,server synchronizes relay log to disk after every sync_relay_log writes to the relay log
+sync_relay_log_info=     #Default 0;If greater than 0,slave synchronizes relay-log.info file to disk after every sync_relay_log_info transactions
+max_relay_log_size=      #Default 0;Range 0 .. 1073741824;If a write causes current log file size exceed this value,the slave rotates the relay logs.
+relay_log_space_limit=     #Default 0;Range 0 .. 18446744073709547520;The maximum amount of space to use for all relay logs.
+relay_log_purge=       #Default 1;Range 0,1;automatic purging of relay log files
+relay_log_recovery     #Default FALSE;slave discards all unprocessed relay logs and retrieves them from the master.
+
+#******filter
+binlog-do-db=              #different action when difference setting in binlog-format.
+binlog-ignore-db=          #refer binlog-do-db
+replicate-do-db=           #different behavior under different binlog format
+replicate-ignore-db=           #different behavior under different binlog format
+replicate-do-table=            #restrict replication to the specified table
+replicate-ignore-table=        #not to replicate any statement that updates the specified table
+replicate-wild-do-table=       #Patterns can contain the “%” and “_” wildcard 
+replicate-wild-ignore-table=       #Patterns can contain the “%” and “_” wildcard 
+replicate-same-server-id       #Default FALSE;Cannot be set to 1 if --log-slave-updates is used
+replicate-rewrite-db=          #translate the default database to to_name
+
+#**********************InnoDB**************************
+innodb_data_home_dir=          #The default value is the MySQL data directory;The common part of the directory path for all InnoDB data files in the shared tablespace.
+innodb_data_file_path=         #default behavior is to create a single 10MB auto-extending data file named ibdata1;The paths to individual data files and their sizes.;innodb_data_file_path=datafile_spec1[;datafile_spec2]...;datafile_spec=file_name:file_size[:autoextend[:max:max_file_size]]
+innodb_log_group_home_dir=     #default is to create two 5MB files named ib_logfile0 and ib_logfile1 in the MySQL data directory. ;The directory path to the InnoDB redo log files
+innodb_log_files_in_group=     #Default 2;Range 2-100;The size in bytes of each log file in a log group.
+innodb_log_file_size=          #Default 5242880;Range 108576-4294967295;The size in bytes of each log file in a log group.
+
+#*****feature
+innodb_open_files=         #Default 300;Range 10-4294967295;specifies the maximum number of .ibd files that MySQL can keep open at one time.independent from --open-files-limit and table cache.
+innodb_change_buffering=         #Default all;Valid Values inserts,deletes,purges,changes,all,none.Whether InnoDB performs change buffering.
+innodb_adaptive_hash_index=        #Default On;Valid Values ON,OFF.the same old way to control build-in hash index,,but now you can trun off it if you want.
+innodb_autoinc_lock_mode=      #Default 1;Valid Values 0,1,2;The locking mode to use for generating auto-increment values.
+innodb_large_prefix            #Default OFF;Enable to allow index key prefixes longer than 767 bytes for DYNAMIC and COMPRESSED tables.requires innodb_file_format=barracuda and innodb_file_per_table=true
+innodb_strict_mode         #Default OFF;Whether InnoDB returns errors rather than warnings for certain conditions.
+innodb_use_sys_malloc=         #Default ON;Whether InnoDB uses the operating system memory allocator (ON) or its own (OFF).
+
+#******buffer&amp;cache
+innodb_buffer_pool_size=       #Default 128m;Range 1048576-2**64-1;The size of the memory buffer InnoDB uses to cache data and indexes of its tables. 
+innodb_buffer_pool_instances=      #Default 1;Range 1-64;The number of regions that the InnoDB buffer pool is divided into.the manual recommend each buffer pool instance is at least 1 gigabyte.
+innodb_max_dirty_pages_pct=        #Default 75;Range 0-99;InnoDB tries to write pages so that the percentage of dirty pages will not exceed this value. 
+innodb_old_blocks_pct=         #Default 37;Range 5-95;Specifies the approximate percentage of the InnoDB buffer pool used for the old block sublist.
+innodb_old_blocks_time=        #Default 0;Range 0-2**32-1;Non-zero values protect against the buffer pool being filled up by data that is referenced only for a brief period, such as during a full table scan.
+innodb_additional_mem_pool_size=   #Default 8388608;Range 2097152-4294967295;The size of a memory pool InnoDB uses to store data dictionary information and other internal data structures.
+innodb_log_buffer_size=        #Default 8388608;Range 262144-4294967295;The size of the buffer that InnoDB uses to write to the log files on disk. 
+
+#******IO
+innodb_flush_method=           #Default fdatasync;Valid Values O_DSYNC,O_DIRECT;specify the way to open and flush files.
+innodb_use_native_aio          #Default ON;Specifies whether to use the Linux asynchronous I/O subsystem.
+innodb_adaptive_flushing         #Default On;Valid Values ON,OFF.the same old way to flush dirty page,but now you can trun off it if you want.
+innodb_flush_log_at_trx_commit=    #Default 1;Valid Values 0,1,2;you should read manual for details
+innodb_io_capacity=            #Default 200;Range 100-2**64-1.An upper limit on the I/O activity performed by the InnoDB background tasks,set this value to system's IOPS.
+innodb_read_io_threads=        #Default 4;Range 1-64;The number of I/O threads for read operations in InnoDB.
+innodb_write_io_threads=       #Default 4;Range 1-64;The number of I/O threads for write operations in InnoDB.
+innodb_read_ahead_threshold=       #Default 56;Range 0-64;Controls the sensitivity of linear read-ahead
+innodb_doublewrite     #Default ON;If enabled (the default),stores all data twice, first to doublewrite buffer,then to data files. 
+innodb_purge_threads=          #Default 0;set 1 can reduce internal contention within InnoDB, improving scalability.but now the performance gain might be minimal.
+innodb_purge_batch_size=       #Default 20;Range 1 .. 5000;tuning performance in combination with the setting innodb_purge_threads=1.
+innodb_max_purge_lag=            #Default 0;Range 0 .. 4294967295; controls how to delay DML operations when purge operations are lagging
+
+#*****fileformat
+innodb_file_per_table              #If disabled (the default),tables created in the system tablespace.If enabled,each new table create its own .ibd file.
+innodb_autoextend_increment=           #Default 8;Range 1-1000;increment size (in MB) for extending an auto-extending shared tablespace.per-table tablespace use another way.
+innodb_file_format=                #Default Antelope;Valid Values Antelope Barracuda;The file format to use for new per-table tablespace InnoDB tables.
+innodb_file_format_check=          #Default ON;enable or disable whether InnoDB checks the file format tag in the shared tablespace
+innodb_file_format_max=            #Default Antelope;Valid Values Antelope,Barracuda; sets the value of innodb_file_format_max to the file format tag in the shared tablespace
+
+#******static&amp;status
+innodb_stats_on_metadata           #Default ON.if on InnoDB updates statistics when SHOW TABLE STATUS,SHOW INDEX,access INFORMATION_SCHEMA.TABLES,INFORMATION_SCHEMA.STATISTICS. 
+innodb_stats_sample_pages=         #Default 8;Range 1-2**64-1.The number of index pages to sample for index distribution statistics.
+innodb_stats_method=               #Default nulls_equal;Valid Values nulls_equal nulls_unequal nulls_ignored;How the server treats NULL values when collecting statistics.
+timed_mutexes                  #Default OFF;When enabled, the os_wait_times indicates time spent in operating system waits.
+innodb-status-file             #Default OFF;innodb_status. in data directory.
+
+#******recovery&amp;related
+innodb_fast_shutdown=          #Default 1;Valid Values 0,1,2.means slow shutdown,fast shutdown,flush logs and then abort respectively
+innodb_force_load_corrupted            #Use only during troubleshooting
+innodb_force_recovery=             #Only set this variable greater than 0 in an emergency situation
+innodb_checksums               #Default ON;validation all pages read from disk
+
+#******transaction,lock,concurrency,rollback
+autocommit=                    #default 1;Range 1,0;If 1,all changes take effect immediately.If 0,you must use COMMIT or ROLLBACK.this option affect many other behavior,be cautious.
+transaction-isolation=             #Default REPEATABLE-READ;Valid Values READ-UNCOMMITTED,READ-COMMITTED,REPEATABLE-READ,SERIALIZABLE
+transaction_prealloc_size=         #Default 4096;Range 1024-18446744073709547520. a per-transaction memory pool for various transaction-related allocations.use it can avoid many malloc() calls.
+transaction_alloc_block_size=          #Default 8192;Range 1024-18446744073709547520.when per-transaction memory pool is not enough ,the pool is increased by transaction_alloc_block_size bytes. 
+completion_type=               #Default NO_CHAIN;Valid Values NO_CHAIN CHAIN RELEASE 0 1 2;Only affects transactions that begin with START TRANSACTION or BEGIN and end with COMMIT or ROLLBACK.
+innodb_support_xa              #Default TRUE;Enables InnoDB support for two-phase commit in XA transactions
+
+innodb_table_locks     #Default TRUE;The default value means LOCK TABLES causes InnoDB to lock a table internally if autocommit = 0. 
+innodb_lock_wait_timeout=  #Default 50;Range 1-1073741824;The timeout in seconds an InnoDB transaction waits for a row lock before giving up.
+innodb_locks_unsafe_for_binlog         #Default OFF;affects how InnoDB uses gap locking for searches and index scans. 
+innodb_spin_wait_delay=            #Default 6;Range 0-4294967295;The maximum delay between polls for a spin lock.
+innodb_sync_spin_loops=            #Default 30;Range 0-4294967295;The number of times a thread waits for an InnoDB mutex.
+
+innodb_commit_concurrency=         #Default 500;Range 1-4294967295;The number of threads that can commit at the same time.
+innodb_thread_concurrency=     #Default 0;Range 0-1000;InnoDB tries to keep threads concurrently inside InnoDB less than this limit. 
+innodb_concurrency_tickets=            #Default 500;Range 1-4294967295.when innodb_thread_concurrency=0,there is no need to set.
+innodb_replication_delay=          #Default 0;Range 0 .. 4294967295;The replication thread delay (in ms) on a slave server if innodb_thread_concurrency is reached
+innodb_thread_sleep_delay=     #Default 10000;How long InnoDB threads sleep before joining the InnoDB queue, in microseconds.
+innodb_rollback_on_timeout     #Default OFF;only rolls back the last statement by default. If innodb_rollback_on_timeout is specified, entire transaction 
+innodb_rollback_segments=      #Default 128;Range 1-128.reduce this value to a smaller number might performs better for your workload. 
+
+#**********************MyISAM**************************
+#******feature
+myisam_data_pointer_size=          #Default 6;Range 2 .. 7;The default pointer size,used when no MAX_ROWS specified. 
+myisam_use_mmap                #Default OFF;Use memory mapping for reading and writing MyISAM tables. 
+keep_files_on_create               #Default OFF;By default,MyISAM overwrites an existing .MYD file if no DATA DIRECTORY option given.
+myisam-block-size=             #Default 1024;Range 1024 .. 16384 ;The block size to be used for MyISAM index pages.
+delay-key-write=               #Default ON;Valid Values ON,OFF,ALL;causes key buffers not flush between writes for MyISAM tables.
+preload_buffer_size        #Default 32768;Range 1024 .. 1073741824；The size of the buffer that is allocated when preloading indexes. 
+myisam_stats_method=          #Valid Values nulls_equal,nulls_unequal,nulls_ignored;How the server treats NULL values when collecting statistics 
+myisam-recover-options=    #Default OFF; Valid Values OFF DEFAULT BACKUP FORCE QUICK;Set the MyISAM storage engine recovery mode. 
+myisam_repair_threads=     #Note:it is still beta-quality code.Default 1;Range 1-18446744073709547520;If greater than 1,indexes are created in parallel.
+
+#******buffer&amp;cache
+key_buffer_size=           #Default 8M;Range 8-4294967295;the size of the buffer used for MyISAM index blocks,shared by all threads.
+key_cache_block_size=          #Default 1024;Range 512-16384;The size of blocks in the key cache.
+key_cache_age_threshold=   #Default 300;Range 100-18446744073709547520;controls the demotion of buffers from hot sublist to warm sublist.
+key_cache_division_limit=      #Default 100;Range 1 .. 100;The division between hot and warm sublists. 
+read_buffer_size=          #Default 131072;Range 8200-2147479552;Each thread that does a sequential scan for a MyISAM table allocates a buffer of this size (in bytes) for each table it scans.
+read_rnd_buffer_size=          #Default Default 262144;Range 8200-4294967295;When reading rows from a MyISAM table in sorted order following a key-sorting operation, the rows are read through this buffer to avoid disk seeks.
+
+#*******delayed insert
+delayed_queue_size=            #Default 1000;Range 1 .. 18446744073709547520;a per-table limit on the number of rows 
+max_delayed_threads=         #Default 20;Range 0 .. 16384;Do not start more than this number of threads to handle INSERT DELAYED statements. 
+delayed_insert_limit=          #Default 100;Range 1 .. 18446744073709547520;After inserting delayed_insert_limit delayed rows,permits pending SELECT to execute. 
+delayed_insert_timeout=        #Default 300;seconds wait for INSERT before terminating. 
+
+#******fulltext
+ft_boolean_syntax=         #Type string;Default +-&amp;gt;&amp;lt;()~*:""&amp;;The list of operators supported by boolean full-text searches performed using IN BOOLEAN MODE.
+ft_max_word_len=               #Min Value 10;The maximum length of the word in FULLTEXT index.indexes must be rebuilt after changing this variable.
+ft_min_word_len=           #Default 4;Min Value 1;The minimum length of the word in FULLTEXT index.indexes must be rebuilt after changing this variable.
+ft_query_expansion_limit=      #Default 20;Range 0 .. 1000;The number of top matches to use for full-text searches performed using WITH QUERY EXPANSION. 
+ft_stopword_file=          #The file from which to read the list of stopwords for full-text searches.
+
+#******limitation
+bulk_insert_buffer_size=       #Default 8388608;Range 0-18446744073709547520; limits the size of the cache tree in bytes per thread.
+myisam_sort_buffer_size=       #Default 8m;Range 4-18446744073709547520;when sorting MyISAM indexes 
+myisam_max_sort_file_size=     #Default 2g;while re-creating a MyISAM index 
+myisam_mmap_size=          #Default 18446744073709547520;Range 7 .. 18446744073709547520; If many compressed MyISAM tables are used,decrease the value to reduce memory-swapping problems.
+
+#******lock&amp;concurrency
+external-locking           #Default FALSE;use this option on a system on which lockd does not fully work (such as Linux), it is easy for mysqld to deadlock. 
+skip-external-locking          #Do not use external locking .This affects only MyISAM table access.
+
+concurrent_insert=         #Default AUTO;Valid Values NEVER,AUTO,ALWAYS,0,1,2;control INSERT and SELECT concurrency;
+skip-concurrent-insert         #Turn off the ability to select and insert at the same time on MyISAM tables
+max_write_lock_count=          #Default 18446744073709547520;Range 1 .. 18446744073709547520;After this many write locks, permit some pending read lock requests to be processed in between.
+low-priority-updates           #Default FALSE;Give DML lower priority than selects.
+
+#********************performance_schema****************
+performance_schema=                        #Default OFF;whether the Performance Schema is enabled
+performance_schema_events_waits_history_long_size=     #The number of rows in the events_waits_history_long table
+performance_schema_events_waits_history_size=          #The number of rows per thread in the events_waits_history table
+performance_schema_max_cond_classes=               #Default 80;The maximum number of condition instruments
+performance_schema_max_cond_instances=             #The maximum number of instrumented condition objects
+performance_schema_max_file_classes=               #Default 50;The maximum number of file instruments
+performance_schema_max_file_handles=               #Default 32768;The maximum number of opened file objects
+performance_schema_max_file_instances=             #The maximum number of instrumented file objects
+performance_schema_max_mutex_classes=              #Default 200;The maximum number of mutex instruments
+performance_schema_max_mutex_instances=            #The maximum number of instrumented mutex objects
+performance_schema_max_rwlock_classes=             #Default 20;The maximum number of rwlock instruments
+performance_schema_max_rwlock_instances=           #The maximum number of instrumented rwlock objects
+performance_schema_max_table_handles=              #The maximum number of opened table objects
+performance_schema_max_table_instances=            #The maximum number of instrumented table objects
+performance_schema_max_thread_classes=             #Default 50;The maximum number of thread instruments
+performance_schema_max_thread_instances=           #The maximum number of instrumented thread objects
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
