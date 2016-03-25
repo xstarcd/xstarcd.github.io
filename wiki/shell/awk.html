@@ -713,7 +713,7 @@ netstat -ntu | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -nr
 #打印99乘法表
 seq 9 | sed 'H;g' | awk -v RS='' '{for(i=1;i&lt;=NF;i++)printf("%dx%d=%d%s", i, NR, i*NR, i==NR?"\n":"\t")}'
 
-* 转换16进制串还原成字符
+* 将16进制串还原成字符
 {{{class="brush:bash"
 # 输入内容，为字符的ASCII码十六进制串
 S="4c56544442313142304742303132363136

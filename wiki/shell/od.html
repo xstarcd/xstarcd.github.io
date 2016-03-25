@@ -3,7 +3,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
-    <title>od</title>
+    <title>od%title%amp;xxd</title>
 </head>
 <body>
 <div id="header">
@@ -15,12 +15,25 @@
 <div id="cse"></div>
 <div id="main">
 
-
-<h1 id="toc_1">od</h1>
+<h1>od&amp;xxd</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">od</a>
+<li><a href="#toc_0.2">xxd</a>
+<li><a href="#toc_0.3">ASCII&lt;=&gt;HEX转换</a>
+</ul>
+</ul>
+</div>
 
 <p>
 od - dump files in octal and other formats
 </p>
+
+<p>
+xxd是vim-common自带的命令，服务器上一般都已安装过了: yum install vim-common
+</p>
+
+<h2 id="toc_0.1">od</h2>
 
 <pre class="brush:bash">
 # 生成测试文件
@@ -39,6 +52,88 @@ od -t x -c -j 1 -N 3 tmp.txt
 # -N 读取字节数
 
 </pre>
+
+<h2 id="toc_0.2">xxd</h2>
+
+<pre class="brush:bash">
+# 字符串转ASCII码16进制字串：
+echo LVTDB11B0GB012616|xxd -p
+4c565444423131423047423031323631360a
+
+
+# ASCII码16进制还原字符串：
+echo LVTDB11B0GB012616|xxd -p|xxd -r -p
+LVTDB11B0GB012616
+
+# 日志里面'0x31 0x32 0x33'形式，可用sed先处理后再转换：
+echo '0x31 0x32 0x33'|sed -e 's/0x//g' -e 's/ //g'|xxd -r -p
+123
+
+# 如果希望转成'0x31 0x32 0x33'的形式，可参数如下的sed(echo -n不会有换行符，否则结尾会多一个0x0a)
+echo -n '123'|xxd -p|sed 's/\(..\)/0x\1 /g'
+0x31 0x32 0x33
+</pre>
+
+<h2 id="toc_0.3">ASCII&lt;=&gt;HEX转换</h2>
+
+<ul>
+<li>
+字符串转换为16进制表示的ASCII串
+<pre class="brush:bash">
+S="LVTDB11B0GB012616
+LH551005XC51
+46003616190946
+18986031590021159873"
+
+echo "$S"|xargs -I {} sh -c 'echo -n "{} = ";echo {}|xxd -p;'
+
+echo LVTDB11B0GB012616|xxd -p
+</pre>
+
+</ul>
+
+<ul>
+<li>
+转换结果
+<pre>
+LVTDB11B0GB012616 = 4c565444423131423047423031323631360a
+LH551005XC51 = 4c48353531303035584335310a
+46003616190946 = 34363030333631363139303934360a
+18986031590021159873 = 31383938363033313539303032313135393837330a
+</pre>
+
+</ul>
+
+<ul>
+<li>
+ASCII码串还原为字符串
+<pre class="brush:bash">
+S="4c56544442313142304742303132363136
+4c4835353130303558433531
+3436303033363136313930393436
+3138393836303331353930303231313539383733"
+
+# awk
+for s in $S;do echo -n "$s = ";echo $s|sed 's/\(..\)/0x\1\n/g'|xargs -I {} awk 'BEGIN{printf("%c",{})}';echo;done
+# xxd
+echo "$S"|xargs -I {} sh -c 'echo -n "{} = ";echo {}|xxd -r -p;echo'
+# echo -e
+echo "$S"|sed 's/\(..\)/\\\\x\1/g'|xargs -I {} sh -c 'echo -e "{}"'
+</pre>
+
+</ul>
+
+<ul>
+<li>
+结果
+<pre>
+4c56544442313142304742303132363136 = LVTDB11B0GB012616
+4c4835353130303558433531 = LH551005XC51
+3436303033363136313930393436 = 46003616190946
+3138393836303331353930303231313539383733 = 18986031590021159873
+</pre>
+
+</ul>
 
 </div>
 <div id="footer">
