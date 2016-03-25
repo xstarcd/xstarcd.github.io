@@ -18,7 +18,11 @@
 <h1>vim使用技巧收集</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">vim匹配删除</a>
+<li><a href="#toc_0.1">commands</a>
+<li><a href="#toc_0.2">设置光标行</a>
+<li><a href="#toc_0.3">NERD tree</a>
+<li><a href="#toc_0.4">vim编辑二进制文件</a>
+<li><a href="#toc_0.5">vim匹配删除</a>
 </ul>
 </ul>
 </div>
@@ -43,6 +47,23 @@
 <a href="vim_replace_encodeing.html">vim字符串替换及编码小技巧</a>
 
 <li>
+<a href="vim_simple.html">简明 Vim 练级攻略</a>
+
+<li>
+<a href="vim_regular.html">vim正规表达式</a>
+
+<li>
+<a href="BestofVimTips.html">BestofVimTips</a>
+
+<li>
+<a href="http://blog.sanctum.geek.nz/advanced-vim-registers/">vim高级功能blog</a>
+
+</ul>
+
+<h2 id="toc_0.1">commands</h2>
+
+<ul>
+<li>
 折叠：zf,zc,zr,zM
 
 <li>
@@ -62,16 +83,21 @@ curl下载到vim编辑
 curl -k https://raw.github.com/lilydjwg/dotvim/master/vimrc | vim -R -c 'setf vim' -
 </pre>
 
-<li>
-设置光标行
+</ul>
+
+<h2 id="toc_0.2">设置光标行</h2>
+
 <pre>
 :set cursorline
 :highlight CursorLine guibg=lightblue ctermbg=lightgray
 :set cursorcolumn #设置光标列，仅gvim/gui下可用
 </pre>
 
-<li>
-NERD tree: Vim 的树状文件浏览插件:<a href="http://www.vim.org/scripts/script.php?script_id=1658">http://www.vim.org/scripts/script.php?script_id=1658</a>
+<h2 id="toc_0.3">NERD tree</h2>
+
+<p>
+Vim 的树状文件浏览插件:<a href="http://www.vim.org/scripts/script.php?script_id=1658">http://www.vim.org/scripts/script.php?script_id=1658</a>
+</p>
 <pre>
 Unzip the archive into your ~/.vim directory.
 That should put NERD_tree.vim in ~/.vim/plugin and NERD_tree.txt in ~/.vim/doc.
@@ -81,13 +107,13 @@ Go :help NERD_tree.txt for the help page.
 :NERDtree #打开目录
 </pre>
 
-<li>
-vim使用XXD编辑二进制文件
+<h2 id="toc_0.4">vim编辑二进制文件</h2>
+
+<p>
+一个真正的二进制编辑器用两种方式来显示文本: 二进制和十六进制格式。你可以在 Vim 里通过转换程序 “xxd” 来达到这效果。该程序是随 Vim 一起发布的。
+</p>
 
 <ul>
-<li>
-一个真正的二进制编辑器用两种方式来显示文本: 二进制和十六进制格式。你可以在 Vim 里通过转换程序 “xxd” 来达到这效果。该程序是随 Vim 一起发布的。
-
 <li>
 首先以二进制方式编辑这个文件:<code>vim -b datafile</code>
 
@@ -112,10 +138,9 @@ vim使用XXD编辑二进制文件
 只有十六进制部分的修改才会被采用。右边可显示文本部分的修改忽略不计。
 
 </ul>
-</ul>
 
 
-<h2 id="toc_0.1">vim匹配删除</h2>
+<h2 id="toc_0.5">vim匹配删除</h2>
 <p>
 VIM的匹配删除主要是在一些配置文件中，删除空行，注释行(#号开头等)，删除含有特定字符的行等等。
 </p>
