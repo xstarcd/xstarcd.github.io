@@ -65,24 +65,24 @@ esxcli system settings advanced list -d             # 列出ESXi主机上被改�
 esxcli system settings kernel list -d               # 列出ESXi主机上被变动过的kernel设定部分
 esxcli system snmp get | hash | set | test          # 列出、测试和更改SNMP设定
 
-esxcli vm process list                              # 利用esxcli列出ESXi服务器上VMs的World ID(运行状态的)
-esxcli vm process kill -t soft -w WorldID           # 利用esxcli命令杀掉VM
+esxcli vm process list                              # 利用esxcli列出ESXi服务器上VMs的World I(运行状态的)
+esxcli vm process kill -t soft -w WorldI           # 利用esxcli命令杀掉VM
 
 vim-cmd hostsvc/hostsummary          # 查看宿主机摘要信息
 vim-cmd vmsvc/get.datastores         # 查看宿主存储空间信息
 vim-cmd vmsvc/getallvms              # 列出所有虚拟机
 
-vim-cmd vmsvc/power.getstate VMID    # 查看指定VMID虚拟状态
-vim-cmd vmsvc/power.shutdown VMID    # 关闭虚拟机
-vim-cmd vmsvc/power.off VMID         # 如果虚拟机没有关闭，使用poweroff命令
-vim-cmd vmsvc/get.config VMID        # 查看虚拟机配置信息
+vim-cmd vmsvc/power.getstate VMI    # 查看指定VMI虚拟状态
+vim-cmd vmsvc/power.shutdown VMI    # 关闭虚拟机
+vim-cmd vmsvc/power.off VMI         # 如果虚拟机没有关闭，使用poweroff命令
+vim-cmd vmsvc/get.config VMI        # 查看虚拟机配置信息
 
 esxcli software vib install -d /vmfs/volumes/datastore/patches/xxx.zip  # 为ESXi主机安装更新补丁和驱动
 
 esxcli network nic list         # 列出当前ESXi主机上所有NICs的状态
 esxcli network vm list          # 列出虚拟机的网路信息
 esxcli storage nmp device list  # 理出当前NMP管理下的设备satp和psp信息
-esxcli storage core device vaai status get # 列出注册到PSA设备的VAAI状态
+esxcli storage core device vaai status get # 列出注册到PS设备的VI状态
 
 esxcli storage nmp satp set --default-psp VMW_PSP_RR --satp xxxx # 利用esxcli命令将缺省psp改成Round Robin
 </pre>
@@ -111,7 +111,7 @@ esxcli是一python编写的工具(/sbin/esxcli.py)。
 <a href="http://pubs.vmware.com/vsphere-50/topic/com.vmware.vcli.ref.doc_50/vcli-right.html">http://pubs.vmware.com/vsphere-50/topic/com.vmware.vcli.ref.doc_50/vcli-right.html</a>
 
 <li>
-<a href="http://pubs.vmware.com/vsphere-50/topic/com.vmware.vsphere.scripting.doc_50/GUID-522DB42D-78C1-4DD3-8708-E0AAA22B82BC.html">http://pubs.vmware.com/vsphere-50/topic/com.vmware.vsphere.scripting.doc_50/GUID-522DB42D-78C1-4DD3-8708-E0AAA22B82BC.html</a>
+<a href="http://pubs.vmware.com/vsphere-50/topic/com.vmware.vsphere.scripting.doc_50/GUI-522B42-78C1-43-8708-E022B82BC.html">http://pubs.vmware.com/vsphere-50/topic/com.vmware.vsphere.scripting.doc_50/GUI-522B42-78C1-43-8708-E022B82BC.html</a>
 
 </ol>
 
@@ -121,41 +121,41 @@ esxcli --help
 Usage: esxcli [options] {namespace}+ {cmd} [cmd options]
 
 Options:
-  --formatter=FORMATTER
-                        Override the formatter to use for a given command. Available formatter: xml, csv, keyvalue
+  --formatter=ORMTTER
+                        Override the formatter to use for a given command. vailable formatter: xml, csv, keyvalue
   --debug               Enable debug or internal use options
-  --version             Display version information for the script
-  -?, --help            Display usage information for the script
+  --version             isplay version information for the script
+  -?, --help            isplay usage information for the script
 
-Available Namespaces:
+vailable Namespaces:
   esxcli                Commands that operate on the esxcli system itself allowing users to get additional information.
-  fcoe                  VMware FCOE commands.
+  fcoe                  VMware COE commands.
   hardware              VMKernel hardware properties and commands for configuring hardware.
   iscsi                 VMware iSCSI commands.
   network               Operations that pertain to the maintenance of networking on an ESX host. This includes a wide variety of commands to
-                        manipulate virtual networking components (vswitch, portgroup, etc) as well as local host IP, DNS and general host networking
+                        manipulate virtual networking components (vswitch, portgroup, etc) as well as local host IP, NS and general host networking
                         settings.
   software              Manage the ESXi software image and packages
   storage               VMware storage commands.
   system                VMKernel system properties and commands for configuring properties of the kernel core system.
-  vm                    A small number of operations that allow a user to Control Virtual Machine operations.
+  vm                     small number of operations that allow a user to Control Virtual Machine operations.
 </pre>
 
 <h3 id="toc_0.2.2">查看性能信息:esxtop</h3>
 <pre>
  9:31:31am up 35 days  7:49, 379 worlds, 16 VMs, 32 vCPUs; CPU load average: 0.02, 0.05, 0.05
-PCPU USED(%): 1.1 1.1 1.4 2.2 3.5 1.8 1.6 1.6 0.6 0.8 0.8 0.5 1.7 1.6 1.5 1.4 AVG: 1.4
-PCPU UTIL(%): 3.7 3.9 5.0 7.3  11 6.0 5.4 5.3 2.3 2.7 2.9 1.9 5.4 5.2 4.7 4.6 AVG: 4.9
+PCPU USE(%): 1.1 1.1 1.4 2.2 3.5 1.8 1.6 1.6 0.6 0.8 0.8 0.5 1.7 1.6 1.5 1.4 VG: 1.4
+PCPU UTIL(%): 3.7 3.9 5.0 7.3  11 6.0 5.4 5.3 2.3 2.7 2.9 1.9 5.4 5.2 4.7 4.6 VG: 4.9
 
-      ID      GID NAME             NWLD   %USED    %RUN    %SYS   %WAIT %VMWAIT    %RDY   %IDLE  %OVRLP   %CSTP  %MLMTD  %SWPWT 
+      I      GI NME             NWL   %USE    %RUN    %SYS   %WIT %VMWIT    %RY   %ILE  %OVRLP   %CSTP  %MLMT  %SWPWT 
        1        1 idle               16 1518.25 1600.00    0.00    0.00       - 1600.00    0.00    2.29    0.00    0.00    0.00 
-    1627     1627 ESET NOD32_192.     6    4.88   14.37    0.07  578.65    0.00    0.53  183.72    0.02    0.00    0.00    0.00 
-    1379     1379 TSP2.0_192.168.     6    4.24   11.40    0.10  581.75    0.00    0.40  187.16    0.03    0.00    0.00    0.00 
-    1558     1558 [XMXD_TEST]SP_1     6    2.56    7.45    0.11  585.88    0.00    0.26  190.68    0.03    0.00    0.00    0.00 
-    1555     1555 [XMXD_PreProd]A     6    2.54    7.17    0.15  585.86    0.00    0.54  190.48    0.03    0.02    0.00    0.00 
-    9669     9669 GAEI_AF_DEMO_19     6    1.92    5.48    0.08  587.60    0.00    0.46  192.46    0.02    0.00    0.00    0.00 
+    1627     1627 ESET NO32_192.     6    4.88   14.37    0.07  578.65    0.00    0.53  183.72    0.02    0.00    0.00    0.00 
+    1379     1379 TEST2.0_192.168.     6    4.24   11.40    0.10  581.75    0.00    0.40  187.16    0.03    0.00    0.00    0.00 
+    1558     1558 [XMX_TEST]SP_1     6    2.56    7.45    0.11  585.88    0.00    0.26  190.68    0.03    0.00    0.00    0.00 
+    1555     1555 [XMX_PreProd]     6    2.54    7.17    0.15  585.86    0.00    0.54  190.48    0.03    0.02    0.00    0.00 
+    9669     9669 GEI__EMO_19     6    1.92    5.48    0.08  587.60    0.00    0.46  192.46    0.02    0.00    0.00    0.00 
  1682712  1682712 esxtop.1880935      1    1.18    3.54    0.00   95.39       -    0.00    0.00    0.00    0.00    0.00    0.00 
- 1193230  1193230 [JD_AF]Slave1_1     6    1.02    2.86    0.06  590.45    0.00    0.28  195.30    0.01    0.00    0.00    0.00 
+ 1193230  1193230 slave1_1     6    1.02    2.86    0.06  590.45    0.00    0.28  195.30    0.01    0.00    0.00    0.00 
 </pre>
 
 <ul>
@@ -175,34 +175,34 @@ ssh登陆到ESXi主机，运行esxtop
 按Shift+v，当前页面只显示虚拟机进程
 
 <li>
-在当前显示中添加Leader World ID这一列，找到要关闭的虚拟机的Leader World ID
+在当前显示中添加Leader World I这一列，找到要关闭的虚拟机的Leader World I
 
 <li>
-按k键，在提示符模式下输入要关闭虚拟机的Leader World ID，回车。
+按k键，在提示符模式下输入要关闭虚拟机的Leader World I，回车。
 
 </ol>
 
 <h3 id="toc_0.2.3">硬盘卷信息</h3>
 <pre class="brush:bash">
 df -h                          # 查看系统磁盘卷容量
-Filesystem   Size   Used Available Use% Mounted on
-VMFS-5       1.6T   1.5T    123.7G  93% /vmfs/volumes/datastore1
+ilesystem   Size   Used vailable Use% Mounted on
+VMS-5       1.6T   1.5T    123.7G  93% /vmfs/volumes/datastore1
 vfat         4.0G  25.2M      4.0G   1% /vmfs/volumes/4ee1d386-965ba574-1fd5-1cc1de17e90e
 vfat       249.7M 127.4M    122.3M  51% /vmfs/volumes/63850576-c5821586-5fce-4343bbbeb921
 vfat       249.7M   8.0K    249.7M   0% /vmfs/volumes/93d3e977-2a99c33b-6c07-1e461ce7a96e
 vfat       285.8M 176.2M    109.6M  62% /vmfs/volumes/4ee1d37e-1aa9294c-21f6-1cc1de17e90e
 
 esxcli storage filesystem list        # 卷信息
-Mount Point                                        Volume Name  UUID                                 Mounted  Type             Size          Free
+Mount Point                                        Volume Name  UUI                                 Mounted  Type             Size          ree
 -------------------------------------------------  -----------  -----------------------------------  -------  ------  -------------  ------------
-/vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e  datastore1   4ee1d386-5b79612c-d9b1-1cc1de17e90e     true  VMFS-5  1794491023360  132805296128
+/vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e  datastore1   4ee1d386-5b79612c-d9b1-1cc1de17e90e     true  VMS-5  1794491023360  132805296128
 /vmfs/volumes/4ee1d386-965ba574-1fd5-1cc1de17e90e               4ee1d386-965ba574-1fd5-1cc1de17e90e     true  vfat       4293591040    4267048960
 /vmfs/volumes/63850576-c5821586-5fce-4343bbbeb921               63850576-c5821586-5fce-4343bbbeb921     true  vfat        261853184     128225280
 /vmfs/volumes/93d3e977-2a99c33b-6c07-1e461ce7a96e               93d3e977-2a99c33b-6c07-1e461ce7a96e     true  vfat        261853184     261844992
 /vmfs/volumes/4ee1d37e-1aa9294c-21f6-1cc1de17e90e               4ee1d37e-1aa9294c-21f6-1cc1de17e90e     true  vfat        299712512     114974720
 
 esxcli storage vmfs extent list    # 虚拟机使用的存储卷?
-Volume Name  VMFS UUID                            Extent Number  Device Name                           Partition
+Volume Name  VMS UUI                            Extent Number  evice Name                           Partition
 -----------  -----------------------------------  -------------  ------------------------------------  ---------
 datastore1   4ee1d386-5b79612c-d9b1-1cc1de17e90e              0  naa.600508b1001030374542413430300400          3
 </pre>
@@ -210,13 +210,13 @@ datastore1   4ee1d386-5b79612c-d9b1-1cc1de17e90e              0  naa.600508b1001
 <h3 id="toc_0.2.4">查看网络信息</h3>
 <pre class="brush:bash">
 esxcli network ip interface ipv4 get
-Name  IPv4 Address   IPv4 Netmask   IPv4 Broadcast  Address Type  DHCP DNS
+Name  IPv4 ddress   IPv4 Netmask   IPv4 Broadcast  ddress Type  HCP NS
 ----  -------------  -------------  --------------  ------------  --------
-vmk0  192.168.0.150  255.255.255.0  192.168.0.255   STATIC           false
+vmk0  192.168.0.150  255.255.255.0  192.168.0.255   STTIC           false
 
 esxcfg-vmknic -l
-Interface  Port Group/DVPort   IP Family IP Address     Netmask         Broadcast       MAC Address       MTU     TSO MSS   Enabled Type                
-vmk0       Management Network  IPv4      192.168.0.150  255.255.255.0   192.168.0.255   1c:c1:de:17:e9:0c 1500    65535     true    STATIC 
+Interface  Port Group/VPort   IP amily IP ddress     Netmask         Broadcast       MC ddress       MTU     TSO MSS   Enabled Type                
+vmk0       Management Network  IPv4      192.168.0.150  255.255.255.0   192.168.0.255   1c:c1:de:17:e9:0c 1500    65535     true    STTIC 
 
 esxcfg-route 
 VMkernel default gateway is 192.168.0.253
@@ -225,12 +225,12 @@ VMkernel default gateway is 192.168.0.253
 <h3 id="toc_0.2.5">查看网络接口</h3>
 <pre class="brush:bash">
 esxcli network nic list
-Name    PCI Device     Driver  Link  Speed  Duplex  MAC Address         MTU  Description                                                  
+Name    PCI evice     river  Link  Speed  uplex  MC ddress         MTU  escription                                                  
 ------  -------------  ------  ----  -----  ------  -----------------  ----  -------------------------------------------------------------
-vmnic0  0000:004:00.0  bnx2    Up     1000  Full    00:9c:02:9b:25:2c  1500  Broadcom Corporation Broadcom NetXtreme II BCM5709 1000Base-T
-vmnic1  0000:004:00.1  bnx2    Up     1000  Full    00:9c:02:9b:25:2e  1500  Broadcom Corporation Broadcom NetXtreme II BCM5709 1000Base-T
-vmnic2  0000:005:00.0  bnx2    Up     1000  Full    00:9c:02:9b:25:30  1500  Broadcom Corporation Broadcom NetXtreme II BCM5709 1000Base-T
-vmnic3  0000:005:00.1  bnx2    Up     1000  Full    00:9c:02:9b:25:32  1500  Broadcom Corporation Broadcom NetXtreme II BCM5709 1000Base-T
+vmnic0  0000:004:00.0  bnx2    Up     1000  ull    00:9c:02:9b:25:2c  1500  Broadcom Corporation Broadcom NetXtreme II BCM5709 1000Base-T
+vmnic1  0000:004:00.1  bnx2    Up     1000  ull    00:9c:02:9b:25:2e  1500  Broadcom Corporation Broadcom NetXtreme II BCM5709 1000Base-T
+vmnic2  0000:005:00.0  bnx2    Up     1000  ull    00:9c:02:9b:25:30  1500  Broadcom Corporation Broadcom NetXtreme II BCM5709 1000Base-T
+vmnic3  0000:005:00.1  bnx2    Up     1000  ull    00:9c:02:9b:25:32  1500  Broadcom Corporation Broadcom NetXtreme II BCM5709 1000Base-T
 </pre>
 
 <h3 id="toc_0.2.6">查看vswitch接口信息</h3>
@@ -243,7 +243,7 @@ vSwitch0                             # 虚拟交换机0
    Used Ports: 13
    Configured Ports: 128
    MTU: 1500
-   CDP Status: listen
+   CP Status: listen
    Beacon Enabled: false
    Beacon Interval: 1
    Beacon Threshold: 3
@@ -258,7 +258,7 @@ vSwitch1
    Used Ports: 10
    Configured Ports: 128
    MTU: 1500
-   CDP Status: listen
+   CP Status: listen
    Beacon Enabled: false
    Beacon Interval: 1
    Beacon Threshold: 3
@@ -278,29 +278,29 @@ vSwitch1
 <pre class="brush:bash">
 esxcli vm process list
 
-[JD_AF]Slave1_172.16.17.222
-   World ID: 1331403
-   Process ID: 0
-   VMX Cartel ID: 1331402
-   UUID: 56 4d b4 20 0a 16 b9 50-1c bd fc 7c 7b dd d5 84
-   Display Name: [JD_AF]Slave1_172.16.17.222
-   Config File: /vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e/[JD_AF]Slave1_172.16.17.222/[JD_AF]Slave1_172.16.17.222.vmx
+slave1_192.168.0222
+   World I: 1331403
+   Process I: 0
+   VMX Cartel I: 1331402
+   UUI: 56 4d b4 20 0a 16 b9 50-1c bd fc 7c 7b dd d5 84
+   isplay Name: slave1_192.168.0222
+   Config ile: /vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e/slave1_192.168.0222/slave1_192.168.0222.vmx
 
-TSSO_192.0168.0.13
-   World ID: 1651806
-   Process ID: 0
-   VMX Cartel ID: 1651805
-   UUID: 56 4d 0a 52 6e d2 61 7a-a5 84 1b e5 35 da d1 62
-   Display Name: TSSO_192.0168.0.13
-   Config File: /vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e/TSSO_192.0168.0.15/TSSO_192.0168.0.15.vmx
+TEST_192.0168.0.13
+   World I: 1651806
+   Process I: 0
+   VMX Cartel I: 1651805
+   UUI: 56 4d 0a 52 6e d2 61 7a-a5 84 1b e5 35 da d1 62
+   isplay Name: TEST_192.0168.0.13
+   Config ile: /vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e/TEST_192.0168.0.15/TEST_192.0168.0.15.vmx
 
-TSP2.0_192.168.0.200
-   World ID: 5602
-   Process ID: 0
-   VMX Cartel ID: 5601
-   UUID: 56 4d 71 65 d5 83 a1 4c-9d 7e 4a 9e f4 9d e3 21
-   Display Name: TSP2.0_192.168.0.200
-   Config File: /vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e/TSP2.0_192.168.0.200/TSP2.0_192.168.0.200.vmx
+TEST2.0_192.168.0.200
+   World I: 5602
+   Process I: 0
+   VMX Cartel I: 5601
+   UUI: 56 4d 71 65 d5 83 a1 4c-9d 7e 4a 9e f4 9d e3 21
+   isplay Name: TEST2.0_192.168.0.200
+   Config ile: /vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e/TEST2.0_192.168.0.200/TEST2.0_192.168.0.200.vmx
 </pre>
 
 <ul>
@@ -314,42 +314,42 @@ esxcli --formatter=xml vm process list
 &lt;root&gt;
    &lt;list type="structure"&gt;
       &lt;structure typeName="VirtualMachine"&gt;
-         &lt;field name="ConfigFile"&gt;
-            &lt;string&gt;/vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e/[JD_AF]Slave1_172.16.17.222/[JD_AF]Slave1_172.16.17.222.vmx&lt;/string&gt;
+         &lt;field name="Configile"&gt;
+            &lt;string&gt;/vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e/slave1_192.168.0222/slave1_192.168.0222.vmx&lt;/string&gt;
          &lt;/field&gt;
-         &lt;field name="DisplayName"&gt;
-            &lt;string&gt;[JD_AF]Slave1_172.16.17.222&lt;/string&gt;
+         &lt;field name="isplayName"&gt;
+            &lt;string&gt;slave1_192.168.0222&lt;/string&gt;
          &lt;/field&gt;
-         &lt;field name="ProcessID"&gt;
+         &lt;field name="ProcessI"&gt;
             &lt;integer&gt;0&lt;/integer&gt;
          &lt;/field&gt;
-         &lt;field name="UUID"&gt;
+         &lt;field name="UUI"&gt;
             &lt;string&gt;56 4d b4 20 0a 16 b9 50-1c bd fc 7c 7b dd d5 84&lt;/string&gt;
          &lt;/field&gt;
-         &lt;field name="VMXCartelID"&gt;
+         &lt;field name="VMXCartelI"&gt;
             &lt;integer&gt;1331402&lt;/integer&gt;
          &lt;/field&gt;
-         &lt;field name="WorldID"&gt;
+         &lt;field name="WorldI"&gt;
             &lt;integer&gt;1331403&lt;/integer&gt;
          &lt;/field&gt;
       &lt;/structure&gt;
       &lt;structure typeName="VirtualMachine"&gt;
-         &lt;field name="ConfigFile"&gt;
-            &lt;string&gt;/vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e/TSSO_192.0168.0.15/TSSO_192.0168.0.15.vmx&lt;/string&gt;
+         &lt;field name="Configile"&gt;
+            &lt;string&gt;/vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e/TEST_192.0168.0.15/TEST_192.0168.0.15.vmx&lt;/string&gt;
          &lt;/field&gt;
-         &lt;field name="DisplayName"&gt;
-            &lt;string&gt;TSSO_192.0168.0.13&lt;/string&gt;
+         &lt;field name="isplayName"&gt;
+            &lt;string&gt;TEST_192.0168.0.13&lt;/string&gt;
          &lt;/field&gt;
-         &lt;field name="ProcessID"&gt;
+         &lt;field name="ProcessI"&gt;
             &lt;integer&gt;0&lt;/integer&gt;
          &lt;/field&gt;
-         &lt;field name="UUID"&gt;
+         &lt;field name="UUI"&gt;
             &lt;string&gt;56 4d 0a 52 6e d2 61 7a-a5 84 1b e5 35 da d1 62&lt;/string&gt;
          &lt;/field&gt;
-         &lt;field name="VMXCartelID"&gt;
+         &lt;field name="VMXCartelI"&gt;
             &lt;integer&gt;1651805&lt;/integer&gt;
          &lt;/field&gt;
-         &lt;field name="WorldID"&gt;
+         &lt;field name="WorldI"&gt;
             &lt;integer&gt;1651806&lt;/integer&gt;
          &lt;/field&gt;
       &lt;/structure&gt;
@@ -379,19 +379,19 @@ hostsvc/      proxysvc/     vimsvc/       help
 vim-cmd vmsvc/getallvms
 
 
-Vmid                          Name                                                                   File                                                 Guest OS          Version                                                                                                 Annotation
-101    Kablink_192.168.0.70                                  [datastore1] Kablink_192.168.0.70/Kablink_192.168.0.70.vmx                             centos64Guest           vmx-08
+Vmid                          Name                                                                   ile                                                 Guest OS          Version                                                                                                 nnotation
+101    test_192.168.0.70                                  [datastore1] test_192.168.0.70/test_192.168.0.70.vmx                             centos64Guest           vmx-08
 102    Test2.0_192.168.0.148                            [datastore1] Test2.0_192.168.0.148/Test2.0_192.168.0.148.vmx                 centos64Guest           vmx-08    Creator：Leo
-Demanders/Team：Divel Fang
+emanders/Team：ivel ang
 Host IP：192.168.0.148
-VM App：MySql5.0
+VM pp：MySql5.0
 Project：Test2.0
 Summary：Test2.0项目测试环境；使用时间2012年9月17日至2012年12月31日
 
 103    Test2.0Wiki_192.168.0.149                        [datastore1] Test2.0_192.168.0.149/Test2.0_192.168.0.149.vmx                 centos64Guest           vmx-08    Creator：Leo
-Demanders/Team：Divel Fang
+emanders/Team：ivel ang
 Host IP：192.168.0.149
-VM App：
+VM pp：
 Project：Test2.0
 Summary：Test2.0项Wiki安装；使用时间2012年9月17日至2012年12月31日
 110    myXinglite_192.168.0.25                             [datastore1] myXinglite_192.168.0.25/myXinglite_192.168.0.25.vmx                   centosGuest             vmx-08
@@ -420,18 +420,18 @@ Networks:
 </p>
 <ul>
 <li>
-名称:Kablink_192.168.0.70
+名称:test_192.168.0.70
 
 <li>
-CPUx2,RAM:4096MB,DISK:SCSI (0:0) 40GB
+CPUx2,RM:4096MB,ISK:SCSI (0:0) 40GB
 
 <li>
-网络适配器1: E1000，VM Network，MAC地址: 00:0c:29:d8:3b:e0
+网络适配器1: E1000，VM Network，MC地址: 00:0c:29:d8:3b:e0
 
 </ul>
 
 <p>
-Guest系统中安装VMware Tools后，摘要信息中可查询到hostName、ipAddress信息，若未安装则值为&lt;unset&gt;。
+Guest系统中安装VMware Tools后，摘要信息中可查询到hostName、ipddress信息，若未安装则值为&lt;unset&gt;。
 </p>
 
 <pre class="brush:bash">
@@ -444,20 +444,20 @@ Listsummary:
    vm = 'vim.VirtualMachine:101', 
    runtime = (vim.vm.RuntimeInfo) {
       dynamicType = &lt;unset&gt;, 
-      device = (vim.vm.DeviceRuntimeInfo) [
-         (vim.vm.DeviceRuntimeInfo) {
+      device = (vim.vm.eviceRuntimeInfo) [
+         (vim.vm.eviceRuntimeInfo) {
             dynamicType = &lt;unset&gt;, 
-            runtimeState = (vim.vm.DeviceRuntimeInfo.VirtualEthernetCardRuntimeState) {
+            runtimeState = (vim.vm.eviceRuntimeInfo.VirtualEthernetCardRuntimeState) {
                dynamicType = &lt;unset&gt;, 
-               vmDirectPathGen2Active = false, 
-               vmDirectPathGen2InactiveReasonVm = (string) [
-                  "vmNptIncompatibleAdapterType", 
-                  "vmNptDisabledOrDisconnectedAdapter"
+               vmirectPathGen2ctive = false, 
+               vmirectPathGen2InactiveReasonVm = (string) [
+                  "vmNptIncompatibledapterType", 
+                  "vmNptisabledOrisconnecteddapter"
                ], 
-               vmDirectPathGen2InactiveReasonOther = (string) [
+               vmirectPathGen2InactiveReasonOther = (string) [
                   "vmNptIncompatibleNetwork"
                ], 
-               vmDirectPathGen2InactiveReasonExtended = &lt;unset&gt;, 
+               vmirectPathGen2InactiveReasonExtended = &lt;unset&gt;, 
             }, 
             key = 4000, 
          }
@@ -466,7 +466,7 @@ Listsummary:
       connectionState = "connected", 
       powerState = "poweredOff", 
       faultToleranceState = "notConfigured", 
-      dasVmProtection = (vim.vm.RuntimeInfo.DasProtectionState) null, 
+      dasVmProtection = (vim.vm.RuntimeInfo.asProtectionState) null, 
       toolsInstallerMounted = false, 
       suspendTime = &lt;unset&gt;, 
       bootTime = &lt;unset&gt;, 
@@ -486,33 +486,33 @@ Listsummary:
    guest = (vim.vm.Summary.GuestSummary) {
       dynamicType = &lt;unset&gt;, 
       guestId = &lt;unset&gt;, 
-      guestFullName = &lt;unset&gt;, 
+      guestullName = &lt;unset&gt;, 
       toolsStatus = "toolsNotInstalled", 
       toolsVersionStatus = "guestToolsNotInstalled", 
       toolsVersionStatus2 = "guestToolsNotInstalled", 
       toolsRunningStatus = "guestToolsNotRunning", 
       hostName = &lt;unset&gt;, 
-      ipAddress = &lt;unset&gt;, 
+      ipddress = &lt;unset&gt;, 
    }, 
    config = (vim.vm.Summary.ConfigSummary) {
       dynamicType = &lt;unset&gt;, 
-      name = "Kablink_192.168.0.70", 
+      name = "test_192.168.0.70", 
       template = false, 
-      vmPathName = "[datastore1] Kablink_192.168.0.70/Kablink_192.168.0.70.vmx", 
+      vmPathName = "[datastore1] test_192.168.0.70/test_192.168.0.70.vmx", 
       memorySizeMB = 4096, 
       cpuReservation = &lt;unset&gt;, 
       memoryReservation = &lt;unset&gt;, 
       numCpu = 2, 
       numEthernetCards = 1, 
-      numVirtualDisks = 1, 
+      numVirtualisks = 1, 
       uuid = "564d379a-5654-a8b9-daab-2ed352d83be0", 
       instanceUuid = "52021751-e075-9a50-934d-e23419b1a06f", 
       guestId = "centos64Guest", 
-      guestFullName = "CentOS 4/5/6 (64-bit)", 
+      guestullName = "CentOS 4/5/6 (64-bit)", 
       annotation = "", 
-      product = (vim.vApp.ProductInfo) null, 
+      product = (vim.vpp.ProductInfo) null, 
       installBootRequired = &lt;unset&gt;, 
-      ftInfo = (vim.vm.FaultToleranceConfigInfo) null, 
+      ftInfo = (vim.vm.aultToleranceConfigInfo) null, 
       managedBy = (vim.ext.ManagedByInfo) null, 
    }, 
    storage = (vim.vm.Summary.StorageSummary) {
@@ -525,7 +525,7 @@ Listsummary:
    quickStats = (vim.vm.Summary.QuickStats) {
       dynamicType = &lt;unset&gt;, 
       overallCpuUsage = &lt;unset&gt;, 
-      overallCpuDemand = &lt;unset&gt;, 
+      overallCpuemand = &lt;unset&gt;, 
       guestMemoryUsage = &lt;unset&gt;, 
       hostMemoryUsage = &lt;unset&gt;, 
       guestHeartbeatStatus = "gray", 
@@ -552,13 +552,13 @@ Listsummary:
 <h3 id="toc_0.3.4">查看指定虚拟机设备信息</h3>
 
 <p>
-其中包括网卡型号、MAC地址等信息。
+其中包括网卡型号、MC地址等信息。
 </p>
 
 <pre class="brush:bash">
 vim-cmd vmsvc/device.getdevices 101
 
-Devices:
+evices:
 
 (vim.vm.VirtualHardware) {
    dynamicType = &lt;unset&gt;, 
@@ -567,31 +567,31 @@ Devices:
    memoryMB = 4096, 
    virtualICH7MPresent = false, 
    virtualSMCPresent = false, 
-   device = (vim.vm.device.VirtualDevice) [
-      (vim.vm.device.VirtualIDEController) {
+   device = (vim.vm.device.Virtualevice) [
+      (vim.vm.device.VirtualIEController) {
          dynamicType = &lt;unset&gt;, 
          key = 200, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
-            label = "IDE 0", 
-            summary = "IDE 0", 
+            label = "IE 0", 
+            summary = "IE 0", 
          }, 
-         backing = (vim.vm.device.VirtualDevice.BackingInfo) null, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) null, 
+         backing = (vim.vm.device.Virtualevice.BackingInfo) null, 
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) null, 
          controllerKey = &lt;unset&gt;, 
          unitNumber = &lt;unset&gt;, 
          busNumber = 0, 
       }, 
-      (vim.vm.device.VirtualIDEController) {
+      (vim.vm.device.VirtualIEController) {
          dynamicType = &lt;unset&gt;, 
          key = 201, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
-            label = "IDE 1", 
-            summary = "IDE 1", 
+            label = "IE 1", 
+            summary = "IE 1", 
          }, 
-         backing = (vim.vm.device.VirtualDevice.BackingInfo) null, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) null, 
+         backing = (vim.vm.device.Virtualevice.BackingInfo) null, 
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) null, 
          controllerKey = &lt;unset&gt;, 
          unitNumber = &lt;unset&gt;, 
          busNumber = 1, 
@@ -602,13 +602,13 @@ Devices:
       (vim.vm.device.VirtualPS2Controller) {
          dynamicType = &lt;unset&gt;, 
          key = 300, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
             label = "PS2 controller 0", 
             summary = "PS2 controller 0", 
          }, 
-         backing = (vim.vm.device.VirtualDevice.BackingInfo) null, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) null, 
+         backing = (vim.vm.device.Virtualevice.BackingInfo) null, 
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) null, 
          controllerKey = &lt;unset&gt;, 
          unitNumber = &lt;unset&gt;, 
          busNumber = 0, 
@@ -620,13 +620,13 @@ Devices:
       (vim.vm.device.VirtualPCIController) {
          dynamicType = &lt;unset&gt;, 
          key = 100, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
             label = "PCI controller 0", 
             summary = "PCI controller 0", 
          }, 
-         backing = (vim.vm.device.VirtualDevice.BackingInfo) null, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) null, 
+         backing = (vim.vm.device.Virtualevice.BackingInfo) null, 
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) null, 
          controllerKey = &lt;unset&gt;, 
          unitNumber = &lt;unset&gt;, 
          busNumber = 0, 
@@ -640,13 +640,13 @@ Devices:
       (vim.vm.device.VirtualSIOController) {
          dynamicType = &lt;unset&gt;, 
          key = 400, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
             label = "SIO controller 0", 
             summary = "SIO controller 0", 
          }, 
-         backing = (vim.vm.device.VirtualDevice.BackingInfo) null, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) null, 
+         backing = (vim.vm.device.Virtualevice.BackingInfo) null, 
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) null, 
          controllerKey = &lt;unset&gt;, 
          unitNumber = &lt;unset&gt;, 
          busNumber = 0, 
@@ -657,62 +657,62 @@ Devices:
       (vim.vm.device.VirtualKeyboard) {
          dynamicType = &lt;unset&gt;, 
          key = 600, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
             label = "Keyboard ", 
             summary = "Keyboard", 
          }, 
-         backing = (vim.vm.device.VirtualDevice.BackingInfo) null, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) null, 
+         backing = (vim.vm.device.Virtualevice.BackingInfo) null, 
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) null, 
          controllerKey = 300, 
          unitNumber = 0, 
       }, 
-      (vim.vm.device.VirtualPointingDevice) {
+      (vim.vm.device.VirtualPointingevice) {
          dynamicType = &lt;unset&gt;, 
          key = 700, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
             label = "Pointing device", 
-            summary = "Pointing device; Device", 
+            summary = "Pointing device; evice", 
          }, 
-         backing = (vim.vm.device.VirtualPointingDevice.DeviceBackingInfo) {
+         backing = (vim.vm.device.VirtualPointingevice.eviceBackingInfo) {
             dynamicType = &lt;unset&gt;, 
             deviceName = "", 
-            useAutoDetect = false, 
-            hostPointingDevice = "autodetect", 
+            useutoetect = false, 
+            hostPointingevice = "autodetect", 
          }, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) null, 
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) null, 
          controllerKey = 300, 
          unitNumber = 1, 
       }, 
       (vim.vm.device.VirtualVideoCard) {
          dynamicType = &lt;unset&gt;, 
          key = 500, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
             label = "Video card ", 
             summary = "Video card", 
          }, 
-         backing = (vim.vm.device.VirtualDevice.BackingInfo) null, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) null, 
+         backing = (vim.vm.device.Virtualevice.BackingInfo) null, 
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) null, 
          controllerKey = 100, 
          unitNumber = 0, 
          videoRamSizeInKB = 4096, 
-         numDisplays = 1, 
-         useAutoDetect = false, 
-         enable3DSupport = false, 
+         numisplays = 1, 
+         useutoetect = false, 
+         enable3Support = false, 
          enableMPTSupport = &lt;unset&gt;, 
       }, 
-      (vim.vm.device.VirtualVMCIDevice) {
+      (vim.vm.device.VirtualVMCIevice) {
          dynamicType = &lt;unset&gt;, 
          key = 12000, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
             label = "VMCI device", 
-            summary = "Device on the virtual machine PCI bus that provides support for the virtual machine communication interface", 
+            summary = "evice on the virtual machine PCI bus that provides support for the virtual machine communication interface", 
          }, 
-         backing = (vim.vm.device.VirtualDevice.BackingInfo) null, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) null, 
+         backing = (vim.vm.device.Virtualevice.BackingInfo) null, 
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) null, 
          controllerKey = 100, 
          unitNumber = 17, 
          id = 1389902816, 
@@ -721,35 +721,35 @@ Devices:
       (vim.vm.device.VirtualLsiLogicController) {
          dynamicType = &lt;unset&gt;, 
          key = 1000, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
             label = "SCSI controller 0", 
             summary = "LSI Logic", 
          }, 
-         backing = (vim.vm.device.VirtualDevice.BackingInfo) null, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) null, 
+         backing = (vim.vm.device.Virtualevice.BackingInfo) null, 
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) null, 
          controllerKey = 100, 
          unitNumber = 3, 
          busNumber = 0, 
          device = (int) [
             2000
          ], 
-         hotAddRemove = true, 
+         hotddRemove = true, 
          sharedBus = "noSharing", 
          scsiCtlrUnitNumber = 7, 
       }, 
-      (vim.vm.device.VirtualDisk) {
+      (vim.vm.device.Virtualisk) {
          dynamicType = &lt;unset&gt;, 
          key = 2000, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
             label = "Hard disk 1", 
             summary = "41,943,040 KB", 
          }, 
-         backing = (vim.vm.device.VirtualDisk.FlatVer2BackingInfo) {
+         backing = (vim.vm.device.Virtualisk.latVer2BackingInfo) {
             dynamicType = &lt;unset&gt;, 
-            fileName = "[datastore1] Kablink_192.168.0.70/Kablink_192.168.0.70.vmdk", 
-            datastore = 'vim.Datastore:4ee1d386-5b79612c-d9b1-1cc1de17e90e', 
+            fileName = "[datastore1] test_192.168.0.70/test_192.168.0.70.vmdk", 
+            datastore = 'vim.atastore:4ee1d386-5b79612c-d9b1-1cc1de17e90e', 
             diskMode = "persistent", 
             split = false, 
             writeThrough = false, 
@@ -758,11 +758,11 @@ Devices:
             uuid = "6000C294-e9da-4137-7ffb-eda45b97abeb", 
             contentId = "1b9ca7efde49e066ab127e04ce8cc8d8", 
             changeId = &lt;unset&gt;, 
-            parent = (vim.vm.device.VirtualDisk.FlatVer2BackingInfo) null, 
-            deltaDiskFormat = &lt;unset&gt;, 
+            parent = (vim.vm.device.Virtualisk.latVer2BackingInfo) null, 
+            deltaiskormat = &lt;unset&gt;, 
             digestEnabled = false, 
          }, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) null, 
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) null, 
          controllerKey = 1000, 
          unitNumber = 0, 
          capacityInKB = 41943040, 
@@ -771,7 +771,7 @@ Devices:
             shares = 1000, 
             level = "normal", 
          }, 
-         storageIOAllocation = (vim.StorageResourceManager.IOAllocationInfo) {
+         storageIOllocation = (vim.StorageResourceManager.IOllocationInfo) {
             dynamicType = &lt;unset&gt;, 
             limit = -1, 
             shares = (vim.SharesInfo) {
@@ -784,17 +784,17 @@ Devices:
       (vim.vm.device.VirtualCdrom) {
          dynamicType = &lt;unset&gt;, 
          key = 3002, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
-            label = "CD/DVD drive 1", 
-            summary = "ISO [datastore1] ISO/systems/CentOS-6.2-x86_64-bin-DVD1.iso", 
+            label = "C/V drive 1", 
+            summary = "ISO [datastore1] ISO/systems/CentOS-6.2-x86_64-bin-V1.iso", 
          }, 
          backing = (vim.vm.device.VirtualCdrom.IsoBackingInfo) {
             dynamicType = &lt;unset&gt;, 
-            fileName = "[datastore1] ISO/systems/CentOS-6.2-x86_64-bin-DVD1.iso", 
-            datastore = 'vim.Datastore:4ee1d386-5b79612c-d9b1-1cc1de17e90e', 
+            fileName = "[datastore1] ISO/systems/CentOS-6.2-x86_64-bin-V1.iso", 
+            datastore = 'vim.atastore:4ee1d386-5b79612c-d9b1-1cc1de17e90e', 
          }, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) {
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) {
             dynamicType = &lt;unset&gt;, 
             startConnected = true, 
             allowGuestControl = true, 
@@ -807,7 +807,7 @@ Devices:
       (vim.vm.device.VirtualE1000) {
          dynamicType = &lt;unset&gt;, 
          key = 4000, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
             label = "Network adapter 1", 
             summary = "VM Network", 
@@ -815,11 +815,11 @@ Devices:
          backing = (vim.vm.device.VirtualEthernetCard.NetworkBackingInfo) {
             dynamicType = &lt;unset&gt;, 
             deviceName = "VM Network", 
-            useAutoDetect = false, 
+            useutoetect = false, 
             network = 'vim.Network:HaNetwork-VM Network', 
             inPassthroughMode = &lt;unset&gt;, 
          }, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) {
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) {
             dynamicType = &lt;unset&gt;, 
             startConnected = true, 
             allowGuestControl = true, 
@@ -829,23 +829,23 @@ Devices:
          controllerKey = 100, 
          unitNumber = 7, 
          addressType = "generated", 
-         macAddress = "00:0c:29:d8:3b:e0", 
+         macddress = "00:0c:29:d8:3b:e0", 
          wakeOnLanEnabled = true, 
       }, 
-      (vim.vm.device.VirtualFloppy) {
+      (vim.vm.device.Virtualloppy) {
          dynamicType = &lt;unset&gt;, 
          key = 8000, 
-         deviceInfo = (vim.Description) {
+         deviceInfo = (vim.escription) {
             dynamicType = &lt;unset&gt;, 
-            label = "Floppy drive 1", 
+            label = "loppy drive 1", 
             summary = "Remote", 
          }, 
-         backing = (vim.vm.device.VirtualFloppy.RemoteDeviceBackingInfo) {
+         backing = (vim.vm.device.Virtualloppy.RemoteeviceBackingInfo) {
             dynamicType = &lt;unset&gt;, 
             deviceName = "", 
-            useAutoDetect = false, 
+            useutoetect = false, 
          }, 
-         connectable = (vim.vm.device.VirtualDevice.ConnectInfo) {
+         connectable = (vim.vm.device.Virtualevice.ConnectInfo) {
             dynamicType = &lt;unset&gt;, 
             startConnected = false, 
             allowGuestControl = true, 
@@ -870,27 +870,27 @@ Configuration:
    dynamicType = &lt;unset&gt;, 
    changeVersion = "2013-03-17T18:15:55.461798Z", 
    modified = "1970-01-01T00:00:00Z", 
-   name = "Kablink_192.168.0.70", 
-   guestFullName = "CentOS 4/5/6 (64-bit)", 
+   name = "test_192.168.0.70", 
+   guestullName = "CentOS 4/5/6 (64-bit)", 
    version = "vmx-08", 
    uuid = "564d379a-5654-a8b9-daab-2ed352d83be0", 
    instanceUuid = "52021751-e075-9a50-934d-e23419b1a06f", 
    npivWorldWideNameType = "", 
-   npivDesiredNodeWwns = &lt;unset&gt;, 
-   npivDesiredPortWwns = &lt;unset&gt;, 
-   npivTemporaryDisabled = true, 
-   npivOnNonRdmDisks = &lt;unset&gt;, 
+   npivesiredNodeWwns = &lt;unset&gt;, 
+   npivesiredPortWwns = &lt;unset&gt;, 
+   npivTemporaryisabled = true, 
+   npivOnNonRdmisks = &lt;unset&gt;, 
    locationId = "564d379a-5654-a8b9-daab-2ed352d83be0", 
    template = false, 
    guestId = "centos64Guest", 
    alternateGuestName = "", 
    annotation = "", 
-   files = (vim.vm.FileInfo) {
+   files = (vim.vm.ileInfo) {
       dynamicType = &lt;unset&gt;, 
-      vmPathName = "[datastore1] Kablink_192.168.0.70/Kablink_192.168.0.70.vmx", 
-      snapshotDirectory = "[datastore1] Kablink_192.168.0.70", 
-      suspendDirectory = "[datastore1] Kablink_192.168.0.70", 
-      logDirectory = "[datastore1] Kablink_192.168.0.70", 
+      vmPathName = "[datastore1] test_192.168.0.70/test_192.168.0.70.vmx", 
+      snapshotirectory = "[datastore1] test_192.168.0.70", 
+      suspendirectory = "[datastore1] test_192.168.0.70", 
+      logirectory = "[datastore1] test_192.168.0.70", 
    }, 
    tools = (vim.vm.ToolsConfigInfo) {
       dynamicType = &lt;unset&gt;, 
@@ -906,27 +906,27 @@ Configuration:
       lastInstallInfo = (vim.vm.ToolsConfigInfo.ToolsLastInstallInfo) {
          dynamicType = &lt;unset&gt;, 
          counter = 0, 
-         fault = (vmodl.MethodFault) null, 
+         fault = (vmodl.Methodault) null, 
       }, 
    }, 
-   flags = (vim.vm.FlagInfo) {
+   flags = (vim.vm.lagInfo) {
       dynamicType = &lt;unset&gt;, 
-      disableAcceleration = false, 
+      disablecceleration = false, 
       enableLogging = true, 
       useToe = false, 
-      runWithDebugInfo = false, 
+      runWithebugInfo = false, 
       monitorType = "release", 
       htSharing = "any", 
-      snapshotDisabled = &lt;unset&gt;, 
+      snapshotisabled = &lt;unset&gt;, 
       snapshotLocked = &lt;unset&gt;, 
       diskUuidEnabled = false, 
       virtualMmuUsage = "automatic", 
-      virtualExecUsage = "hvAuto", 
+      virtualExecUsage = "hvuto", 
       snapshotPowerOffBehavior = "powerOff", 
       recordReplayEnabled = false, 
    }, 
    consolePreferences = (vim.vm.ConsolePreferences) null, 
-   defaultPowerOps = (vim.vm.DefaultPowerOpInfo) {
+   defaultPowerOps = (vim.vm.efaultPowerOpInfo) {
       dynamicType = &lt;unset&gt;, 
       powerOffType = "soft", 
       suspendType = "hard", 
@@ -934,7 +934,7 @@ Configuration:
       defaultPowerOffType = "soft", 
       defaultSuspendType = "hard", 
       defaultResetType = "soft", 
-      standbyAction = "checkpoint", 
+      standbyction = "checkpoint", 
    }, 
    hardware = (vim.vm.VirtualHardware) {
       dynamicType = &lt;unset&gt;, 
@@ -944,7 +944,7 @@ Configuration:
       virtualICH7MPresent = &lt;unset&gt;, 
       virtualSMCPresent = &lt;unset&gt;, 
    }, 
-   cpuAllocation = (vim.ResourceAllocationInfo) {
+   cpullocation = (vim.ResourcellocationInfo) {
       dynamicType = &lt;unset&gt;, 
       reservation = 0, 
       expandableReservation = false, 
@@ -956,7 +956,7 @@ Configuration:
       }, 
       overheadLimit = &lt;unset&gt;, 
    }, 
-   memoryAllocation = (vim.ResourceAllocationInfo) {
+   memoryllocation = (vim.ResourcellocationInfo) {
       dynamicType = &lt;unset&gt;, 
       reservation = 0, 
       expandableReservation = false, 
@@ -968,13 +968,13 @@ Configuration:
       }, 
       overheadLimit = &lt;unset&gt;, 
    }, 
-   memoryHotAddEnabled = false, 
-   cpuHotAddEnabled = false, 
+   memoryHotddEnabled = false, 
+   cpuHotddEnabled = false, 
    cpuHotRemoveEnabled = false, 
    hotPlugMemoryLimit = &lt;unset&gt;, 
    hotPlugMemoryIncrementSize = &lt;unset&gt;, 
-   cpuAffinity = (vim.vm.AffinityInfo) null, 
-   memoryAffinity = (vim.vm.AffinityInfo) null, 
+   cpuffinity = (vim.vm.ffinityInfo) null, 
+   memoryffinity = (vim.vm.ffinityInfo) null, 
    networkShaper = (vim.vm.NetworkShaperInfo) null, 
    extraConfig = (vim.option.OptionValue) [
       (vim.option.OptionValue) {
@@ -985,7 +985,7 @@ Configuration:
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
          key = "nvram", 
-         value = "Kablink_192.168.0.70.nvram", 
+         value = "test_192.168.0.70.nvram", 
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
@@ -1015,7 +1015,7 @@ Configuration:
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
          key = "sched.swap.derivedName", 
-         value = "/vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e/Kablink_192.168.0.70/Kablink_192.168.0.70-5f8c4459.vswp", 
+         value = "/vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e/test_192.168.0.70/test_192.168.0.70-5f8c4459.vswp", 
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
@@ -1059,7 +1059,7 @@ Configuration:
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "pciBridge4.virtualDev", 
+         key = "pciBridge4.virtualev", 
          value = "pcieRootPort", 
       }, 
       (vim.option.OptionValue) {
@@ -1074,62 +1074,62 @@ Configuration:
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "ethernet0.generatedAddressOffset", 
+         key = "ethernet0.generatedddressOffset", 
          value = "0", 
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "hostCPUID.0", 
+         key = "hostCPUI.0", 
          value = "0000000568747541444d416369746e65", 
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "hostCPUID.1", 
+         key = "hostCPUI.1", 
          value = "00100f910008080000802009178bfbff", 
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "hostCPUID.80000001", 
+         key = "hostCPUI.80000001", 
          value = "00100f913000025f000837ffefd3fbff", 
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "guestCPUID.0", 
+         key = "guestCPUI.0", 
          value = "0000000568747541444d416369746e65", 
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "guestCPUID.1", 
+         key = "guestCPUI.1", 
          value = "00100f910002080080802001178bfbff", 
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "guestCPUID.80000001", 
+         key = "guestCPUI.80000001", 
          value = "00100f913000025f000003e9ebd3fbff", 
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "userCPUID.0", 
+         key = "userCPUI.0", 
          value = "0000000568747541444d416369746e65", 
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "userCPUID.1", 
+         key = "userCPUI.1", 
          value = "00100f910008080080802001178bfbff", 
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "userCPUID.80000001", 
+         key = "userCPUI.80000001", 
          value = "00100f913000025f000003e9ebd3fbff", 
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
          key = "evcCompatibilityMode", 
-         value = "FALSE", 
+         value = "LSE", 
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "vmotion.checkpointFBSize", 
+         key = "vmotion.checkpointBSize", 
          value = "4194304", 
       }, 
       (vim.option.OptionValue) {
@@ -1154,7 +1154,7 @@ Configuration:
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "pciBridge5.virtualDev", 
+         key = "pciBridge5.virtualev", 
          value = "pcieRootPort", 
       }, 
       (vim.option.OptionValue) {
@@ -1169,7 +1169,7 @@ Configuration:
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "pciBridge6.virtualDev", 
+         key = "pciBridge6.virtualev", 
          value = "pcieRootPort", 
       }, 
       (vim.option.OptionValue) {
@@ -1184,7 +1184,7 @@ Configuration:
       }, 
       (vim.option.OptionValue) {
          dynamicType = &lt;unset&gt;, 
-         key = "pciBridge7.virtualDev", 
+         key = "pciBridge7.virtualev", 
          value = "pcieRootPort", 
       }, 
       (vim.option.OptionValue) {
@@ -1223,30 +1223,30 @@ Configuration:
          value = "0", 
       }
    ], 
-   datastoreUrl = (vim.vm.ConfigInfo.DatastoreUrlPair) [
-      (vim.vm.ConfigInfo.DatastoreUrlPair) {
+   datastoreUrl = (vim.vm.ConfigInfo.atastoreUrlPair) [
+      (vim.vm.ConfigInfo.atastoreUrlPair) {
          dynamicType = &lt;unset&gt;, 
          name = "datastore1", 
          url = "/vmfs/volumes/4ee1d386-5b79612c-d9b1-1cc1de17e90e/", 
       }
    ], 
    swapPlacement = "inherit", 
-   swapDirectory = &lt;unset&gt;, 
+   swapirectory = &lt;unset&gt;, 
    preserveSwapOnPowerOff = &lt;unset&gt;, 
    bootOptions = (vim.vm.BootOptions) {
       dynamicType = &lt;unset&gt;, 
-      bootDelay = 0, 
+      bootelay = 0, 
       enterBIOSSetup = false, 
       bootRetryEnabled = false, 
-      bootRetryDelay = 10000, 
+      bootRetryelay = 10000, 
    }, 
-   ftInfo = (vim.vm.FaultToleranceConfigInfo) null, 
-   vAppConfig = (vim.vApp.VmConfigInfo) null, 
-   vAssertsEnabled = false, 
+   ftInfo = (vim.vm.aultToleranceConfigInfo) null, 
+   vppConfig = (vim.vpp.VmConfigInfo) null, 
+   vssertsEnabled = false, 
    changeTrackingEnabled = false, 
    firmware = "bios", 
    maxMksConnections = 40, 
-   guestAutoLockEnabled = false, 
+   guestutoLockEnabled = false, 
    managedBy = (vim.ext.ManagedByInfo) null, 
    memoryReservationLockedToMax = false, 
    initialOverhead = (vim.vm.ConfigInfo.OverheadInfo) {
