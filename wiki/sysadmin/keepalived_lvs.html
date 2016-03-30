@@ -95,6 +95,28 @@ CONFIG_IP_VS_FTP=m
 
 </ul>
 
+<ul>
+<li>
+lvs怪异的网络延现象(gro/lro引起的)
+<pre>
+ethtool -k eth0
+Features for eth0:
+rx-checksumming: on
+tx-checksumming: on
+scatter-gather: on
+tcp-segmentation-offload: on
+udp-fragmentation-offload: off
+generic-segmentation-offload: on
+generic-receive-offload: off
+large-receive-offload: off
+rx-vlan-offload: off
+tx-vlan-offload: off
+ntuple-filters: off
+receive-hashing: off
+</pre>
+
+</ul>
+
 </div>
 <div id="footer">
 <p>
