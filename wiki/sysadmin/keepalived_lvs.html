@@ -95,10 +95,42 @@ CONFIG_IP_VS_FTP=m
 
 </ul>
 
+<h2 id="toc_1.1">LVS不能转发网络包的一种解决方法</h2>
+
 <ul>
 <li>
-lvs怪异的网络延现象(gro/lro引起的)
-<pre>
+<a href="http://www.2cto.com/os/201311/255608.html">http://www.2cto.com/os/201311/255608.html</a>
+
+<li>
+2013-11-06       个评论    来源：加菲猫爱上紫罗兰 的专栏   
+
+<li>
+ linux kernel 网络协议栈之GRO(Generic receive offload) : <a href="http://blog.csdn.net/lucien_cc/article/details/11731463">http://blog.csdn.net/lucien_cc/article/details/11731463</a>
+
+</ul>
+
+<p>
+LVS在使用tunl方式时，在请求的包的长度超过1480时，不能转发网络包。
+</p>
+ 
+<p>
+修改eth的参数：generic-receive-offload=off，系统默认on。
+</p>
+ 
+<p>
+这个参数是针对IP分片的，网卡支持IP的分片组包功能，将IP协议栈的功能转移到网卡硬件，增加了效率，但是对于LVS这个参数会使LVS在转发包时，因为包超过1480，而不转发。 
+</p>
+ 
+<p>
+关闭后正常。
+</p>
+ 
+<p>
+使用命令 ：
+</p>
+ 
+<pre class="brush:bash">
+# 查看offload
 ethtool -k eth0
 Features for eth0:
 rx-checksumming: on
@@ -113,9 +145,22 @@ rx-vlan-offload: off
 tx-vlan-offload: off
 ntuple-filters: off
 receive-hashing: off
+
+# 修改gro
+ethtool -K eth0 gro off
 </pre>
 
-</ul>
+<pre>
+GRO(Generic receive offload)在内核2.6.29之后合并进去的，作者是一个华裔Herbert Xu ,GRO的简介可以看这里：
+
+http://lwn.net/Articles/358910/
+
+先来描述一下GRO的作用，GRO是针对网络接受包的处理的，并且只是针对NAPI类型的驱动，因此如果要支持GRO，不仅要内核支持，而且驱动也必须调用相应的借口，用ethtool -K gro on来设置，如果报错就说明网卡驱动本身就不支持GRO。
+
+GRO类似tso，可是tso只支持发送数据包，这样你tcp层大的段会在网卡被切包，然后再传递给对端，而如果没有gro，则小的段会被一个个送到协议栈，有了gro之后，就会在接收端做一个反向的操作(想对于tso).也就是将tso切好的数据包组合成大包再传递给协议栈。
+
+如果实现了GRO支持的驱动是这样子处理数据的，在NAPI的回调poll方法中读取数据包，然后调用GRO的接口napi_gro_receive或者napi_gro_frags来将数据包feed进协议栈。而具体GRO的工作就是在这两个函数中进行的，他们最终都会调用__napi_gro_receive。下面就是napi_gro_receive，它最终会调用napi_skb_finish以及__napi_gro_receive。
+</pre>
 
 </div>
 <div id="footer">
