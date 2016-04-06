@@ -40,6 +40,11 @@
 <li><a href="#toc_1.4.5">Maatkit工具包</a>
 </ul>
 </ul>
+<li><a href="#toc_2">MySQL复制监控</a>
+<ul>
+<li><a href="#toc_2.1">MySQL常见错误类型</a>
+<li><a href="#toc_2.2">复制监控脚本</a>
+</ul>
 </ul>
 </div>
 
@@ -721,6 +726,287 @@ When enabled, either explicitly or implicitly, the transaction isolation level
 is set C&lt;REPEATABLE READ&gt; and transactions are started C&lt;WITH CONSISTENT
 SNAPSHOT&gt;
 </pre>
+
+<h1 id="toc_2">MySQL复制监控</h1>
+
+<ul>
+<li>
+原文：<a href="http://www.tianfeiyu.com/?p=2062">http://www.tianfeiyu.com/?p=2062</a>
+
+</ul>
+
+<h2 id="toc_2.1">MySQL常见错误类型</h2>
+
+<pre>
+1005：创建表失败
+1006：创建数据库失败
+1007：数据库已存在，创建数据库失败
+1008：数据库不存在，删除数据库失败
+1009：不能删除数据库文件导致删除数据库失败
+1010：不能删除数据目录导致删除数据库失败
+1011：删除数据库文件失败
+1012：不能读取系统表中的记录
+1020：记录已被其他用户修改
+1021：硬盘剩余空间不足，请加大硬盘可用空间
+1022：关键字重复，更改记录失败
+1023：关闭时发生错误
+1024：读文件错误
+1025：更改名字时发生错误
+1026：写文件错误
+1032：记录不存在
+1036：数据表是只读的，不能对它进行修改
+1037：系统内存不足，请重启数据库或重启服务器
+1038：用于排序的内存不足，请增大排序缓冲区
+1040：已到达数据库的最大连接数，请加大数据库可用连接数
+1041：系统内存不足
+1042：无效的主机名
+1043：无效连接
+1044：当前用户没有访问数据库的权限
+1045：不能连接数据库，用户名或密码错误
+1048：字段不能为空
+1049：数据库不存在
+1050：数据表已存在
+1051：数据表不存在
+1054：字段不存在
+1065：无效的SQL语句，SQL语句为空
+1081：不能建立Socket连接
+1114：数据表已满，不能容纳任何记录
+1116：打开的数据表太多
+1129：数据库出现异常，请重启数据库
+1130：连接数据库失败，没有连接数据库的权限
+1133：数据库用户不存在
+1141：当前用户无权访问数据库
+1142：当前用户无权访问数据表
+1143：当前用户无权访问数据表中的字段
+1146：数据表不存在
+1147：未定义用户对数据表的访问权限
+1149：SQL语句语法错误
+1158：网络错误，出现读错误，请检查网络连接状况
+1159：网络错误，读超时，请检查网络连接状况
+1160：网络错误，出现写错误，请检查网络连接状况
+1161：网络错误，写超时，请检查网络连接状况
+1062：字段值重复，入库失败
+1169：字段值重复，更新记录失败
+1177：打开数据表失败
+1180：提交事务失败
+1181：回滚事务失败
+1203：当前用户和数据库建立的连接已到达数据库的最大连接数，请增大可用的数据库连接数或重启数据库
+1205：加锁超时
+1211：当前用户没有创建用户的权限
+1216：外键约束检查失败，更新子表记录失败
+1217：外键约束检查失败，删除或修改主表记录失败
+1226：当前用户使用的资源已超过所允许的资源，请重启数据库或重启服务器
+1227：权限不足，您无权进行此操作
+1235：MySQL版本过低，不具有本功能
+</pre>
+
+<h2 id="toc_2.2">复制监控脚本</h2>
+
+<p>
+参考原文修改。
+</p>
+
+<ul>
+<li>
+原脚本
+<pre class="brush:bash">
+#!/bin/bash
+#
+#check_mysql_slave_replication_status
+#
+#
+#
+parasum=2
+help_msg(){
+ 
+cat &lt;&lt; help
++---------------------+
++Error Cause:
++you must input $parasum parameters!
++1st : Host_IP
++2st : Host_Port
+help
+exit 
+}
+ 
+[ $# -ne ${parasum} ] &amp;&amp; help_msg  #若参数不够打印帮助信息并退出
+ 
+export HOST_IP=$1
+export HOST_PORt=$2
+MYUSER="root"           
+MYPASS="123456"
+ 
+MYSQL_CMD="mysql -u$MYUSER -p$MYPASS"
+MailTitle=""                #邮件主题
+Mail_Address_MysqlStatus="root@localhost.localdomain"   #收件人邮箱    
+ 
+time1=$(date +"%Y%m%d%H%M%S")
+time2=$(date +"%Y-%m-%d %H:%M:%S")
+ 
+SlaveStatusFile=/tmp/salve_status_${HOST_PORT}.${time1}   #邮件内容所在文件
+echo "--------------------Begin at: "$time2 &gt; $SlaveStatusFile
+echo "" &gt;&gt; $SlaveStatusFile
+ 
+#get slave status
+${MYSQL_CMD} -e "show slave status\G" &gt;&gt; $SlaveStatusFile #取得salve进程的状态
+ 
+#get io_thread_status,sql_thread_status,last_errno   取得以下状态值
+ 
+IOStatus=$(cat $SlaveStatusFile|grep Slave_IO_Running|awk '{print $2}')
+SQLStatus=$(cat $SlaveStatusFile|grep Slave_SQL_Running |awk '{print $2}')
+    Errno=$(cat $SlaveStatusFile|grep Last_Errno | awk '{print $2}')
+   Behind=$(cat $SlaveStatusFile|grep Seconds_Behind_Master | awk '{print $2}')
+ 
+echo "" &gt;&gt; $SlaveStatusFile
+ 
+if [ "$IOStatus" == "No" ] || [ "$SQLStatus" == "No" ];then   #判断错误类型
+       if [ "$Errno" -eq 0 ];then   #可能是salve线程未启动
+            $MYSQL_CMD -e "start slave io_thread;start slave sql_thread;"
+            echo "Cause slave threads doesnot's running,trying start slsave io_thread;start slave sql_thread;" &gt;&gt; $SlaveStatusFile
+            MailTitle="[Warning] Slave threads stoped on $HOST_IP $HOST_PORT"
+        elif [ "$Errno" -eq 1007 ] || [ "$Errno" -eq 1053 ] || [ "$Errno" -eq 1062 ] || [ "$Errno" -eq 1213 ] || [ "$Errno" -eq 1032 ]\
+            || [ "Errno" -eq 1158 ] || [ "$Errno" -eq 1159 ] || [ "$Errno" -eq 1008 ];then  #忽略此些错误
+            $MYSQL_CMD -e "stop slave;set global sql_slave_skip_counter=1;start slave;"
+            echo "Cause slave replication catch errors,trying skip counter and restart slave;stop slave ;set global sql_slave_skip_counter=1;slave start;" &gt;&gt; $SlaveStatusFile
+            MailTitle="[Warning] Slave error on $HOST_IP $HOST_PORT! ErrNum: $Errno"
+        else
+            echo "Slave $HOST_IP $HOST_PORT is down!" &gt;&gt; $SlaveStatusFile
+            MailTitle="[ERROR]Slave replication is down on $HOST_IP $HOST_PORT ! ErrNum:$Errno"
+        fi
+fi
+if [ -n "$Behind" ];then 
+        Behind=0
+fi
+echo "$Behind" &gt;&gt; $SlaveStatusFile
+ 
+#delay behind master 判断延时时间
+if [ $Behind -gt 300 ];then
+    echo `date +"%Y-%m%d %H:%M:%S"` "slave is behind master $Bebind seconds!" &gt;&gt; $SlaveStatusFile
+    MailTitle="[Warning]Slave delay $Behind seconds,from $HOST_IP $HOST_PORT"
+fi
+ 
+if [ -n "$MailTitle" ];then  #若出错或者延时时间大于300s则发送邮件
+        cat ${SlaveStatusFile} | /bin/mail -s "$MailTitle" $Mail_Address_MysqlStatus
+fi
+ 
+#del tmpfile:SlaveStatusFile
+&gt; $SlaveStatusFile
+ 
+</pre>
+
+</ul>
+
+<ul>
+<li>
+修改后脚本
+
+<ul>
+<li>
+只做了简单的整理，修正了Behind为NULL的判断，但均未测试；
+
+<li>
+应可考虑增加:
+
+<ul>
+<li>
+对修复执行结果的判断;
+
+<li>
+Errno、Behind两种告警分别发邮件？
+
+<li>
+取消SlaveStatusFile临时文件。
+
+<li>
+告警正文增加show slave结果原文。
+
+<li>
+增加PATH，以便加到crontab中。
+
+<li>
+考虑crontab中周期执行、或多个错误的循环修复？
+<pre class="brush:bash">
+#!/bin/sh
+# check_mysql_slave_replication_status
+# 参考:http://www.tianfeiyu.com/?p=2062
+
+Usage(){
+    echo Usage:
+    echo "$0 HOST PORT USER PASS"
+}
+
+[ -z "$1" -o -z "$2" -o -z "$3" -o -z "$4" ] &amp;&amp; Usage &amp;&amp; exit 1
+HOST=$1
+PORT=$2
+USER=$3
+PASS=$4
+ 
+MYSQL_CMD="mysql -h$HOST -P$PORT -u$USER -p$PASS"
+
+MailTitle=""                #邮件主题
+Mail_Address_MysqlStatus="root@localhost.localdomain"   #收件人邮箱    
+ 
+time1=$(date +"%Y%m%d%H%M%S")
+time2=$(date +"%Y-%m-%d %H:%M:%S")
+ 
+SlaveStatusFile=/tmp/salve_status_${HOST_PORT}.${time1}   #邮件内容所在文件
+echo "--------------------Begin at: "$time2 &gt; $SlaveStatusFile
+echo "" &gt;&gt; $SlaveStatusFile
+ 
+#get slave status
+${MYSQL_CMD} -e "show slave status\G" &gt;&gt; $SlaveStatusFile #取得salve进程的状态
+ 
+#get io_thread_status,sql_thread_status,last_errno   取得以下状态值
+ 
+ IOStatus=$(cat $SlaveStatusFile|grep Slave_IO_Running|awk '{print $2}')
+SQLStatus=$(cat $SlaveStatusFile|grep Slave_SQL_Running |awk '{print $2}')
+    Errno=$(cat $SlaveStatusFile|grep Last_Errno | awk '{print $2}')
+   Behind=$(cat $SlaveStatusFile|grep Seconds_Behind_Master | awk '{print $2}')
+ 
+echo "" &gt;&gt; $SlaveStatusFile
+
+if [ "$IOStatus" = "No" -o "$SQLStatus" = "No" ];then
+    case "$Errno" in
+    0)
+        # 可能是slave未启动
+        $MYSQL_CMD -e "start slave io_thread;start slave sql_thread;"
+        echo "Cause slave threads doesnot's running,trying start slsave io_thread;start slave sql_thread;" &gt;&gt; $SlaveStatusFile
+        ;;
+    1007|1053|1062|1213|1032|1158|1159|1008)
+        # 忽略这些错误
+        $MYSQL_CMD -e "stop slave;set global sql_slave_skip_counter=1;start slave;"
+        echo "Cause slave replication catch errors,trying skip counter and restart slave;stop slave ;set global sql_slave_skip_counter=1;slave start;" &gt;&gt; $SlaveStatusFile
+        MailTitle="[Warning] Slave error on $HOST:$PORT! ErrNum: $Errno"
+        ;;
+    *)
+        echo "Slave $HOST:$PORT is down!" &gt;&gt; $SlaveStatusFile
+        MailTitle="[ERROR]Slave replication is down on $HOST:$PORT! Errno:$Errno"
+        ;;
+    esac
+fi
+
+if [ "$Behind" = "NULL" -o -z "$Behind" ];then 
+    Behind=0
+fi
+echo "Behind:$Behind" &gt;&gt; $SlaveStatusFile
+ 
+#delay behind master 判断延时时间
+if [ $Behind -gt 300 ];then
+    echo `date +"%Y-%m%d %H:%M:%S"` "slave is behind master $Bebind seconds!" &gt;&gt; $SlaveStatusFile
+    MailTitle="[Warning]Slave delay $Behind seconds,from $HOST $PORT"
+fi
+ 
+if [ -n "$MailTitle" ];then  #若出错或者延时时间大于300s则发送邮件
+    cat ${SlaveStatusFile} | /bin/mail -s "$MailTitle" $Mail_Address_MysqlStatus
+fi
+ 
+#del tmpfile:SlaveStatusFile
+&gt; $SlaveStatusFile
+</pre>
+
+</ul>
+</ul>
+</ul>
 
 </div>
 <div id="footer">
