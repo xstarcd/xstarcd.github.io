@@ -909,22 +909,22 @@ fi
 
 <ul>
 <li>
-对修复执行结果的判断;
-
-<li>
-Errno、Behind两种告警分别发邮件？
+对修复执行结果的判断;多条错误的循环修复、检测、再修复？
 
 <li>
 取消SlaveStatusFile临时文件。
 
 <li>
-告警正文增加show slave结果原文。
+Errno、Behind两种告警分别发邮件，告警正文增加show slave结果原文。
 
 <li>
 增加PATH，以便加到crontab中。
 
 <li>
-考虑crontab中周期执行、或多个错误的循环修复？
+考虑crontab中周期执行(加锁避免执行冲突、执行周期选择)
+
+<li>
+增加执行日志？
 <pre class="brush:bash">
 #!/bin/sh
 # check_mysql_slave_replication_status
