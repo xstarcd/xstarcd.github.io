@@ -107,9 +107,17 @@ nameserver 114.114.114.114
 nameserver 114.114.115.115
 EOF
 
-# hosts方式解析记录配置(未使用)
+# hosts解析
 cat &gt; /etc/dnsmasq.hosts &lt;&lt;EOF
 #192.168.0.100 test.testdomain.com
+EOF
+
+# address泛解析
+cat &gt; /etc/dnsmasq.d/address.conf &lt;&lt;EOF
+#泛解析
+#address=/test.testdomain.com/192.168.0.100
+#反向解析
+#ptr-record=100.0.168.192.in-addr.arpa,test.testdomain.com
 EOF
 
 # 日志回滚
@@ -135,18 +143,24 @@ EOF
 
 <ul>
 <li>
-配置范例
+hosts解析范例:/etc/dnsmasq.hosts
 <pre class="brush:bash">
-# 解析记录配置
-cat &gt; /etc/dnsmasq.d/hosts.conf &lt;&lt;EOF
-#正向解析
-address=/test.testdomain.com/192.168.0.100
-#反向解析
-ptr-record=100.0.168.192.in-addr.arpa,test.testdomain.com
-EOF
+192.168.0.100 test.testdomain.com
 </pre>
 
 </ul>
+
+<ol>
+<li>
+泛解析、反向解析:/etc/dnsmasq.d/address.conf 
+<pre class="brush:bash">
+#泛解析
+address=/test.testdomain.com/192.168.0.100
+#反向解析
+ptr-record=100.0.168.192.in-addr.arpa,test.testdomain.com
+</pre>
+
+</ol>
 
 <h2 id="toc_0.4">启停服务</h2>
 
@@ -177,16 +191,18 @@ dig 100.0.168.192.in-addr.arpa ptr @127.0.0.1
 nslookup -query=ptr 100.0.168.192.in-addr.arpa 127.0.0.1
 nslookup -query=ptr 192.168.0.100 127.0.0.1
 
-# 全部检查
+# host记录检查
+cat /etc/dnsmasq.hosts |grep -v '^#'|grep -v '^ \+$'|awk '{print $2}' \
+|xargs -I {} sh -c "dig @127.0.0.1 {}|grep IN"
+# address记录检查
 cat /etc/dnsmasq.d/*.conf |grep ^address|awk -F/ '{print $2}' \
 |xargs -I {} sh -c "dig @127.0.0.1 {}|grep IN"
-
+# ptr记录检查
 cat /etc/dnsmasq.d/*.conf |grep ^ptr-record|sed 's/=/,/g' \
 |awk -F, '{print $2}'|xargs -I {} sh -c "dig @127.0.0.1 {} ptr|grep IN"
 </pre>
 
 <h2 id="toc_0.6">附:dnsmasq.conf</h2>
-
 
 <pre class="brush:bash">
 # Configuration file for dnsmasq.
