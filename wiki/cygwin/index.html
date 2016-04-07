@@ -653,7 +653,35 @@ start_ssh_agent
 trap "stop_ssh_agent" 0
 </pre>
 
+<li>
+MAC OS版本
+<pre class="brush:bash">
+# start_stop_ssh_agent
+SSH_ENV=$HOME/.ssh/ssh-agent-env
+function stop_ssh_agent {
+    U=$(whoami)
+    if [ $(ps aux|grep "$U.*-bash\$"|grep -v grep|wc -l) -lt 3 -a -n "$SSH_AGENT_PID" ];then
+        ps aux | grep ${SSH_AGENT_PID} | grep ssh-agent &gt; /dev/null &amp;&amp; kill $SSH_AGENT_PID
+    fi
+}
+function start_ssh_agent {
+    if [ -f "${SSH_ENV}" ]; then
+         . ${SSH_ENV} &gt; /dev/null
+         ps aux | grep ${SSH_AGENT_PID} | grep ssh-agent &gt; /dev/null &amp;&amp; return 0
+    fi
+    echo "Initialising new SSH agent..."
+    /usr/bin/ssh-agent -s | sed 's/^echo/#echo/' &gt; ${SSH_ENV} \
+    &amp;&amp; echo succeeded \
+    &amp;&amp; chmod 600 ${SSH_ENV} \
+    &amp;&amp; . ${SSH_ENV} &gt; /dev/null
+    #&amp;&amp; /usr/bin/ssh-add \
+}
+start_ssh_agent
+trap "stop_ssh_agent" 0
+</pre>
+
 </ol>
+
 
 <ul>
 <li>
