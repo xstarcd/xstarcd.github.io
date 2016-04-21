@@ -18,13 +18,13 @@
 <h1>dig Domain Information Groper</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">域名DNS解析完整解析过程</a>
+<li><a href="#toc_0.1">DNS解析完整过程</a>
 <li><a href="#toc_0.2">初次见面</a>
 <li><a href="#toc_0.3">最简单的dig用法</a>
 <li><a href="#toc_0.4">dig加个点</a>
-<li><a href="#toc_0.5">指定DNS来查baidu.com的A记录</a>
+<li><a href="#toc_0.5">指定DNS解析A记录</a>
 <li><a href="#toc_0.6">一些常用的选项</a>
-<li><a href="#toc_0.7">dig特有的查询选项(query option)</a>
+<li><a href="#toc_0.7">dig特有的查询选项</a>
 <ul>
 <li><a href="#toc_0.7.1">TCP代替UDP</a>
 <li><a href="#toc_0.7.2">默认追加域</a>
@@ -52,7 +52,7 @@
 </p>
 
 
-<h2 id="toc_0.1">域名DNS解析完整解析过程</h2>
+<h2 id="toc_0.1">DNS解析完整过程</h2>
 
 <ol>
 <li>
@@ -168,7 +168,7 @@ dig .
 ;; MSG SIZE  rcvd: 92
 </pre>
 
-<h2 id="toc_0.5">指定DNS来查baidu.com的A记录</h2>
+<h2 id="toc_0.5">指定DNS解析A记录</h2>
 
 <ul>
 <li>
@@ -296,7 +296,7 @@ dig -x 193.0.14.129
 </ul>
  
 
-<h2 id="toc_0.7">dig特有的查询选项(query option)</h2>
+<h2 id="toc_0.7">dig特有的查询选项</h2>
 
 <p>
 和刚才的选项不同，dig还有一批所谓的“查询选项”，这批选项的使用与否，会影响到dig的查询方式或输出的结果信息，因此对于这批选项，dig要求显式的在其前面统一的加上一个“+”（加号），这样dig识别起来会更方便，同时命令的可读性也会更强。
