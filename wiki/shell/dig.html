@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>dig Domain Information Groper</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>dig Domain Information Groper</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">域名DNS解析完整解析过程</a>
+<li><a href="#toc_0.2">初次见面</a>
+<li><a href="#toc_0.3">最简单的dig用法</a>
+<li><a href="#toc_0.4">dig加个点</a>
+<li><a href="#toc_0.5">指定DNS来查baidu.com的A记录</a>
+<li><a href="#toc_0.6">一些常用的选项</a>
+<li><a href="#toc_0.7">dig特有的查询选项(query option)</a>
+<ul>
+<li><a href="#toc_0.7.1">TCP代替UDP</a>
+<li><a href="#toc_0.7.2">默认追加域</a>
+<li><a href="#toc_0.7.3">跟踪dig全过程</a>
+<li><a href="#toc_0.7.4">精简dig输出</a>
+</ul>
+<li><a href="#toc_0.8">我们还需要学习什么</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+来源:<a href="http://blog.csdn.net/ysdaniel/article/details/8076444">http://blog.csdn.net/ysdaniel/article/details/8076444</a>
+
+</ul>
+
+
+<p>
+本原创文章属于《Linux大棚》博客。
+</p>
+
+<p>
+博客地址为<a href="http://roclinux.cn">http://roclinux.cn</a>
+</p>
+
+
+<h2 id="toc_0.1">域名DNS解析完整解析过程</h2>
+
+<ol>
+<li>
+用户向本地DNS发出解析请求
+
+<li>
+本地DNS向根服务器（根服务器地址在本地有个静态列表）请求谁是该域名的顶机DNS（并把结果缓存在本地）
+
+<li>
+根DNS告诉本地DNS谁是该域的顶级DNS
+
+<li>
+本地DNS向顶级DNS请求谁是权威DNS（并缓存在本地）
+
+<li>
+应答谁是该域权威DNS
+
+<li>
+本地DNS向权威DNS请求域名解析（并把结果缓存在本地）
+
+<li>
+权威服务器应答6的请求
+
+<li>
+本地DNS把结果告诉用户
+
+</ol>
+
+<h2 id="toc_0.2">初次见面</h2>
+
+<p>
+我相信使用nslookup的同学一定比使用dig的同学多，所以还是有必要花些时间给大家介绍一下dig的。
+</p>
+
+<p>
+dig，和nslookup作用有些类似，都是DNS查询工具。
+</p>
+
+<p>
+dig，其实是一个缩写，即Domain Information Groper。
+</p>
+
+<p>
+一些专业的DNS管理员在追查DNS问题时，都乐于使用dig命令，是看中了dig设置灵活、输出清晰、功能强大的特点。
+</p>
+
+<h2 id="toc_0.3">最简单的dig用法</h2>
+
+<p>
+最简单的dig用法，当然就是直接输入dig按回车。
+</p>
+
+<pre>
+; &lt;&lt;&gt;&gt; DiG 9.8.3-P1 &lt;&lt;&gt;&gt;
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 8934
+;; flags: qr rd ra; QUERY: 1, ANSWER: 13, AUTHORITY: 0, ADDITIONAL: 0
+
+;; QUESTION SECTION:
+;.              IN  NS
+
+;; ANSWER SECTION:
+.           30189   IN  NS  a.root-servers.net.
+.           30189   IN  NS  i.root-servers.net.
+.           30189   IN  NS  l.root-servers.net.
+.           30189   IN  NS  e.root-servers.net.
+.           30189   IN  NS  h.root-servers.net.
+.           30189   IN  NS  g.root-servers.net.
+.           30189   IN  NS  b.root-servers.net.
+.           30189   IN  NS  j.root-servers.net.
+.           30189   IN  NS  k.root-servers.net.
+.           30189   IN  NS  c.root-servers.net.
+.           30189   IN  NS  m.root-servers.net.
+.           30189   IN  NS  d.root-servers.net.
+.           30189   IN  NS  f.root-servers.net.
+
+;; Query time: 11 msec
+;; SERVER: 192.168.1.1#53(192.168.1.1)
+;; WHEN: Fri Apr 22 01:50:09 2016
+;; MSG SIZE  rcvd: 228
+</pre>
+
+
+<p>
+从上面的输出，你一定观察到了，当直接使用dig命令，不加任何参数和选项时，dig会向默认的上连DNS服务器查询“.”（根域）的NS记录。
+</p>
+
+<h2 id="toc_0.4">dig加个点</h2>
+
+<p>
+刚才直接输入dig，这次我们在后面加上一个“.”，看看结果和刚才有何区别：
+</p>
+
+<pre>
+dig .
+
+; &lt;&lt;&gt;&gt; DiG 9.8.3-P1 &lt;&lt;&gt;&gt; .
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 5002
+;; flags: qr rd ra; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 0
+
+;; QUESTION SECTION:
+;.              IN  A
+
+;; AUTHORITY SECTION:
+.           57125   IN  SOA a.root-servers.net. nstld.verisign-grs.com. 2016042100 1800 900 604800 86400
+
+;; Query time: 7 msec
+;; SERVER: 192.168.1.1#53(192.168.1.1)
+;; WHEN: Fri Apr 22 01:51:22 2016
+;; MSG SIZE  rcvd: 92
+</pre>
+
+<h2 id="toc_0.5">指定DNS来查baidu.com的A记录</h2>
+
+<ul>
+<li>
+命令格式: dig @dnsserver name querytype
+
+</ul>
+
+<pre>
+dig @114.114.114.114 www.baidu.com A
+
+; &lt;&lt;&gt;&gt; DiG 9.8.3-P1 &lt;&lt;&gt;&gt; @114.114.114.114 www.baidu.com A
+; (1 server found)
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 16922
+;; flags: qr rd ra; QUERY: 1, ANSWER: 3, AUTHORITY: 0, ADDITIONAL: 0
+
+;; QUESTION SECTION:
+;www.baidu.com.         IN  A
+
+;; ANSWER SECTION:
+www.baidu.com.      1162    IN  CNAME   www.a.shifen.com.
+www.a.shifen.com.   274 IN  A   180.97.33.108
+www.a.shifen.com.   274 IN  A   180.97.33.107
+
+;; Query time: 42 msec
+;; SERVER: 114.114.114.114#53(114.114.114.114)
+;; WHEN: Fri Apr 22 01:53:23 2016
+;; MSG SIZE  rcvd: 90
+</pre>
+
+<p>
+如果你设置的dnsserver是一个域名，那么dig会首先通过默认的上连DNS服务器去查询对应的IP地址，然后再以设置的dnsserver为上连DNS服务器。
+</p>
+
+<p>
+如果你没有设置@dnsserver，那么dig就会依次使用/etc/resolv.conf里的地址作为上连DNS服务器。
+</p>
+
+<p>
+而对于querytype，如果你看过我上一篇有关nslookup命令的讲解，那么你应该对querytype有所了解，你可以设置A/AAAA/PTR/MX/ANY等值，默认是查询A记录。
+</p>
+
+<h2 id="toc_0.6">一些常用的选项</h2>
+
+<ul>
+<li>
+-c选项，可以设置协议类型（class），包括IN(默认)、CH和HS。
+
+<li>
+-f选项，dig支持从一个文件里读取内容进行批量查询，这个非常体贴和方便。文件的内容要求一行为一个查询请求。
+
+<li>
+-4和-6两个选项，用于设置仅适用哪一种作为查询包传输协议，分别对应着IPv4和IPv6。
+
+<li>
+-t选项，用来设置查询类型，默认情况下是A，也可以设置MX等类型，来一个例子：
+<pre>
+dig roclinux.cn -t MX
+
+; &lt;&lt;&gt;&gt; DiG 9.8.3-P1 &lt;&lt;&gt;&gt; roclinux.cn -t MX
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 35781
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0
+
+;; QUESTION SECTION:
+;roclinux.cn.           IN  MX
+
+;; ANSWER SECTION:
+roclinux.cn.        3600    IN  MX  0 mail.roclinux.cn.
+
+;; Query time: 93 msec
+;; SERVER: 192.168.1.1#53(192.168.1.1)
+;; WHEN: Fri Apr 22 01:58:15 2016
+;; MSG SIZE  rcvd: 50
+</pre>
+
+<li>
+-q选项，其实它本身是一个多余的选项，但是它在复杂的dig命令中又是那么的有用。-q选项可以显式设置你要查询的域名，这样可以避免和其他众多的参数、选项相混淆，提高了命令的可读性，来个例子：
+<pre>
+dig -q www.roclinux.cn
+
+; &lt;&lt;&gt;&gt; DiG 9.8.3-P1 &lt;&lt;&gt;&gt; -q www.roclinux.cn
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 12247
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0
+
+;; QUESTION SECTION:
+;www.roclinux.cn.       IN  A
+
+;; ANSWER SECTION:
+www.roclinux.cn.    3600    IN  A   116.255.245.206
+
+;; Query time: 46 msec
+;; SERVER: 192.168.1.1#53(192.168.1.1)
+;; WHEN: Fri Apr 22 01:59:19 2016
+;; MSG SIZE  rcvd: 49
+</pre>
+
+<li>
+-x选项，是逆向查询选项。可以查询IP地址到域名的映射关系。举一个例子：
+<pre>
+dig -x 193.0.14.129
+
+; &lt;&lt;&gt;&gt; DiG 9.8.3-P1 &lt;&lt;&gt;&gt; -x 193.0.14.129
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 47369
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0
+
+;; QUESTION SECTION:
+;129.14.0.193.in-addr.arpa. IN  PTR
+
+;; ANSWER SECTION:
+129.14.0.193.in-addr.arpa. 17124 IN PTR k.root-servers.net.
+
+;; Query time: 6 msec
+;; SERVER: 192.168.1.1#53(192.168.1.1)
+;; WHEN: Fri Apr 22 02:00:42 2016
+;; MSG SIZE  rcvd: 75
+</pre>
+
+</ul>
+ 
+
+<h2 id="toc_0.7">dig特有的查询选项(query option)</h2>
+
+<p>
+和刚才的选项不同，dig还有一批所谓的“查询选项”，这批选项的使用与否，会影响到dig的查询方式或输出的结果信息，因此对于这批选项，dig要求显式的在其前面统一的加上一个“+”（加号），这样dig识别起来会更方便，同时命令的可读性也会更强。
+</p>
+
+<p>
+dig总共有42个查询选项，涉及到DNS信息的方方面面，如此多的查询选项，本文不会一一赘述，只会挑出最最常用的几个重点讲解。
+</p>
+
+<h3 id="toc_0.7.1">TCP代替UDP</h3>
+
+<p>
+众所周知，DNS查询过程中的交互是采用UDP的。如果你希望采用TCP方式，需要这样：
+</p>
+
+<pre>
+dig @114.114.114.114 +tcp www.baidu.com
+
+; &lt;&lt;&gt;&gt; DiG 9.8.3-P1 &lt;&lt;&gt;&gt; @114.114.114.114 +tcp www.baidu.com
+; (1 server found)
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 24998
+;; flags: qr rd ra; QUERY: 1, ANSWER: 3, AUTHORITY: 0, ADDITIONAL: 0
+
+;; QUESTION SECTION:
+;www.baidu.com.         IN  A
+
+;; ANSWER SECTION:
+www.baidu.com.      607 IN  CNAME   www.a.shifen.com.
+www.a.shifen.com.   35  IN  A   180.97.33.108
+www.a.shifen.com.   35  IN  A   180.97.33.107
+
+;; Query time: 40 msec
+;; SERVER: 114.114.114.114#53(114.114.114.114)
+;; WHEN: Fri Apr 22 02:02:38 2016
+;; MSG SIZE  rcvd: 90
+</pre>
+
+<h3 id="toc_0.7.2">默认追加域</h3>
+
+<p>
+大家直接看例子，应该就能理解“默认域”的概念了，也就能理解+domain=somedomain的作用了：
+</p>
+
+<pre>
+dig +domain=baidu.com image
+
+; &lt;&lt;&gt;&gt; DiG 9.8.3-P1 &lt;&lt;&gt;&gt; +domain=baidu.com image
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 17582
+;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 0
+
+;; QUESTION SECTION:
+;image.baidu.com.       IN  A
+
+;; ANSWER SECTION:
+image.baidu.com.    716 IN  CNAME   image.n.shifen.com.
+image.n.shifen.com. 197 IN  A   115.239.210.36
+
+;; Query time: 10 msec
+;; SERVER: 192.168.1.1#53(192.168.1.1)
+;; WHEN: Fri Apr 22 02:04:00 2016
+;; MSG SIZE  rcvd: 78
+</pre>
+
+
+<h3 id="toc_0.7.3">跟踪dig全过程</h3>
+
+<p>
+dig非常著名的一个查询选项就是+trace，当使用这个查询选项后，dig会从根域查询一直跟踪直到查询到最终结果，并将整个过程信息输出出来。
+</p>
+
+<pre>
+dig +trace roclinux.cn
+
+; &lt;&lt;&gt;&gt; DiG 9.8.3-P1 &lt;&lt;&gt;&gt; +trace roclinux.cn
+;; global options: +cmd
+.           29486   IN  NS  m.root-servers.net.
+.           29486   IN  NS  k.root-servers.net.
+.           29486   IN  NS  f.root-servers.net.
+.           29486   IN  NS  b.root-servers.net.
+.           29486   IN  NS  e.root-servers.net.
+.           29486   IN  NS  d.root-servers.net.
+.           29486   IN  NS  g.root-servers.net.
+.           29486   IN  NS  h.root-servers.net.
+.           29486   IN  NS  j.root-servers.net.
+.           29486   IN  NS  i.root-servers.net.
+.           29486   IN  NS  l.root-servers.net.
+.           29486   IN  NS  a.root-servers.net.
+.           29486   IN  NS  c.root-servers.net.
+;; Received 228 bytes from 192.168.1.1#53(192.168.1.1) in 96 ms
+//从本地DNS查找到根域DNS列表
+
+cn.         172800  IN  NS  a.dns.cn.
+cn.         172800  IN  NS  b.dns.cn.
+cn.         172800  IN  NS  d.dns.cn.
+cn.         172800  IN  NS  c.dns.cn.
+cn.         172800  IN  NS  ns.cernet.net.
+cn.         172800  IN  NS  e.dns.cn.
+;; Received 292 bytes from 192.36.148.17#53(192.36.148.17) in 116 ms
+//选择了192.36.148.17这台根域DNS来查找cn.域DNS列表
+
+roclinux.cn.        86400   IN  NS  ns12.edong.com.
+roclinux.cn.        86400   IN  NS  ns11.edong.com.
+;; Received 76 bytes from 203.119.27.1#53(203.119.27.1) in 985 ms
+//选择了203.119.27.1来查找roclinux域的DNS列表
+
+roclinux.cn.        3600    IN  A   116.255.245.206
+roclinux.cn.        3600    IN  NS  ns12.edong.com.
+roclinux.cn.        3600    IN  NS  ns11.edong.com.
+;; Received 92 bytes from 61.147.124.145#53(61.147.124.145) in 42 ms
+////最终查找到A记录
+</pre>
+ 
+<h3 id="toc_0.7.4">精简dig输出</h3>
+
+<ul>
+<li>
+使用+nocmd的话，可以节省输出dig版本信息。
+
+<li>
+使用+short的话，仅会输出最精简的CNAME信息和A记录，其他都不会输出。就像这样：
+
+</ul>
+
+<pre>
+dig +short www.baidu.com
+www.a.shifen.com.
+180.97.33.108
+180.97.33.107
+</pre>
+<ul>
+<li>
+使用+nocomment的话，可以节省输出dig的详情注释信息。
+
+<li>
+使用+nostat的话，最后的统计信息也不会输出。当+nocmd、+nocomment和+nostat都是用上，是这样：
+<pre>
+dig +nocmd +nocomment +nostat www.baidu.com
+;www.baidu.com.         IN  A
+www.baidu.com.      1047    IN  CNAME   www.a.shifen.com.
+www.a.shifen.com.   122 IN  A   180.97.33.107
+www.a.shifen.com.   122 IN  A   180.97.33.108
+</pre>
+
+</ul>
+
+<h2 id="toc_0.8">我们还需要学习什么</h2>
+
+<p>
+坚持看我的博客的同学，已经掌握了nslookup和dig两个DNS工具，我想，下一步你可以
+自己搭建一套内部的DNS服务器了，自己设置master/slave服务器，自己添加Zone，
+自己添加正解、反解，自己设置缓存超时等等，相信通过这一番折腾，
+你对DNS会有不一样的理解和认识。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
