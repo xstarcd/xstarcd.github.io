@@ -187,6 +187,18 @@ NTPDATE_OPTIONS=""
 </ul>
 </ul>
 
+<pre>
+restrict [address] mask [netmask_ip] [parameter]
+
+其中parameter的参数主要有：
+ignore     ：    拒绝所有类型的ntp连接
+nomodify   ：    客户端不能使用ntpc与ntpq两支程式来修改服务器的时间参数
+noquery    ：    客户端不能使用ntpq、ntpc等指令来查询服务器时间，等于不提供ntp的网络校时
+notrap     ：    不提供trap这个远程时间登录的功能
+notrust    ：    拒绝没有认证的客户端
+nopeer     ：    不与其他同一层的ntp服务器进行时间同步
+</pre>
+
 <h3 id="toc_0.1.4">验证与状态检查</h3>
 
 <ul>
