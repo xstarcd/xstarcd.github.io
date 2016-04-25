@@ -152,14 +152,10 @@ restrict 192.168.0.0 mask 255.255.255.0 nomodify motrap
 restrict 192.168.1.123 mask 255.255.255.255 nomodify motrap
 
 # 使用上层的internet ntp服务器
-restrict cn.pool.ntp.org
-restrict 1.cn.poo.ntp.org
-restrict 0.asia.pool.ntp.org
-restrict 3.asia.pool.ntp.org
 server cn.pool.ntp.org prefer
-server 1.cn.poo.ntp.org
 server 0.asia.pool.ntp.org
 server 3.asia.pool.ntp.org
+server 0.centos.pool.ntp.org iburst
 
 # 如果无法与上层ntp server通信以本地时间为标准时间
 server   127.127.1.0    # local clock
@@ -379,9 +375,11 @@ Every 2.0s: ntpq -p                                                             
 <h3 id="toc_0.2.2">错误2.Server dropped: no data</h3>
 
 <p>
-从客户端执行netdate –d时有错误信息如下：
+从客户端执行ntpdate –d时有错误信息如下：
 </p>
 <pre>
+ntpdate -d 192.168.30.22
+
 transmit(192.168.30.22)
 transmit(192.168.30.22)
 transmit(192.168.30.22)
