@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>AWStats网站日志分析</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>AWStats网站日志分析</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">安装</a>
+<li><a href="#toc_0.2">初次配置</a>
+<li><a href="#toc_0.3">中文乱码修正</a>
+<li><a href="#toc_0.4">配置文件</a>
+<li><a href="#toc_0.5">日志分析及html生成</a>
+<li><a href="#toc_0.6">其它</a>
+<li><a href="#toc_0.7">指标说明</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="http://www.awstats.org/">http://www.awstats.org/</a>
+
+<li>
+与其他分析工具比较：<a href="http://www.awstats.org/docs/awstats_compare.html">http://www.awstats.org/docs/awstats_compare.html</a>
+
+<li>
+安装说明：<a href="http://www.awstats.org/docs/awstats_setup.html">http://www.awstats.org/docs/awstats_setup.html</a>
+
+<li>
+Awstats显示国家地区插件GeoIP安装: <a href="http://www.cnblogs.com/xcxc/p/4449867.html">http://www.cnblogs.com/xcxc/p/4449867.html</a>
+
+<li>
+车东的博客：<a href="http://www.chedong.com/blog/archives/cat_awstats.html">http://www.chedong.com/blog/archives/cat_awstats.html</a>
+
+<li>
+部署版本：awstats-7.4.tar.gz
+
+<li>
+部署方式：
+
+<ul>
+<li>
+配置Nginx日志格式。
+
+<li>
+增加GeoIP支持。
+
+<li>
+用crontab调度每天执行日志分析和静态生成，未采用动态网站形式。
+
+</ul>
+</ul>
+
+<h2 id="toc_0.1">安装</h2>
+
+<pre class="brush:bash">
+# 安装AWStats
+mkdir -p /data/soft &amp;&amp; cd /data/soft/ \
+&amp;&amp; wget https://prdownloads.sourceforge.net/awstats/awstats-7.4.tar.gz \
+&amp;&amp; cd /usr/local \
+&amp;&amp; tar zxvf /data/soft/awstats-7.4.tar.gz \
+&amp;&amp; mv awstats-7.4 awstats
+
+# 创建数据和html目录
+mkdir /data/awstatsData
+mkdir /data/www/awstats
+
+# 安装GeoIP(在CentOS 6.5源中已有)
+yum -y install GeoIP perl-Geo-IP
+
+# 下载GeoIP数据文件
+cd /data/soft
+wget http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz
+wget http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz
+
+# 将GeoIP数据文件放到指定目录(与后面的配置文件一致)
+cd /data/awstatsData
+cp /data/soft/Geo*.gz .
+gzip -d Geo*.gz
+</pre>
+
+<h2 id="toc_0.2">初次配置</h2>
+
+<p>
+执行以下命令，按照提示选择和输入对应信息，生成第一个站点配置文件，作为配置文件模版。
+</p>
+
+<p>
+我因为没有安装Apache Web Server、也不想安装php环境，因此选择Web服务器位置时，均是选择的No。
+</p>
+
+<pre class="brush:bash">
+cd /usr/local/awstats/tools
+perl awstats_configure.pl
+</pre>
+
+<h2 id="toc_0.3">中文乱码修正</h2>
+
+<p>
+当设置<code>Lang="cn"</code>时，生成的html文件charset与lang文件不匹配，造成显示中文为乱码。
+</p>
+
+<pre class="brush:bash">
+cd /usr/local/awstats/wwwroot/cgi-bin/lang
+cp awstats-cn.txt awstats-cn.txt.bak
+iconv -f GBK -t UTF-8 awstats-cn.txt.bak &gt; awstats-cn.txt
+sed -i 's/PageCode=GBK/PageCode=UTF-8/g' awstats-cn.txt
+file awstats-cn.txt
+#awstats-cn.txt: UTF-8 Unicode text, with CRLF line terminators
+file awstats-cn.txt.bak
+#awstats-cn.txt.bak: ISO-8859 text, with CRLF line terminators
+</pre>
+
+<h2 id="toc_0.4">配置文件</h2>
+
+<p>
+针对多个站点，很多配置选项是重复的，如果每个配置文件都修改维护起来会很麻烦，AWStats从5.4开始提供了配置文件包含的功能，所以我们可以配置一个通用配置，比如：awstats.model.conf，然后其他站点的配置设置为：可以通过后面的选项覆盖和缺省不一致的配置。
+</p>
+
+<ul>
+<li>
+通用配置：awstats.model.conf (只做了小量的修改)
+<pre class="brush:bash">
+LogType=W
+LogFormat="%host %other %logname %time1 %methodurl %code %bytesd %refererquot %uaquot %gzipratio %otherquot %otherquot"
+LogSeparator=" "
+HostAliases="mysite 127.0.0.1 localhost"
+DNSLookup=0
+DirData="/data/awstatsData"
+DirCgi="/cgi-bin"
+DirIcons="/awstats/icon"
+AllowToUpdateStatsFromBrowser=0
+AllowFullYearView=2
+EnableLockForUpdate=0
+DNSStaticCacheFile="dnscache.txt"
+DNSLastUpdateCacheFile="dnscachelastupdate.txt"
+SkipDNSLookupFor=""
+AllowAccessFromWebToAuthenticatedUsersOnly=0
+AllowAccessFromWebToFollowingAuthenticatedUsers=""
+AllowAccessFromWebToFollowingIPAddresses=""
+CreateDirDataIfNotExists=0
+BuildHistoryFormat=text
+BuildReportFormat=html
+SaveDatabaseFilesWithPermissionsForEveryone=0
+PurgeLogFile=0
+ArchiveLogRecords=0
+KeepBackupOfHistoricFiles=0
+DefaultFile="index.php index.html"
+SkipHosts=""
+SkipUserAgents=""
+SkipFiles=""
+SkipReferrersBlackList=""
+OnlyHosts=""
+OnlyUserAgents=""
+OnlyUsers=""
+OnlyFiles=""
+NotPageList="css js class gif jpg jpeg png bmp ico rss xml swf zip arj rar gz z bz2 wav mp3 wma mpg avi"
+ValidHTTPCodes="200 304"
+ValidSMTPCodes="1 250"
+TrapInfosForHTTPErrorCodes = "400 403 404"
+AuthenticatedUsersNotCaseSensitive=0
+URLNotCaseSensitive=0
+URLWithAnchor=0
+URLQuerySeparators="?;"
+URLWithQuery=0
+URLWithQueryWithOnlyFollowingParameters=""
+URLWithQueryWithoutFollowingParameters=""
+URLReferrerWithQuery=0
+WarningMessages=1
+ErrorMessages=""
+DebugMessages=0
+NbOfLinesForCorruptedLog=50
+WrapperScript=""
+DecodeUA=0
+MiscTrackerUrl="/js/awstats_misc_tracker.js"
+LevelForBrowsersDetection=2         # 0 disables Browsers detection.
+                                    # 2 reduces AWStats speed by 2%
+                                    # allphones reduces AWStats speed by 5%
+LevelForOSDetection=2               # 0 disables OS detection.
+                                    # 2 reduces AWStats speed by 3%
+LevelForRefererAnalyze=2            # 0 disables Origin detection.
+                                    # 2 reduces AWStats speed by 14%
+LevelForRobotsDetection=2           # 0 disables Robots detection.
+                                    # 2 reduces AWStats speed by 2.5%
+LevelForSearchEnginesDetection=2    # 0 disables Search engines detection.
+                                    # 2 reduces AWStats speed by 9%
+LevelForKeywordsDetection=2         # 0 disables Keyphrases/Keywords detection.
+                                    # 2 reduces AWStats speed by 1%
+LevelForFileTypesDetection=2        # 0 disables File types detection.
+                                    # 2 reduces AWStats speed by 1%
+LevelForWormsDetection=0            # 0 disables Worms detection.
+                                    # 2 reduces AWStats speed by 15%
+UseFramesWhenCGI=1
+DetailedReportsOnNewWindows=1
+Expires=0
+MaxRowsInHTMLOutput=1000
+Lang="cn"
+DirLang="./lang"
+ShowMenu=1
+ShowSummary=UVPHB
+ShowMonthStats=UVPHB
+ShowDaysOfMonthStats=VPHB
+ShowDaysOfWeekStats=PHB
+ShowHoursStats=PHB
+ShowDomainsStats=PHB
+ShowHostsStats=PHBL
+ShowAuthenticatedUsers=0
+ShowRobotsStats=HBL
+ShowWormsStats=0
+ShowEMailSenders=0
+ShowEMailReceivers=0
+ShowSessionsStats=1
+ShowPagesStats=PBEX
+ShowFileTypesStats=HB
+ShowFileSizesStats=0
+ShowDownloadsStats=HB
+ShowOSStats=1
+ShowBrowsersStats=1
+ShowScreenSizeStats=0
+ShowOriginStats=PH
+ShowKeyphrasesStats=1
+ShowKeywordsStats=1
+ShowMiscStats=a
+ShowHTTPErrorsStats=1
+ShowHTTPErrorsPageDetail=R
+ShowSMTPErrorsStats=0
+ShowClusterStats=0
+AddDataArrayMonthStats=1
+AddDataArrayShowDaysOfMonthStats=1
+AddDataArrayShowDaysOfWeekStats=1
+AddDataArrayShowHoursStats=1
+IncludeInternalLinksInOriginSection=0
+MaxNbOfDomain = 10
+MinHitDomain  = 1
+MaxNbOfHostsShown = 10
+MinHitHost    = 1
+MaxNbOfLoginShown = 10
+MinHitLogin   = 1
+MaxNbOfRobotShown = 10
+MinHitRobot   = 1
+MaxNbOfDownloadsShown = 10
+MinHitDownloads = 1
+MaxNbOfPageShown = 10
+MinHitFile    = 1
+MaxNbOfOsShown = 10
+MinHitOs      = 1
+MaxNbOfBrowsersShown = 10
+MinHitBrowser = 1
+MaxNbOfScreenSizesShown = 5
+MinHitScreenSize = 1
+MaxNbOfWindowSizesShown = 5
+MinHitWindowSize = 1
+MaxNbOfRefererShown = 10
+MinHitRefer   = 1
+MaxNbOfKeyphrasesShown = 10
+MinHitKeyphrase = 1
+MaxNbOfKeywordsShown = 10
+MinHitKeyword = 1
+MaxNbOfEMailsShown = 20
+MinHitEMail   = 1
+FirstDayOfWeek=1
+ShowFlagLinks=""
+ShowLinksOnUrl=1
+UseHTTPSLinkForUrl=""
+MaxLengthOfShownURL=64
+HTMLHeadSection=""
+HTMLEndSection=""
+MetaRobot=0
+Logo="awstats_logo6.png"
+LogoLink="http://www.awstats.org"
+BarWidth   = 260
+BarHeight  = 90
+StyleSheet=""
+color_Background="FFFFFF"               # Background color for main page (Default = "FFFFFF")
+color_TableBGTitle="CCCCDD"             # Background color for table title (Default = "CCCCDD")
+color_TableTitle="000000"               # Table title font color (Default = "000000")
+color_TableBG="CCCCDD"                  # Background color for table (Default = "CCCCDD")
+color_TableRowTitle="FFFFFF"    # Table row title font color (Default = "FFFFFF")
+color_TableBGRowTitle="ECECEC"  # Background color for row title (Default = "ECECEC")
+color_TableBorder="ECECEC"              # Table border color (Default = "ECECEC")
+color_text="000000"                             # Color of text (Default = "000000")
+color_textpercent="606060"              # Color of text for percent values (Default = "606060")
+color_titletext="000000"                # Color of text title within colored Title Rows (Default = "000000")
+color_weekend="EAEAEA"                  # Color for week-end days (Default = "EAEAEA")
+color_link="0011BB"                             # Color of HTML links (Default = "0011BB")
+color_hover="605040"                    # Color of HTML on-mouseover links (Default = "605040") 
+color_u="FFAA66"                                # Background color for number of unique visitors (Default = "FFAA66")
+color_v="F4F090"                                # Background color for number of visites (Default = "F4F090")
+color_p="4477DD"                                # Background color for number of pages (Default = "4477DD")
+color_h="66DDEE"                                # Background color for number of hits (Default = "66DDEE")
+color_k="2EA495"                                # Background color for number of bytes (Default = "2EA495")
+color_s="8888DD"                                # Background color for number of search (Default = "8888DD")
+color_e="CEC2E8"                                # Background color for number of entry pages (Default = "CEC2E8")
+color_x="C1B2E2"                                # Background color for number of exit pages (Default = "C1B2E2")
+LoadPlugin="geoip GEOIP_STANDARD /data/awstatsData/GeoIP.dat"
+LoadPlugin="geoip_city_maxmind GEOIP_STANDARD /data/awstatsData/GeoLiteCity.dat"
+ExtraTrackedRowsLimit=500
+</pre>
+
+</ul>
+
+<ul>
+<li>
+站点配置文件: awstats.mysite.conf
+<pre class="brush:bash">
+Include "awstats.model.conf"
+LogFile="gzip -cd /mnt/logs/192.168.0.100/nginx/mysite.access.log-%YYYY-0%MM-0%DD-0.gz |"
+LogType=W
+LogFormat="%host %other %logname %time1 %methodurl %code %bytesd %refererquot %uaquot %gzipratio %otherquot %otherquot"
+LogSeparator=" "
+SiteDomain="www.mysite.com"
+HostAliases="www.mysite.com 127.0.0.1 localhost"
+DirData="/data/awstatsData"
+DirIcons="/awstats/icon"
+ValidHTTPCodes="200 304 302"
+Lang="cn"
+DirLang="./lang"
+</pre>
+
+</ul>
+
+<h2 id="toc_0.5">日志分析及html生成</h2>
+
+<p>
+将下面的脚本加到/etc/crontab设置中来每日定时完成日志分析和html生成。
+</p>
+
+<p>
+也可直接使用awstats_buildstaticpages.pl的-update选项来自动完成/etc/awstats中配置的所有站点的日志分析和html生成，详见：
+</p>
+
+<p>
+<a href="http://www.awstats.org/docs/awstats_tools.html#awstats_buildstaticpages">http://www.awstats.org/docs/awstats_tools.html#awstats_buildstaticpages</a>
+</p>
+
+<pre class="brush:bash">
+#!/bin/sh
+#0 5 * * * root /data/awstats_cron.sh &gt;&gt; /data/www/awstats/awstats.txt 2&gt;&amp;1
+
+SITES="mysite"
+OUTDIR=/data/www/awstats
+export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
+AWSTATS=/usr/local/awstats/wwwroot/cgi-bin/awstats.pl
+AWSTATS_UPDATEALL=/usr/local/awstats/tools/awstats_updateall.pl
+AWSTATS_BUILD=/usr/local/awstats/tools/awstats_buildstaticpages.pl
+for site in $SITES;do
+    echo "$(date) Update Data $site"
+    perl $AWSTATS -update -config=$site
+
+    echo "$(date) Create Html $site"
+    out=$OUTDIR/$site
+    [ ! -d "$out" ] &amp;&amp; mkdir -p "$out"
+    perl $AWSTATS_BUILD -awstatsprog=$AWSTATS -config=$site -dir=$out
+    cd $out 
+    ln -sfT awstats.${site }.html index.html
+    cd -
+done
+</pre>
+
+<h2 id="toc_0.6">其它</h2>
+
+<ul>
+<li>
+AWstats的配置中有很多设置项和Plugin可选，可根据实际需要进行调整和启用。
+
+<li>
+自定义报表:<a href="http://www.awstats.org/docs/awstats_extra.html">http://www.awstats.org/docs/awstats_extra.html</a>
+<pre>
+The AWStats ExtraSection features are powerfull setup options to allow you to add your own report not provided by default with AWStats. You can use it to build special reports, like number of sales for a particular product, marketing reports, counting for a particular user or agent, etc...
+</pre>
+
+</ul>
+
+
+<h2 id="toc_0.7">指标说明</h2>
+
+<ul>
+<li>
+参观者：按来访者不重复的IP统计，一个IP代表一个参观者；
+
+<li>
+参观次数：一个参观者可能1天之内参观多次（比如：上午一次，下午一次），所以按一定时间内（比如：1个小时），不重复的IP数统计，参观者的访问次数；
+
+<li>
+网页数：不包括图片，CSS, JavaScript文件等的纯页面访问总数，但如果一个页面使用了多个帧，每个帧都算一个页面请求；
+
+<li>
+文件数：来自浏览器客户端的文件请求总数，包括图片，CSS，JavaScript等，用户请求一个页面是，如果页面中包含图片等，所以对服务器会发出多次文件请求，文件数一般远远大于文件数；
+
+<li>
+字节：传给客户端的数据总流量；
+
+<li>
+来自REFERER中的数据：日志中的参考（REFERER）字段，记录了访问相应网页之前地址，因此如果用户是通过搜索引擎的搜索结果点击进入网站的，日志中就会有用户在相应搜索引擎的查询地址，这个地址中就可以通过解析将用户查询使用的关键词提取出来，比如：
+<pre>
+2003-03-26 15:43:58 123.123.123.123 - GET /index.html 200 192 HTTP/1.1 Mozilla/4.0+(compatible;+MSIE+5.01;+Windows+NT+5.0) http://www.google.com/search?q=chedong
+</pre>
+
+<li>
+AWStats在搜索引擎的关键短语和关键词统计方面的功能还是比较完整的：可以对全世界3百多种机器爬虫进行识别，并且可以识别大部分主流国际化搜索引擎和很多地区的本地语言搜索引擎。
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
