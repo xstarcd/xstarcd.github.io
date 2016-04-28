@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Shell Json</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Shell Json</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">利用sed解析</a>
+<li><a href="#toc_0.2">shell脚本处理JSON数据工具jq</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">利用sed解析</h2>
+
+<ul>
+<li>
+解析json(不能有无用的空格)
+<pre class="brush:bash">
+#!/bin/sh
+s={"rv":0,flag:1,"url":"http://www.jinhill.com","msg":"test"}
+parse_json(){
+    echo $1 | sed 's/.*'$2':\([^,}]*\).*/\1/'
+}
+
+echo "Json strings: $s"
+rv=$(parse_json $s "rv")
+url=$(parse_json $s "url")
+msg=$(parse_json $s "msg")
+echo rv=$rv
+echo url=$url
+echo msg=$msg
+</pre>
+
+</ul>
+
+<ul>
+<li>
+解析URL Query
+<pre class="brush:bash">
+#!/bin/sh
+s="http://www.zonetec.cn/WlanAuth/portal.do?appid=aaaa&amp;apidx=0"
+parse(){
+    echo $1 | sed 's/.*'$2'=\([[:alnum:]]*\).*/\1/'
+}
+value=$(parse $s "appid")
+echo $value
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">shell脚本处理JSON数据工具jq</h2>
+
+<ul>
+<li>
+原文:<a href="http://www.tuicool.com/articles/vieMN3Q">http://www.tuicool.com/articles/vieMN3Q</a>
+
+<li>
+jq 
+
+<ul>
+<li>
+<a href="https://stedolan.github.io/jq/">https://stedolan.github.io/jq/</a>
+
+<li>
+<a href="https://stedolan.github.io/jq/tutorial/">https://stedolan.github.io/jq/tutorial/</a>
+
+</ul>
+</ul>
+ 
+
+
+<p>
+Json.org推荐了两个：Jshon和JSON.sh
+</p>
+
+<ul>
+<li>
+<a href="http://kernelpanic.im/blog/2012/03/08/shell-manipulate-json/">http://kernelpanic.im/blog/2012/03/08/shell-manipulate-json/</a>
+
+<ul>
+<li>
+JSON.sh:<a href="https://github.com/dominictarr/JSON.sh">https://github.com/dominictarr/JSON.sh</a>
+
+<li>
+JSON.awk:<a href="https://github.com/step-/JSON.awk">https://github.com/step-/JSON.awk</a>
+
+<li>
+jshon:<a href="http://kmkeen.com/jshon/">http://kmkeen.com/jshon/</a>
+
+</ul>
+</ul>
+ 
+<p>
+其中JSON.sh是完全用shell实现的json parser，似乎不能做到添加/修改/删除原有json的结构。
+</p>
+
+<p>
+而jshon是用c实现的，依赖于jansson，使用MIT协议，目的就是为了替代由 grep/sed/awk写的fragile adhoc parsers，相比之下python/perl/ruby显得过于笨重了。 
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
