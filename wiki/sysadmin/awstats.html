@@ -372,8 +372,8 @@ for site in $SITES;do
     cd -
 
     if [ "$DAY" = "01" ];then
-        out_month="$OUTDIR/$site/${YEAR}${$MONTH}"
-        [ ! -d "$out" ] &amp;&amp; mkdir -p "$out"
+        out_month="$OUTDIR/$site/${YEAR}${MONTH}"
+        [ ! -d "$out_month" ] &amp;&amp; mkdir -p "$out_month"
         perl $AWSTATS_BUILD -awstatsprog=$AWSTATS -config=$site -dir=$out_month -month=$MONTH -year=$YEAR
         cd $out_month
         ln -sfT awstats.${site}.html index.html
