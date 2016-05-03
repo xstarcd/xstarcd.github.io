@@ -356,6 +356,9 @@ export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/b
 AWSTATS=/usr/local/awstats/wwwroot/cgi-bin/awstats.pl
 AWSTATS_UPDATEALL=/usr/local/awstats/tools/awstats_updateall.pl
 AWSTATS_BUILD=/usr/local/awstats/tools/awstats_buildstaticpages.pl
+DAY=$(date +'%d' -d '-1 day')
+MONTH=$(date +'%m' -d '-1 day')
+YEAR=$(date +'%Y' -d '-1 day')
 for site in $SITES;do
     echo "$(date) Update Data $site"
     perl $AWSTATS -update -config=$site
@@ -367,6 +370,15 @@ for site in $SITES;do
     cd $out 
     ln -sfT awstats.${site }.html index.html
     cd -
+
+    if [ "$DAY" = "01" ];then
+        out_month="$OUTDIR/$site/${YEAR}${$MONTH}"
+        [ ! -d "$out" ] &amp;&amp; mkdir -p "$out"
+        perl $AWSTATS_BUILD -awstatsprog=$AWSTATS -config=$site -dir=$out_month -month=$MONTH -year=$YEAR
+        cd $out_month
+        ln -sfT awstats.${site}.html index.html
+        cd -
+    fi
 done
 </pre>
 
