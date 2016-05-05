@@ -454,24 +454,24 @@ Docker 是 dotCloud 最近2013年宣布的开源引擎，旨在提供一种应�
 </p>
 
 <pre class="brush:bash">
-docker run -d -it -p  9000:9000 -e ZK_HOSTS="cowinslave1.uat:2181,cowinslave2.uat:2181,cowinslave3.uat:2181" -e APPLICATION_SECRET=letmein sheepkiller/kafka-manager
+docker run -d -it -p  9000:9000 -e ZK_HOSTS="slave1.uat:2181,slave2.uat:2181,slave3.uat:2181" -e APPLICATION_SECRET=letmein sheepkiller/kafka-manager
 
 docker run -d -it -p  9000:9000 \
---add-host cowinhadoop1.uat:172.16.192.89 \
---add-host cowinslave1.uat:172.16.192.22 \
---add-host cowinslave2.uat:172.16.192.23 \
---add-host cowinslave3.uat:172.16.192.24 \
---add-host cowinhadoop1.uat:172.16.192.89 \
---add-host cowinSlave1.pro:172.16.26.22 \
---add-host cowinSlave2.pro:172.16.26.23 \
---add-host cowinSlave3.pro:172.16.26.24 \
---add-host cowinSlave4.pro:172.16.26.25 \
---add-host cowinSlave5.pro:172.16.26.26 \
---add-host cowinSlave6.pro:172.16.26.2 \
---add-host cowinSlave7.pro:172.16.26.28 \
---add-host cowinSlave8.pro:172.16.26.29 \
---add-host cowinSlave9.pro:172.16.26.30 \
--e ZK_HOSTS="cowinslave1.uat:2181,cowinslave2.uat:2181,cowinslave3.uat:2181" \
+--add-host hadoop1.uat:192.168.1.89 \
+--add-host slave1.uat:192.168.1.22 \
+--add-host slave2.uat:192.168.1.23 \
+--add-host slave3.uat:192.168.1.24 \
+--add-host hadoop1.uat:192.168.1.89 \
+--add-host Slave1.pro:192.168.0.22 \
+--add-host Slave2.pro:192.168.0.23 \
+--add-host Slave3.pro:192.168.0.24 \
+--add-host Slave4.pro:192.168.0.25 \
+--add-host Slave5.pro:192.168.0.26 \
+--add-host Slave6.pro:192.168.0.2 \
+--add-host Slave7.pro:192.168.0.28 \
+--add-host Slave8.pro:192.168.0.29 \
+--add-host Slave9.pro:192.168.0.30 \
+-e ZK_HOSTS="slave1.uat:2181,slave2.uat:2181,slave3.uat:2181" \
 -e APPLICATION_SECRET=letmein \
 sheepkiller/kafka-manager
 
