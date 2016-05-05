@@ -444,11 +444,44 @@ Razor的工作流程是，新加的机器通过Razor提供的网络启动，加�
 <li>
 Docker的价值和应用场景分析: <a href="http://www.iamadmin.com/blog/read.php?560">http://www.iamadmin.com/blog/read.php?560</a>
 
+<li>
+Docker 网络配置:<a href="http://www.oschina.net/translate/docker-network-configuration">http://www.oschina.net/translate/docker-network-configuration</a>
+
 </ul>
 
 <p>
 Docker 是 dotCloud 最近2013年宣布的开源引擎，旨在提供一种应用程序的自动化部署解决方案，简单的说就是，在 Linux 系统上迅速创建一个容器（类似虚拟机）并在容器上部署和运行应用程序，并通过配置文件可以轻松实现应用程序的自动化安装、部署和升级，非常方便。因为使用了容器，所以可以很方便的把生产环境和开发环境分开，互不影响，这是 docker 最普遍的一个玩法。更多的玩法还有大规模 web 应用、数据库部署、持续部署、集群、测试环境、面向服务的云计算、虚拟桌面 VDI 等等。
 </p>
+
+<pre class="brush:bash">
+docker run -d -it -p  9000:9000 -e ZK_HOSTS="cowinslave1.uat:2181,cowinslave2.uat:2181,cowinslave3.uat:2181" -e APPLICATION_SECRET=letmein sheepkiller/kafka-manager
+
+docker run -d -it -p  9000:9000 \
+--add-host cowinhadoop1.uat:172.16.192.89 \
+--add-host cowinslave1.uat:172.16.192.22 \
+--add-host cowinslave2.uat:172.16.192.23 \
+--add-host cowinslave3.uat:172.16.192.24 \
+--add-host cowinhadoop1.uat:172.16.192.89 \
+--add-host cowinSlave1.pro:172.16.26.22 \
+--add-host cowinSlave2.pro:172.16.26.23 \
+--add-host cowinSlave3.pro:172.16.26.24 \
+--add-host cowinSlave4.pro:172.16.26.25 \
+--add-host cowinSlave5.pro:172.16.26.26 \
+--add-host cowinSlave6.pro:172.16.26.2 \
+--add-host cowinSlave7.pro:172.16.26.28 \
+--add-host cowinSlave8.pro:172.16.26.29 \
+--add-host cowinSlave9.pro:172.16.26.30 \
+-e ZK_HOSTS="cowinslave1.uat:2181,cowinslave2.uat:2181,cowinslave3.uat:2181" \
+-e APPLICATION_SECRET=letmein \
+sheepkiller/kafka-manager
+
+docker ps
+
+CONTAINER ID        IMAGE                       COMMAND             CREATED             STATUS              PORTS                    NAMES
+0d46d0308ad4        sheepkiller/kafka-manager   "./km.sh"           2 minutes ago       Up 16 seconds       0.0.0.0:9000-&gt;9000/tcp   silly_fermat        
+
+docker restart 0d46d0308ad4
+</pre>
 
 </div>
 <div id="footer">
