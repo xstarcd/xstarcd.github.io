@@ -164,7 +164,7 @@ deadline兼顾到一个请求不会在队列中等待太久导致饿死，对数
 
 <h2 id="toc_2.1">MySQL常用操作</h2>
 
-<ol>
+<ul>
 <li>
 修改mysql密码、建库、备份
 <pre class="brush: bash">
@@ -186,7 +186,32 @@ date;mysqldump -uroot -p --default-character-set=utf8 --opt --extended-insert=fa
 SELECT INET_ATON('192.168.0.1');
 </pre>
 
-</ol>
+</ul>
+
+<ul>
+<li>
+replace、substring_index使用
+
+</ul>
+
+<p>
+SUBSTRING_INDEX(str,delim,num)，其返回在str中第num个delim之前或之后的字符串，若num为正则为向前取，为负则为向后取。
+</p>
+
+<pre class="brush:sql">
+
+select SUBSTRING_INDEX('abcdefg','d',1);
+-- 向前取，返回字符串abc
+select SUBSTRING_INDEX('abcdefg','d',-1);
+-- 向后取，返回efg
+select SUBSTRING_INDEX(SUBSTRING_INDEX('abcdefg','d',-1),'g',1);
+-- 取中间，返回ef
+
+-- replace替换范例
+select id,
+REPLACE(paramObj,CONCAT(',"header":{',SUBSTRING_INDEX(SUBSTRING_INDEX(paramObj,'{',-1),'}',2)),'') as opt
+from RemoteOperationCmdHistory limit 1;
+</pre>
 
 <h2 id="toc_2.2"><a href="MySQL_replicate.html">MySQL复制</a></h2>
 

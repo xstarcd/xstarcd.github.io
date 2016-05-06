@@ -18,13 +18,15 @@
 <h1>监控系统</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">Zenoss</a>
-<li><a href="#toc_0.2">Cacti</a>
-<li><a href="#toc_0.3">Nagios</a>
-<li><a href="#toc_0.4">Ganglia</a>
-<li><a href="#toc_0.5">zabbix</a>
-<li><a href="#toc_0.6">WhatsUp</a>
-<li><a href="#toc_0.7">centreon</a>
+<li><a href="#toc_0.1">Collectd</a>
+<li><a href="#toc_0.2">Zenoss</a>
+<li><a href="#toc_0.3">Open-falcon</a>
+<li><a href="#toc_0.4">Cacti</a>
+<li><a href="#toc_0.5">Nagios</a>
+<li><a href="#toc_0.6">Ganglia</a>
+<li><a href="#toc_0.7">zabbix</a>
+<li><a href="#toc_0.8">WhatsUp</a>
+<li><a href="#toc_0.9">centreon</a>
 </ul>
 </ul>
 </div>
@@ -58,11 +60,60 @@ RRDTOOL 1.2.x 的差异: <a href="http://bbs.chinaunix.net/forum.php?mod=viewthr
 
 </ul>
 
-<h2 id="toc_0.1">Zenoss</h2>
+<h2 id="toc_0.1">Collectd</h2>
 
 <p>
-Zenoss Core是开源企业级IT管理软件-是智能监控软件，他允许IT管理员依靠单一的WEB控制台来监控网络架构的状态和健康度。Zenoss Core同时也是开源的网络与系统管理软件。
+Collectd 和Munin以及Cacti一样是注重图形式的系统指标显示方式。与众不同的是，它是专门为性能和可移植性而设计的。这意味着它适用于那些粗糙的、低端的 和嵌入式的系统。高性能低资源占有率的设计使得Collectd可以在不干扰你的服务进程的条件下，每10秒钟收集一次数据，提供高清晰的结果。你可以用 C、Perl或是Java给它写扩展程序。
 </p>
+
+<ul>
+<li>
+<a href="http://collectd.org/">http://collectd.org/</a>
+
+</ul>
+
+<h2 id="toc_0.2">Zenoss</h2>
+
+<p>
+Zenoss Core是Zenoss的开源版本，其商用版本为ZenossEnterprise。作为企业级智能监控软件，Zenoss Core允许IT管理员依靠单一的WEB控制台来监控网络架构的状态和健康度。Zenoss Core的强大能力来自于深入的列表与配置管理数据库，以发现和管理公司IT环境的各类资产。Zenoss同时提供与CMDB关联的事件和错误管理系统， 以协助提高各类事件和提醒的管理效率。
+</p>
+
+<ul>
+<li>
+优点：
+
+<ol>
+<li>
+Zenoss比较出色的地方在于它的Dashboard，可以配置很多portlet
+
+<li>
+每个用户的界面都是分开管理的，自定义dashboard不会影响其他用户
+
+<li>
+强大监控功能支持服务器、路由交换、防火墙、存储、数据库、中间件监控
+
+<li>
+采用基于HBASE的opentsdb存储任意时间段的数据
+
+<li>
+将状态监控，性能监控，资源管理，良好的报告机制进行有机的整合
+
+</ol>
+</ul>
+
+<ul>
+<li>
+缺点：
+
+<ol>
+<li>
+对资源要求较高，即使只管理少数几台设备，也需要消耗大量硬件及内存等附加资源。
+
+<li>
+针对windows系统，开源版只提供SNMP，通过WMI检测CPU，Disk，软硬件和性能只在收费版提供。
+
+</ol>
+</ul>
 
 <ul>
 <li>
@@ -73,7 +124,19 @@ Zenoss Core是开源企业级IT管理软件-是智能监控软件，他允许IT�
 
 </ul>
 
-<h2 id="toc_0.2">Cacti</h2>
+<h2 id="toc_0.3">Open-falcon</h2>
+
+<p>
+Open-falcon是小米运维团队从互联网公司的需求出发，根据多年的运维经验，结合SRE、SA、DEVS的使用经验和反馈，开发的一套面向互联网的企业级开源监控产品。
+</p>
+
+<ul>
+<li>
+<a href="http://www.oschina.net/p/open-falcon">http://www.oschina.net/p/open-falcon</a>
+
+</ul>
+
+<h2 id="toc_0.4">Cacti</h2>
 
 <p>
 <img src="http://www.cacti.net/images/cacti.png" alt="Cacti" />
@@ -84,7 +147,7 @@ Zenoss Core是开源企业级IT管理软件-是智能监控软件，他允许IT�
 
 </ul>
 
-<h2 id="toc_0.3">Nagios</h2>
+<h2 id="toc_0.5">Nagios</h2>
 
 <p>
 <img src="http://assets.nagios.com/images/header/Nagios.png" alt="Nagios" />
@@ -288,7 +351,7 @@ OMD，全称Open Monitoring Distribution，是一个围绕Nagios core构建的�
 </ul>
 </ul>
 
-<h2 id="toc_0.4">Ganglia</h2>
+<h2 id="toc_0.6">Ganglia</h2>
 
 <ul>
 <li>
@@ -303,9 +366,12 @@ Ganglia汇总监控搭建和配置详解: <a href="http://slaytanic.blog.51cto.c
 <li>
 ganglia快速开始向导（翻译自官方wiki）: <a href="http://cryinstall.com/?p=180">http://cryinstall.com/?p=180</a>
 
+<li>
+ Ganglia汇总监控搭建和配置详解:<a href="http://slaytanic.blog.51cto.com/2057708/808981/">http://slaytanic.blog.51cto.com/2057708/808981/</a>
+
 </ul>
 
-<h2 id="toc_0.5">zabbix</h2>
+<h2 id="toc_0.7">zabbix</h2>
 
 <ul>
 <li>
@@ -323,11 +389,20 @@ CentOS 6.7安装zabix 3.0: <a href="http://www.centoscn.com/zabbix/2016/0218/676
 <li>
 CentOS6下yum升级Zabbix2.2到Zabbix3.0:<a href="http://www.tuicool.com/articles/AnqMvq">http://www.tuicool.com/articles/AnqMvq</a>
 
+<li>
+实战：Zabbix 聚合功能配置与应用: <a href="http://opsnotes.net/2014/10/24/zabbix_juhe/">http://opsnotes.net/2014/10/24/zabbix_juhe/</a>
+
+<li>
+基于dropwizard/metrics ，kafka，zabbix构建应用统计数据收集展示系统: <a href="http://blog.csdn.net/hengyunabc/article/details/44072285">http://blog.csdn.net/hengyunabc/article/details/44072285</a>
+
+<li>
+使用Zabbix监控ZooKeeper服务的健康状态: <a href="http://www.tuicool.com/articles/AZ7V3qr">http://www.tuicool.com/articles/AZ7V3qr</a>
+
 </ul>
 
-<h2 id="toc_0.6">WhatsUp</h2>
+<h2 id="toc_0.8">WhatsUp</h2>
 
-<h2 id="toc_0.7">centreon</h2>
+<h2 id="toc_0.9">centreon</h2>
 
 <p>
 centreon是开源的IT监控软件，由法国人于2003年开发，最初名为Oreon，并于2005年正式更名为centreon。
