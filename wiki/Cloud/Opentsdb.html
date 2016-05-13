@@ -55,6 +55,9 @@ openTSDB使用hbase作为存储中心，它无须采样，可以完整的收集�
 <li>
 <a href="http://tech.meituan.com/opentsdb_hbase_compaction_problem.html">OpenTSDB 造成 Hbase 整点压力过大问题的排查和解决</a>
 
+<li>
+Writing Data:<a href="http://www.cnblogs.com/gsblog/p/4029987.html">http://www.cnblogs.com/gsblog/p/4029987.html</a>
+
 </ul>
 
 <h2 id="toc_0.2">OpenTSDB安装</h2>
@@ -135,7 +138,7 @@ tsd.http.staticroot = /opt/opentsdb/share/opentsdb/static
 tsd.http.cachedir =
 tsd.core.auto_create_metrics = true
 tsd.core.meta.enable_realtime_ts=true
-tsd.storage.hbase.zk_quorum = yunwei2.timait:2181
+tsd.storage.hbase.zk_quorum = yunwei2.myit:2181
 
 # 使用以下配置项指定hbase中的表名称
 # Name of the HBase table where data points are stored, default is "tsdb"
