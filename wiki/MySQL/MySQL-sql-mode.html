@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>mysql的sql_mode合理设置</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>mysql的sql_mode合理设置</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">当前sql-mode设置</a>
+<li><a href="#toc_0.2">sql_mode常用值</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="http://dev.mysql.com/doc/refman/5.7/en/sql-mode.html">http://dev.mysql.com/doc/refman/5.7/en/sql-mode.html</a>
+
+<li>
+<a href="http://blog.csdn.net/wyzxg/article/details/8787878">http://blog.csdn.net/wyzxg/article/details/8787878</a>
+
+</ul>
+
+<h2 id="toc_0.1">当前sql-mode设置</h2>
+
+<ul>
+<li>
+查看当前sql-mode
+<pre class="brush:sql">
+SELECT @@GLOBAL.sql_mode;
+SELECT @@SESSION.sql_mode;
+</pre>
+
+</ul>
+
+<pre>
+mysql&gt; SELECT @@GLOBAL.sql_mode;
++--------------------------------------------+
+| @@GLOBAL.sql_mode                          |
++--------------------------------------------+
+| STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION |
++--------------------------------------------+
+1 row in set (0.00 sec)
+
+mysql&gt; SELECT @@SESSION.sql_mode;
++--------------------------------------------+
+| @@SESSION.sql_mode                         |
++--------------------------------------------+
+| STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION |
++--------------------------------------------+
+1 row in set (0.00 sec)
+</pre>
+
+<ul>
+<li>
+设置当前sql-mode
+
+</ul>
+
+<pre class="brush:sql">
+SET GLOBAL sql_mode = 'modes...';
+SET SESSION sql_mode = 'modes...';
+</pre>
+
+<ul>
+<li>
+my.cnf中配置sql-mode
+
+</ul>
+
+<pre class="brush:bash">
+[mysqld]
+#set the SQL mode to strict
+#sql-mode="modes..." 
+sql-mode = "STRICT_TRANS_TABLES,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+</pre>
+
+<h2 id="toc_0.2">sql_mode常用值</h2>
+
+<ul>
+<li>
+ONLY_FULL_GROUP_BY：
+
+</ul>
+
+<p>
+对于GROUP BY聚合操作，如果在SELECT中的列，没有在GROUP BY中出现，那么这个SQL是不合法的，因为列不在GROUP BY从句中
+</p>
+
+<ul>
+<li>
+NO_AUTO_VALUE_ON_ZERO：
+
+</ul>
+
+<p>
+该值影响自增长列的插入。默认设置下，插入0或NULL代表生成下一个自增长值。如果用户 希望插入的值为0，而该列又是自增长的，那么这个选项就有用了。
+</p>
+
+<ul>
+<li>
+STRICT_TRANS_TABLES：
+
+</ul>
+
+<p>
+在该模式下，如果一个值不能插入到一个事务表中，则中断当前的操作，对非事务表不做限制
+</p>
+
+<ul>
+<li>
+NO_ZERO_IN_DATE：
+
+</ul>
+
+<p>
+在严格模式下，不允许日期和月份为零
+</p>
+
+<ul>
+<li>
+NO_ZERO_DATE：
+
+</ul>
+
+<p>
+设置该值，mysql数据库不允许插入零日期，插入零日期会抛出错误而不是警告。
+</p>
+
+<ul>
+<li>
+ERROR_FOR_DIVISION_BY_ZERO：
+
+</ul>
+
+<p>
+在INSERT或UPDATE过程中，如果数据被零除，则产生错误而非警告。如 果未给出该模式，那么数据被零除时MySQL返回NULL
+</p>
+
+<ul>
+<li>
+NO_AUTO_CREATE_USER：
+
+</ul>
+
+<p>
+禁止GRANT创建密码为空的用户
+</p>
+
+<ul>
+<li>
+NO_ENGINE_SUBSTITUTION：
+
+</ul>
+
+<p>
+如果需要的存储引擎被禁用或未编译，那么抛出错误。不设置此值时，用默认的存储引擎替代，并抛出一个异常
+</p>
+
+<ul>
+<li>
+PIPES_AS_CONCAT：
+
+</ul>
+
+<ul>
+<li>
+将"||"视为字符串的连接操作符而非或运算符，这和Oracle数据库是一样的，也和字符串的拼接函数Concat相类似
+
+</ul>
+
+<ul>
+<li>
+ANSI_QUOTES：
+
+</ul>
+
+<p>
+启用ANSI_QUOTES后，不能用双引号来引用字符串，因为它被解释为识别符
+</p>
+
+<p>
+ORACLE的sql_mode设置等同：PIPES_AS_CONCAT, ANSI_QUOTES, IGNORE_SPACE, NO_KEY_OPTIONS, NO_TABLE_OPTIONS, NO_FIELD_OPTIONS, NO_AUTO_CREATE_USER.
+</p>
+
+<p>
+如果使用mysql，为了继续保留大家使用oracle的习惯，可以对mysql的sql_mode设置如下：在my.cnf添加如下配置
+</p>
+<pre>
+[mysqld]
+sql_mode='ONLY_FULL_GROUP_BY,NO_AUTO_VALUE_ON_ZERO,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,
+ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION,PIPES_AS_CONCAT,ANSI_QUOTES'
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
