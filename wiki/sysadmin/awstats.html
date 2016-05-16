@@ -21,10 +21,12 @@
 <li><a href="#toc_0.1">安装</a>
 <li><a href="#toc_0.2">初次配置</a>
 <li><a href="#toc_0.3">中文乱码修正</a>
-<li><a href="#toc_0.4">配置文件</a>
-<li><a href="#toc_0.5">日志分析及html生成</a>
-<li><a href="#toc_0.6">其它</a>
-<li><a href="#toc_0.7">指标说明</a>
+<li><a href="#toc_0.4">robots.pm修改</a>
+<li><a href="#toc_0.5">配置文件</a>
+<li><a href="#toc_0.6">日志分析及html生成</a>
+<li><a href="#toc_0.7">其它</a>
+<li><a href="#toc_0.8">指标说明</a>
+<li><a href="#toc_0.9">多节点日志分析</a>
 </ul>
 </ul>
 </div>
@@ -124,7 +126,22 @@ file awstats-cn.txt.bak
 #awstats-cn.txt.bak: ISO-8859 text, with CRLF line terminators
 </pre>
 
-<h2 id="toc_0.4">配置文件</h2>
+<h2 id="toc_0.4">robots.pm修改</h2>
+
+<p>
+取消Java Agent屏蔽，方便内部接口调用统计。
+</p>
+
+<p>
+/usr/local/awstats/wwwroot/cgi-bin/lib/robots.pm
+</p>
+<pre calss="brush:bash">
+# 注释以下两行，避免屏蔽java客户端
+'^java\/[0-9]'   # put at end to avoid false positive
+'^java\/[0-9]','&lt;a href="http://www.projecthoneypot.org/harvester_useragents.php" title="Bot home page [new window]" target="_blank"&gt;Java (Often spam bot)&lt;/a&gt;', # put at end to avoid false positive
+</pre>
+
+<h2 id="toc_0.5">配置文件</h2>
 
 <p>
 针对多个站点，很多配置选项是重复的，如果每个配置文件都修改维护起来会很麻烦，AWStats从5.4开始提供了配置文件包含的功能，所以我们可以配置一个通用配置，比如：awstats.model.conf，然后其他站点的配置设置为：可以通过后面的选项覆盖和缺省不一致的配置。
@@ -332,7 +349,7 @@ DirLang="./lang"
 
 </ul>
 
-<h2 id="toc_0.5">日志分析及html生成</h2>
+<h2 id="toc_0.6">日志分析及html生成</h2>
 
 <p>
 将下面的脚本加到/etc/crontab设置中来每日定时完成日志分析和html生成。
@@ -382,7 +399,7 @@ for site in $SITES;do
 done
 </pre>
 
-<h2 id="toc_0.6">其它</h2>
+<h2 id="toc_0.7">其它</h2>
 
 <ul>
 <li>
@@ -397,7 +414,7 @@ The AWStats ExtraSection features are powerfull setup options to allow you to ad
 </ul>
 
 
-<h2 id="toc_0.7">指标说明</h2>
+<h2 id="toc_0.8">指标说明</h2>
 
 <ul>
 <li>
@@ -425,6 +442,16 @@ The AWStats ExtraSection features are powerfull setup options to allow you to ad
 AWStats在搜索引擎的关键短语和关键词统计方面的功能还是比较完整的：可以对全世界3百多种机器爬虫进行识别，并且可以识别大部分主流国际化搜索引擎和很多地区的本地语言搜索引擎。
 
 </ul>
+
+<h2 id="toc_0.9">多节点日志分析</h2>
+
+<p>
+当使用多台WebServer负载均衡时，需要将日志合并后，再进行计算。
+</p>
+
+<pre class="brush:bash">
+LogFile="/usr/local/awstats/tools/logresolvemerge.pl /var/log/nginx/site[12]/access.log-%YYYY-0%MM-0%DD-0.gz|"
+</pre>
 
 </div>
 <div id="footer">
