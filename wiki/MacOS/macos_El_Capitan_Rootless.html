@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>macos_El_Capitan_Rootless</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>macos_El_Capitan_Rootless</h1>
+
+<ul>
+<li>
+Mac OS X 11中的/usr/bin 的“Operation not permitted”:<a href="http://www.jianshu.com/p/22b89f19afd6">http://www.jianshu.com/p/22b89f19afd6</a>
+
+<li>
+文／midmirror（简书作者）
+
+<li>
+原文链接：<a href="http://www.jianshu.com/p/22b89f19afd6">http://www.jianshu.com/p/22b89f19afd6</a>
+
+<li>
+著作权归作者所有，转载请联系作者获得授权，并标注“简书作者”。
+
+</ul>
+
+<p>
+更新了 Mac OS X 11后发现，MacVim 不再能够通过Terminal用命令打开了。
+</p>
+
+<pre>
+mvim hello.txt
+</pre>
+
+<p>
+于是尝试将 mvim 重新复制到/usr/bin/中去
+</p>
+
+<pre>
+sudo cp -f mvim /usr/bin/
+</pre>
+
+<p>
+然而出现了权限问题：
+</p>
+
+<pre>
+cp: /usr/bin/mvim: Operation not permitted
+</pre>
+
+<p>
+搜索之后发现，是El Capitan 加入了Rootless机制，不再能够随心所欲的读写很多路径下了。设置 root 权限也不行。
+</p>
+
+<p>
+Rootless机制将成为对抗恶意程序的最后防线
+</p>
+
+<p>
+于是尝试关闭 Rootless。重启按住 Command+R，进入恢复模式，打开Terminal。
+</p>
+
+<pre>
+csrutil disable
+</pre>
+
+<p>
+重启即可。如果要恢复默认，那么
+</p>
+
+<pre>
+csrutil enable
+</pre>
+
+<p>
+附录:
+</p>
+
+<p>
+csrutil命令参数格式：
+</p>
+
+<pre>
+csrutil enable [--without kext | fs | debug | dtrace | nvram][--no-internal]
+</pre>
+<p>
+禁用：csrutil disable
+</p>
+
+<p>
+（等同于csrutil enable --without kext --without fs --without debug --without dtrace --without nvram）
+</p>
+
+<ul>
+<li>
+其中各个开关，意义如下：
+
+</ul>
+
+<pre>
+B0: [kext] 允许加载不受信任的kext（与已被废除的kext-dev-mode=1等效）
+B1: [fs] 解锁文件系统限制
+B2: [debug] 允许task_for_pid()调用
+B3: [n/a] 允许内核调试 （官方的csrutil工具无法设置此位）
+B4: [internal] Apple内部保留位（csrutil默认会设置此位，实际不会起作用。设置与否均可）
+B5: [dtrace] 解锁dtrace限制
+B6: [nvram] 解锁NVRAM限制
+B7: [n/a] 允许设备配置（新增，具体作用暂时未确定）
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
