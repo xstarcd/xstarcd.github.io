@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>mongodb数据迁移方案</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>mongodb数据迁移方案</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">确认节点主从状态</a>
+<li><a href="#toc_0.2">迁移slave节点</a>
+<li><a href="#toc_0.3">迁移主节点</a>
+<li><a href="#toc_0.4">原主节点恢复</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+2016-05 by WangJunlin
+
+</ul>
+
+<p>
+一个三节点的mongodb副本集，因业务增涨、存储空间不足，mongodb所在主机增加第二个硬盘，需要将mongodb数据路径迁移到第二个硬盘。
+</p>
+
+<p>
+为降低风险，首先对现有数据进行备份。
+</p>
+
+<h2 id="toc_0.1">确认节点主从状态</h2>
+
+<p>
+查看副本集各节点主从状态，先进行slave节点迁移，完成后再迁移主节点。
+</p>
+
+<pre class="brush:bash">
+rs.status()
+</pre>
+
+<h2 id="toc_0.2">迁移slave节点</h2>
+
+<ul>
+<li>
+首先在关闭处于slave状态的node1和node3
+<pre class="brush:bash">
+use admin
+db.shutdownServer()
+# 或者
+/etc/init.d/mongd stop
+</pre>
+
+</ul>
+
+<ul>
+<li>
+迁移目录
+<pre class="brush:bash">
+mv /var/lib/mongo /data/
+</pre>
+
+</ul>
+
+<ul>
+<li>
+修改配置/etc/mongodb.conf
+
+</ul>
+
+<pre class="brush:bash">
+#dbpath =/var/lib/mongodb
+dbpath=/data/mongodb
+</pre>
+
+<ul>
+<li>
+重启服务
+<pre class="brush:bash">
+/etc/init.d/mongd start
+</pre>
+
+</ul>
+
+<ul>
+<li>
+检查同步状态
+
+</ul>
+
+<pre class="brush:bash">
+rs.status()
+use mydb 
+db.printSlaveReplicationInfo()
+db.printReplicationInfo()
+</pre>
+
+<h2 id="toc_0.3">迁移主节点</h2>
+
+<p>
+在node1上操作，先将节点从主节点下线，再关闭服务进行数据迁移。
+</p>
+
+<ul>
+<li>
+切换主从状态
+<pre class="brush:bash">
+rs.stepDown()
+</pre>
+
+</ul>
+
+<ul>
+<li>
+按照slave节点迁移方法，完成数据目录切换，并重新开启服务。
+
+<li>
+检查节点同步状态。
+
+</ul>
+
+<h2 id="toc_0.4">原主节点恢复</h2>
+
+<p>
+在新的主节点上执行rs.stepDown()将其切换为slave，直到node2重新被选举为主节点。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
