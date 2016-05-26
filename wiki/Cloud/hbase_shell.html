@@ -18,24 +18,27 @@
 <h1>hbase shell</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">基本概念</a>
+<li><a href="#toc_1">基本概念</a>
 <ul>
-<li><a href="#toc_0.1.1">HBase的表结构</a>
-<li><a href="#toc_0.1.2">Row Key</a>
-<li><a href="#toc_0.1.3">列族 column family</a>
-<li><a href="#toc_0.1.4">单元 Cell</a>
-<li><a href="#toc_0.1.5">时间戳timestamp</a>
+<li><a href="#toc_1.1">HBase的表结构</a>
+<li><a href="#toc_1.2">Row Key</a>
+<li><a href="#toc_1.3">列族column family</a>
+<li><a href="#toc_1.4">单元Cell</a>
+<li><a href="#toc_1.5">时间戳timestamp</a>
 </ul>
-<li><a href="#toc_0.2">hbase shell</a>
+<li><a href="#toc_2">常用命令</a>
+<li><a href="#toc_3">help</a>
 <ul>
-<li><a href="#toc_0.2.1">create/put</a>
-<li><a href="#toc_0.2.2">get</a>
-<li><a href="#toc_0.2.3">scan</a>
-</ul>
-<li><a href="#toc_0.3">help</a>
-<ul>
-<li><a href="#toc_0.3.1">help 'dml'</a>
-</ul>
+<li><a href="#toc_3.1">namespace</a>
+<li><a href="#toc_3.2">ddl</a>
+<li><a href="#toc_3.3">dml</a>
+<li><a href="#toc_3.4">tools</a>
+<li><a href="#toc_3.5">replication</a>
+<li><a href="#toc_3.6">snapshots</a>
+<li><a href="#toc_3.7">configuration</a>
+<li><a href="#toc_3.8">quotas</a>
+<li><a href="#toc_3.9">security</a>
+<li><a href="#toc_3.10">visibility labels</a>
 </ul>
 </ul>
 </div>
@@ -66,13 +69,13 @@ hbase shell基础和常用命令详解: <a href="http://www.jb51.net/article/311
 </ul>
 </ul>
 
-<h2 id="toc_0.1">基本概念</h2>
+<h1 id="toc_1">基本概念</h1>
 
 <p>
 HBase是一个分布式的、面向列的开源数据库,源于google的一篇论文《bigtable：一个结构化数据的分布式存储系统》。HBase是Google Bigtable的开源实现，它利用Hadoop HDFS作为其文件存储系统，利用Hadoop MapReduce来处理HBase中的海量数据，利用Zookeeper作为协同服务。
 </p>
 
-<h3 id="toc_0.1.1">HBase的表结构</h3>
+<h2 id="toc_1.1">HBase的表结构</h2>
 
 <p>
 HBase以表的形式存储数据。表有行和列组成。列划分为若干个列族/列簇(column family)。
@@ -240,7 +243,7 @@ column-family1,column-family2,column-family3是三个列族，每个列族下又
 这些名词的具体含义如下：
 </p>
 
-<h3 id="toc_0.1.2">Row Key</h3>
+<h2 id="toc_1.2">Row Key</h2>
 
 <p>
 与nosql数据库们一样,row key是用来检索记录的主键。访问hbase table中的行，只有三种方式：
@@ -278,7 +281,7 @@ Row key行键 (Row key)可以是任意字符串(最大长度是 64KB，实际应
 行的一次读写是原子操作 (不论一次读写多少列)。这个设计决策能够使用户很容易的理解程序在对同一个行进行并发更新操作时的行为。
 </p>
 
-<h3 id="toc_0.1.3">列族 column family</h3>
+<h2 id="toc_1.3">列族column family</h2>
 
 <p>
 hbase表中的每个列，都归属与某个列族。列族是表的chema的一部分(而列不是)，必须在使用表之前定义。列名都以列族作为前缀。例如courses:history，courses:math 都属于 courses 这个列族。
@@ -288,13 +291,13 @@ hbase表中的每个列，都归属与某个列族。列族是表的chema的一�
 访问控制、磁盘和内存的使用统计都是在列族层面进行的。实际应用中，列族上的控制权限能帮助我们管理不同类型的应用：我们允许一些应用可以添加新的基本数据、一些应用可以读取基本数据并创建继承的列族、一些应用则只允许浏览数据（甚至可能因为隐私的原因不能浏览所有数据）。
 </p>
 
-<h3 id="toc_0.1.4">单元 Cell</h3>
+<h2 id="toc_1.4">单元Cell</h2>
 
 <p>
 HBase中通过row和columns确定的为一个存贮单元称为cell。由{row key, column( =&lt;family&gt; + &lt;label&gt;), version} 唯一确定的单元。cell中的数据是没有类型的，全部是字节码形式存贮。
 </p>
 
-<h3 id="toc_0.1.5">时间戳timestamp</h3>
+<h2 id="toc_1.5">时间戳timestamp</h2>
 
 <p>
 每个cell都保存着同一份数据的多个版本。版本通过时间戳来索引。时间戳的类型是 64位整型。时间戳可以由hbase(在数据写入时自动 )赋值，此时时间戳是精确到毫秒的当前系统时间。时间戳也可以由客户显式赋值。如果应用程序要避免数据版本冲突，就必须自己生成具有唯一性的时间戳。每个cell中，不同版本的数据按照时间倒序排序，即最新的数据排在最前面。
@@ -304,7 +307,7 @@ HBase中通过row和columns确定的为一个存贮单元称为cell。由{row ke
 为了避免数据存在过多版本造成的的管理 (包括存贮和索引)负担，hbase提供了两种数据版本回收方式。一是保存数据的最后n个版本，二是保存最近一段时间内的版本（比如最近七天）。用户可以针对每个列族进行设置。
 </p>
 
-<h2 id="toc_0.2">hbase shell</h2>
+<h1 id="toc_2">常用命令</h1>
 
 <p>
 hbase提供了一个shell的终端给用户交互。通过执行 help get 可以看到命令的帮助信息。
@@ -318,7 +321,11 @@ hbase shell常用的操作命令有create,describe,disable,drop,list,scan,put,ge
 HBase的shell操作，一个大概顺序就是操作关键词后跟表名，行名，列名这样的一个顺序，如果有其他条件再用花括号加上。
 </p>
 
-<h3 id="toc_0.2.1">create/put</h3>
+<ul>
+<li>
+create/put
+
+</ul>
 
 <p>
 以网上的一个学生成绩表的例子来演示hbase的用法。
@@ -396,7 +403,11 @@ put 'scores','Jim','course:','89'
 put 'scores','Jim','course:','80' 
 </pre>
 
-<h3 id="toc_0.2.2">get</h3>
+<ul>
+<li>
+get
+
+</ul>
 
 <pre class="brush:bash">
 get 't1', 'r1'
@@ -412,7 +423,11 @@ get 't1', 'r1', ['c1', 'c2']
 </pre>
 
 
-<h3 id="toc_0.2.3">scan</h3>
+<ul>
+<li>
+scan
+
+</ul>
 
 <p>
 扫描所有数据。
@@ -431,34 +446,43 @@ scan 't1', {FILTER =&gt; "(PrefixFilter('row2') AND (QualifierFilter(&gt;=,'bina
 scan 't1', {FILTER =&gt; org.apache.hadoop.hbase.filter.ColumnPaginationFilter.new(1, 0)} 
 </pre>
 
-<h2 id="toc_0.3">help</h2>
+<h1 id="toc_3">help</h1>
 
 <pre class="brush:bash">
-HBase Shell, version 1.1.2, rcc2b70cf03e3378800661ec5cab11eb43fafe0fc, Wed Aug 26 20:11:27 PDT 2015
-Type 'help "COMMAND"', (e.g. 'help "get"' -- the quotes are necessary) for help on a specific command.
-Commands are grouped. Type 'help "COMMAND_GROUP"', (e.g. 'help "general"') for help on a command group.
+#HBase Shell, version 1.1.2, rcc2b70cf03e3378800661ec5cab11eb43fafe0fc, Wed Aug 26 20:11:27 PDT 2015
+#Type 'help "COMMAND"', (e.g. 'help "get"' -- the quotes are necessary) for help on a specific command.
+#Commands are grouped. Type 'help "COMMAND_GROUP"', (e.g. 'help "general"') for help on a command group.
 
 COMMAND GROUPS:
   Group name: general
   Commands: status, table_help, version, whoami
 
   Group name: ddl
-  Commands: alter, alter_async, alter_status, create, describe, disable, disable_all, drop, drop_all, enable, enable_all, exists, get_table, is_disabled, is_enabled, list, show_filters
+  Commands: alter, alter_async, alter_status, create, describe, disable, disable_all, drop, drop_all, 
+            enable, enable_all, exists, get_table, is_disabled, is_enabled, list, show_filters
 
   Group name: namespace
-  Commands: alter_namespace, create_namespace, describe_namespace, drop_namespace, list_namespace, list_namespace_tables
+  Commands: alter_namespace, create_namespace, describe_namespace, drop_namespace, list_namespace, 
+            list_namespace_tables
 
   Group name: dml
-  Commands: append, count, delete, deleteall, get, get_counter, get_splits, incr, put, scan, truncate, truncate_preserve
+  Commands: append, count, delete, deleteall, get, get_counter, get_splits, incr, put, scan, 
+            truncate, truncate_preserve
 
   Group name: tools
-  Commands: assign, balance_switch, balancer, balancer_enabled, catalogjanitor_enabled, catalogjanitor_run, catalogjanitor_switch, close_region, compact, compact_rs, flush, major_compact, merge_region, move, split, trace, unassign, wal_roll, zk_dump
+  Commands: assign, balance_switch, balancer, balancer_enabled, 
+            catalogjanitor_enabled, catalogjanitor_run, catalogjanitor_switch, 
+            close_region, compact, compact_rs, flush, major_compact, merge_region, 
+            move, split, trace, unassign, wal_roll, zk_dump
 
   Group name: replication
-  Commands: add_peer, append_peer_tableCFs, disable_peer, disable_table_replication, enable_peer, enable_table_replication, list_peers, list_replicated_tables, remove_peer, remove_peer_tableCFs, set_peer_tableCFs, show_peer_tableCFs
+  Commands: add_peer, append_peer_tableCFs, disable_peer, disable_table_replication, 
+            enable_peer, enable_table_replication, list_peers, list_replicated_tables, 
+            remove_peer, remove_peer_tableCFs, set_peer_tableCFs, show_peer_tableCFs
 
   Group name: snapshots
-  Commands: clone_snapshot, delete_all_snapshot, delete_snapshot, list_snapshots, restore_snapshot, snapshot
+  Commands: clone_snapshot, delete_all_snapshot, delete_snapshot, list_snapshots, 
+            restore_snapshot, snapshot
 
   Group name: configuration
   Commands: update_all_config, update_config
@@ -496,8 +520,294 @@ The HBase shell is the (J)Ruby IRB with the above HBase-specific commands added.
 For more on the HBase Shell, see http://hbase.apache.org/book.html
 </pre>
 
+<h2 id="toc_3.1">namespace</h2>
 
-<h3 id="toc_0.3.1">help 'dml'</h3>
+<pre class="brush:bash">
+Command: alter_namespace
+Alter namespace properties.
+
+To add/modify a property:
+
+  hbase&gt; alter_namespace 'ns1', {METHOD =&gt; 'set', 'PROERTY_NAME' =&gt; 'PROPERTY_VALUE'}
+
+To delete a property:
+
+  hbase&gt; alter_namespace 'ns1', {METHOD =&gt; 'unset', NAME=&gt;'PROERTY_NAME'}
+
+Command: create_namespace
+Create namespace; pass namespace name,
+and optionally a dictionary of namespace configuration.
+Examples:
+
+  hbase&gt; create_namespace 'ns1'
+  hbase&gt; create_namespace 'ns1', {'PROERTY_NAME'=&gt;'PROPERTY_VALUE'}
+
+Command: describe_namespace
+Describe the named namespace. For example:
+  hbase&gt; describe_namespace 'ns1'
+
+Command: drop_namespace
+Drop the named namespace. The namespace must be empty.
+
+Command: list_namespace
+List all namespaces in hbase. Optional regular expression parameter could
+be used to filter the output. Examples:
+
+  hbase&gt; list_namespace
+  hbase&gt; list_namespace 'abc.*'
+
+Command: list_namespace_tables
+List all tables that are members of the namespace.
+Examples:
+
+  hbase&gt; list_namespace_tables 'ns1'
+</pre>
+
+<h2 id="toc_3.2">ddl</h2>
+
+<pre class="brush:bash">
+hbase(main):025:0&gt; help 'ddl'
+Command: alter
+Alter a table. If the "hbase.online.schema.update.enable" property is set to
+false, then the table must be disabled (see help 'disable'). If the 
+"hbase.online.schema.update.enable" property is set to true, tables can be 
+altered without disabling them first. Altering enabled tables has caused problems 
+in the past, so use caution and test it before using in production. 
+
+You can use the alter command to add, 
+modify or delete column families or change table configuration options.
+Column families work in a similar way as the 'create' command. The column family
+specification can either be a name string, or a dictionary with the NAME attribute.
+Dictionaries are described in the output of the 'help' command, with no arguments.
+
+For example, to change or add the 'f1' column family in table 't1' from 
+current value to keep a maximum of 5 cell VERSIONS, do:
+
+  hbase&gt; alter 't1', NAME =&gt; 'f1', VERSIONS =&gt; 5
+
+You can operate on several column families:
+
+  hbase&gt; alter 't1', 'f1', {NAME =&gt; 'f2', IN_MEMORY =&gt; true}, {NAME =&gt; 'f3', VERSIONS =&gt; 5}
+
+To delete the 'f1' column family in table 'ns1:t1', use one of:
+
+  hbase&gt; alter 'ns1:t1', NAME =&gt; 'f1', METHOD =&gt; 'delete'
+  hbase&gt; alter 'ns1:t1', 'delete' =&gt; 'f1'
+
+You can also change table-scope attributes like MAX_FILESIZE, READONLY, 
+MEMSTORE_FLUSHSIZE, DURABILITY, etc. These can be put at the end;
+for example, to change the max size of a region to 128MB, do:
+
+  hbase&gt; alter 't1', MAX_FILESIZE =&gt; '134217728'
+
+You can add a table coprocessor by setting a table coprocessor attribute:
+
+  hbase&gt; alter 't1',
+    'coprocessor'=&gt;'hdfs:///foo.jar|com.foo.FooRegionObserver|1001|arg1=1,arg2=2'
+
+Since you can have multiple coprocessors configured for a table, a
+sequence number will be automatically appended to the attribute name
+to uniquely identify it.
+
+The coprocessor attribute must match the pattern below in order for
+the framework to understand how to load the coprocessor classes:
+
+  [coprocessor jar file location] | class name | [priority] | [arguments]
+
+You can also set configuration settings specific to this table or column family:
+
+  hbase&gt; alter 't1', CONFIGURATION =&gt; {'hbase.hregion.scan.loadColumnFamiliesOnDemand' =&gt; 'true'}
+  hbase&gt; alter 't1', {NAME =&gt; 'f2', CONFIGURATION =&gt; {'hbase.hstore.blockingStoreFiles' =&gt; '10'}}
+
+You can also remove a table-scope attribute:
+
+  hbase&gt; alter 't1', METHOD =&gt; 'table_att_unset', NAME =&gt; 'MAX_FILESIZE'
+
+  hbase&gt; alter 't1', METHOD =&gt; 'table_att_unset', NAME =&gt; 'coprocessor$1'
+
+You can also set REGION_REPLICATION:
+
+  hbase&gt; alter 't1', {REGION_REPLICATION =&gt; 2}
+
+There could be more than one alteration in one command:
+
+  hbase&gt; alter 't1', { NAME =&gt; 'f1', VERSIONS =&gt; 3 }, 
+   { MAX_FILESIZE =&gt; '134217728' }, { METHOD =&gt; 'delete', NAME =&gt; 'f2' },
+   OWNER =&gt; 'johndoe', METADATA =&gt; { 'mykey' =&gt; 'myvalue' }
+
+Command: alter_async
+Alter column family schema, does not wait for all regions to receive the
+schema changes. Pass table name and a dictionary specifying new column
+family schema. Dictionaries are described on the main help command output.
+Dictionary must include name of column family to alter. For example,
+
+To change or add the 'f1' column family in table 't1' from defaults
+to instead keep a maximum of 5 cell VERSIONS, do:
+
+  hbase&gt; alter_async 't1', NAME =&gt; 'f1', VERSIONS =&gt; 5
+
+To delete the 'f1' column family in table 'ns1:t1', do:
+
+  hbase&gt; alter_async 'ns1:t1', NAME =&gt; 'f1', METHOD =&gt; 'delete'
+
+or a shorter version:
+
+  hbase&gt; alter_async 'ns1:t1', 'delete' =&gt; 'f1'
+
+You can also change table-scope attributes like MAX_FILESIZE
+MEMSTORE_FLUSHSIZE, READONLY, and DEFERRED_LOG_FLUSH.
+
+For example, to change the max size of a family to 128MB, do:
+
+  hbase&gt; alter 't1', METHOD =&gt; 'table_att', MAX_FILESIZE =&gt; '134217728'
+
+There could be more than one alteration in one command:
+
+  hbase&gt; alter 't1', {NAME =&gt; 'f1'}, {NAME =&gt; 'f2', METHOD =&gt; 'delete'}
+
+To check if all the regions have been updated, use alter_status &lt;table_name&gt;
+
+Command: alter_status
+Get the status of the alter command. Indicates the number of regions of the
+table that have received the updated schema
+Pass table name.
+
+hbase&gt; alter_status 't1'
+hbase&gt; alter_status 'ns1:t1'
+
+Command: create
+Creates a table. Pass a table name, and a set of column family
+specifications (at least one), and, optionally, table configuration.
+Column specification can be a simple string (name), or a dictionary
+(dictionaries are described below in main help output), necessarily 
+including NAME attribute. 
+Examples:
+
+Create a table with namespace=ns1 and table qualifier=t1
+  hbase&gt; create 'ns1:t1', {NAME =&gt; 'f1', VERSIONS =&gt; 5}
+
+Create a table with namespace=default and table qualifier=t1
+  hbase&gt; create 't1', {NAME =&gt; 'f1'}, {NAME =&gt; 'f2'}, {NAME =&gt; 'f3'}
+  hbase&gt; # The above in shorthand would be the following:
+  hbase&gt; create 't1', 'f1', 'f2', 'f3'
+  hbase&gt; create 't1', {NAME =&gt; 'f1', VERSIONS =&gt; 1, TTL =&gt; 2592000, BLOCKCACHE =&gt; true}
+  hbase&gt; create 't1', {NAME =&gt; 'f1', CONFIGURATION =&gt; {'hbase.hstore.blockingStoreFiles' =&gt; '10'}}
+  
+Table configuration options can be put at the end.
+Examples:
+
+  hbase&gt; create 'ns1:t1', 'f1', SPLITS =&gt; ['10', '20', '30', '40']
+  hbase&gt; create 't1', 'f1', SPLITS =&gt; ['10', '20', '30', '40']
+  hbase&gt; create 't1', 'f1', SPLITS_FILE =&gt; 'splits.txt', OWNER =&gt; 'johndoe'
+  hbase&gt; create 't1', {NAME =&gt; 'f1', VERSIONS =&gt; 5}, METADATA =&gt; { 'mykey' =&gt; 'myvalue' }
+  hbase&gt; # Optionally pre-split the table into NUMREGIONS, using
+  hbase&gt; # SPLITALGO ("HexStringSplit", "UniformSplit" or classname)
+  hbase&gt; create 't1', 'f1', {NUMREGIONS =&gt; 15, SPLITALGO =&gt; 'HexStringSplit'}
+  hbase&gt; create 't1', 'f1', {NUMREGIONS =&gt; 15, SPLITALGO =&gt; 'HexStringSplit', REGION_REPLICATION =&gt; 2, CONFIGURATION =&gt; {'hbase.hregion.scan.loadColumnFamiliesOnDemand' =&gt; 'true'}}
+
+You can also keep around a reference to the created table:
+
+  hbase&gt; t1 = create 't1', 'f1'
+
+Which gives you a reference to the table named 't1', on which you can then
+call methods.
+
+Command: describe
+Describe the named table. For example:
+  hbase&gt; describe 't1'
+  hbase&gt; describe 'ns1:t1'
+
+Alternatively, you can use the abbreviated 'desc' for the same thing.
+  hbase&gt; desc 't1'
+  hbase&gt; desc 'ns1:t1'
+
+Command: disable
+Start disable of named table:
+  hbase&gt; disable 't1'
+  hbase&gt; disable 'ns1:t1'
+
+Command: disable_all
+Disable all of tables matching the given regex:
+
+hbase&gt; disable_all 't.*'
+hbase&gt; disable_all 'ns:t.*'
+hbase&gt; disable_all 'ns:.*'
+
+Command: drop
+Drop the named table. Table must first be disabled:
+  hbase&gt; drop 't1'
+  hbase&gt; drop 'ns1:t1'
+
+Command: drop_all
+Drop all of the tables matching the given regex:
+
+hbase&gt; drop_all 't.*'
+hbase&gt; drop_all 'ns:t.*'
+hbase&gt; drop_all 'ns:.*'
+
+Command: enable
+Start enable of named table:
+  hbase&gt; enable 't1'
+  hbase&gt; enable 'ns1:t1'
+
+Command: enable_all
+Enable all of the tables matching the given regex:
+
+hbase&gt; enable_all 't.*'
+hbase&gt; enable_all 'ns:t.*'
+hbase&gt; enable_all 'ns:.*'
+
+Command: exists
+Does the named table exist?
+  hbase&gt; exists 't1'
+  hbase&gt; exists 'ns1:t1'
+
+Command: get_table
+Get the given table name and return it as an actual object to
+be manipulated by the user. See table.help for more information
+on how to use the table.
+Eg.
+
+  hbase&gt; t1 = get_table 't1'
+  hbase&gt; t1 = get_table 'ns1:t1'
+
+returns the table named 't1' as a table object. You can then do
+
+  hbase&gt; t1.help
+
+which will then print the help for that table.
+
+Command: is_disabled
+Is named table disabled? For example:
+  hbase&gt; is_disabled 't1'
+  hbase&gt; is_disabled 'ns1:t1'
+
+Command: is_enabled
+Is named table enabled? For example:
+  hbase&gt; is_enabled 't1'
+  hbase&gt; is_enabled 'ns1:t1'
+
+Command: list
+List all tables in hbase. Optional regular expression parameter could
+be used to filter the output. Examples:
+
+  hbase&gt; list
+  hbase&gt; list 'abc.*'
+  hbase&gt; list 'ns:abc.*'
+  hbase&gt; list 'ns:.*'
+
+Command: show_filters
+Show all the filters in hbase. Example:
+  hbase&gt; show_filters
+
+  ColumnPrefixFilter
+  TimestampsFilter
+  PageFilter
+  .....
+  KeyOnlyFilter
+</pre>
+
+<h2 id="toc_3.3">dml</h2>
 
 <pre class="brush:bash">
 hbase(main):037:0* help 'dml'
@@ -758,6 +1068,591 @@ Command: truncate
 
 Command: truncate_preserve
   Disables, drops and recreates the specified table while still maintaing the previous region boundaries.
+</pre>
+
+<h2 id="toc_3.4">tools</h2>
+
+<pre class="brush:bash">
+Command: assign
+Assign a region. Use with caution. If region already assigned,
+this command will do a force reassign. For experts only.
+Examples:
+
+  hbase&gt; assign 'REGIONNAME'
+  hbase&gt; assign 'ENCODED_REGIONNAME'
+
+Command: balance_switch
+Enable/Disable balancer. Returns previous balancer state.
+Examples:
+
+  hbase&gt; balance_switch true
+  hbase&gt; balance_switch false
+
+Command: balancer
+Trigger the cluster balancer. Returns true if balancer ran and was able to
+tell the region servers to unassign all the regions to balance  (the re-assignment itself is async). 
+Otherwise false (Will not run if regions in transition).
+
+Command: balancer_enabled
+Query the balancer's state.
+Examples:
+
+  hbase&gt; balancer_enabled
+
+Command: catalogjanitor_enabled
+Query for the CatalogJanitor state (enabled/disabled?)
+Examples:
+
+  hbase&gt; catalogjanitor_enabled
+
+Command: catalogjanitor_run
+Catalog janitor command to run the (garbage collection) scan from command line.
+
+  hbase&gt; catalogjanitor_run
+
+
+Command: catalogjanitor_switch
+Enable/Disable CatalogJanitor. Returns previous CatalogJanitor state.
+Examples:
+
+  hbase&gt; catalogjanitor_switch true
+  hbase&gt; catalogjanitor_switch false
+
+Command: close_region
+Close a single region.  Ask the master to close a region out on the cluster
+or if 'SERVER_NAME' is supplied, ask the designated hosting regionserver to
+close the region directly.  Closing a region, the master expects 'REGIONNAME'
+to be a fully qualified region name.  When asking the hosting regionserver to
+directly close a region, you pass the regions' encoded name only. A region
+name looks like this:
+ 
+ TestTable,0094429456,1289497600452.527db22f95c8a9e0116f0cc13c680396.
+or
+ Namespace:TestTable,0094429456,1289497600452.527db22f95c8a9e0116f0cc13c680396.
+
+The trailing period is part of the regionserver name. A region's encoded name
+is the hash at the end of a region name; e.g. 527db22f95c8a9e0116f0cc13c680396 
+(without the period).  A 'SERVER_NAME' is its host, port plus startcode. For
+example: host187.example.com,60020,1289493121758 (find servername in master ui
+or when you do detailed status in shell).  This command will end up running
+close on the region hosting regionserver.  The close is done without the
+master's involvement (It will not know of the close).  Once closed, region will
+stay closed.  Use assign to reopen/reassign.  Use unassign or move to assign
+the region elsewhere on cluster. Use with caution.  For experts only.
+Examples:
+
+  hbase&gt; close_region 'REGIONNAME'
+  hbase&gt; close_region 'REGIONNAME', 'SERVER_NAME'
+  hbase&gt; close_region 'ENCODED_REGIONNAME'
+  hbase&gt; close_region 'ENCODED_REGIONNAME', 'SERVER_NAME'
+
+Command: compact
+          Compact all regions in passed table or pass a region row
+          to compact an individual region. You can also compact a single column
+          family within a region.
+          Examples:
+          Compact all regions in a table:
+          hbase&gt; compact 'ns1:t1'
+          hbase&gt; compact 't1'
+          Compact an entire region:
+          hbase&gt; compact 'r1'
+          Compact only a column family within a region:
+          hbase&gt; compact 'r1', 'c1'
+          Compact a column family within a table:
+          hbase&gt; compact 't1', 'c1'
+
+Command: compact_rs
+          Compact all regions on passed regionserver.
+          Examples:
+          Compact all regions on a regionserver:
+          hbase&gt; compact_rs 'host187.example.com,60020'
+          or
+          hbase&gt; compact_rs 'host187.example.com,60020,1289493121758'
+          Major compact all regions on a regionserver:
+          hbase&gt; compact_rs 'host187.example.com,60020,1289493121758', true
+
+Command: flush
+Flush all regions in passed table or pass a region row to
+flush an individual region.  For example:
+
+  hbase&gt; flush 'TABLENAME'
+  hbase&gt; flush 'REGIONNAME'
+  hbase&gt; flush 'ENCODED_REGIONNAME'
+
+Command: major_compact
+          Run major compaction on passed table or pass a region row
+          to major compact an individual region. To compact a single
+          column family within a region specify the region name
+          followed by the column family name.
+          Examples:
+          Compact all regions in a table:
+          hbase&gt; major_compact 't1'
+          hbase&gt; major_compact 'ns1:t1'
+          Compact an entire region:
+          hbase&gt; major_compact 'r1'
+          Compact a single column family within a region:
+          hbase&gt; major_compact 'r1', 'c1'
+          Compact a single column family within a table:
+          hbase&gt; major_compact 't1', 'c1'
+
+Command: merge_region
+Merge two regions. Passing 'true' as the optional third parameter will force
+a merge ('force' merges regardless else merge will fail unless passed
+adjacent regions. 'force' is for expert use only).
+
+NOTE: You must pass the encoded region name, not the full region name so
+this command is a little different from other region operations.  The encoded
+region name is the hash suffix on region names: e.g. if the region name were
+TestTable,0094429456,1289497600452.527db22f95c8a9e0116f0cc13c680396. then
+the encoded region name portion is 527db22f95c8a9e0116f0cc13c680396
+
+Examples:
+
+  hbase&gt; merge_region 'ENCODED_REGIONNAME', 'ENCODED_REGIONNAME'
+  hbase&gt; merge_region 'ENCODED_REGIONNAME', 'ENCODED_REGIONNAME', true
+
+Command: move
+Move a region.  Optionally specify target regionserver else we choose one
+at random.  NOTE: You pass the encoded region name, not the region name so
+this command is a little different to the others.  The encoded region name
+is the hash suffix on region names: e.g. if the region name were
+TestTable,0094429456,1289497600452.527db22f95c8a9e0116f0cc13c680396. then
+the encoded region name portion is 527db22f95c8a9e0116f0cc13c680396
+A server name is its host, port plus startcode. For example:
+host187.example.com,60020,1289493121758
+Examples:
+
+  hbase&gt; move 'ENCODED_REGIONNAME'
+  hbase&gt; move 'ENCODED_REGIONNAME', 'SERVER_NAME'
+
+Command: split
+Split entire table or pass a region to split individual region.  With the 
+second parameter, you can specify an explicit split key for the region.  
+Examples:
+    split 'tableName'
+    split 'namespace:tableName'
+    split 'regionName' # format: 'tableName,startKey,id'
+    split 'tableName', 'splitKey'
+    split 'regionName', 'splitKey'
+
+Command: trace
+Start or Stop tracing using HTrace.
+Always returns true if tracing is running, otherwise false.
+If the first argument is 'start', new span is started.
+If the first argument is 'stop', current running span is stopped.
+('stop' returns false on success.)
+If the first argument is 'status', just returns if or not tracing is running.
+On 'start'-ing, you can optionally pass the name of span as the second argument.
+The default name of span is 'HBaseShell'.
+Repeating 'start' does not start nested span.
+
+Examples:
+
+  hbase&gt; trace 'start'
+  hbase&gt; trace 'status'
+  hbase&gt; trace 'stop'
+
+  hbase&gt; trace 'start', 'MySpanName'
+  hbase&gt; trace 'stop'
+
+
+Command: unassign
+Unassign a region. Unassign will close region in current location and then
+reopen it again.  Pass 'true' to force the unassignment ('force' will clear
+all in-memory state in master before the reassign. If results in
+double assignment use hbck -fix to resolve. To be used by experts).
+Use with caution.  For expert use only.  Examples:
+
+  hbase&gt; unassign 'REGIONNAME'
+  hbase&gt; unassign 'REGIONNAME', true
+  hbase&gt; unassign 'ENCODED_REGIONNAME'
+  hbase&gt; unassign 'ENCODED_REGIONNAME', true
+
+Command: wal_roll
+Roll the log writer. That is, start writing log messages to a new file.
+The name of the regionserver should be given as the parameter.  A
+'server_name' is the host, port plus startcode of a regionserver. For
+example: host187.example.com,60020,1289493121758 (find servername in
+master ui or when you do detailed status in shell)
+
+Command: zk_dump
+Dump status of HBase cluster as seen by ZooKeeper.
+
+--------------------------------------------------------------------------------
+
+WARNING: Above commands are for 'experts'-only as misuse can damage an install
+</pre>
+
+
+<h2 id="toc_3.5">replication</h2>
+
+<pre class="brush:bash">
+Command: add_peer
+A peer can either be another HBase cluster or a custom replication endpoint. In either case an id
+must be specified to identify the peer.
+
+For a HBase cluster peer, a cluster key must be provided and is composed like this:
+hbase.zookeeper.quorum:hbase.zookeeper.property.clientPort:zookeeper.znode.parent
+This gives a full path for HBase to connect to another HBase cluster. An optional parameter for
+table column families identifies which column families will be replicated to the peer cluster.
+Examples:
+
+  hbase&gt; add_peer '1', "server1.cie.com:2181:/hbase"
+  hbase&gt; add_peer '2', "zk1,zk2,zk3:2182:/hbase-prod"
+  hbase&gt; add_peer '3', "zk4,zk5,zk6:11000:/hbase-test", "table1; table2:cf1; table3:cf1,cf2"
+  hbase&gt; add_peer '4', CLUSTER_KEY =&gt; "server1.cie.com:2181:/hbase"
+  hbase&gt; add_peer '5', CLUSTER_KEY =&gt; "server1.cie.com:2181:/hbase",
+    TABLE_CFS =&gt; { "table1" =&gt; [], "table2" =&gt; ["cf1"], "table3" =&gt; ["cf1", "cf2"] }
+
+For a custom replication endpoint, the ENDPOINT_CLASSNAME can be provided. Two optional arguments
+are DATA and CONFIG which can be specified to set different either the peer_data or configuration
+for the custom replication endpoint. Table column families is optional and can be specified with
+the key TABLE_CFS.
+
+  hbase&gt; add_peer '6', ENDPOINT_CLASSNAME =&gt; 'org.apache.hadoop.hbase.MyReplicationEndpoint'
+  hbase&gt; add_peer '7', ENDPOINT_CLASSNAME =&gt; 'org.apache.hadoop.hbase.MyReplicationEndpoint',
+    DATA =&gt; { "key1" =&gt; 1 }
+  hbase&gt; add_peer '8', ENDPOINT_CLASSNAME =&gt; 'org.apache.hadoop.hbase.MyReplicationEndpoint',
+    CONFIG =&gt; { "config1" =&gt; "value1", "config2" =&gt; "value2" }
+  hbase&gt; add_peer '9', ENDPOINT_CLASSNAME =&gt; 'org.apache.hadoop.hbase.MyReplicationEndpoint',
+    DATA =&gt; { "key1" =&gt; 1 }, CONFIG =&gt; { "config1" =&gt; "value1", "config2" =&gt; "value2" },
+  hbase&gt; add_peer '10', ENDPOINT_CLASSNAME =&gt; 'org.apache.hadoop.hbase.MyReplicationEndpoint',
+    TABLE_CFS =&gt; { "table1" =&gt; [], "table2" =&gt; ["cf1"], "table3" =&gt; ["cf1", "cf2"] }
+  hbase&gt; add_peer '11', ENDPOINT_CLASSNAME =&gt; 'org.apache.hadoop.hbase.MyReplicationEndpoint',
+    DATA =&gt; { "key1" =&gt; 1 }, CONFIG =&gt; { "config1" =&gt; "value1", "config2" =&gt; "value2" },
+    TABLE_CFS =&gt; { "table1" =&gt; [], "table2" =&gt; ["cf1"], "table3" =&gt; ["cf1", "cf2"] }
+
+Note: Either CLUSTER_KEY or ENDPOINT_CLASSNAME must be specified but not both.
+
+Command: append_peer_tableCFs
+Append a replicable table-cf config for the specified peer
+Examples:
+
+  # append a table / table-cf to be replicable for a peer
+  hbase&gt; append_peer_tableCFs '2', "table4:cfA,cfB"
+
+
+Command: disable_peer
+Stops the replication stream to the specified cluster, but still
+keeps track of new edits to replicate.
+
+Examples:
+
+  hbase&gt; disable_peer '1'
+
+Command: disable_table_replication
+Disable a table's replication switch.
+
+Examples:
+
+  hbase&gt; disable_table_replication 'table_name'
+
+Command: enable_peer
+Restarts the replication to the specified peer cluster,
+continuing from where it was disabled.
+
+Examples:
+
+  hbase&gt; enable_peer '1'
+
+Command: enable_table_replication
+Enable a table's replication switch.
+
+Examples:
+
+  hbase&gt; enable_table_replication 'table_name'
+
+Command: list_peers
+List all replication peer clusters.
+
+  hbase&gt; list_peers
+
+Command: list_replicated_tables
+List all the tables and column families replicated from this cluster
+
+  hbase&gt; list_replicated_tables
+  hbase&gt; list_replicated_tables 'abc.*'
+
+Command: remove_peer
+Stops the specified replication stream and deletes all the meta
+information kept about it. Examples:
+
+  hbase&gt; remove_peer '1'
+
+Command: remove_peer_tableCFs
+Remove a table / table-cf from the table-cfs config for the specified peer
+Examples:
+
+  # Remove a table / table-cf from the replicable table-cfs for a peer
+  hbase&gt; remove_peer_tableCFs '2', "table1"
+  hbase&gt; remove_peer_tableCFs '2', "table1:cf1"
+
+
+Command: set_peer_tableCFs
+  Set the replicable table-cf config for the specified peer
+  Examples:
+
+    # set all tables to be replicable for a peer
+    hbase&gt; set_peer_tableCFs '1', ""
+    hbase&gt; set_peer_tableCFs '1'
+    # set table / table-cf to be replicable for a peer, for a table without
+    # an explicit column-family list, all replicable column-families (with
+    # replication_scope == 1) will be replicated
+    hbase&gt; set_peer_tableCFs '2', "table1; table2:cf1,cf2; table3:cfA,cfB"
+
+
+Command: show_peer_tableCFs
+  Show replicable table-cf config for the specified peer.
+
+    hbase&gt; show_peer_tableCFs
+
+--------------------------------------------------------------------------------
+
+In order to use these tools, hbase.replication must be true.
+</pre>
+
+<h2 id="toc_3.6">snapshots</h2>
+
+<pre class="brush:bash">
+Command: clone_snapshot
+Create a new table by cloning the snapshot content. 
+There are no copies of data involved.
+And writing on the newly created table will not influence the snapshot data.
+
+Examples:
+  hbase&gt; clone_snapshot 'snapshotName', 'tableName'
+  hbase&gt; clone_snapshot 'snapshotName', 'namespace:tableName'
+
+Command: delete_all_snapshot
+Delete all of the snapshots matching the given regex. Examples:
+
+  hbase&gt; delete_all_snapshot 's.*'
+
+
+Command: delete_snapshot
+Delete a specified snapshot. Examples:
+
+  hbase&gt; delete_snapshot 'snapshotName',
+
+Command: list_snapshots
+List all snapshots taken (by printing the names and relative information).
+Optional regular expression parameter could be used to filter the output
+by snapshot name.
+
+Examples:
+  hbase&gt; list_snapshots
+  hbase&gt; list_snapshots 'abc.*'
+
+Command: restore_snapshot
+Restore a specified snapshot.
+The restore will replace the content of the original table,
+bringing back the content to the snapshot state.
+The table must be disabled.
+
+Examples:
+  hbase&gt; restore_snapshot 'snapshotName'
+
+Command: snapshot
+Take a snapshot of specified table. Examples:
+
+  hbase&gt; snapshot 'sourceTable', 'snapshotName'
+  hbase&gt; snapshot 'namespace:sourceTable', 'snapshotName', {SKIP_FLUSH =&gt; true}
+</pre>
+
+<h2 id="toc_3.7">configuration</h2>
+
+<pre class="brush:bash">
+Command: update_all_config
+Reload a subset of configuration on all servers in the cluster.  See
+http://hbase.apache.org/book.html?dyn_config for more details. Here is how
+you would run the command in the hbase shell:
+  hbase&gt; update_all_config
+
+Command: update_config
+Reload a subset of configuration on server 'servername' where servername is
+host, port plus startcode. For example: host187.example.com,60020,1289493121758
+See http://hbase.apache.org/book.html?dyn_config for more details. Here is how
+you would run the command in the hbase shell:
+  hbase&gt; update_config 'servername'
+</pre>
+
+<h2 id="toc_3.8">quotas</h2>
+
+<pre class="brush:bash">
+Command: list_quotas
+List the quota settings added to the system.
+You can filter the result based on USER, TABLE, or NAMESPACE.
+
+For example:
+
+    hbase&gt; list_quotas
+    hbase&gt; list_quotas USER =&gt; 'bob.*'
+    hbase&gt; list_quotas USER =&gt; 'bob.*', TABLE =&gt; 't1'
+    hbase&gt; list_quotas USER =&gt; 'bob.*', NAMESPACE =&gt; 'ns.*'
+    hbase&gt; list_quotas TABLE =&gt; 'myTable'
+    hbase&gt; list_quotas NAMESPACE =&gt; 'ns.*'
+
+Command: set_quota
+Set a quota for a user, table, or namespace.
+Syntax : set_quota TYPE =&gt; &lt;type&gt;, &lt;args&gt;
+
+TYPE =&gt; THROTTLE
+The request limit can be expressed using the form 100req/sec, 100req/min
+and the size limit can be expressed using the form 100k/sec, 100M/min
+with (B, K, M, G, T, P) as valid size unit and (sec, min, hour, day) as valid time unit.
+Currently the throttle limit is per machine - a limit of 100req/min
+means that each machine can execute 100req/min.
+
+For example:
+
+    hbase&gt; set_quota TYPE =&gt; THROTTLE, USER =&gt; 'u1', LIMIT =&gt; '10req/sec'
+    hbase&gt; set_quota TYPE =&gt; THROTTLE, USER =&gt; 'u1', LIMIT =&gt; '10M/sec'
+    hbase&gt; set_quota TYPE =&gt; THROTTLE, USER =&gt; 'u1', TABLE =&gt; 't2', LIMIT =&gt; '5K/min'
+    hbase&gt; set_quota TYPE =&gt; THROTTLE, USER =&gt; 'u1', NAMESPACE =&gt; 'ns2', LIMIT =&gt; NONE
+    hbase&gt; set_quota TYPE =&gt; THROTTLE, NAMESPACE =&gt; 'ns1', LIMIT =&gt; '10req/sec'
+    hbase&gt; set_quota TYPE =&gt; THROTTLE, TABLE =&gt; 't1', LIMIT =&gt; '10M/sec'
+    hbase&gt; set_quota TYPE =&gt; THROTTLE, USER =&gt; 'u1', LIMIT =&gt; NONE
+    hbase&gt; set_quota USER =&gt; 'u1', GLOBAL_BYPASS =&gt; true
+</pre>
+
+
+<h2 id="toc_3.9">security</h2>
+
+<pre class="brush:bash">
+Command: grant
+Grant users specific rights.
+Syntax : grant &lt;user&gt; &lt;permissions&gt; [&lt;@namespace&gt; [&lt;table&gt; [&lt;column family&gt; [&lt;column qualifier&gt;]]]
+
+permissions is either zero or more letters from the set "RWXCA".
+READ('R'), WRITE('W'), EXEC('X'), CREATE('C'), ADMIN('A')
+
+Note: Groups and users are granted access in the same way, but groups are prefixed with an '@' 
+      character. In the same way, tables and namespaces are specified, but namespaces are 
+      prefixed with an '@' character.
+
+For example:
+
+    hbase&gt; grant 'bobsmith', 'RWXCA'
+    hbase&gt; grant '@admins', 'RWXCA'
+    hbase&gt; grant 'bobsmith', 'RWXCA', '@ns1'
+    hbase&gt; grant 'bobsmith', 'RW', 't1', 'f1', 'col1'
+    hbase&gt; grant 'bobsmith', 'RW', 'ns1:t1', 'f1', 'col1'
+
+Command: revoke
+Revoke a user's access rights.
+Syntax : revoke &lt;user&gt; [&lt;@namespace&gt; [&lt;table&gt; [&lt;column family&gt; [&lt;column qualifier&gt;]]]]
+
+Note: Groups and users access are revoked in the same way, but groups are prefixed with an '@' 
+      character. In the same way, tables and namespaces are specified, but namespaces are 
+      prefixed with an '@' character.
+
+For example:
+
+    hbase&gt; revoke 'bobsmith'
+    hbase&gt; revoke '@admins'
+    hbase&gt; revoke 'bobsmith', '@ns1'
+    hbase&gt; revoke 'bobsmith', 't1', 'f1', 'col1'
+    hbase&gt; revoke 'bobsmith', 'ns1:t1', 'f1', 'col1'
+
+Command: user_permission
+Show all permissions for the particular user.
+Syntax : user_permission &lt;table&gt;
+
+Note: A namespace must always precede with '@' character.
+
+For example:
+
+    hbase&gt; user_permission
+    hbase&gt; user_permission '@ns1'
+    hbase&gt; user_permission 'table1'
+    hbase&gt; user_permission 'namespace1:table1'
+    hbase&gt; user_permission '.*'
+    hbase&gt; user_permission '^[A-C].*'
+
+--------------------------------------------------------------------------------
+
+NOTE: Above commands are only applicable if running with the AccessController coprocessor
+</pre>
+
+<h2 id="toc_3.10">visibility labels</h2>
+
+<pre class="brush:bash">
+Command: add_labels
+Add a set of visibility labels.
+Syntax : add_labels [label1, label2]
+
+For example:
+
+    hbase&gt; add_labels ['SECRET','PRIVATE']
+
+Command: clear_auths
+Clear visibility labels from a user or group
+Syntax : clear_auths 'user',[label1, label2]
+
+For example:
+
+    hbase&gt; clear_auths 'user1', ['SECRET','PRIVATE']
+    hbase&gt; clear_auths '@group1', ['SECRET','PRIVATE']
+
+Command: get_auths
+Get the visibility labels set for a particular user or group
+Syntax : get_auths 'user'
+
+For example:
+
+    hbase&gt; get_auths 'user1'
+    hbase&gt; get_auths '@group1'
+
+Command: list_labels
+List the visibility labels defined in the system.
+Optional regular expression parameter could be used to filter the labels being returned.
+Syntax : list_labels
+
+For example:
+
+    hbase&gt; list_labels 'secret.*'
+    hbase&gt; list_labels
+
+Command: set_auths
+Add a set of visibility labels for a user or group
+Syntax : set_auths 'user',[label1, label2]
+
+For example:
+
+    hbase&gt; set_auths 'user1', ['SECRET','PRIVATE']
+    hbase&gt; set_auths '@group1', ['SECRET','PRIVATE']
+
+Command: set_visibility
+Set the visibility expression on one or more existing cells.
+
+Pass table name, visibility expression, and a dictionary containing
+scanner specifications.  Scanner specifications may include one or more
+of: TIMERANGE, FILTER, STARTROW, STOPROW, ROWPREFIXFILTER, TIMESTAMP, or COLUMNS
+
+If no columns are specified, all columns will be included.
+To include all members of a column family, leave the qualifier empty as in
+'col_family:'.
+
+The filter can be specified in two ways:
+1. Using a filterString - more information on this is available in the
+Filter Language document attached to the HBASE-4176 JIRA
+2. Using the entire package name of the filter.
+
+Examples:
+
+    hbase&gt; set_visibility 't1', 'A|B', {COLUMNS =&gt; ['c1', 'c2']}
+    hbase&gt; set_visibility 't1', '(A&amp;B)|C', {COLUMNS =&gt; 'c1',
+        TIMERANGE =&gt; [1303668804, 1303668904]}
+    hbase&gt; set_visibility 't1', 'A&amp;B&amp;C', {ROWPREFIXFILTER =&gt; 'row2',
+        FILTER =&gt; "(QualifierFilter (&gt;=, 'binary:xyz')) AND
+        (TimestampsFilter ( 123, 456))"}
+
+This command will only affect existing cells and is expected to be mainly
+useful for feature testing and functional verification.
+
+--------------------------------------------------------------------------------
+
+NOTE: Above commands are only applicable if running with the VisibilityController coprocessor
 </pre>
 
 </div>
