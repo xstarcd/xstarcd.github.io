@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>hbase shell</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>hbase shell</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">基本概念</a>
+<ul>
+<li><a href="#toc_0.1.1">HBase的表结构</a>
+<li><a href="#toc_0.1.2">Row Key</a>
+<li><a href="#toc_0.1.3">列族 column family</a>
+<li><a href="#toc_0.1.4">单元 Cell</a>
+<li><a href="#toc_0.1.5">时间戳timestamp</a>
+</ul>
+<li><a href="#toc_0.2">hbase shell</a>
+<ul>
+<li><a href="#toc_0.2.1">create/put</a>
+<li><a href="#toc_0.2.2">get</a>
+<li><a href="#toc_0.2.3">scan</a>
+</ul>
+<li><a href="#toc_0.3">help</a>
+<ul>
+<li><a href="#toc_0.3.1">help 'dml'</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+参考
+
+<ul>
+<li>
+HBase基本概念和hbase shell常用命令用法: <a href="http://blog.csdn.net/smcwwh/article/details/7468672">http://blog.csdn.net/smcwwh/article/details/7468672</a>
+
+<li>
+hbase shell命令的使用： <a href="http://www.cnblogs.com/mbailing/p/3365769.html">http://www.cnblogs.com/mbailing/p/3365769.html</a>
+
+<li>
+HBASE shell 常用命令大全: <a href="http://itindex.net/detail/46101-hbase-shell-%E5%91%BD%E4%BB%A4">http://itindex.net/detail/46101-hbase-shell-%E5%91%BD%E4%BB%A4</a>
+
+<li>
+HBase 常用Shell命令: <a href="http://www.cnblogs.com/nexiyi/p/hbase_shell.html">http://www.cnblogs.com/nexiyi/p/hbase_shell.html</a>
+
+<li>
+HBase总结（十三）HBase Shell 常用命令及例子: <a href="http://blog.csdn.net/lifuxiangcaohui/article/details/40042117">http://blog.csdn.net/lifuxiangcaohui/article/details/40042117</a>
+
+<li>
+hbase shell基础和常用命令详解: <a href="http://www.jb51.net/article/31172.htm">http://www.jb51.net/article/31172.htm</a>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.1">基本概念</h2>
+
+<p>
+HBase是一个分布式的、面向列的开源数据库,源于google的一篇论文《bigtable：一个结构化数据的分布式存储系统》。HBase是Google Bigtable的开源实现，它利用Hadoop HDFS作为其文件存储系统，利用Hadoop MapReduce来处理HBase中的海量数据，利用Zookeeper作为协同服务。
+</p>
+
+<h3 id="toc_0.1.1">HBase的表结构</h3>
+
+<p>
+HBase以表的形式存储数据。表有行和列组成。列划分为若干个列族/列簇(column family)。
+</p>
+
+<table>
+<tr>
+<th>
+RowKey
+</th>
+<th colspan="2">
+column-family1
+</th>
+<th colspan="3">
+column-family2
+</th>
+<th>
+column-family3
+</th>
+</tr>
+<tr>
+<td>
+column1
+</td>
+<td>
+column2
+</td>
+<td>
+column1
+</td>
+<td>
+column2
+</td>
+<td>
+column3
+</td>
+<td>
+column1
+</td>
+</tr>
+<tr>
+<td rowspan="3">
+key1
+</td>
+<td>
+t1.abc
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+t4:hi
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td rowspan="2">
+t2.efg
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+t3:hello
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+t2:hello2
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+&nbsp;
+</td>
+<td>
+t2:world
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+t3:world2
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td rowspan="2">
+key3
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+t2:123
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+t2:xxx
+</td>
+</tr>
+<tr>
+<td>
+&nbsp;
+</td>
+<td>
+t1:456
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+t1:zzz
+</td>
+</tr>
+</table>
+
+<p>
+如上图所示:
+</p>
+
+<ol>
+<li>
+key1,key2,key3是三条记录的唯一的row key值
+
+<li>
+column-family1,column-family2,column-family3是三个列族，每个列族下又包括几列。
+
+<ul>
+<li>
+比如column-family1这个列族下包括两列，名字是column1和column2，t1:abc,t2:efg是由row key1和column-family1-column1唯一确定的一个单元cell。这个cell中有两个数据，abc和efg。两个值的时间戳不一样，分别是t1,t2, hbase会返回最新时间的值给请求者。
+
+</ul>
+</ol>
+
+<p>
+这些名词的具体含义如下：
+</p>
+
+<h3 id="toc_0.1.2">Row Key</h3>
+
+<p>
+与nosql数据库们一样,row key是用来检索记录的主键。访问hbase table中的行，只有三种方式：
+</p>
+
+<ol>
+<li>
+通过单个row key访问
+
+<li>
+通过row key的range
+
+<li>
+全表扫描
+
+</ol>
+
+<p>
+Row key行键 (Row key)可以是任意字符串(最大长度是 64KB，实际应用中长度一般为 10-100bytes)，在hbase内部，row key保存为字节数组。
+</p>
+
+<p>
+存储时，数据按照Row key的字典序(byte order)排序存储。设计key时，要充分排序存储这个特性，将经常一起读取的行存储放到一起。(位置相关性)
+</p>
+
+<p>
+<strong>注意：</strong>
+</p>
+
+<p>
+字典序对int排序的结果是1,10,100,11,12,13,14,15,16,17,18,19,2,20,21,…,9,91,92,93,94,95,96,97,98,99。要保持整形的自然序，行键必须用0作左填充。
+</p>
+
+<p>
+行的一次读写是原子操作 (不论一次读写多少列)。这个设计决策能够使用户很容易的理解程序在对同一个行进行并发更新操作时的行为。
+</p>
+
+<h3 id="toc_0.1.3">列族 column family</h3>
+
+<p>
+hbase表中的每个列，都归属与某个列族。列族是表的chema的一部分(而列不是)，必须在使用表之前定义。列名都以列族作为前缀。例如courses:history，courses:math 都属于 courses 这个列族。
+</p>
+
+<p>
+访问控制、磁盘和内存的使用统计都是在列族层面进行的。实际应用中，列族上的控制权限能帮助我们管理不同类型的应用：我们允许一些应用可以添加新的基本数据、一些应用可以读取基本数据并创建继承的列族、一些应用则只允许浏览数据（甚至可能因为隐私的原因不能浏览所有数据）。
+</p>
+
+<h3 id="toc_0.1.4">单元 Cell</h3>
+
+<p>
+HBase中通过row和columns确定的为一个存贮单元称为cell。由{row key, column( =&lt;family&gt; + &lt;label&gt;), version} 唯一确定的单元。cell中的数据是没有类型的，全部是字节码形式存贮。
+</p>
+
+<h3 id="toc_0.1.5">时间戳timestamp</h3>
+
+<p>
+每个cell都保存着同一份数据的多个版本。版本通过时间戳来索引。时间戳的类型是 64位整型。时间戳可以由hbase(在数据写入时自动 )赋值，此时时间戳是精确到毫秒的当前系统时间。时间戳也可以由客户显式赋值。如果应用程序要避免数据版本冲突，就必须自己生成具有唯一性的时间戳。每个cell中，不同版本的数据按照时间倒序排序，即最新的数据排在最前面。
+</p>
+
+<p>
+为了避免数据存在过多版本造成的的管理 (包括存贮和索引)负担，hbase提供了两种数据版本回收方式。一是保存数据的最后n个版本，二是保存最近一段时间内的版本（比如最近七天）。用户可以针对每个列族进行设置。
+</p>
+
+<h2 id="toc_0.2">hbase shell</h2>
+
+<p>
+hbase提供了一个shell的终端给用户交互。通过执行 help get 可以看到命令的帮助信息。
+</p>
+
+<p>
+hbase shell常用的操作命令有create,describe,disable,drop,list,scan,put,get,delete,deleteall,count,status等，通过help可以看到详细的用法。
+</p>
+
+<p>
+HBase的shell操作，一个大概顺序就是操作关键词后跟表名，行名，列名这样的一个顺序，如果有其他条件再用花括号加上。
+</p>
+
+<h3 id="toc_0.2.1">create/put</h3>
+
+<p>
+以网上的一个学生成绩表的例子来演示hbase的用法。
+</p>
+
+<table>
+<tr>
+<th>
+name
+</th>
+<th>
+grad
+</th>
+<th colspan="2">
+course
+</th>
+</tr>
+<tr>
+<td>
+math
+</td>
+<td>
+art
+</td>
+</tr>
+<tr>
+<td>
+Tom
+</td>
+<td>
+5
+</td>
+<td>
+97
+</td>
+<td>
+87
+</td>
+</tr>
+<tr>
+<td>
+Jerry
+</td>
+<td>
+4
+</td>
+<td>
+89
+</td>
+<td>
+80
+</td>
+</tr>
+</table>
+
+<p>
+这里grad对于表来说是一个列,course对于表来说是一个列族,这个列族由两个列组成math和art,当然我们可以根据我们的需要在course中建立更多的列族,如computer,physics等相应的列添加入course列族。图中需要注意的是，列族下面的列也是可以没有名字的。
+</p>
+
+<pre class="brush:bash">
+# 建立一个表格scores  具有两个列族grad 和courese
+create'scores','grade', 'course'
+list
+desc 'scores'
+
+# 添加数据
+# put ‘'t1', 'r1', 'c1', 'value', ts1
+# t1指表名，r1指行键名，c1指列名，value指单元格值。ts1指时间戳，一般都省略掉了。
+put 'scores','Tom','grade:','5'
+put 'scores','Tom','course:math','97'
+put 'scores','Tom','course:art','87'
+
+put 'scores','Jim','grade','4'
+put 'scores','Jim','course:','89'
+put 'scores','Jim','course:','80' 
+</pre>
+
+<h3 id="toc_0.2.2">get</h3>
+
+<pre class="brush:bash">
+get 't1', 'r1'
+get 't1', 'r1', {TIMERANGE =&gt; [ts1, ts2]}
+get 't1', 'r1', {COLUMN =&gt; 'c1'}
+get 't1', 'r1', {COLUMN =&gt; ['c1', 'c2', 'c3']}
+get 't1', 'r1', {COLUMN =&gt; 'c1', TIMESTAMP =&gt; ts1}
+get 't1', 'r1', {COLUMN =&gt; 'c1', TIMERANGE =&gt; [ts1, ts2], VERSIONS =&gt; 4}
+get 't1', 'r1', {COLUMN =&gt; 'c1', TIMESTAMP =&gt; ts1, VERSIONS =&gt; 4}
+get 't1', 'r1', 'c1'
+get 't1', 'r1', 'c1', 'c2'
+get 't1', 'r1', ['c1', 'c2'] 
+</pre>
+
+
+<h3 id="toc_0.2.3">scan</h3>
+
+<p>
+扫描所有数据。
+</p>
+
+<p>
+也可以指定一些修饰词：TIMERANGE, FILTER, LIMIT, STARTROW, STOPROW, TIMESTAMP, MAXLENGTH,or COLUMNS。没任何修饰词，就是上边例句，就会显示所有数据行。
+</p>
+
+<pre class="brush:bash">
+scan '.META.'
+scan '.META.', {COLUMNS =&gt; 'info:regioninfo'}
+scan 't1', {COLUMNS =&gt; ['c1','c2'], LIMIT =&gt; 10, STARTROW =&gt;'xyz'}
+scan 't1', {COLUMNS =&gt; 'c1', TIMERANGE =&gt; [1303668804,1303668904]}
+scan 't1', {FILTER =&gt; "(PrefixFilter('row2') AND (QualifierFilter(&gt;=,'binary:xyz'))) AND (TimestampsFilter(123,456))"}
+scan 't1', {FILTER =&gt; org.apache.hadoop.hbase.filter.ColumnPaginationFilter.new(1, 0)} 
+</pre>
+
+<h2 id="toc_0.3">help</h2>
+
+<pre class="brush:bash">
+HBase Shell, version 1.1.2, rcc2b70cf03e3378800661ec5cab11eb43fafe0fc, Wed Aug 26 20:11:27 PDT 2015
+Type 'help "COMMAND"', (e.g. 'help "get"' -- the quotes are necessary) for help on a specific command.
+Commands are grouped. Type 'help "COMMAND_GROUP"', (e.g. 'help "general"') for help on a command group.
+
+COMMAND GROUPS:
+  Group name: general
+  Commands: status, table_help, version, whoami
+
+  Group name: ddl
+  Commands: alter, alter_async, alter_status, create, describe, disable, disable_all, drop, drop_all, enable, enable_all, exists, get_table, is_disabled, is_enabled, list, show_filters
+
+  Group name: namespace
+  Commands: alter_namespace, create_namespace, describe_namespace, drop_namespace, list_namespace, list_namespace_tables
+
+  Group name: dml
+  Commands: append, count, delete, deleteall, get, get_counter, get_splits, incr, put, scan, truncate, truncate_preserve
+
+  Group name: tools
+  Commands: assign, balance_switch, balancer, balancer_enabled, catalogjanitor_enabled, catalogjanitor_run, catalogjanitor_switch, close_region, compact, compact_rs, flush, major_compact, merge_region, move, split, trace, unassign, wal_roll, zk_dump
+
+  Group name: replication
+  Commands: add_peer, append_peer_tableCFs, disable_peer, disable_table_replication, enable_peer, enable_table_replication, list_peers, list_replicated_tables, remove_peer, remove_peer_tableCFs, set_peer_tableCFs, show_peer_tableCFs
+
+  Group name: snapshots
+  Commands: clone_snapshot, delete_all_snapshot, delete_snapshot, list_snapshots, restore_snapshot, snapshot
+
+  Group name: configuration
+  Commands: update_all_config, update_config
+
+  Group name: quotas
+  Commands: list_quotas, set_quota
+
+  Group name: security
+  Commands: grant, revoke, user_permission
+
+  Group name: visibility labels
+  Commands: add_labels, clear_auths, get_auths, list_labels, set_auths, set_visibility
+
+SHELL USAGE:
+Quote all names in HBase Shell such as table and column names.  Commas delimit
+command parameters.  Type &lt;RETURN&gt; after entering a command to run it.
+Dictionaries of configuration used in the creation and alteration of tables are
+Ruby Hashes. They look like this:
+
+  {'key1' =&gt; 'value1', 'key2' =&gt; 'value2', ...}
+
+and are opened and closed with curley-braces.  Key/values are delimited by the
+'=&gt;' character combination.  Usually keys are predefined constants such as
+NAME, VERSIONS, COMPRESSION, etc.  Constants do not need to be quoted.  Type
+'Object.constants' to see a (messy) list of all constants in the environment.
+
+If you are using binary keys or values and need to enter them in the shell, use
+double-quote'd hexadecimal representation. For example:
+
+  hbase&gt; get 't1', "key\x03\x3f\xcd"
+  hbase&gt; get 't1', "key\003\023\011"
+  hbase&gt; put 't1', "test\xef\xff", 'f1:', "\x01\x33\x40"
+
+The HBase shell is the (J)Ruby IRB with the above HBase-specific commands added.
+For more on the HBase Shell, see http://hbase.apache.org/book.html
+</pre>
+
+
+<h3 id="toc_0.3.1">help 'dml'</h3>
+
+<pre class="brush:bash">
+hbase(main):037:0* help 'dml'
+Command: append
+Appends a cell 'value' at specified table/row/column coordinates.
+
+  hbase&gt; append 't1', 'r1', 'c1', 'value', ATTRIBUTES=&gt;{'mykey'=&gt;'myvalue'}
+  hbase&gt; append 't1', 'r1', 'c1', 'value', {VISIBILITY=&gt;'PRIVATE|SECRET'}
+
+The same commands also can be run on a table reference. Suppose you had a reference
+t to table 't1', the corresponding command would be:
+
+  hbase&gt; t.append 'r1', 'c1', 'value', ATTRIBUTES=&gt;{'mykey'=&gt;'myvalue'}
+  hbase&gt; t.append 'r1', 'c1', 'value', {VISIBILITY=&gt;'PRIVATE|SECRET'}
+
+Command: count
+Count the number of rows in a table.  Return value is the number of rows.
+This operation may take a LONG time (Run '$HADOOP_HOME/bin/hadoop jar
+hbase.jar rowcount' to run a counting mapreduce job). Current count is shown
+every 1000 rows by default. Count interval may be optionally specified. Scan
+caching is enabled on count scans by default. Default cache size is 10 rows.
+If your rows are small in size, you may want to increase this
+parameter. Examples:
+
+ hbase&gt; count 'ns1:t1'
+ hbase&gt; count 't1'
+ hbase&gt; count 't1', INTERVAL =&gt; 100000
+ hbase&gt; count 't1', CACHE =&gt; 1000
+ hbase&gt; count 't1', INTERVAL =&gt; 10, CACHE =&gt; 1000
+
+The same commands also can be run on a table reference. Suppose you had a reference
+t to table 't1', the corresponding commands would be:
+
+ hbase&gt; t.count
+ hbase&gt; t.count INTERVAL =&gt; 100000
+ hbase&gt; t.count CACHE =&gt; 1000
+ hbase&gt; t.count INTERVAL =&gt; 10, CACHE =&gt; 1000
+
+Command: delete
+Put a delete cell value at specified table/row/column and optionally
+timestamp coordinates.  Deletes must match the deleted cell's
+coordinates exactly.  When scanning, a delete cell suppresses older
+versions. To delete a cell from  't1' at row 'r1' under column 'c1'
+marked with the time 'ts1', do:
+
+  hbase&gt; delete 'ns1:t1', 'r1', 'c1', ts1
+  hbase&gt; delete 't1', 'r1', 'c1', ts1
+  hbase&gt; delete 't1', 'r1', 'c1', ts1, {VISIBILITY=&gt;'PRIVATE|SECRET'}
+
+The same command can also be run on a table reference. Suppose you had a reference
+t to table 't1', the corresponding command would be:
+
+  hbase&gt; t.delete 'r1', 'c1',  ts1
+  hbase&gt; t.delete 'r1', 'c1',  ts1, {VISIBILITY=&gt;'PRIVATE|SECRET'}
+
+Command: deleteall
+Delete all cells in a given row; pass a table name, row, and optionally
+a column and timestamp. Examples:
+
+  hbase&gt; deleteall 'ns1:t1', 'r1'
+  hbase&gt; deleteall 't1', 'r1'
+  hbase&gt; deleteall 't1', 'r1', 'c1'
+  hbase&gt; deleteall 't1', 'r1', 'c1', ts1
+  hbase&gt; deleteall 't1', 'r1', 'c1', ts1, {VISIBILITY=&gt;'PRIVATE|SECRET'}
+
+The same commands also can be run on a table reference. Suppose you had a reference
+t to table 't1', the corresponding command would be:
+
+  hbase&gt; t.deleteall 'r1'
+  hbase&gt; t.deleteall 'r1', 'c1'
+  hbase&gt; t.deleteall 'r1', 'c1', ts1
+  hbase&gt; t.deleteall 'r1', 'c1', ts1, {VISIBILITY=&gt;'PRIVATE|SECRET'}
+
+Command: get
+Get row or cell contents; pass table name, row, and optionally
+a dictionary of column(s), timestamp, timerange and versions. Examples:
+
+  hbase&gt; get 'ns1:t1', 'r1'
+  hbase&gt; get 't1', 'r1'
+  hbase&gt; get 't1', 'r1', {TIMERANGE =&gt; [ts1, ts2]}
+  hbase&gt; get 't1', 'r1', {COLUMN =&gt; 'c1'}
+  hbase&gt; get 't1', 'r1', {COLUMN =&gt; ['c1', 'c2', 'c3']}
+  hbase&gt; get 't1', 'r1', {COLUMN =&gt; 'c1', TIMESTAMP =&gt; ts1}
+  hbase&gt; get 't1', 'r1', {COLUMN =&gt; 'c1', TIMERANGE =&gt; [ts1, ts2], VERSIONS =&gt; 4}
+  hbase&gt; get 't1', 'r1', {COLUMN =&gt; 'c1', TIMESTAMP =&gt; ts1, VERSIONS =&gt; 4}
+  hbase&gt; get 't1', 'r1', {FILTER =&gt; "ValueFilter(=, 'binary:abc')"}
+  hbase&gt; get 't1', 'r1', 'c1'
+  hbase&gt; get 't1', 'r1', 'c1', 'c2'
+  hbase&gt; get 't1', 'r1', ['c1', 'c2']
+  hbase&gt; get 't1', 'r1', {COLUMN =&gt; 'c1', ATTRIBUTES =&gt; {'mykey'=&gt;'myvalue'}}
+  hbase&gt; get 't1', 'r1', {COLUMN =&gt; 'c1', AUTHORIZATIONS =&gt; ['PRIVATE','SECRET']}
+  hbase&gt; get 't1', 'r1', {CONSISTENCY =&gt; 'TIMELINE'}
+  hbase&gt; get 't1', 'r1', {CONSISTENCY =&gt; 'TIMELINE', REGION_REPLICA_ID =&gt; 1}
+
+Besides the default 'toStringBinary' format, 'get' also supports custom formatting by
+column.  A user can define a FORMATTER by adding it to the column name in the get
+specification.  The FORMATTER can be stipulated: 
+
+ 1. either as a org.apache.hadoop.hbase.util.Bytes method name (e.g, toInt, toString)
+ 2. or as a custom class followed by method name: e.g. 'c(MyFormatterClass).format'.
+
+Example formatting cf:qualifier1 and cf:qualifier2 both as Integers: 
+  hbase&gt; get 't1', 'r1' {COLUMN =&gt; ['cf:qualifier1:toInt',
+    'cf:qualifier2:c(org.apache.hadoop.hbase.util.Bytes).toInt'] } 
+
+Note that you can specify a FORMATTER by column only (cf:qualifier).  You cannot specify
+a FORMATTER for all columns of a column family.
+    
+The same commands also can be run on a reference to a table (obtained via get_table or
+create_table). Suppose you had a reference t to table 't1', the corresponding commands
+would be:
+
+  hbase&gt; t.get 'r1'
+  hbase&gt; t.get 'r1', {TIMERANGE =&gt; [ts1, ts2]}
+  hbase&gt; t.get 'r1', {COLUMN =&gt; 'c1'}
+  hbase&gt; t.get 'r1', {COLUMN =&gt; ['c1', 'c2', 'c3']}
+  hbase&gt; t.get 'r1', {COLUMN =&gt; 'c1', TIMESTAMP =&gt; ts1}
+  hbase&gt; t.get 'r1', {COLUMN =&gt; 'c1', TIMERANGE =&gt; [ts1, ts2], VERSIONS =&gt; 4}
+  hbase&gt; t.get 'r1', {COLUMN =&gt; 'c1', TIMESTAMP =&gt; ts1, VERSIONS =&gt; 4}
+  hbase&gt; t.get 'r1', {FILTER =&gt; "ValueFilter(=, 'binary:abc')"}
+  hbase&gt; t.get 'r1', 'c1'
+  hbase&gt; t.get 'r1', 'c1', 'c2'
+  hbase&gt; t.get 'r1', ['c1', 'c2']
+  hbase&gt; t.get 'r1', {CONSISTENCY =&gt; 'TIMELINE'}
+  hbase&gt; t.get 'r1', {CONSISTENCY =&gt; 'TIMELINE', REGION_REPLICA_ID =&gt; 1}
+
+Command: get_counter
+Return a counter cell value at specified table/row/column coordinates.
+A counter cell should be managed with atomic increment functions on HBase
+and the data should be binary encoded (as long value). Example:
+
+  hbase&gt; get_counter 'ns1:t1', 'r1', 'c1'
+  hbase&gt; get_counter 't1', 'r1', 'c1'
+
+The same commands also can be run on a table reference. Suppose you had a reference
+t to table 't1', the corresponding command would be:
+
+  hbase&gt; t.get_counter 'r1', 'c1'
+
+Command: get_splits
+Get the splits of the named table:
+  hbase&gt; get_splits 't1'
+  hbase&gt; get_splits 'ns1:t1'
+
+The same commands also can be run on a table reference. Suppose you had a reference
+t to table 't1', the corresponding command would be:
+
+  hbase&gt; t.get_splits
+
+Command: incr
+Increments a cell 'value' at specified table/row/column coordinates.
+To increment a cell value in table 'ns1:t1' or 't1' at row 'r1' under column
+'c1' by 1 (can be omitted) or 10 do:
+
+  hbase&gt; incr 'ns1:t1', 'r1', 'c1'
+  hbase&gt; incr 't1', 'r1', 'c1'
+  hbase&gt; incr 't1', 'r1', 'c1', 1
+  hbase&gt; incr 't1', 'r1', 'c1', 10
+  hbase&gt; incr 't1', 'r1', 'c1', 10, {ATTRIBUTES=&gt;{'mykey'=&gt;'myvalue'}}
+  hbase&gt; incr 't1', 'r1', 'c1', {ATTRIBUTES=&gt;{'mykey'=&gt;'myvalue'}}
+  hbase&gt; incr 't1', 'r1', 'c1', 10, {VISIBILITY=&gt;'PRIVATE|SECRET'}
+
+The same commands also can be run on a table reference. Suppose you had a reference
+t to table 't1', the corresponding command would be:
+
+  hbase&gt; t.incr 'r1', 'c1'
+  hbase&gt; t.incr 'r1', 'c1', 1
+  hbase&gt; t.incr 'r1', 'c1', 10, {ATTRIBUTES=&gt;{'mykey'=&gt;'myvalue'}}
+  hbase&gt; t.incr 'r1', 'c1', 10, {VISIBILITY=&gt;'PRIVATE|SECRET'}
+
+Command: put
+Put a cell 'value' at specified table/row/column and optionally
+timestamp coordinates.  To put a cell value into table 'ns1:t1' or 't1'
+at row 'r1' under column 'c1' marked with the time 'ts1', do:
+
+  hbase&gt; put 'ns1:t1', 'r1', 'c1', 'value'
+  hbase&gt; put 't1', 'r1', 'c1', 'value'
+  hbase&gt; put 't1', 'r1', 'c1', 'value', ts1
+  hbase&gt; put 't1', 'r1', 'c1', 'value', {ATTRIBUTES=&gt;{'mykey'=&gt;'myvalue'}}
+  hbase&gt; put 't1', 'r1', 'c1', 'value', ts1, {ATTRIBUTES=&gt;{'mykey'=&gt;'myvalue'}}
+  hbase&gt; put 't1', 'r1', 'c1', 'value', ts1, {VISIBILITY=&gt;'PRIVATE|SECRET'}
+
+The same commands also can be run on a table reference. Suppose you had a reference
+t to table 't1', the corresponding command would be:
+
+  hbase&gt; t.put 'r1', 'c1', 'value', ts1, {ATTRIBUTES=&gt;{'mykey'=&gt;'myvalue'}}
+
+Command: scan
+Scan a table; pass table name and optionally a dictionary of scanner
+specifications.  Scanner specifications may include one or more of:
+TIMERANGE, FILTER, LIMIT, STARTROW, STOPROW, ROWPREFIXFILTER, TIMESTAMP,
+MAXLENGTH or COLUMNS, CACHE or RAW, VERSIONS
+
+If no columns are specified, all columns will be scanned.
+To scan all members of a column family, leave the qualifier empty as in
+'col_family:'.
+
+The filter can be specified in two ways:
+1. Using a filterString - more information on this is available in the
+Filter Language document attached to the HBASE-4176 JIRA
+2. Using the entire package name of the filter.
+
+Some examples:
+
+  hbase&gt; scan 'hbase:meta'
+  hbase&gt; scan 'hbase:meta', {COLUMNS =&gt; 'info:regioninfo'}
+  hbase&gt; scan 'ns1:t1', {COLUMNS =&gt; ['c1', 'c2'], LIMIT =&gt; 10, STARTROW =&gt; 'xyz'}
+  hbase&gt; scan 't1', {COLUMNS =&gt; ['c1', 'c2'], LIMIT =&gt; 10, STARTROW =&gt; 'xyz'}
+  hbase&gt; scan 't1', {COLUMNS =&gt; 'c1', TIMERANGE =&gt; [1303668804, 1303668904]}
+  hbase&gt; scan 't1', {REVERSED =&gt; true}
+  hbase&gt; scan 't1', {ROWPREFIXFILTER =&gt; 'row2', FILTER =&gt; "
+    (QualifierFilter (&gt;=, 'binary:xyz')) AND (TimestampsFilter ( 123, 456))"}
+  hbase&gt; scan 't1', {FILTER =&gt;
+    org.apache.hadoop.hbase.filter.ColumnPaginationFilter.new(1, 0)}
+  hbase&gt; scan 't1', {CONSISTENCY =&gt; 'TIMELINE'}
+For setting the Operation Attributes 
+  hbase&gt; scan 't1', { COLUMNS =&gt; ['c1', 'c2'], ATTRIBUTES =&gt; {'mykey' =&gt; 'myvalue'}}
+  hbase&gt; scan 't1', { COLUMNS =&gt; ['c1', 'c2'], AUTHORIZATIONS =&gt; ['PRIVATE','SECRET']}
+For experts, there is an additional option -- CACHE_BLOCKS -- which
+switches block caching for the scanner on (true) or off (false).  By
+default it is enabled.  Examples:
+
+  hbase&gt; scan 't1', {COLUMNS =&gt; ['c1', 'c2'], CACHE_BLOCKS =&gt; false}
+
+Also for experts, there is an advanced option -- RAW -- which instructs the
+scanner to return all cells (including delete markers and uncollected deleted
+cells). This option cannot be combined with requesting specific COLUMNS.
+Disabled by default.  Example:
+
+  hbase&gt; scan 't1', {RAW =&gt; true, VERSIONS =&gt; 10}
+
+Besides the default 'toStringBinary' format, 'scan' supports custom formatting
+by column.  A user can define a FORMATTER by adding it to the column name in
+the scan specification.  The FORMATTER can be stipulated: 
+
+ 1. either as a org.apache.hadoop.hbase.util.Bytes method name (e.g, toInt, toString)
+ 2. or as a custom class followed by method name: e.g. 'c(MyFormatterClass).format'.
+
+Example formatting cf:qualifier1 and cf:qualifier2 both as Integers: 
+  hbase&gt; scan 't1', {COLUMNS =&gt; ['cf:qualifier1:toInt',
+    'cf:qualifier2:c(org.apache.hadoop.hbase.util.Bytes).toInt'] } 
+
+Note that you can specify a FORMATTER by column only (cf:qualifier).  You cannot
+specify a FORMATTER for all columns of a column family.
+
+Scan can also be used directly from a table, by first getting a reference to a
+table, like such:
+
+  hbase&gt; t = get_table 't'
+  hbase&gt; t.scan
+
+Note in the above situation, you can still provide all the filtering, columns,
+options, etc as described above.
+
+
+Command: truncate
+  Disables, drops and recreates the specified table.
+
+Command: truncate_preserve
+  Disables, drops and recreates the specified table while still maintaing the previous region boundaries.
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -583,6 +583,34 @@ curl -I -A “soso” cnc.c1gstudio.com
 <li>
 apache 转 nginx 规则工具: <a href="http://www.ubuntuset.com/apache2nginx">http://www.ubuntuset.com/apache2nginx</a>
 
+<li>
+特定uri限制访问IP
+
+<ul>
+<li>
+方式一:if+rewrite
+<pre class="brush:bash">
+# 要放在location之前才有效
+    if ( $remote_addr !~ (192\.168\.0\.|192\.168\.1\.) ) {
+        rewrite (application.wadl|Internal/|/internal/) /DENYIP/$1 break;
+    }
+</pre>
+
+<li>
+方式二:location+allow+deny
+<pre class="brush:bash">
+    location / {
+        location ~ (application\.wadl|Internal/|/internal/) {
+            allow 192.168.0.0/24;
+            allow 192.168.1.0/24;
+            deny all;
+            proxy_pass http://backend;
+        } 
+        proxy_pass http://backend;
+    }
+</pre>
+
+</ul>
 </ul>
 
 </div>
