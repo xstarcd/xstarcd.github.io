@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>shell中的算术、字符串计算方法</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>shell中的算术、字符串计算方法</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_1">expr对字符串和整数做些运算</a>
+<ul>
+<li><a href="#toc_1.1">length</a>
+<li><a href="#toc_1.2">index</a>
+<li><a href="#toc_1.3">match</a>
+<li><a href="#toc_1.4">substr</a>
+<li><a href="#toc_1.5">删除字符串</a>
+<li><a href="#toc_1.6">替换子串</a>
+<li><a href="#toc_1.7">整数值计算</a>
+<li><a href="#toc_1.8">求模/求幂</a>
+<li><a href="#toc_1.9">浮点预算</a>
+<li><a href="#toc_1.10">浮点数比较</a>
+<li><a href="#toc_1.11">整数比较</a>
+<li><a href="#toc_1.12">字符串比较</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+原文：<a href="http://blog.sina.com.cn/s/blog_7ec3252d01013l2w.html">http://blog.sina.com.cn/s/blog_7ec3252d01013l2w.html</a>
+
+</ul>
+
+<h1 id="toc_1">expr对字符串和整数做些运算</h1>
+
+<ul>
+<li>
+规则：
+
+<ul>
+<li>
+用空格隔开每个项。
+
+<li>
+用 \（反斜杠） 放在 shell 特定的字符前面。（* | &amp; （ ） &gt;  &gt;=   &lt;   &lt;=  ）
+
+<li>
+对包含空格和其他特殊字符的字符串要用引号括起来。
+
+<li>
+整数前面可以放一个一元连字符。在内部，整数被当作 32 位，双互补数。
+
+</ul>
+</ul>
+
+<h2 id="toc_1.1">length</h2>
+
+<p>
+计算字符串的长度，我们可以用awk中的length(s)进行计算。我们也可以用echo中的<code>echo \({#string}</code>进行计算，当然也可以expr中的<code>expr length \)string</code>求出字符串的长度。
+</p>
+
+<pre class="brush:bash">
+string="hello,everyone my name is xiaoming"
+echo ${#string}
+expr length "$string"
+awk -v s="$string" 'BEGIN{printf("%d\n",length(s))}'
+</pre>
+
+<p>
+注意：当string字符串中有空格时必须用双引号把<code>$string</code>引起来。
+</p>
+
+<h2 id="toc_1.2">index</h2>
+
+<p>
+<code>index \(string substring</code>索引命令功能在字符串<code>\)string</code>上找出substring中任一字符第一次出现的位置，若找不到则expr index返回0或1。
+</p>
+
+<pre class="brush:bash">
+string="hello,everyone my name is xiaoming"
+expr index "$string" my
+# 11
+expr index "$string" nihao
+# 1
+</pre>
+
+<h2 id="toc_1.3">match</h2>
+
+<p>
+<code>match $string substring</code>命令在string字符串中匹配substring字符串，然后返回匹配到的substring字符串的长度，若找不到则返回0。
+</p>
+
+<p>
+match String1 String2 与 Expression1 : Expression2 相同，所有的模式固定到字符串的开始（也就是说，只有以字符串的第一个字符开始的序列才被正则表达式匹配）。因此 ^ （插入符号） 在这种情况下就不是特殊字符。
+</p>
+
+<p>
+一般地，匹配运算符返回匹配的字符个数（失败的时候返回0）
+</p>
+
+<pre class="brush:bash">
+string="hello,everyone my name is xiaoming"
+expr match "$string" my
+#0 
+expr match "$string" .*my
+#17
+expr match "$string" hell.*
+#34
+expr match "$string" hell
+#4
+expr match "$string" small
+#0
+</pre>
+
+<h2 id="toc_1.4">substr</h2>
+
+<p>
+在shell中可以用<code>{string:position}</code>和<code>{string:position:length}</code>进行对string字符串中字符的抽取。
+</p>
+
+
+<pre class="brush:bash">
+string="hello,everyone my name is xiaoming"
+
+# 从position位置开始抽取直到字符串结束,从0开始标号
+echo ${string:10}
+#yone my name is xiaoming
+
+# 从position位置开始抽取长度为length的子串
+echo ${string:10:5}
+#yone
+echo ${string:10:10}
+#yone my na
+
+# expr substr $string $position $length同样能实现上述功能，expr从1开始标号
+expr substr "$string" 10 5
+#ryone
+</pre>
+
+<h2 id="toc_1.5">删除字符串</h2>
+
+<p>
+删除字符串和抽取字符串相似<code>\({string#substring}</code>为删除string开头处与substring匹配的最短字符子串，而<code>\){string##substring}</code>为删除string开头处与substring匹配的最长字符子串。
+</p>
+
+<pre class="brush:bash">
+string="20091111 readnow please"
+
+# 删除2和1之间最短匹配
+echo ${string#2*1}
+#111 readnow please
+
+# 删除2和1之间的最长匹配
+echo ${string##2*1}
+#readnow please
+</pre>
+
+<h2 id="toc_1.6">替换子串</h2>
+
+<pre class="brush:bash">
+string="you and you with me"
+
+# ${string/substring/replacement}表示仅替换一次substring相配字符
+echo ${string/you/me}
+#me and you with me
+
+# ${string//substring/replacement}表示为替换所有的substring相配的子串
+echo ${string//you/me}
+#me and me with me
+</pre>
+
+<h2 id="toc_1.7">整数值计算</h2>
+
+<pre class="brush:bash">
+i=0;
+let i++
+((i++))
+$ expr $i + 1
+$ echo $i 1 | awk '{printf $1+$2}'
+
+let i++;
+i=$(expr $i + 1)
+i=$(echo $i+1|bc)
+i=$(echo "$i 1" | awk '{printf $1+$2;}')
+</pre>
+
+<h2 id="toc_1.8">求模/求幂</h2>
+
+<p>
+let,expr,bc都可以用来求模，运算符都是%，而let和bc可以用来求幂，运算符不一样，前者是**，后者是^
+</p>
+
+<pre class="brush:bash">
+# 求模
+expr 5 % 2
+# 1
+let i=5%2;echo $i
+# 1
+echo 5 % 2 | bc
+# 1
+((i=5%2));echo $i
+# 1
+
+# 求幂
+let i=5**2;echo $i
+# 25
+((i=5**2));echo $i
+# 25
+echo "5^2" | bc
+# 25
+</pre>
+
+<h2 id="toc_1.9">浮点预算</h2>
+
+<p>
+let和expr都无法进行浮点运算，但是bc和awk可以。
+</p>
+
+<ul>
+<li>
+bc命令交互式
+
+<ul>
+<li>
+bc -l 进入bc
+
+<li>
+scale=10 将小数位定为10位
+
+<li>
+e(1) 计算e的小数点后10位
+
+<li>
+quit 退出bc
+
+</ul>
+</ul>
+
+<pre class="brush:bash">
+echo "scale=10;0.46492572708365077*16205" | bc
+#转换成2进制
+echo "obase=2;123"|bc
+
+# 用百分数的形式输出
+# 前面一个%代表百分数的显示位数，后面两个%打印成一个%，scale=3是计算到小数点后面三位
+printf "result: %.2f%%\n" `echo "scale=3;(6/17)*100"|bc`
+# result: 35.20%
+awk 'BEGIN{printf("result: %.2f%\n", (6/17)*100 )}'
+# result: 35.29%
+</pre>
+
+<h2 id="toc_1.10">浮点数比较</h2>
+
+<p>
+shell脚本中浮点数的比较，一般有两种方式，使用bc和awk的方式，下面分别举例介绍：
+</p>
+
+<pre class="brush:bash">
+# bc
+if [ `echo "0.5 &gt; 0.3" | bc` -eq 1 ]; then echo "ok"; else echo "not ok"; fi; 
+
+# awk
+x=3.1; y=3.2; echo "$x $y" | awk '{if ($1 &gt; $2) print $1; else print $2}'
+</pre>
+
+<h2 id="toc_1.11">整数比较</h2>
+
+<pre>
+-eq       等于,如:if [ "$a" -eq "$b" ] 
+-ne       不等于,如:if [ "$a" -ne "$b" ] 
+-gt       大于,如:if [ "$a" -gt "$b" ] 
+-ge       大于等于,如:if [ "$a" -ge "$b" ] 
+-lt       小于,如:if [ "$a" -lt "$b" ] 
+-le       小于等于,如:if [ "$a" -le "$b" ] 
+&lt;         小于(需要双括号),如:(("$a" &lt; "$b")) 
+&lt;=        小于等于(需要双括号),如:(("$a" &lt;= "$b")) 
+&gt;         大于(需要双括号),如:(("$a" &gt; "$b")) 
+&gt;=        大于等于(需要双括号),如:(("$a" &gt;= "$b")) 
+</pre>
+ 
+<h2 id="toc_1.12">字符串比较</h2>
+
+<pre>
+=        等于,如:if [ "$a" = "$b" ] 
+==       等于,如:if [ "$a" == "$b" ],与=等价
+!=       不等于,如:if [ "$a" != "$b" ] 
+&lt;        小于,在ASCII字母顺序下.如: 
+&gt;        大于,在ASCII字母顺序下.如: 
+-z       字符串为"null".就是长度为0. 
+-n       字符串不为"null" 
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
