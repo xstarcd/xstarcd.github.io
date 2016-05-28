@@ -60,9 +60,6 @@ Options-&gt;Global Options-&gt;Terminal-&gt;Mouse
 这样选中内容后，占击右键会弹出右键菜单，否则会直接完成复制、粘贴动作。
 </pre>
 
-</ul>
-
-<ul>
 <li>
 防止服务端断开连接
 
@@ -74,8 +71,21 @@ SecureCRT长时间不使用时，ssh服务端会主动断开连接，可设置An
 Options-&gt;Global Options-&gt;Default Session-&gt;Edit Default Settings...-&gt;Terminal:
 Anti-idel:勾选Send Protocol NO-OP,every 60 seconds
 </pre>
+<ul>
+<li>
+hbase shell无法使用退格键
+<pre>
+Options-&gt;Global Options-&gt;Default Session-&gt;Edit Default Settings...-&gt;
+Terminal-&gt;Emulation-&gt;Mapped Keys:
+Other mappings中勾选：
+Backspace sends delete
+Delete sends backspace
+</pre>
+
+</ul>
 
 <h3 id="toc_0.1.2">显示设置</h3>
+
 <ul>
 <li>
 ANSI Color项设置
@@ -206,7 +216,7 @@ YaHei Consolas hybrid.1.12字体下载：
 <a href="../files/YaHei.Consolas.1.12.7z">YaHei.Consolas.1.12.7z</a>
 
 <li>
-<a href="http://pan.baidu.com/s/1jHu9aHw">百度网盘下载：YaHei.Consolas.1.12.7z</a>
+<a href="http://pan.baidu.com/s/1pJ6BV7t">百度网盘下载：YaHei.Consolas.1.12.7z</a>
 <pre>
 Global Options-&gt;Default Session-&gt;Edit Default Settings...-&gt;Terminal-&gt;Appearance:
 Fonts:Normal font设置为YaHei Consolas Hybird.1.12

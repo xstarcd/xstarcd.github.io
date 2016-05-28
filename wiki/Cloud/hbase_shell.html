@@ -393,20 +393,20 @@ Jerry
 
 <pre class="brush:bash">
 # 建立一个表格scores  具有两个列族grad 和courese
-create'scores','grade', 'course'
+create'test_scores','grade', 'course'
 list
-desc 'scores'
+desc 'test_scores'
 
 # 添加数据
 # put ‘'t1', 'r1', 'c1', 'value', ts1
 # t1指表名，r1指行键名，c1指列名，value指单元格值。ts1指时间戳，一般都省略掉了。
-put 'scores','Tom','grade:','5'
-put 'scores','Tom','course:math','97'
-put 'scores','Tom','course:art','87'
+put 'test_scores','Tom','grade:','5'
+put 'test_scores','Tom','course:math','97'
+put 'test_scores','Tom','course:art','87'
 
-put 'scores','Jim','grade','4'
-put 'scores','Jim','course:','89'
-put 'scores','Jim','course:','80' 
+put 'test_scores','Jim','grade','4'
+put 'test_scores','Jim','course:','89'
+put 'test_scores','Jim','course:','80' 
 </pre>
 
 <ul>
@@ -451,6 +451,16 @@ scan 't1', {COLUMNS =&gt; 'c1', TIMERANGE =&gt; [1303668804,1303668904]}
 scan 't1', {FILTER =&gt; "(PrefixFilter('row2') AND (QualifierFilter(&gt;=,'binary:xyz'))) AND (TimestampsFilter(123,456))"}
 scan 't1', {FILTER =&gt; org.apache.hadoop.hbase.filter.ColumnPaginationFilter.new(1, 0)} 
 </pre>
+
+<ul>
+<li>
+将文本串转为二进制查询
+<pre>
+scan 'VEH_REPAIR_HISTORY_ONE', 
+{FILTER =&gt; org.apache.hadoop.hbase.filter.PrefixFilter.new(org.apache.hadoop.hbase.util.Bytes.toBytes('LFV2A1150B3666808'))}
+</pre>
+
+</ul>
 
 <h1 id="toc_3">help</h1>
 
