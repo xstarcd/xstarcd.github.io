@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>kafka工作原理</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>kafka工作原理</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Kafka系统的角色</a>
+<li><a href="#toc_0.2">Topic、Partition和Replica的关系</a>
+<li><a href="#toc_0.3">问题</a>
+<li><a href="#toc_0.4">zookeeper存储结果</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="http://www.aboutyun.com/thread-11895-1-1.html">http://www.aboutyun.com/thread-11895-1-1.html</a>
+
+<li>
+kafka入门：简介、使用场景、设计原理、主要配置及集群搭建（转）:<a href="http://www.cnblogs.com/likehua/p/3999538.html">http://www.cnblogs.com/likehua/p/3999538.html</a>
+
+<li>
+apache kafka系列之在zookeeper中存储结构：<a href="http://blog.csdn.net/strawbingo/article/details/45484139">http://blog.csdn.net/strawbingo/article/details/45484139</a>
+
+<li>
+Kafka文件存储机制那些事:<a href="http://www.open-open.com/lib/view/open1421150566328.html">http://www.open-open.com/lib/view/open1421150566328.html</a>
+
+<li>
+apache kafka系列之server.properties配置文件参数说明:<a href="http://blog.csdn.net/lizhitao/article/details/25667831">http://blog.csdn.net/lizhitao/article/details/25667831</a>
+
+<li>
+kafka入门:<a href="http://bit1129.iteye.com/blog/2174791">http://bit1129.iteye.com/blog/2174791</a>
+
+</ul>
+
+<h2 id="toc_0.1">Kafka系统的角色</h2>
+
+<ul>
+<li>
+Broker ：一台kafka服务器就是一个broker。一个集群由多个broker组成。一个broker可以容纳多个topic
+
+<li>
+topic： 可以理解为一个MQ消息队列的名字
+
+<li>
+Partition：
+
+<ul>
+<li>
+为了实现扩展性，一个非常大的topic可以分布到多个 broker（即服务器）上，一个topic可以分为多个partition，每个partition是一个有序的队列。
+
+<li>
+partition中的每条消息都会被分配一个有序的id（offset）。kafka只保证按一个partition中的顺序将消息发给consumer，不保证一个topic的整体 （多个partition间）的顺序。
+
+<li>
+也就是说，一个topic在集群中可以有多个partition，那么分区的策略是什么？(消息发送到哪个分区上，有两种基本的策略，一是采用Key Hash算法，一是采用Round Robin算法)
+
+</ul>
+</ul>
+
+<p>
+<img src="../img/kafka/anatomy_of_a_topic.png">
+</p>
+
+<ul>
+<li>
+Offset：kafka的存储文件都是按照offset.kafka来命名，用offset做名字的好处是方便查找。例如你想找位于2049的位置，只要找到2048.kafka的文件即可。当然the first offset就是00000000000.kafka
+
+<li>
+Producer ：消息生产者，就是向kafka broker发消息的客户端。
+
+<li>
+Consumer ：消息消费者，向kafka broker取消息的客户端
+
+</ul>
+
+<p>
+<img src="../img/kafka/kafka_cluster.png">
+</p>
+
+<ul>
+<li>
+Consumer Group （CG）：
+
+<ul>
+<li>
+消息系统有两类，一是广播，二是订阅发布。广播是把消息发送给所有的消费者；发布订阅是把消息只发送给订阅者。Kafka通过Consumer Group组合实现了这两种机制： 实现一个topic消息广播（发给所有的consumer）和单播（发给任意一个consumer）。一个topic可以有多个CG。
+
+<li>
+topic的消息会复制（不是真的复制，是概念上的）到所有的CG，但每个CG只会把消息发给该CG中的一个 consumer（这是实现一个Topic多Consumer的关键点：为一个Topic定义一个CG，CG下定义多个Consumer）。如果需要实现广播，只要每个consumer有一个独立的CG就可以了。要实现单播只要所有的consumer在同一个CG。用CG还可以将consumer进行自由的分组而不需要多次发送消息到不同的topic。
+
+<li>
+典型的应用场景是，多个Consumer来读取一个Topic(理想情况下是一个Consumer读取Topic的一个Partition）,那么可以让这些Consumer属于同一个Consumer Group即可实现消息的多Consumer并行处理，原理是Kafka将一个消息发布出去后，ConsumerGroup中的Consumers可以通过Round Robin的方式进行消费(Consumers之间的负载均衡使用Zookeeper来实现)
+
+</ul>
+</ul>
+
+<p>
+<img src="../img/kafka/kafka_cluster_2.png">
+</p>
+
+<p>
+A two server Kafka cluster hosting four partitions (P0-P3) with two consumer groups. Consumer group A has two consumer instances and group B has four. 
+</p>
+
+<h2 id="toc_0.2">Topic、Partition和Replica的关系</h2>
+
+<p>
+<img src="../img/kafka/topic_partition_replica.png">
+</p>
+
+<p>
+如上图，一个Topic有四个Partition，每个Partition两个replication。
+</p>
+
+<p>
+Zookeeper在Kakfa中扮演的角色Kafka将元数据信息保存在Zookeeper中，但是发送给Topic本身的数据是不会发到Zk上的，否则Zk就疯了。
+</p>
+
+<ul>
+<li>
+kafka使用zookeeper来实现动态的集群扩展，不需要更改客户端（producer和consumer）的配置。broker会在zookeeper注册并保持相关的元数据（topic，partition信息等）更新。
+
+<li>
+而客户端会在zookeeper上注册相关的watcher。一旦zookeeper发生变化，客户端能及时感知并作出相应调整。这样就保证了添加或去除broker时，各broker间仍能自动实现负载均衡。这里的客户端指的是Kafka的消息生产端(Producer)和消息消费端(Consumer)
+
+<li>
+Broker端使用zookeeper来注册broker信息，以及监测partition leader存活性。
+
+<li>
+Consumer端使用zookeeper用来注册consumer信息，其中包括consumer消费的partition列表等，同时也用来发现broker列表，并和partition leader建立socket连接，并获取消息。
+
+<li>
+Zookeeper和Producer没有建立关系，只和Brokers、Consumers建立关系以实现负载均衡，即同一个Consumer Group中的Consumers可以实现负载均衡。
+
+</ul>
+
+<h2 id="toc_0.3">问题</h2>
+
+<ul>
+<li>
+Topic有多个Partition，那么消息分配到某个Partition的依据是什么？
+
+<ul>
+<li>
+Key Hash或者Round Robin
+
+</ul>
+<li>
+如何查看一个Topic有多少个Partition？
+
+<ul>
+<li>
+使用kakfa-topic.sh --list topic topicName --zookeeper zookeeper.servers.list
+
+</ul>
+</ul>
+
+<h2 id="toc_0.4">zookeeper存储结果</h2>
+
+<ul>
+<li>
+原文：<a href="http://blog.csdn.net/strawbingo/article/details/45484139">http://blog.csdn.net/strawbingo/article/details/45484139</a>
+
+</ul>
+
+<pre>
+    [zk: localhost:2181(CONNECTED) 0] ls /
+    [admin, consumers, config, brokers]
+</pre>
+
+<p>
+<img src="../img/kafka/kafka_zookeeper.jpg" width="800px">
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
