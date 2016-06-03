@@ -79,6 +79,9 @@ Filters In Hbase Shell: <a href="http://www.hadooptpoint.com/filters-in-hbase-sh
 <li>
 hbase-shell-commands: <a href="https://learnhbase.wordpress.com/2013/03/02/hbase-shell-commands/">https://learnhbase.wordpress.com/2013/03/02/hbase-shell-commands/</a>
 
+<li>
+HBase Filter及对应Shell: <a href="http://www.cnblogs.com/skyl/p/4807793.html">http://www.cnblogs.com/skyl/p/4807793.html</a>
+
 </ul>
 </ul>
 
@@ -340,75 +343,139 @@ hbase shell常用的操作命令有create,describe,disable,drop,list,scan,put,ge
 HBase的shell操作，一个大概顺序就是操作关键词后跟表名，行名，列名这样的一个顺序，如果有其他条件再用花括号加上。
 </p>
 
-<ul>
-<li>
-create/put
+<pre>
+表的管理
+1）查看有哪些表
+hbase(main)&gt; list
 
-</ul>
+2）创建表
+# 语法：create &lt;table&gt;, {NAME =&gt; &lt;family&gt;, VERSIONS =&gt; &lt;VERSIONS&gt;}
+# 例如：创建表t1，有两个family name：f1，f2，且版本数均为2
+hbase(main)&gt; create 't1',{NAME =&gt; 'f1', VERSIONS =&gt; 2},{NAME =&gt; 'f2', VERSIONS =&gt; 2}
 
-<p>
+3）删除表
+分两步：首先disable，然后drop
+例如：删除表t1
+hbase(main)&gt; disable 't1'
+hbase(main)&gt; drop 't1'
+
+4）查看表的结构
+# 语法：describe &lt;table&gt;
+# 例如：查看表t1的结构
+hbase(main)&gt; describe 't1'
+
+5）修改表结构
+修改表结构必须先disable
+# 语法：alter 't1', {NAME =&gt; 'f1'}, {NAME =&gt; 'f2', METHOD =&gt; 'delete'}
+# 例如：修改表test1的cf的TTL为180天
+hbase(main)&gt; disable 'test1'
+hbase(main)&gt; alter 'test1',{NAME=&gt;'body',TTL=&gt;'15552000'},{NAME=&gt;'meta', TTL=&gt;'15552000'}
+hbase(main)&gt; enable 'test1'
+
+权限管理
+1）分配权限
+# 语法 : grant &lt;user&gt; &lt;permissions&gt; &lt;table&gt; &lt;column family&gt; &lt;column qualifier&gt; 参数后面用逗号分隔
+# 权限用五个字母表示： "RWXCA".
+# READ('R'), WRITE('W'), EXEC('X'), CREATE('C'), ADMIN('A')
+# 例如，给用户‘test'分配对表t1有读写的权限，
+hbase(main)&gt; grant 'test','RW','t1'
+
+2）查看权限
+# 语法：user_permission &lt;table&gt;
+# 例如，查看表t1的权限列表
+hbase(main)&gt; user_permission 't1'
+
+3）收回权限
+# 与分配权限类似，语法：revoke &lt;user&gt; &lt;table&gt; &lt;column family&gt; &lt;column qualifier&gt;
+# 例如，收回test用户在表t1上的权限
+hbase(main)&gt; revoke 'test','t1'
+
+表数据的增删改查
+1）添加数据
+# 语法：put &lt;table&gt;,&lt;rowkey&gt;,&lt;family:column&gt;,&lt;value&gt;,&lt;timestamp&gt;
+# 例如：给表t1的添加一行记录：rowkey是rowkey001，family name：f1，column name：col1，value：value01，timestamp：系统默认
+hbase(main)&gt; put 't1','rowkey001','f1:col1','value01'
+用法比较单一。
+
+2）查询数据
+a）查询某行记录
+# 语法：get &lt;table&gt;,&lt;rowkey&gt;,[&lt;family:column&gt;,....]
+# 例如：查询表t1，rowkey001中的f1下的col1的值
+hbase(main)&gt; get 't1','rowkey001', 'f1:col1'
+# 或者：
+hbase(main)&gt; get 't1','rowkey001', {COLUMN=&gt;'f1:col1'}
+# 查询表t1，rowke002中的f1下的所有列值
+hbase(main)&gt; get 't1','rowkey001'
+
+b）扫描表
+# 语法：scan &lt;table&gt;, {COLUMNS =&gt; [ &lt;family:column&gt;,.... ], LIMIT =&gt; num}
+# 另外，还可以添加STARTROW、TIMERANGE和FITLER等高级功能
+# 例如：扫描表t1的前5条数据
+hbase(main)&gt; scan 't1',{LIMIT=&gt;5}
+
+c）查询表中的数据行数
+# 语法：count &lt;table&gt;, {INTERVAL =&gt; intervalNum, CACHE =&gt; cacheNum}
+# INTERVAL设置多少行显示一次及对应的rowkey，默认1000；CACHE每次去取的缓存区大小，默认是10，调整该参数可提高查询速度
+# 例如，查询表t1中的行数，每100条显示一次，缓存区为500
+hbase(main)&gt; count 't1', {INTERVAL =&gt; 100, CACHE =&gt; 500}
+
+3）删除数据
+a )删除行中的某个列值
+# 语法：delete &lt;table&gt;, &lt;rowkey&gt;,  &lt;family:column&gt; , &lt;timestamp&gt;,必须指定列名
+# 例如：删除表t1，rowkey001中的f1:col1的数据
+hbase(main)&gt; delete 't1','rowkey001','f1:col1'
+注：将删除改行f1:col1列所有版本的数据
+
+b )删除行
+# 语法：deleteall &lt;table&gt;, &lt;rowkey&gt;,  &lt;family:column&gt; , &lt;timestamp&gt;，可以不指定列名，删除整行数据
+# 例如：删除表t1，rowk001的数据
+hbase(main)&gt; deleteall 't1','rowkey001'
+
+c）删除表中的所有数据
+# 语法： truncate &lt;table&gt;
+# 其具体过程是：disable table -&gt; drop table -&gt; create table
+# 例如：删除表t1的所有数据
+hbase(main)&gt; truncate 't1'
+
+
+* create/put
+
 以网上的一个学生成绩表的例子来演示hbase的用法。
-</p>
 
-<table>
-<tr>
-<th>
-name
-</th>
-<th>
-grad
-</th>
-<th colspan="2">
-course
-</th>
-</tr>
-<tr>
-<td>
-math
-</td>
-<td>
-art
-</td>
-</tr>
-<tr>
-<td>
-Tom
-</td>
-<td>
-5
-</td>
-<td>
-97
-</td>
-<td>
-87
-</td>
-</tr>
-<tr>
-<td>
-Jerry
-</td>
-<td>
-4
-</td>
-<td>
-89
-</td>
-<td>
-80
-</td>
-</tr>
-</table>
+| name   | grad | course | &gt;   |
+|--------|------|--------|-----|
+| \/     | \/   | math   | art |
+| Tom    | 5    | 97     | 87  |
+| Jerry  | 4    | 89     | 80  |
 
-<p>
 这里grad对于表来说是一个列,course对于表来说是一个列族,这个列族由两个列组成math和art,当然我们可以根据我们的需要在course中建立更多的列族,如computer,physics等相应的列添加入course列族。图中需要注意的是，列族下面的列也是可以没有名字的。
-</p>
 
-<pre class="brush:bash">
+{{{class="brush:bash"
 # 建立一个表格scores  具有两个列族grad 和courese
 create'test_scores','grade', 'course'
 list
 desc 'test_scores'
+
+scan 'test_scores'
+ROW                                      COLUMN+CELL
+ Jim                                     column=course:, timestamp=1464446407298, value=80
+ Jim                                     column=grade:, timestamp=1464446406438, value=4
+ Leo                                     column=course:math, timestamp=1464450250315, value=99
+ Leo.Peng                                column=course:math, timestamp=1464451773801, value=70
+ Tom                                     column=course:art, timestamp=1464446361576, value=87
+ Tom                                     column=course:math, timestamp=1464446360394, value=97
+ Tom                                     column=grade:, timestamp=1464446360354, value=5
+4 row(s) in 0.0090 seconds
+
+scan 'test_scores',{FILTER=&gt;"SingleColumnValueFilter('course','art',&lt;,'binary:0')"}
+ROW                                      COLUMN+CELL
+ Jim                                     column=course:, timestamp=1464446407298, value=80
+ Jim                                     column=grade:, timestamp=1464446406438, value=4
+ Leo                                     column=course:math, timestamp=1464450250315, value=99
+ Leo.Peng                                column=course:math, timestamp=1464451773801, value=70
+3 row(s) in 0.0080 seconds
+
+scan 'test_scores',{FILTER=&gt;"SingleColumnValueFilter('course','art',&lt;,'binary:0')"}
 
 # 添加数据
 # put ‘'t1', 'r1', 'c1', 'value', ts1
