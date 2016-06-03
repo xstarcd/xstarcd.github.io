@@ -73,6 +73,12 @@ HBase内置过滤器的一些总结:<a href="http://blog.csdn.net/cnweike/articl
 <li>
 hbase的内容查询:<a href="http://blog.csdn.net/zreodown/article/details/7917538/">http://blog.csdn.net/zreodown/article/details/7917538/</a>
 
+<li>
+Filters In Hbase Shell: <a href="http://www.hadooptpoint.com/filters-in-hbase-shell/">http://www.hadooptpoint.com/filters-in-hbase-shell/</a>
+
+<li>
+hbase-shell-commands: <a href="https://learnhbase.wordpress.com/2013/03/02/hbase-shell-commands/">https://learnhbase.wordpress.com/2013/03/02/hbase-shell-commands/</a>
+
 </ul>
 </ul>
 
@@ -1699,6 +1705,7 @@ scan只返回rowkey
 
 <p>
 3. KeyOnlyFilter：这个过滤器唯一的功能就是只返回每行的行键，值全部为空，这对于只关注于行键的应用场景来说非常合适，这样忽略掉其值就可以减少传递到客户端的数据量，能起到一定的优化作用：
+KeyOnlyFilter: 只要key,不要value
 </p>
 
 <p>
@@ -1707,11 +1714,21 @@ Filter kof = new KeyOnlyFilter(); // OK 返回所有的行，但值全是空
 
 <p>
 6. FirstKeyOnlyFilter：如果你只想返回的结果集中只包含第一列的数据，那么这个过滤器能够满足你的要求。它在找到每行的第一列之后会停止扫描，从而使扫描的性能也得到了一定的提升：
+FirstKeyOnlyFilter: 一个rowkey可以有多个version,同一个rowkey的同一个column也会有多个的值, 只拿出key中的第一个column的第一个version
 </p>
 
 <p>
 Filter fkof = new FirstKeyOnlyFilter(); // OK 筛选出第一个每个第一个单元格
 </p>
+
+<pre>
+scan 'toplist_ware_ios_1009_201231',{COLUMNS=&gt;'info',FILTER=&gt;"(FirstKeyOnlyFilter())"}
+scan 'test1', FILTER=&gt;"FirstKeyOnlyFilter() AND ValueFilter(=,'binary:sku188') AND KeyOnlyFilter()"
+scan 'test1',{FILTER=&gt;"FirstKeyOnlyFilter() AND KeyOnlyFilter()"}
+count 'table_name',{ INTERVAL =&gt;1}
+get "LOCATION","FOTON_LMGFE1G88D1022014_\x7F\xFF\xFE\xAD\x1B\xFBn\x0F","d:direction"
+get "LOCATION","FOTON_LMGFE1G88D1022014_\x7F\xFF\xFE\xAD\x1B\xFBn\x0F","d:direction:toDouble"
+</pre>
 
 </div>
 <div id="footer">
