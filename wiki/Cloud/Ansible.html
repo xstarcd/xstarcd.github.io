@@ -48,14 +48,13 @@ python方式安装
 <pre class="brush:bash">
 # 安装easy_install
 yum -y install gcc python-setuptools python-devel python-paramiko
-# python-crypto
+yum -y remove python-crypto
 
 # 安装pip
 easy_install pip
 
 # 修改pip源
 mkdir -p ~/.pip
-
 cat &gt; ~/.pip/pip.conf &lt;&lt;EOF
 [global]
 index-url = http://mirrors.aliyun.com/pypi/simple/
