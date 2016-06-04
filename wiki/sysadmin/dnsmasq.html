@@ -76,6 +76,8 @@ yum -y erase bind-*
 rm -rf /var/named
 yum -y install dnsmasq dnsmasq-utils bind-utils
 
+chkconfig dnsmasq on
+chkconfig --list dnsmasq
 </pre>
 
 <h2 id="toc_0.2">基本配置</h2>

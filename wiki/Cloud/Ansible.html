@@ -47,13 +47,25 @@
 python方式安装
 <pre class="brush:bash">
 # 安装easy_install
-yum -y install python-setuptools python-devel python-crypto
+yum -y install gcc python-setuptools python-devel python-paramiko
+# python-crypto
 
 # 安装pip
 easy_install pip
 
+# 修改pip源
+mkdir -p ~/.pip
+
+cat &gt; ~/.pip/pip.conf &lt;&lt;EOF
+[global]
+index-url = http://mirrors.aliyun.com/pypi/simple/
+
+[install]
+trusted-host=mirrors.aliyun.com
+EOF
+
 # 用pip安装ansible
-pip install simplejson paramiko PyYAML Jinja2 httplib2 ansible
+pip install simplejson pyYAML Jinja2 httplib2 ansible
 
 # 编译安装ansible
 # https://pypi.python.org/packages/source/a/ansible/ansible-1.5.tar.gz
@@ -254,7 +266,10 @@ ansible-doc: 模块文档查看器，使用ansible-doc -l 显示所有module列�
 ansible-playbook: 配置管理工具
 
 <li>
-ansible-galaxy: 你可以把他理解成ansible的pip，可以从galaxy.ansible.com下载官方收录的playbooks
+ansible-galaxy: <a href="你可以把他理解成ansible的pip，可以从galaxy.ansible.com下载官方收录的playbooks.html">你可以把他理解成ansible的pip，可以从galaxy.ansible.com下载官方收录的playbooks</a>
+
+<li>
+
 
 <li>
 ansible-pull: 支持直接从git下载playbook执行，需要遵循其规定的目录格式，用处不是特别大，可以不关注
