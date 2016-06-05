@@ -38,7 +38,34 @@
 </ul>
 </div>
 
+
 <ul>
+<li>
+java命令及其他实用工具
+
+<ul>
+<li>
+jps:查看本机的Java中进程信息。
+
+<li>
+jstack:打印线程的栈信息,制作线程Dump。
+
+<li>
+jmap:打印内存映射,制作堆Dump。
+
+<li>
+jstat:性能监控工具。
+
+<li>
+jhat:内存分析工具。
+
+<li>
+jconsole:简易的可视化控制台。
+
+<li>
+jvisualvm:功能强大的控制台。
+
+</ul>
 <li>
 查看指定进程的线程信息：top -Hp 17071
 
@@ -51,6 +78,35 @@ jstack
 <ul>
 <li>
 jstack 17071 &gt; /tmp/jstack_dump.txt
+
+<li>
+Java命令学习系列（二）——Jstack:<a href="http://www.hollischuang.com/archives/110">http://www.hollischuang.com/archives/110</a>
+
+<li>
+jstack dump日志文件详解:<a href="http://gudaoqing.blog.51cto.com/7729345/1332829">http://gudaoqing.blog.51cto.com/7729345/1332829</a>
+
+<li>
+Java并发：隐藏的线程死锁:<a href="http://www.importnew.com/10661.html">http://www.importnew.com/10661.html</a>
+<pre>
+线程状态:
+    NEW,未启动的。不会出现在Dump中。
+    RUNNABLE,在虚拟机内执行的。
+    BLOCKED,受阻塞并等待监视器锁。
+    WATING,无限期等待另一个线程执行特定操作。
+    TIMED_WATING,有时限的等待另一个线程的特定操作。
+    TERMINATED,已退出的。
+
+dump 文件里，值得关注的线程状态有：
+
+    死锁，Deadlock（重点关注）
+    执行中，Runnable
+    等待资源，Waiting on condition（重点关注）
+    等待获取监视器，Waiting on monitor entry（重点关注）
+    暂停，Suspended
+    对象等待中，Object.wait() 或 TIMED_WAITING
+    阻塞，Blocked（重点关注）
+    停止，Parked
+</pre>
 
 </ul>
 <li>
@@ -66,6 +122,9 @@ jmap -histo pid &gt;a.log
 <li>
 jmap -dump:format=b,file=heap.hprof &lt;pid&gt;
 
+<li>
+<a href="http://www.hollischuang.com/archives/303">http://www.hollischuang.com/archives/303</a>
+
 </ul>
 <li>
 jinfo
@@ -79,6 +138,7 @@ jstat -printcompilation -h10 &lt;pid&gt; 250 600
 
 </ul>
 </ul>
+
 
 <h2 id="toc_0.1">jmap、jstack、jps无法连接jvm解决办法</h2>
 

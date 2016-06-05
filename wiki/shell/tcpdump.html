@@ -52,9 +52,49 @@ TCP协议的一些认识及实践:<a href="http://www.cnblogs.com/geekma/archive
 <li>
 <a href="UDP_Hole_Punching.html">UDP防火墙穿透原理与分析</a>
 
+<li>
+Wireshark抓包常见问题解析:
+
+<ul>
+<li>
+<a href="http://www.xianren.org/net/wireshark-q.html">http://www.xianren.org/net/wireshark-q.html</a>
+
+<li>
+<a href="http://babyhe.blog.51cto.com/1104064/1393724">http://babyhe.blog.51cto.com/1104064/1393724</a>
+
+</ul>
+<li>
+TcpNoDelay降低通信延迟
+
+<ul>
+<li>
+<a href="http://babyhe.blog.51cto.com/1104064/1393725">http://babyhe.blog.51cto.com/1104064/1393725</a>
+
+<li>
+<a href="http://blog.csdn.net/huang_xw/article/details/7340241">http://blog.csdn.net/huang_xw/article/details/7340241</a>
+<pre>
+TcpNoDelay=false，为启用nagle算法，也是默认值。 Nagle算法的立意是良好的，避免网络中充塞小封包，提高网络的利用率。但是当Nagle算法遇到delayed ACK悲剧就发生了。Delayed ACK的本意也是为了提高TCP性能，跟应答数据捎带上ACK，同时避免糊涂窗口综合症，也可以一个ack确认多个段来节省开销。悲剧发生在这种情况，假设一端发送数据并等待另一端应答，协议上分为头部和数据，发送的时候不幸地选择了write-write，然后再read，也就是先发送头部，再发送数据，最后等待应答。
+
+实验模型：
+发送端（客户端）
+write(head);
+write(body);
+read(response);
+接收端（服务端）
+read(request);  
+process(request);  
+write(response);
+这里假设head和body都比较小，当默认启用nagle算法，并且是第一次发送的时候，根据nagle算法，第一个段head可以立即发送，因为没有等待确认的段；接收端（服务端）收到head，但是包不完整，继续等待body达到并延迟ACK；发送端（客户端）继续写入body，这时候nagle算法起作用了，因为head还没有被ACK，所以body要延迟发送。这就造成了发送端（客户端）和接收端（服务端）都在等待对方发送数据的现象：
+发送端（客户端）等待接收端ACK head以便继续发送body；
+接收端（服务端）在等待发送方发送body并延迟ACK，悲剧的无以言语。
+这种时候只有等待一端超时并发送数据才能继续往下走。
+</pre>
+
+</ul>
 </ul>
 
 <h2 id="toc_1.2">tcpdump使用范例</h2>
+
 <pre class="brush:bash">
 # 调试keepalived/lvs时，抓包分析：
 # 把125.70.148.77改成你自己的IP，避免远程登录的流量。
