@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>关于gethostbyname域名解析</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>关于gethostbyname域名解析</h1>
+
+<ul>
+<li>
+CoolShell性能调优攻略: <a href="http://coolshell.cn/articles/7490.html">http://coolshell.cn/articles/7490.html</a>
+
+<li>
+[Android]c/c++调用gethostbyname失败解决方案:<a href="http://blog.chinaunix.net/uid-15059847-id-112040.html">http://blog.chinaunix.net/uid-15059847-id-112040.html</a>
+
+<li>
+DNS的解析杂谈，以及gethostbyname的弊端:<a href="http://blog.csdn.net/Shijun_Zhang/article/details/6577426">http://blog.csdn.net/Shijun_Zhang/article/details/6577426</a>
+<pre>
+Unix/Linux下的gethostbyname函数常用来向DNS查询一个域名的IP地址。 由于DNS的递归查询，常常会发生gethostbyname函数在查询一个域名时严重超时。而该函数又不能像connect和read等函数那样通过setsockopt或者select函数那样设置超时时间，因此常常成为程序的瓶颈。有人提出一种解决办法是用alarm设置定时信号，如果超时就用setjmp和longjmp跳过gethostbyname函数（这种方式我没有试过，不知道具体效果如何）。
+
+在多线程下面，gethostbyname会一个更严重的问题，就是如果有一个线程的gethostbyname发生阻塞，其它线程都会在gethostbyname处发生阻塞。我在编写爬虫时也遇到了这个让我疑惑很久的问题，所有的爬虫线程都阻塞在gethostbyname处，导致爬虫速度非常慢。在网上google了很长时间这个问题，也没有找到解答。今天凑巧在实验室的googlegroup里面发现了一本电子书"Mining the Web - Discovering Knowledge from Hypertext Data",其中在讲解爬虫时有下面几段文字：
+...
+...
+大意是说unix的gethostbyname无法处理在并发程序下使用，这是先天的缺陷是无法改变的。大型爬虫往往不会使用gethostbyname，而是实现自己独立定制的DNS客户端。这样可以实现DNS的负载平衡，而且通过异步解析能够大大提高DNS解析速度。DNS客户端往往用UDP实现，可以在爬虫爬取网页前提前解析URL的IP。文章中还提到了一个开源的异步DNS库adns，主页是http://www.chiark.greenend.org.uk/~ian/adns/
+
+从以上可看出，gethostbyname并不适用于多线程环境以及其它对DNS解析速度要求较高的程序。
+...
+...
+</pre>
+
+<li>
+InetAddress/InetSocketAddress类
+<pre>
+InetAddress类
+
+表示为互联网协议地址.InetAddress类具有一个缓存,用于存储成功或者不成功的主机名解析.可以通过系统属性"networkaddress.cache.ttl"(time-to-live)来设定.InetAddress有2个子类:Inet4Address和Inet6Address,大部分时候我们无需关注获得InetAddress是何种类型.可以使用instanceof来判断获取的IP地址是何种类型.
+
+InetAddress类中有个内置的Cache内部类,用来缓存"IP信息"(基于Map实现)
+
+String getHostName():获取此IP地址的主机名,如果此InetAddress是用主机名创建的,将返回主机名.否则将执行反向名称查找并给予系统配置的名称查找服务返回结果.如果有安全管理器且查找不被允许则返回IP地址的文本形式.
+
+String getCanonicalHostName():获取IP地址的完整限定域名(包括主机所在域信息 + 主机名).如果有安全管理器且查找不被允许则返回IP地址的文本形式
+
+ 
+    InetAddress inet = InetAddress.getLocalHost();  
+    System.out.println(inet.getCanonicalHostName());//BJXX-LIUGUANQ.360.local  
+    System.out.println(inet.getHostName());//BJXX-LIUGUANQ  
+
+    String getHostAddress():获取IP地址的文本形式//10.12.124.57
+    static InetAddress getByName(String host):根据主机名,获取inetAddress.
+    InetAddress.getByName("BJXX-YANGKUN").getHostName();//10.12.144.92
+    static InetAddress getLocalHost():获取本机IP地址.
+    boolean isMulticastAddress():检测当前地址是否为多播地址,多播地址用于"UDP发送多播数据时"使用,多播地址有严格的协议要求,IPV4多播地址为"224.0.0.0"~"239.255.255.255",IPV6的多播地址为任意FF开头的地址.参见MulticastSocket.
+     boolean isAnyLocalAddress():是否为任意本地地址,在Socket编程中,如果尚未制定特定地址,那么此时地址将会被置为0.检测是如果发现地址的值为0,此方法返回true.
+     boolean isLookbackAddress():是否为回送地址,IPV4中以"127"开头的地址均为回送地址(即127.0.0.1),IPV6的回送地址为"0:0:0:0:0:0:0:1"(即,::1).
+    boolean isLinkLocalAddress():是否为本地连接地址(link-local).IPV4中为169.254.0.1 ~ 169. 254.254.255.IPV6为FE80::/16;link-local地址是一种互联网保护协议地址,只能被用于本地局域网内的通信,link-local的数据包将不会被路由器转发.本地链接地址将有操作系统管理配置(或自动装配),提供了一种在本地局域网中实现P2P通讯的手段.(无线鼠标??)
+    boolean isSiteLocalAddress() :是否为"站点本地"地址.IPV4中以"172.16"或者"192.168"开头,是封闭局域网IP,不能直接和开放互联网通信(需要地址转换技术,路由器?).具有开放互联网通信的所有基础..
+
+InetSocketAddress类
+
+为Socket链接而设计,为InetAddress + port.
+
+     InetSocketAddress(InetAddress,int port)
+     InetSoketAddress(String hostname,int port)
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
