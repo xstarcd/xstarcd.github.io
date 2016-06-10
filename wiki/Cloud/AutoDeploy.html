@@ -463,6 +463,12 @@ Docker的价值和应用场景分析: <a href="http://www.iamadmin.com/blog/read
 <li>
 Docker 网络配置:<a href="http://www.oschina.net/translate/docker-network-configuration">http://www.oschina.net/translate/docker-network-configuration</a>
 
+<li>
+CentOS6.5下docker的安装及遇到的问题和简单使用: <a href="http://blog.csdn.net/wuzhilon88/article/details/41621285">http://blog.csdn.net/wuzhilon88/article/details/41621285</a>
+
+<li>
+CentOS系统下docker的安装配置及使用详解: <a href="http://www.server110.com/docker/201411/11105.html">http://www.server110.com/docker/201411/11105.html</a>
+
 </ul>
 
 <p>
@@ -498,6 +504,64 @@ CONTAINER ID        IMAGE                       COMMAND             CREATED     
 
 docker restart 0d46d0308ad4
 </pre>
+
+<ul>
+<li>
+升级内核（带aufs模块，记住一定要升级，要不然会出现很多莫名奇怪的问题，建议用yum安装）
+
+<ul>
+<li>
+1、yum安装带aufs模块的3.10内核（或到这里下载kernel手动安装：<a href="http://down.51cto.com/data/1903250）">http://down.51cto.com/data/1903250）</a>
+<pre>
+cd /etc/yum.repos.d 
+wget http://www.hop5.in/yum/el6/hop5.repo
+yum install kernel-ml-aufs kernel-ml-aufs-devel
+</pre>
+
+<li>
+2、修改grub的主配置文件/etc/grub.conf，设置default=0，表示第一个title下的内容为默认启动的kernel（一般新安装的内核在第一个位置）。
+
+<li>
+3、重启系统，这时候你的内核就成功升级了。
+<pre>
+uname -r
+3.10.5-3.el6.x86_64
+
+# 查看内核是否支持aufs：
+grep aufs /proc/filesystems
+nodev    aufs
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+安装docker
+
+<ul>
+<li>
+1、首先关闭selinux：
+<pre>
+setenforce 0
+sed -i '/^SELINUX=/c\SELINUX=disabled' /etc/selinux/config
+</pre>
+
+<li>
+2、在Fedora EPEL源中已经提供了docker-io包，下载安装epel：
+<pre>
+rpm -ivh http://mirrors.sohu.com/fedora-epel/6/x86_64/epel-release-6-8.noarch.rpm
+sed -i 's/^mirrorlist=https/mirrorlist=http/' /etc/yum.repos.d/epel.repo
+</pre>
+
+<li>
+3、yum安装docker-io：
+<pre>
+yum -y install docker-io
+</pre>
+
+</ul>
+</ul>
 
 </div>
 <div id="footer">
