@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>tree</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>tree</h1>
+
+<ul>
+<li>
+tree命令乱码表问题
+
+<ul>
+<li>
+前面的树状结构字符乱码，可能是终端charset有误造成中文显示乱码，解决方式：
+
+<ul>
+<li>
+如:SecureCRT: Global Options -&gt; Default Session -&gt; Edit Default Settings... -&gt; Terminal -&gt; Character encoding... UTF-8
+
+<li>
+或者使用--charset参数，改用ASCII字符：<code>tree --charset ascii</code>
+
+</ul>
+<li>
+中文文件名乱码
+
+<ul>
+<li>
+乱码实际是tree对non-printable字符的转义引起，使用-N选项即可解决：
+
+<ul>
+<li>
+-N     Print non-printable characters as is instead of as escaped octal numbers.
+
+</ul>
+<li>
+<code>tree -N</code>
+
+<li>
+<code>alias tree='tree -N'</code>
+
+</ul>
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
