@@ -2,5 +2,5 @@
 
 ## http://xstarcd.github.io/
 
-## http://w.gdu.me/ (即将停止使用)
+## http://w.gdu.me/ (已停止使用)
 
