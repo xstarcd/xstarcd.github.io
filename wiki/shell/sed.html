@@ -40,6 +40,7 @@
 <li><a href="#toc_1.1.5.4">Hold Space</a>
 </ul>
 </ul>
+<li><a href="#toc_1.2">添加BOM头</a>
 </ul>
 </ul>
 </div>
@@ -698,6 +699,24 @@ $!d —— 除了最后一行不执行d命令，其它行都执行d命令，删�
 <p>
 （转载本站文章请注明作者和出处 <a href="http://coolshell.cn/">酷壳 – CoolShell.cn</a>，请勿用于任何商业用途）
 </p>
+
+<h2 id="toc_1.2">添加BOM头</h2>
+
+
+<pre class="brush:bash">
+cat a.txt 
+#1
+#2
+#3
+echo -ne '\xEF\xBB\xBF' &gt; b.txt;cat a.txt &gt;&gt; b.txt 
+cat a.txt&gt; c.txt;sed -i "1s/^/\xEF\xBB\xBF/g" c.txt
+od -x b.txt 
+# 0000000 bbef 31bf 320a 330a 000a
+# 0000011
+od -x c.txt
+# 0000000 bbef 31bf 320a 330a 000a
+# 0000011
+</pre>
 
 </div>
 <div id="footer">
