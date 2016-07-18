@@ -175,13 +175,24 @@ set header_cache=~/.mutt/cache/headers
 set message_cachedir=~/.mutt/cache/bodies
 set certificate_file=~/.mutt/certificates
 set move = no
+set content_type="text/html"
+set send_charset="us-ascii:iso-8859-1:utf-8"
+set charset="utf-8"
 </pre>
 
 </ul>
 
-<pre>
+<ul>
+<li>
+发送邮件
+<pre class="brush:bash">
 echo 'test mutt'|mutt xing.yuan@timanetworks.com -s 'test mutt'
+
+(echo -e "&lt;h1&gt;test mail&lt;/h1&gt;&lt;br&gt;\n";cat /data/www/logs/csm_dcs_list.html) \
+|mutt youmail@abc.com -s 'test mutt'
 </pre>
+
+</ul>
 
 </div>
 <div id="footer">
