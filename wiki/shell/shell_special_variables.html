@@ -171,9 +171,17 @@ $2 是传递给该shell脚本的第二个参数
 $@ 是传给脚本的所有参数的列表
 </pre>
 
-</ul>
+<li>
+获取最后个参数
+<pre class="brush:bash">
+#!/bin/sh
+args=$#
+lastargs=${!args}
+echo $lastargs
+echo ${!#}
+echo $(eval echo "\$$#")
+</pre>
 
-<ul>
 <li>
 <code>$*</code>和<code>S@</code>的差别
 
