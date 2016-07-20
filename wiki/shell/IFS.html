@@ -53,6 +53,72 @@ echo $TMPIP | read ip1 ip2 ip3 ip4
 INVERT_IP=$ip4.$ip3.$ip2.$ip1
 </pre>
 
+<ul>
+<li>
+使用换行符做分隔符
+
+</ul>
+
+<pre class="brush:bash">
+#!/bin/sh
+conf="ABC
+A B C
+1|2|3
+1 2 3"
+echo "$conf"
+
+echo --------------
+echo IFS:
+echo $IFS|od -x
+echo --------------
+for c in $conf;do
+    echo "line='$c'";
+done
+
+echo --------------
+#IFS=$'\n'  表示用 换行符 做分隔
+#IFS="\n" 与 IFS='\n'  都是用 n 字符作为分隔
+IFS=$'\n'
+echo IFS:
+echo $IFS|od -x
+echo --------------
+for c in $conf;do
+    echo "line='$c'";
+done
+
+</pre>
+
+<pre>
+BC
+A B C
+1|2|3
+1 2 3
+--------------
+IFS:
+0000000      000a                                                        
+0000001
+--------------
+line='ABC'
+line='A'
+line='B'
+line='C'
+line='1|2|3'
+line='1'
+line='2'
+line='3'
+--------------
+IFS:
+0000000      000a                                                        
+0000001
+--------------
+line='ABC
+A B C
+1'
+line='2'
+line='3
+1 2 3'
+</pre>
+
 </div>
 <div id="footer">
 <p>
