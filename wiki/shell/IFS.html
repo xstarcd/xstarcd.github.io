@@ -69,7 +69,7 @@ echo "$conf"
 
 echo --------------
 echo IFS:
-echo $IFS|od -x
+echo -n "$IFS"|xxd 
 echo --------------
 for c in $conf;do
     echo "line='$c'";
@@ -80,23 +80,21 @@ echo --------------
 #IFS="\n" 与 IFS='\n'  都是用 n 字符作为分隔
 IFS=$'\n'
 echo IFS:
-echo $IFS|od -x
+echo -n "$IFS"|xxd 
 echo --------------
 for c in $conf;do
     echo "line='$c'";
 done
-
 </pre>
 
 <pre>
-BC
+ABC
 A B C
 1|2|3
 1 2 3
 --------------
 IFS:
-0000000      000a                                                        
-0000001
+00000000: 2d6e 2020 090a 0a                        -n  ...
 --------------
 line='ABC'
 line='A'
@@ -108,15 +106,12 @@ line='2'
 line='3'
 --------------
 IFS:
-0000000      000a                                                        
-0000001
+00000000: 2d6e 200a 0a                             -n ..
 --------------
-line='ABC
-A B C
-1'
-line='2'
-line='3
-1 2 3'
+line='ABC'
+line='A B C'
+line='1|2|3'
+line='1 2 3'
 </pre>
 
 </div>
