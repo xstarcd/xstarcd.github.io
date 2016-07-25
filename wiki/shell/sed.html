@@ -702,8 +702,12 @@ $!d —— 除了最后一行不执行d命令，其它行都执行d命令，删�
 
 <h2 id="toc_1.2">添加BOM头</h2>
 
-
 <pre class="brush:bash">
+# UTF-8 ║ EF BB BF 
+# UTF-16LE ║ FF FE (小尾)
+# UTF-16BE ║ FE FF (大尾)
+# UTF-32LE ║ FF FE 00 00 
+# UTF-32BE ║ 00 00 FE FF
 cat a.txt 
 #1
 #2
