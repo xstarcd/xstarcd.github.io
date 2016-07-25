@@ -708,10 +708,11 @@ $!d —— 除了最后一行不执行d命令，其它行都执行d命令，删�
 # UTF-16BE ║ FE FF (大尾)
 # UTF-32LE ║ FF FE 00 00 
 # UTF-32BE ║ 00 00 FE FF
-cat a.txt 
-#1
-#2
-#3
+cat &gt;a.txt &lt;&lt;EOF 
+1
+2
+3
+EOF
 echo -ne '\xEF\xBB\xBF' &gt; b.txt;cat a.txt &gt;&gt; b.txt 
 cat a.txt&gt; c.txt;sed -i "1s/^/\xEF\xBB\xBF/g" c.txt
 od -x b.txt 
@@ -720,6 +721,12 @@ od -x b.txt
 od -x c.txt
 # 0000000 bbef 31bf 320a 330a 000a
 # 0000011
+# 删除BOM头
+sed -i "1s/^\xEF\xBB\xBF//g" c.txt
+# 添加UTF-16LE头，在MAC office 2016打开失败
+sed -i "1s/^/\xFF\xFE/g" c.txt
+# 添加UTF-16BE头，在MAC office 2016打开失败
+sed -i "1s/^/\xFE\xFF/g" c.txt
 </pre>
 
 </div>
