@@ -295,6 +295,27 @@ netstat -antp|grep ^tcp|awk '{print $6}'|sort|uniq -c|sort -nr
      17 ESTABLISHED
       8 LISTEN
       1 CLOSE_WAIT
+
+# 之前用grep进行过滤的方式，要多一次管道
+cat netstat.txt |grep ^tcp|awk '{print $6}'|sort|uniq -c|sort -nr
+   2713 TIME_WAIT
+    203 ESTABLISHED
+     29 FIN_WAIT1
+     18 LISTEN
+     17 FIN_WAIT2
+# 根据Ficapy的反馈，使用awk的正则匹配进行过滤，减少前面的grep指令(谢谢Ficapy的提醒)
+cat netstat.txt |awk '{if($1=="tcp")print $6}'|sort|uniq -c|sort -nr
+   2713 TIME_WAIT
+    203 ESTABLISHED
+     29 FIN_WAIT1
+     18 LISTEN
+     17 FIN_WAIT2
+cat netstat.txt |awk '{if($1=="tcp")print $6}'|sort|uniq -c|sort -nr
+   2713 TIME_WAIT
+    203 ESTABLISHED
+     29 FIN_WAIT1
+     18 LISTEN
+     17 FIN_WAIT2
 </pre>
 
 <h3 id="toc_1.3.4">URI、Agent统计</h3>
