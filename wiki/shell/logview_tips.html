@@ -304,13 +304,29 @@ cat netstat.txt |grep ^tcp|awk '{print $6}'|sort|uniq -c|sort -nr
      18 LISTEN
      17 FIN_WAIT2
 # 根据Ficapy的反馈，使用awk的正则匹配进行过滤，减少前面的grep指令(谢谢Ficapy的提醒)
-cat netstat.txt |awk '/^tcp/ {print $6}'|sort|uniq -c|sort -nr
+# 不过grep的过滤处理速度似乎比awk的正则匹配速度更快，因此对大日志分析时可能还是先用grep过滤效率更高
+time cat netstat.txt |awk '/^tcp/ {print $6}'|sort|uniq -c|sort -nr
    2713 TIME_WAIT
     203 ESTABLISHED
      29 FIN_WAIT1
      18 LISTEN
      17 FIN_WAIT2
 
+real	0m0.017s
+user	0m0.014s
+sys	0m0.002s
+time cat netstat.txt |grep ^tcp|awk '{print $6}'|sort|uniq -c|sort -nr
+   2713 TIME_WAIT
+    203 ESTABLISHED
+     29 FIN_WAIT1
+     18 LISTEN
+     17 FIN_WAIT2
+
+real	0m0.008s
+user	0m0.005s
+sys	0m0.001s
+
+# 其他awk匹配方式
 cat netstat.txt |awk '{if($1=="tcp")print $6}'|sort|uniq -c|sort -nr
    2713 TIME_WAIT
     203 ESTABLISHED
