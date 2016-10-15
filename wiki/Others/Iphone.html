@@ -19,6 +19,7 @@
 <div class="toc">
 <ul>
 <li><a href="#toc_0.1">更改itunes文件备份路径</a>
+<li><a href="#toc_0.2">iOS9关闭自动更新</a>
 </ul>
 </ul>
 </div>
@@ -90,6 +91,42 @@ mklink /J "C:\Users\%username%\AppData\Roaming\Apple Computer\MobileSync" "F:\iT
 <p>
 本经验在win7 64位下测试成功。其他windows系统适用。
 </p>
+
+<h2 id="toc_0.2">iOS9关闭自动更新</h2>
+
+<ul>
+<li>
+进入设置-通用-储存空间与iCloud用量-管理储存空间，删除已下载的iOS更新包。 
+
+<li>
+安装描述文件
+
+<ol>
+<li>
+打开你设备上的safari，然后访问 <a href="https://oldcat.me/web/NOOTA9.mobileconfig">https://oldcat.me/web/NOOTA9.mobileconfig</a>
+
+<li>
+按照提示输入密码、安装描述文件，提示重启的时候请重启。
+
+<li>
+然后就安装好了，不过桌面会多出一个“反馈助手”(Feedback)，你把它挪到某个文件夹无视即可。
+
+<li>
+这样，你应该已经检测不到更新啦(比如今天发布的iOS9.2.1，iOS10也是)。
+
+</ol>
+<li>
+想删除本方法并恢复OTA更新的话，请到设置-&gt;通用，最下方找到描述文件，然后删除描述文件：
+
+<ul>
+<li>
+tvOS beta - Apple Developer v1 
+
+<li>
+tvOS 10 beta Software Profile
+
+</ul>
+</ul>
 
 </div>
 <div id="footer">
