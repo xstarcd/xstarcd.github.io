@@ -295,6 +295,81 @@ netstat -antp|grep ^tcp|awk '{print $6}'|sort|uniq -c|sort -nr
      17 ESTABLISHED
       8 LISTEN
       1 CLOSE_WAIT
+
+# 根据Ficapy的反馈，使用awk的正则匹配进行过滤，减少前面的grep指令(谢谢Ficapy的提醒)
+# 不过grep的过滤处理速度似乎比awk的正则匹配速度更快，因此对大日志分析时可能还是先用grep过滤效率更高
+time cat netstat.txt |awk '/^tcp/ {print $6}'|sort|uniq -c|sort -nr
+   2713 TIME_WAIT
+    203 ESTABLISHED
+     29 FIN_WAIT1
+     18 LISTEN
+     17 FIN_WAIT2
+
+real	0m0.017s
+user	0m0.014s
+sys	0m0.002s
+time cat netstat.txt |grep ^tcp|awk '{print $6}'|sort|uniq -c|sort -nr
+   2713 TIME_WAIT
+    203 ESTABLISHED
+     29 FIN_WAIT1
+     18 LISTEN
+     17 FIN_WAIT2
+
+real	0m0.008s
+user	0m0.005s
+sys	0m0.001s
+
+# 其他awk匹配方式
+cat netstat.txt |awk '{if($1=="tcp")print $6}'|sort|uniq -c|sort -nr
+   2713 TIME_WAIT
+    203 ESTABLISHED
+     29 FIN_WAIT1
+     18 LISTEN
+     17 FIN_WAIT2
+
+cat netstat.txt |awk '$1=="tcp" {print $6}'|sort|uniq -c|sort -nr
+   2713 TIME_WAIT
+    203 ESTABLISHED
+     29 FIN_WAIT1
+     18 LISTEN
+     17 FIN_WAIT2
+
+# 多条件匹配
+cat netstat.txt |awk '/^tcp|^udp/ {print $1"-"$6}'|sort|uniq -c|sort -nr
+   2713 tcp-TIME_WAIT
+    203 tcp-ESTABLISHED
+     29 tcp-FIN_WAIT1
+     18 tcp-LISTEN
+     17 tcp-FIN_WAIT2
+      4 udp-32366/rpcbind
+      4 udp--
+      3 udp-32526/rpc.statd
+      2 udp-19339/rpc.mountd
+      1 udp-ESTABLISHED
+      1 udp-38143/gmond
+      1 udp-19335/rpc.rquotad
+      1 udp-1282/portreserve
+
+cat netstat.txt |awk '{if($1~"^tcp" || $1~"^udp")print $1"-"$6}'|sort|uniq -c|sort -nr
+   2713 tcp-TIME_WAIT
+    203 tcp-ESTABLISHED
+     29 tcp-FIN_WAIT1
+     18 tcp-LISTEN
+     17 tcp-FIN_WAIT2
+      4 udp-32366/rpcbind
+      4 udp--
+      3 udp-32526/rpc.statd
+      2 udp-19339/rpc.mountd
+      1 udp-ESTABLISHED
+      1 udp-38143/gmond
+      1 udp-19335/rpc.rquotad
+      1 udp-1282/portreserve
+
+cat netstat.txt |awk '{if($1=="tcp" &amp;&amp; $6!~"ESTABLISHED")print $6}'|sort|uniq -c|sort -nr
+   2713 TIME_WAIT
+     29 FIN_WAIT1
+     18 LISTEN
+     17 FIN_WAIT2
 </pre>
 
 <h3 id="toc_1.3.4">URI、Agent统计</h3>
