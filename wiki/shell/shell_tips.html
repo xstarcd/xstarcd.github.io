@@ -202,6 +202,21 @@ lastb | awk '{print $3}' | sort | uniq -c | sort -n
 
 </ul>
 
+<ul>
+<li>
+给文本添加行号
+<pre class="brush:bash">
+# 用awk实现
+awk '{print FNR" "$0}' file.txt
+# 用sed实现
+sed = test.txt | sed 'N;s/\n/\t/'
+# 用sed生成行号，再用paste进行合并
+sed -n '=' file.txt &gt;tmp
+paste tmp file.txt
+</pre>
+
+</ul>
+
 </div>
 <div id="footer">
 <p>
