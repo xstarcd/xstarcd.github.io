@@ -114,6 +114,9 @@ Mutt中文手册: <a href="http://www.xhc.me/wp-content/uploads/mutt/manual_1.5.
 <li>
 linux下利用mutt来发邮件: <a href="http://pandarabbit.blog.163.com/blog/static/209284144201392532123788/">http://pandarabbit.blog.163.com/blog/static/209284144201392532123788/</a>
 
+<li>
+傻瓜式配置mutt:<a href="http://chuansong.me/n/2630234">http://chuansong.me/n/2630234</a>
+
 </ul>
 
 <pre>
@@ -153,8 +156,15 @@ usage: mutt [&lt;options&gt;] [-z] [-f &lt;file&gt; | -yZ]
   --        separate filename(s) and recipients,
         when using -a, -- is mandatory
 </pre>
-
 <ul>
+<li>
+安装
+<pre class="brush:bash">
+yum install mutt -y
+# 缺少这些包，会报"No authenticators available"错误：
+yum install cyrus-sasl-gssapi cyrus-sasl-plain cyrus-sasl cyrus-sasl-lib -y
+</pre>
+
 <li>
 ~/.muttrc
 <pre class="brush:bash">
