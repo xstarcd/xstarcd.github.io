@@ -40,6 +40,68 @@ Kafka设计解析（二）：Kafka High Availability
 <a href="http://www.infoq.com/cn/articles/kafka-analysis-part-3/">http://www.infoq.com/cn/articles/kafka-analysis-part-3/</a>
 
 </ul>
+<li>
+总结kafka的consumer消费能力很低的情况下的处理方案
+
+<ul>
+<li>
+文／浮云1o__o1（简书作者）
+
+<li>
+原文链接：<a href="http://www.jianshu.com/p/4e00dff97f39">http://www.jianshu.com/p/4e00dff97f39</a>
+
+<li>
+著作权归作者所有，转载请联系作者获得授权，并标注“简书作者”。 
+
+<li>
+摘要：
+
+<ul>
+<li>
+spring-boot 的版本是1.4.0.RELEASE
+
+<li>
+kafka 的版本是0.9.0.x 版本
+
+<li>
+spring-kafka 的版本是1.0.3.RELEASE
+
+</ul>
+<li>
+原因分析：
+
+<ul>
+<li>
+案例:consumer消费一条数据平均需要200ms的时间，并且在某个时刻，producer会在短时间内产生大量的数据丢进kafka的broker里面（假设平均1s中内丢入了5w条需要消费的消息，这个情况会持续几分钟）。
+
+<li>
+这种情况下，kafka的consumer会从broker里面取出一批数据，给消费线程进行消费。
+
+<li>
+由于取出的一批消息数量太大，consumer在session.timeout.ms时间之内没有消费完成
+
+<li>
+consumer coordinator 会由于没有接受到心跳而挂掉，并且出现一些日志:
+
+<ul>
+<li>
+org.apache.kafka.clients.consumer.internals.AbstractCoordinator coordinatorDead
+
+<li>
+日志的意思大概是coordinator挂掉了，然后自动提交offset失败，然后重新分配partition给客户端
+
+</ul>
+<li>
+由于自动提交offset失败，导致重新分配了partition的客户端又重新消费之前的一批数据
+
+<li>
+接着consumer重新消费，又出现了消费超时，无限循环下去。
+
+</ul>
+<li>
+解决方案分析请见原文。
+
+</ul>
 </ul>
 
 </div>
