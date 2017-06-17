@@ -18,25 +18,34 @@
 <h1>使用grub2制作U盘引导iso</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">U盘安装grub2</a>
-<li><a href="#toc_0.2">grub.cfg</a>
+<li><a href="#toc_1">创建U盘多引导ISO</a>
 <ul>
-<li><a href="#toc_0.2.1">pendrivelinux范例</a>
-<li><a href="#toc_0.2.2">多引导配置范例</a>
-<li><a href="#toc_0.2.3">我的grub.cfg</a>
+<li><a href="#toc_1.1">创建U盘分区</a>
+<li><a href="#toc_1.2">安装grub2到U盘</a>
+<li><a href="#toc_1.3">拷贝所需文件</a>
+<li><a href="#toc_1.4">配置grub.cfg</a>
 </ul>
-<li><a href="#toc_0.3">U盘启动WinPE</a>
+<li><a href="#toc_2">历史资料</a>
 <ul>
-<li><a href="#toc_0.3.1">GRUB2-&gt;grub4dos方式</a>
-<li><a href="#toc_0.3.2">grub2+syslinux/memdisk</a>
-<li><a href="#toc_0.3.3">ntldr方式</a>
+<li><a href="#toc_2.1">U盘安装grub2</a>
+<li><a href="#toc_2.2">grub.cfg</a>
+<ul>
+<li><a href="#toc_2.2.1">pendrivelinux范例</a>
+<li><a href="#toc_2.2.2">多引导配置范例</a>
+<li><a href="#toc_2.2.3">我的grub.cfg</a>
 </ul>
-<li><a href="#toc_0.4">编译syslinux</a>
-<li><a href="#toc_0.5">工具下载</a>
-<li><a href="#toc_0.6">在boot.ini中添加grub4dos</a>
+<li><a href="#toc_2.3">U盘启动WinPE</a>
 <ul>
-<li><a href="#toc_0.6.1">WinXP</a>
-<li><a href="#toc_0.6.2">Win7</a>
+<li><a href="#toc_2.3.1">GRUB2-&gt;grub4dos方式</a>
+<li><a href="#toc_2.3.2">grub2+syslinux/memdisk</a>
+<li><a href="#toc_2.3.3">ntldr方式</a>
+</ul>
+<li><a href="#toc_2.4">编译syslinux</a>
+<li><a href="#toc_2.5">工具下载</a>
+<li><a href="#toc_2.6">在boot.ini中添加grub4dos</a>
+<ul>
+<li><a href="#toc_2.6.1">WinXP</a>
+<li><a href="#toc_2.6.2">Win7</a>
 </ul>
 </ul>
 </ul>
@@ -48,7 +57,262 @@ grub2基础教程-修订版: <a href="http://forum.ubuntu.org.cn/viewtopic.php?t
 
 </ul>
 
-<h2 id="toc_0.1">U盘安装grub2</h2>
+<h1 id="toc_1">创建U盘多引导ISO</h1>
+
+<ul>
+<li>
+Update:2017-06-17
+
+</ul>
+
+<h2 id="toc_1.1">创建U盘分区</h2>
+
+<ul>
+<li>
+将U盘分为两个分区:
+
+<ul>
+<li>
+sdb1:用于放数据(NTFS)，使用剩余空间(Windows只能识别到U盘上的第一个分区)。
+
+<li>
+sdb2:用于引导(FAT32)，设置boot标志，安装grub，放置用于启动文件，约2GB(grub/winpe/CDlinux/linuxmint)，若加上win7安装包，约需6GB。
+<pre>
+# 分区
+fdisk -l /dev/sdb
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sdb1               1        1614    12964423+   7  HPFS/NTFS
+/dev/sdb2   *        1615        1881     2144677+   b  W95 FAT32
+
+# 格式化
+mkdosfs -F32 -v -n "uboot" /dev/sdb2
+mkntfs -Q -v -L "udata" /dev/sdb1
+</pre>
+
+</ul>
+</ul>
+
+<h2 id="toc_1.2">安装grub2到U盘</h2>
+
+<ul>
+<li>
+安装grub2
+<pre class="brush:bash">
+# 如果使用了错误的参数，会出现"Installation is impossible. Aborting"错误。
+# 将/dev/sdb替换为你实际的U盘分区
+mkdir /media/uboot &amp;&amp; mount /dev/sdb2 /media/uboot
+
+# 旧版本grub使用：--root-directory=/media/USB，如:Ubuntu 10.04,grub-install (GNU GRUB 1.98-1ubuntu13)
+grub-install --force --no-floppy --root-directory=/media/uboot /dev/sdb
+
+# 新版本grub使用：--boot-directory=/media/USB/boot
+#grub-install --force --no-floppy --boot-directory=/media/uboot/boot --target=i386-pc --recheck /dev/sdb
+grub-install --force --no-floppy --boot-directory=/media/uboot/boot /dev/sdb
+
+# 增加unicode、ascii支持(可选)
+cp /usr/share/grub/{unicode.pf2,ascii.pf2} /media/uboot/boot/grub/
+
+# 使用grub-mkconfig可自动生成grub.cfg，并添加硬盘上的引导信息
+# grub-mkconfig -o /media/uboot/boot/grub/grub.cfg
+# GRUB_PREFIX="/media/uboot/boot/grub" grub-mkconfig -o /mnt/uboot/boot/grub/grub.cfg
+</pre>
+
+</ul>
+
+<h2 id="toc_1.3">拷贝所需文件</h2>
+
+<ul>
+<li>
+将memdisk拷贝到U盘:/boot/grub/目录中。
+
+<li>
+将grub4dos拷贝到U盘:/boot/目录中。
+
+<li>
+将firadisk.ima、lmt7.iso等拷贝到U盘/iso目录。
+
+<li>
+其它的软件安装包可拷贝到U盘第二个分区中，便于后续维护更新。
+<pre>
+.
+|-- boot
+|   |-- grub
+|   `-- grub4dos
+|-- iso
+|   |-- CDlinux_mini-0.9.7.1.iso
+|   |-- Deepin_Windows_PE_4.2_Build_100910.iso
+|   |-- firadisk.ima
+|   |-- linuxmint-17.2-cinnamon-32bit.iso
+|   `-- lmt7.iso
+`-- tools
+    |-- BOOTICEx86v133.exe
+    |-- DiskGenius.exe
+    |-- NTPWEDIT.exe
+    `-- WIN$MAN.EXE
+df -h
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/sdb2             2.0G  1.8G  283M  87% /media/uboot
+</pre>
+
+</ul>
+
+<h2 id="toc_1.4">配置grub.cfg</h2>
+
+<pre class="brush:bash">
+#加载模块
+insmod cat
+insmod gzio
+insmod ext2
+insmod ntfs
+#insmod ntldr
+insmod font
+insmod fat
+insmod part_msdos
+insmod loopback
+insmod iso9660
+
+set default=0   #这里是默认选项，0就是第一个
+set timeout=5   #这里是默认等待时间
+
+#设置显示情况，包括中文字体
+
+#这里是设置字体文件，也就是前面我们拷贝的unicode.pf2
+loadfont /boot/grub/unicode.pf2
+
+# 这些是图形化设置的，加上更漂亮
+# ------------------------------------------------------------------------
+#set gfxmode=800x600          #设置分辨率
+#set gfxpayload=keep          #这一句不太清除，网上没有找到相关资料，加上保险
+#insmod gfxterm               #启用gfxterm模块，分辨率什么的，都靠它
+#insmod vbe                   #加载vbe模块
+#terminal_output gfxterm      #将终端设置为gfxterm模式，也就是使上面的分辨率什么的生效
+
+#以下是设置背景图片
+#set root='hd0,msdos1'
+#insmod jpeg                                #开启jpeg模块
+#background_image /boot/images/nature.jpg   #指定背景图片的路径
+#set menu_color_normal=white/black          #菜单中未选中项目的字体颜色
+#set menu_color_highlight=cyan/black        #选中项目的字体颜色
+# ------------------------------------------------------------------------
+
+#搜索ISO目录下有iso的硬盘设定为root分区，也可以改为在U盘根目录下放置的文件，但注意这个文件其他硬盘的根目录不能有
+#search --set -f /iso/CDlinux_mini-0.9.7.1.iso
+
+menuentry "WinPE--LMT(grub4dos)" {
+    set iso_path=/iso/lmt7.iso
+    search --set -f ${iso_path}
+    set g4d_dir="/boot/grub4dos"
+    set cfgfile="find --set-root ${iso_path};map --mem ${iso_path} (0xff);map --hook;chainloader (0xff);boot"
+    echo 'Loading ISO via grub4dos...'
+    linux $g4d_dir/grub.exe --config-file=$cfgfile
+}
+
+menuentry "WinPE--LMT(memdisk)" {
+    set iso_path=/iso/lmt7.iso
+    search --set -f ${iso_path}
+    echo 'Loading Memdisk...'
+    linux16 /boot/grub/memdisk iso raw
+    echo 'Loading ISO...'
+    initrd16 ${iso_path}
+}
+
+menuentry "WinPE--Deepin WinPE 4.2(grub4dos)" {
+    set iso_path=/iso/Deepin_Windows_PE_4.2_Build_100910.iso
+    search --set -f ${iso_path}
+    set g4d_dir="/boot/grub4dos"
+    set cfgfile="find --set-root ${iso_path};map --mem ${iso_path} (0xff);map --hook;chainloader (0xff);boot"
+    echo 'Loading ISO via grub4dos...'
+    linux $g4d_dir/grub.exe --config-file=$cfgfile
+}
+
+menuentry "WinPE--Deepin WinPE 4.2(grub4dos+firadisk)" {
+    set iso_path=/iso/Deepin_Windows_PE_4.2_Build_100910.iso
+    set firadisk=/iso/firadisk.ima
+    search --set -f ${iso_path}
+    set g4d_dir="/boot/grub4dos"
+    set cfgfile="find --set-root ${iso_path};map --mem ${firadisk} (fd0);map --mem ${iso_path} (0xff);map --hook;chainloader (0xff);boot"
+    echo 'Loading ISO via grub4dos...'
+    linux $g4d_dir/grub.exe --config-file=$cfgfile
+}
+
+menuentry "WinPE--Deepin WinPE 4.2(memdisk)" {
+    set iso_path=/iso/Deepin_Windows_PE_4.2_Build_100910.iso
+    search --set -f ${iso_path}
+    echo 'Loading Memdisk...'
+    linux16 /boot/grub/memdisk iso raw
+    echo 'Loading ISO...'
+    initrd16 ${iso_path}
+}
+
+menuentry "CDlinux (console only)" {
+    set gfxpayload=1280x1024x32,1024x768x32,800x600x32,800x600x16,800x600,640x480
+    set iso_path=/iso/CDlinux_mini-0.9.7.1.iso
+    loopback loop ${iso_path}
+    linux (loop)/CDlinux/bzImage iso-scan/filename=${iso_path} quiet CDL_LANG=en_US.UTF-8
+    initrd (loop)/CDlinux/initrd
+}
+
+menuentry "Linux Mint 17.2 ISO" {
+    set iso_path=/iso/linuxmint-17.2-cinnamon-32bit.iso
+    loopback loop ${iso_path}
+    linux (loop)/casper/vmlinuz file=/cdrom/preseed/linuxmint.seed boot=casper initrd=/casper/initrd.lz iso-scan/filename=${iso_path} noeject noprompt splash --
+    initrd (loop)/casper/initrd.lz
+}
+
+menuentry 'BOOT HDisk'{
+    insmod ntfs
+    search --set -f /bootmgr
+    chainloader +1
+}
+
+menuentry "Reboot" --class windows --class os {
+    reboot
+}
+
+#menuentry 'CentOS Linux 7 1503 Live' {
+#    set iso_name=CentOS-7-livecd-x86_64
+#    set iso_path=/iso/CentOS-7-x86_64-LiveCD-1503.iso
+#    loopback loop ${iso_path}
+#    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=${iso_name} rootfstype=auto ro rd.live.image quiet rhgb rd.luks=0 rd.md=0 rd.dm=0
+#    initrd (loop)/isolinux/initrd0.img
+#}
+
+#menuentry 'Fedora LiveCD' {
+#    set iso_name=Fedora-Live-Desktop-i686-20-1
+#    set iso_path=/iso/Fedora-Live-Desktop-i686-20-1.iso
+#    loopback loop ${iso_path}
+#    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=${iso_name} rootfstype=auto ro rd.live.image quiet rhgb rd.luks=0 rd.md=0 rd.dm=0
+#    initrd (loop)/isolinux/initrd0.img
+#}
+
+#menuentry 'Fedora LiveCD X86_64' {
+#    set iso_name=Fedora-Live-Desktop-x86_64-20-1
+#    set iso_path=/iso/Fedora-Live-Desktop-x86_64-20-1.iso
+#    loopback loop ${iso_path}
+#    linux (loop)/isolinux/vmlinuz0 iso-scan/filename=${iso_path} root=live:CDLABEL=${iso_name} rootfstype=auto ro rd.live.image quiet rhgb rd.luks=0 rd.md=0 rd.dm=0
+#    initrd (loop)/isolinux/initrd0.img
+#}
+
+#menuentry "Install Ubuntu Server 12.04" {
+#    set isofile="/iso/ubuntu-12.04-server-amd64.iso"
+#    loopback loop $isofile
+#    set gfxpayload=keep
+#    linux   (loop)/install/vmlinuz  file=/cdrom/preseed/ubuntu-server.seed iso-scan/filename=$isofile quiet --
+#    initrd  (loop)/install/initrd.gz
+#}
+
+#menuentry "Install Ubuntu Server 14.04" {
+#    set isofile="/iso/ubuntu-14.04.1-server-amd64.iso"
+#    loopback loop $isofile
+#    set gfxpayload=keep
+#    linux   (loop)/install/vmlinuz  file=/cdrom/preseed/ubuntu-server.seed iso-scan/filename=$isofile quiet --
+#    initrd  (loop)/install/initrd.gz
+#}
+</pre>
+
+<h1 id="toc_2">历史资料</h1>
+
+<h2 id="toc_2.1">U盘安装grub2</h2>
 
 <ul>
 <li>
@@ -73,7 +337,7 @@ mkfs.vfat -F 32 -n MULTIBOOT /dev/sdx1
 # 新版本grub使用：--boot-directory=/mnt/USB/boot
 # 如果使用了错误的参数，会出现"Installation is impossible. Aborting"错误。
 # 将/dev/sdb替换为你实际的U盘分区
-mkdir /mnt/uboot &amp;&amp; mount /dev/sdb1 /mnt/uboot
+mkdir /mnt/uboot &amp;&amp; mount /dev/sdb2 /mnt/uboot
 #grub-install --force --no-floppy --boot-directory=/mnt/uboot/boot --target=i386-pc --recheck /dev/sdb
 grub-install --force --no-floppy --boot-directory=/mnt/uboot/boot /dev/sdb
 
@@ -87,9 +351,9 @@ cp /usr/share/grub/{unicode.pf2,ascii.pf2} /mnt/uboot/boot/grub/
 
 </ul>
 
-<h2 id="toc_0.2">grub.cfg</h2>
+<h2 id="toc_2.2">grub.cfg</h2>
 
-<h3 id="toc_0.2.1">pendrivelinux范例</h3>
+<h3 id="toc_2.2.1">pendrivelinux范例</h3>
 
 <pre class="brush:bash">
 # This grub.cfg file was created by Lance http://www.pendrivelinux.com
@@ -139,7 +403,7 @@ menuentry "SystemRescueCd" {
 Adding an Unlisted ISO: To try ISO Files that are not yet listed, use the existing menuentry examples in /boot/grub/grub.cfg and append any options normally found in the distributions syslinux.cfg file on the "append" line to the "linux" line of the menu entry.
 </pre>
 
-<h3 id="toc_0.2.2">多引导配置范例</h3>
+<h3 id="toc_2.2.2">多引导配置范例</h3>
 
 <pre class="brush:bash">
 # http://www.cnblogs.com/eshizhan/archive/2012/04/24/2467632.html
@@ -202,7 +466,7 @@ menuentry "GRUB4DOS" {
 }
 </pre>
 
-<h3 id="toc_0.2.3">我的grub.cfg</h3>
+<h3 id="toc_2.2.3">我的grub.cfg</h3>
 
 <pre class="brush:bash">
 #加载模块
@@ -358,9 +622,9 @@ menuentry "Reboot" --class windows --class os {
 
 </pre>
 
-<h2 id="toc_0.3">U盘启动WinPE</h2>
+<h2 id="toc_2.3">U盘启动WinPE</h2>
 
-<h3 id="toc_0.3.1">GRUB2-&gt;grub4dos方式</h3>
+<h3 id="toc_2.3.1">GRUB2-&gt;grub4dos方式</h3>
 
 <p>
 通过grub4dos提供的map功能引导WinPE.iso。
@@ -379,7 +643,7 @@ menuentry "[iso] -- WinPE(g4d)" --class windows --class os {
     initrd16 /image/winpe.iso
 </pre>
 
-<h3 id="toc_0.3.2">grub2+syslinux/memdisk</h3>
+<h3 id="toc_2.3.2">grub2+syslinux/memdisk</h3>
 
 <ul>
 <li>
@@ -428,7 +692,7 @@ menuentry '[iso] -- /WinPE(memdisk) ' {
     initrd16 /winpe.iso
 </pre>
 
-<h3 id="toc_0.3.3">ntldr方式</h3>
+<h3 id="toc_2.3.3">ntldr方式</h3>
 
 <ul>
 <li>
@@ -469,7 +733,7 @@ menuentry 'LDRXPE for WinCE'{
 
 </ul>
 
-<h2 id="toc_0.4">编译syslinux</h2>
+<h2 id="toc_2.4">编译syslinux</h2>
 
 <ul>
 <li>
@@ -504,7 +768,7 @@ make
 <strong>测试编译报错，以后再来查找原因。</strong>
 </p>
 
-<h2 id="toc_0.5">工具下载</h2>
+<h2 id="toc_2.5">工具下载</h2>
 
 <ul>
 <li>
@@ -554,9 +818,9 @@ BOOTICE 是一个启动相关的维护的小工具，主要用于安装、修复
 </ul>
 </ul>
 
-<h2 id="toc_0.6">在boot.ini中添加grub4dos</h2>
+<h2 id="toc_2.6">在boot.ini中添加grub4dos</h2>
 
-<h3 id="toc_0.6.1">WinXP</h3>
+<h3 id="toc_2.6.1">WinXP</h3>
 
 <ul>
 <li>
@@ -567,7 +831,7 @@ C:\boot.ini里面最后加上一句：<code>C:\GRLDR=GRUB4DOS</code>，配合gru
 
 </ul>
 
-<h3 id="toc_0.6.2">Win7</h3>
+<h3 id="toc_2.6.2">Win7</h3>
 
 <ul>
 <li>
