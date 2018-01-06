@@ -48,7 +48,50 @@
 <li>
 <a href="SpringCloud_introduce.html">SpringCloud介绍</a>
 
+<li>
+HTTP抓包分析工具：Fiddler
+
+<li>
+Restful规范分析：<a href="http://blog.csdn.net/yzzst/article/details/53775319">http://blog.csdn.net/yzzst/article/details/53775319</a>
+
+<li>
+API多版本支持：<a href="http://blog.csdn.net/yzzst/article/details/54755077">http://blog.csdn.net/yzzst/article/details/54755077</a>
+
 </ul>
+
+<pre>
+REST的关键原则是将你的API分割成逻辑资源紧密相关，并采用所用并理解的原理。使用HTTP请求控制这些资源，其中，这些方法（GET, POST, PUT, PATCH, DELETE）具有特殊含义。
+
+举例来说，有一个API提供公司内部（company）的信息，还包括各种部门（departments
+）和雇员（employees）的信息，则它的路径应该设计成下面这样。
+
+https://api.example.com/company
+https://api.example.com/departments
+https://api.example.com/employees
+
+基于请求的方式和路径来作为常见的CURD（增删改查）
+
+GET /company：列出所有公司
+POST /company：新建一个公司
+GET /company/ID：获取某个指定公司的信息
+PUT /company/ID：更新某个指定公司的信息（提供该公司的全部信息）
+PATCH /company/ID：更新某个指定公司的信息（提供该公司的部分信息）
+DELETE /company/ID：删除某个公司
+GET /company/ID/employees：列出某个指定公司的所有雇员
+DELETE /company/ID/employees/ID：删除某个指定公司的指定雇员
+
+对于请求后的响应结果，RESTful也做了一个很好得定义：
+
+GET /collection：返回资源对象的列表（数组）
+GET /collection/resource：返回单个资源对象
+POST /collection：返回新生成的资源对象
+PUT /collection/resource：返回完整的资源对象
+PATCH /collection/resource：返回完整的资源对象
+DELETE /collection/resource：返回一个空文档
+
+RESTful API设计确实比较不多，对于一些简单的APP来说，能够快速的开发，并满足他们的绝大部分需求。
+</pre>
+
 
 <h1 id="toc_2">云计算</h1>
 
