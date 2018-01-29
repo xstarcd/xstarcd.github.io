@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>实例化DevOps原则</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>实例化DevOps原则</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">DevOps的起源可以分为两条线</a>
+<li><a href="#toc_0.2">第一条线是:比利时独立咨询师Patrick Debois</a>
+<li><a href="#toc_0.3">第二条线是:当时雅虎旗下的图片分享网站Flickr</a>
+<ul>
+<li><a href="#toc_0.3.1">DevOps框架：CALMS</a>
+<li><a href="#toc_0.3.2">DevOps框架：The Three Ways</a>
+</ul>
+<li><a href="#toc_0.4">DevOps的一些原则</a>
+<ul>
+<li><a href="#toc_0.4.1">1. 人</a>
+<ul>
+<li><a href="#toc_0.4.1.1">领导者身体力行持续改进 高于 关注工具和基础设施</a>
+<li><a href="#toc_0.4.1.2">试验并改进流程 而非 指责人的过失</a>
+<li><a href="#toc_0.4.1.3">产品思维 高于 项目思维</a>
+</ul>
+<li><a href="#toc_0.4.2">2. 产品</a>
+<ul>
+<li><a href="#toc_0.4.2.1">质量和安全内建 而非 晚期度量和检查</a>
+<li><a href="#toc_0.4.2.2">客户反馈 高于 按期交付</a>
+<li><a href="#toc_0.4.2.3">基于不可变容器的微服务 高于 单块应用</a>
+</ul>
+<li><a href="#toc_0.4.3">3. 流程</a>
+<ul>
+<li><a href="#toc_0.4.3.1">管理层实践Improvement Kata和Coaching Kata进行流程持续改进 高于 用结果导向进行管理</a>
+</ul>
+<li><a href="#toc_0.4.4">全局优化 而非 局部优化</a>
+<li><a href="#toc_0.4.5">单件流 高于 库存</a>
+<li><a href="#toc_0.4.6">4. 工具</a>
+<ul>
+<li><a href="#toc_0.4.6.1">自动化 高于 手工</a>
+<li><a href="#toc_0.4.6.2">基础设施及代码 高于 手工配置</a>
+<li><a href="#toc_0.4.6.3">部署流水线 而非 每日构建</a>
+</ul>
+</ul>
+<li><a href="#toc_0.5">总结</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+原文：<a href="http://insights.thoughtworkers.org/instantiate-the-principles-of-devops/">http://insights.thoughtworkers.org/instantiate-the-principles-of-devops/</a>
+
+<li>
+作者：伍斌
+<pre>
+伍斌_Ben，ThoughtWorks软件开发咨询师。潜心进行软件开发技术的操练与悟道。因经常办技术操练道场，人称“道长”。著有《驯服烂代码》。自1993年大学毕业以来，先后做过程序员、测试工程师、项目经理和软件开发咨询师。2013年4月创办全栈开发者的编程操练社区"bjdp.org北京设计模式学习组"。微信公众号bjdp_org。
+发表于
+2017年3月9日
+</pre>
+
+</ul>
+
+<ul>
+<li>
+【摘要】
+
+<ul>
+<li>
+DevOps原则所追求的愿景，就是“让业务所要求的那些变化能随时上线可用”；
+
+<li>
+DevOps的起源表明，其原则是从Agile与Lean的实践当中提炼而来，因此与Agile和Lean的原则并无二致；
+
+<li>
+本文所讨论的DevOps原则可以用"人、产品、流程和工具"这4个维度来进行组织。
+
+</ul>
+</ul>
+
+<p>
+你在做用户故事拆分？这不是在做DevOps。”这是笔者在2016年以咨询师的身份，参与一家大型跨国金融企业的Agile和DevOps转型时所听到的话。在这家企业，Agile和DevOps明显指的是不同的东西：前者专指每日站会、计划会、回顾会等Scrum的实践和用户故事实践；后者专指自动化、工具链和基础设施等实践。过了一段时间，笔者把本文所列举的一些DevOps原则发到一个相关微信群里面，得到了这样的反馈："怎么满眼都是敏捷和精益？""感觉DevOps被一群不操作Op的人给玩儿坏了。"
+</p>
+
+<p>
+这些经历让笔者开始关心这些问题：既然Dev指的是“开发”，Ops指的是“运维”，那么到底什么是DevOps？它的原则是什么？它和敏捷、精益的关系是什么？让我们先观察一下<a href="https://www.jianshu.com/p/f40209023006">DevOps的起源</a>[1][2]。
+</p>
+
+<h2 id="toc_0.1">DevOps的起源可以分为两条线</h2>
+
+<h2 id="toc_0.2">第一条线是:比利时独立咨询师Patrick Debois</h2>
+
+<p>
+2007年他在比利以咨询师的身份，参与了一个政府数据中心迁移中的测试工作。他在做测试时，需要频繁往返于Dev团队和Ops团队之间。Dev团队已经实践了敏捷，而Ops团队还是传统运维的工作方式。看到Ops团队每天忙于救火和疲于奔命的状态，他在想：能否把敏捷的实践引入Ops团队呢？
+</p>
+
+<h2 id="toc_0.3">第二条线是:当时雅虎旗下的图片分享网站Flickr</h2>
+
+<p>
+这家公司的运维部门经理John Allspaw和工程师Paul Hammond，于2009年6月23日在美国圣荷西举办的Velocity 2009大会上，发表了一个引燃DevOps的演讲。这个演讲的题目在当时很抢眼－－<a href="https://www.slideshare.net/jallspaw/10-deploys-per-day-dev-and-ops-cooperation-at-flickr">《每天部署10次以上：Flickr公司的Dev与Ops的合作》</a>[3]。
+</p>
+
+<p>
+这个演讲有一个核心议题：Dev和Ops的目标到底是不是冲突？传统观念认为Dev和Ops的目标是有冲突的——Dev的工作是添加新特性，而Ops的工作是保持系统运行的稳定和快速；而Dev在添加新特性时所带来的代码变化，会导致系统运行不稳定和变慢，从而引发Dev与Ops的冲突。然而从全局来看，Dev和Ops的目标是一致的，即都是“让业务所要求的那些变化能随时上线可用”。
+</p>
+
+<p>
+这样抢眼的题目和鲜明的观点，自然抓住了当时还在比利时的Debois。他在“推特”上发帖：“可惜没法去现场参加。”朋友Paul Nasrat回帖说：“为什么不在比利时搞一个你自己的Velocity大会？”这两条线使得Debois撸起袖子，于2009年10月30至31日，在比利时的第二大城市根特，以社区自发的形式举办了一个名为DevOpsDays的大会。这次大会吸引了不少开发者、系统管理员和软件工具程序员。这两天大家聊得太开心了，会议结束还不过瘾，回去继续在“推特”上聊。限于推特140个字符的制约，Debois把DevOpsDays中的Days去掉，而创建了#DevOps#这个“推特”聊天主题标签，DevOps诞生了。
+</p>
+
+<p>
+Flickr公司的两位演讲者所表达的“Dev和Ops的共同目标是让业务所要求的那些变化能随时上线可用”这一观点，其实就是DevOps的愿景。而要达到这一点，可以使用一个现成的工具：精益。源自丰田生产方式的“精益”的愿景就是“Shortest lead time”，即用最短的时间来完成从客户下订单到收到货物的全过程。这恰好能帮助实现DevOps的上述愿景。《持续交付》的作者之一Jez Humble也体会出精益在DevOps中的重要性，以至于他把DevOps的CAMS框架修订为<a href="https://blog.rackspace.com/quantifying-devops-capability-its-important-to-keep-calms">CALMS</a>[4]，其中增加的L指的就是Lean（精益），这一点下文还会提及。
+</p>
+
+<p>
+<img src="../img/DevOps/instantiate-the-principles-of-devops-Flickr.jpeg">
+</p>
+
+<p>
+从上面DevOps的起源中能够看出三点：
+</p>
+
+<pre>
+    * DevOps源自草根社区，最初并没有什么自上而下设计出来的理论框架；
+    * DevOps背后的原则，就是上面两条线中所涉及的敏捷和精益的原则；
+    * DevOps的愿景是让业务所要求的那些变化能随时上线可用。
+</pre>
+
+<p>
+一旦了解了上面第2点，就不会有前文中所说的“Agile和DevOps是不同的东西”和“感觉DevOps被一群不操作Op的人给玩儿坏了”这样的说法。
+</p>
+
+<p>
+因为DevOps源自草根，没有什么框架，所以如何定义DevOps成了DevOps社区里面的一个<a href="https://www.upguard.com/blog/the-problem-with-defining-devops">大难题</a>[5]。一些DevOps从业者，纷纷设定自己的DevOps框架。其中比较有名的框架有上文提到的Damon Edwards所定义并被Jez Humble所修订的CALMS，和Gene Kim所定义的<a href="http://itrevolution.com/the-three-ways-principles-underpinning-devops/">The Three Ways</a>[6]。
+</p>
+
+<h3 id="toc_0.3.1">DevOps框架：CALMS</h3>
+
+<pre>
+    Culture – 文化：公司各个角色一起担当业务变化，实现有效协作和沟通；
+    Automation – 自动化：在价值链中尽量除去手工步骤；
+    Lean – 精益：运用精益原则更频繁地交付价值；
+    Metrics – 度量：度量并使用数据来优化交付周期；
+    Sharing – 分享：分享成功和失败的经验来相互学习。
+</pre>
+
+<h3 id="toc_0.3.2">DevOps框架：The Three Ways</h3>
+
+<pre>
+    The First Way： System Thinking （系统思考：强调全局优化，避免局部优化）；
+    The Second Way： Amplify Feedback Loops （经过放大的反馈回路：创建从开发过程下游至上游的反馈环）；
+    The Third Way： Culture of Continual Experimentation And Learning（持续做试验和学习的文化：持续做试验，承担风险、从失败中学习；通过反复实践来达到精通）。
+</pre>
+
+<p>
+<img src="../img/DevOps/instantiate-the-principles-of-devops-the-three-ways.jpg">
+</p>
+
+<p>
+(图片来自：<a href="http://t.cn/RijRjYS)">http://t.cn/RijRjYS)</a>
+</p>
+
+<h2 id="toc_0.4">DevOps的一些原则</h2>
+
+<p>
+本文试着从 <strong>“人、产品、流程和工具”</strong> 4个维度，来梳理DevOps的一些原则。为什么会有这4个维度？
+</p>
+
+<pre>
+工业经济：流程-&gt;产品-&gt;工具-&gt;人
+短识经济：人-&gt;产品-&gt;流程-&gt;工具
+</pre>
+
+<p>
+先看前三个维度：“人”、“产品”和“流程”。在一百多年前的工业经济时代，由于物质匮乏，所以当时占主导地位的泰勒科学管理理论将“流程”这个维度放到了第一位，让企业首先通过标准化的“流程”达到规模化的制造能力，来满足供不应求的市场。市场上可购买的商品少，人们对“产品”的质量、设计也就不介意了，所以“产品”排在了第二位。而标准化的流程把工人的素质标准降到了最低，只要带着一双手来，在流水线上重复一个动作就好了，不需要动脑子，因此“人”排在了最后的位置。
+</p>
+
+<p>
+一百年后，工业经济霸主的地位已被知识经济所取代。在具有知识密集特点的敏捷软件开发的上下文中，这三个维度的顺序颠倒了：“人”的优先级最高，因为只有依靠“人”的创造力才能应对多变的业务需求；给用户提供价值的“产品”依旧排第二位，因为这是企业赖以生存的根基；而“流程”可以为了“人”来高效地实现“产品”而进行定制，所以优先级最低。而强调自动化的DevOps离不开好用的“工具”，“工具”又可以依据流程来定制，因而可以补在“流程”的后面。
+</p>
+
+<p>
+<img src="../img/DevOps/instantiate-the-principles-of-devops-deveops-principle.png">
+</p>
+
+<p>
+(图片来自：<a href="http://t.cn/RijRMrp)">http://t.cn/RijRMrp)</a>
+</p>
+
+<p>
+下面所描述的DevOps原则，来源于敏捷、精益和DevOps的一些具体实践。虽然没有涵盖DevOps的所有实践，但已经包括笔者最近一年在DevOps的实践中所感悟的主要内容，而且今后会继续完善。
+</p>
+
+<p>
+一般的文章对于“原则”的阐述都比较抽象，有点像上面提到的CALMS和The Three Ways这两个框架的定义方式那样——仅仅把几个名词或短语放到那里。对于不熟悉Agile、Lean和DevOps的人来说，看了上述框架还是不知道DevOps到底是做啥的。
+</p>
+
+<p>
+为了让DevOps原则的描述更加具体生动，笔者参考敏捷宣言的写法和实例化需求的做法（即用具体的实际例子来编写验收条件），使用了“高于”和“而非”的句式来对比两个具体实践的实例，且尽量用一些具体的实践来代表相应的原则，如“部署流水线”等。其中，“高于”表示右边的实践虽然不如左边的好，但还是有价值的。“而非”表示右边的实践并不值得推荐。这就是本文标题中“实例化”的由来。
+</p>
+
+<h3 id="toc_0.4.1">1. 人</h3>
+
+<h4 id="toc_0.4.1.1">领导者身体力行持续改进 高于 关注工具和基础设施</h4>
+
+<p>
+很多企业（包括笔者所辅导的企业）都在实践DevOps。要想让DevOps这颗树苗茁壮成长，企业要为其提供一个良好的土壤——即企业文化。而企业文化，是企业领导者引导塑造的。DevOps对于国内大部分企业来说，都是一个前所未有的新事物。必须通过不断做试验，才能找到培育它生长的土壤方，做试验就是为持续改进做准备。笔者所辅导的企业，工程师被项目进度压得喘不过气来，根本没有时间学习新工具和新方法，更别提做试验了。
+</p>
+
+<p>
+<img src="../img/DevOps/instantiate-the-principles-of-devops-continuous-improvement.jpg">
+(图片来自：<a href="http://www.yes123.com.tw/)">http://www.yes123.com.tw/)</a>
+</p>
+
+<p>
+所以只有领导者身体力行，不仅自己亲自做试验和进行持续改进，并给工程师足够的时间来做试验和持续改进，这样所创造出良好的环境，才能让那些自动化工具和基础设施在企业内部得到有效利用。
+</p>
+
+<h4 id="toc_0.4.1.2">试验并改进流程 而非 指责人的过失</h4>
+
+<p>
+丰田公司有一句口号：“对流程苛，对人员柔”，意思是说：每位员工都会尽力做好工作的，那些在工作中所出现的问题都是流程的问题。因为根据这种有问题的流程来工作，无论是谁都会出同样的问题。前面说过，DevOps对于国内大部分企业都是新事物，需要做试验来“摸着石头过河”，做试验就有失败的时候，此时就要调整流程，而不是怪罪于人，否则企业没有人会去继续尝试DevOps。
+</p>
+
+<h4 id="toc_0.4.1.3">产品思维 高于 项目思维</h4>
+
+<p>
+根据这一个原则可以定义“人”的组织结构——团队结构，即可以按照产品而不是项目来组建团队。这样的产品团队包括了Dev、Ops、BA、Tester、PO和Architect等各种角色，他们相互配合且不依靠团队以外的其他角色就能独立自主地交付软件产品，这个产品团队负责该产品从生到死的全生命周期，并且只要产品还在，这个团队就不会解散。这种设置会让团队的不同角色目标一致，比起从目标不一致的各种职能团队（比如Dev团队、Tester团队和BA团队）抽调人员拼凑成临时的项目团队，磨合期更短，更加有战斗力。
+</p>
+
+<h3 id="toc_0.4.2">2. 产品</h3>
+
+<h4 id="toc_0.4.2.1">质量和安全内建 而非 晚期度量和检查</h4>
+
+<p>
+产品需要质量和安全来保证价值。人们长期认为“高质量”意味着“高成本”，因为要维护高质量，需要在产品出厂前做大批量检测，并销毁那些次品，这就花费了高昂的成本。但丰田公司却说“<a href="http://blog.sina.com.cn/s/blog_7a25b1b00102ws84.html">高质量是免费的</a>”[7]。这是怎么做到的呢？这其实就是前文提到的丰田公司“对流程苛”的结果。丰田公司通过持续改进流程，“一次就根据最佳流程或实践把事情做对，并持续改进这些流程和实践，使其一直保持最佳”，这样就能在脱离后期大规模检查的情况下保证高质量，同时其成本也趋近于零。
+</p>
+
+<h4 id="toc_0.4.2.2">客户反馈 高于 按期交付</h4>
+
+<p>
+产品是否实现了价值，只有通过客户的反馈才能知道。很多团队往往过分关注交付期限，而忽视客户反馈。这样做的后果，就是虽然按期交付，但是产品却不是客户所期望的，造成返工或项目失败。
+</p>
+
+<p>
+<img src="../img/DevOps/instantiate-the-principles-of-devops-customer-feedback.jpg" width="500px">
+</p>
+
+<h4 id="toc_0.4.2.3">基于不可变容器的微服务 高于 单块应用</h4>
+
+<p>
+产品需要能快速地开发、测试和部署才能有效地交付价值。对于复杂度高的大型产品，如果可以由多个微服务组合而成，每个微服务都能独立地开发、测试、部署和上线。这比起必须集成各个模块才能进行手工测试的单块应用来说，更能实现各个微服务之间的并行研发，加快每个微服务的开发下游至上游的反馈环的反馈速度，进而缩短项目进度，让价值交付得更快。
+</p>
+
+<p>
+不可变容器指的是软件产品被封装到一个类似docker这样的容器内上线，且上线后不可手工修改其配置。如果一定要修改，也只能通过部署流水线把要修改的内容重新打包成另一个新的不可变容器来上线。这样做的好处是能够实现部署和发布自动化以及进行更好的版本控制，消除线上手工配置所带来的无法审计的风险。这一实践是本文写作时期的推荐实践，该实践今后还会继续演进。
+</p>
+
+<h3 id="toc_0.4.3">3. 流程</h3>
+
+<h4 id="toc_0.4.3.1">管理层实践Improvement Kata和Coaching Kata进行流程持续改进 高于 用结果导向进行管理</h4>
+
+<p>
+佛家说：“菩萨畏因，众生畏果”。传统按结果导向进行管理的一个弊病，就是团队成员会把注意力放到结果上，而不是产生这样结果的原因——即过程改进之上。这样的后果就是，大家会把精力放到如何让报表好看，而不是真正地提高团队成员的持续改进能力来真正达到所期望的结果。企业管理层可以参考<a href="https://read.douban.com/ebook/10138727/">《丰田套路》</a>[8]一书来带头实践Improvement Kata和Coaching Kata，让企业产生持续改进的文化。
+</p>
+
+<p>
+其中:
+</p>
+
+<ul>
+<li>
+Improvement Kata是通过一系列<code>“</code>确定目标—&gt;考察现状—&gt;识别困难—&gt;制定方案—&gt;观察成效” `的PDCA反馈环来做持续改进；
+
+<li>
+Coaching Kata是通过导师“一对一带学徒”的方式来让企业全员掌握持续改进的方法。
+
+</ul>
+
+<h3 id="toc_0.4.4">全局优化 而非 局部优化</h3>
+
+<p>
+由于大部分按职能组织团队的企业内部都存在部门割据的问题，导致大家都在做本职能部门内的局部优化，而没人做部门间的整体优化。有些部门间的扯皮时间甚至长达数月，严重影响了产品的交付。这提醒我们，全局优化来提高企业整体竞争力，才是各个部门赖以生存的保障。
+</p>
+
+<h3 id="toc_0.4.5">单件流 高于 库存</h3>
+
+<p>
+单件流指的是，正在制作的产品的各个模块，能从最初的对其增加价值的加工步骤，直接传递到下一个增值加工步骤进行加工，并最终被传递到客户手中，在这个过程中，各个步骤之间没有发生等待或者排队的现象。而如果在各个步骤的传递过程中发生了等待或排队，那就等同于建立了库存。
+</p>
+
+<p>
+软件开发中常见的库存包括排队等候开发的需求、排队等候测试的代码、排队等待修复的缺陷和排队等待上线的产品特性；隐藏很深的库存可能由诸如那些有固定期限（比如每月一次）的“用户验收测试”的流程造成——月初几天就开发测试完毕的产品特性必须要被存放近一个月，等到月底“用户验收测试”后才能继续往下游走。软件开发中的上述库存就是让项目延期的最大原因。而企业如果能做到单件流，那么就相当于消灭了库存，让价值在不同环节之间流动得最快，进而实现了前文所提到的全局优化。
+</p>
+
+<h3 id="toc_0.4.6">4. 工具</h3>
+
+<h4 id="toc_0.4.6.1">自动化 高于 手工</h4>
+
+<p>
+按照固定流程所进行的手工工作，比如手工回归测试和手工部署工作，无趣、缓慢且无法审计。如果能将其代码化，且用版本控制系统管理起来，并加以自动化，这既能节省以后手工运行的大量时间，又能体验到开发测试和部署脚本工作的乐趣。
+</p>
+
+<h4 id="toc_0.4.6.2">基础设施及代码 高于 手工配置</h4>
+
+<p>
+传统Ops的部署工作有些需要用鼠标在界面上点来点去，效率很低；效率高一些的Ops用了自动化脚本，但很多脚本都没有进行版本控制，更别提针对脚本的自动化测试了。
+</p>
+
+<p>
+如果能够将基础设施的维护工作都通过编写代码并加以版本控制来完成，那么会带来很多好处，比如Ops可以不用通过访问生产环境，就能知道生产环境上的配置情况；非运维人员如Dev，就有机会去学习这些运维配置代码并且加以修改，提升整个团队的DevOps能力；另外工具能方便地读取这些代码，来自动化地维护基层设施，大幅度提升Ops的工作效率。
+</p>
+
+<h4 id="toc_0.4.6.3">部署流水线 而非 每日构建</h4>
+
+<p>
+程序员每天都会用代码提交来为软件系统增加价值。而如何有效地保证每次提交的代码质量过关而不会有损现有系统的价值呢？这就需要一个代码构建系统自动地验证代码在编译、测试和打包等工作的过程中，是否符合质量要求。有些团队还在每晚做一次代码构建，这个昔日的“最佳”实践如今已经不再被推荐。一个团队程序员们每天代码的提交会有很多，如果晚上构建发现了错误，第二天从这些众多提交中发现谁导致的错误，将是一个很困难的事情。推荐的做法是每一次代码提交，都能自动触发部署流水线来检查该提交是否通过了自动化单元、验收和性能等测试。一旦发现问题，就能轻松定位是谁在哪个环节出现了什么问题。
+</p>
+
+<h2 id="toc_0.5">总结</h2>
+
+<p>
+DevOps的原则来自从业者们在日常工作中运用敏捷、精益原则的具体实践。这些原则可以按照“人、产品、流程和工具”4个维度来组织。这些原则和实践的目的，都是要实现DevOps的愿景——让业务所要求的那些变化能随时上线可用。
+</p>
+
+<p>
+下图是本文实例化DevOps原则的一个可视化总结。
+</p>
+
+<p>
+<img src="../img/DevOps/9-devops-instantiation-summary.png">
+</p>
+
+<p>
+感谢笔者在ThoughtWorks的同事Patrick B. Sarnacke、顾宇、马博文、黄博文、蔡同、万金、张凯峰、周文晔和亢江妹。他们在阅读了初稿后，给笔者提出了精彩的反馈，使得本文得以改进。
+</p>
+
+<p>
+后记：
+</p>
+
+<p>
+在本文所讨论的上下文中，原则（Principle）指的是主观的“影响行为的坚定信念”（a moral rule or a strong belief that influences your actions），而不是客观的”自然法则“（a general or scientific law that explains how sth works or why sth happens）。括号中的英文来自《牛津高阶英语词典》第8版对Principle一词的解释。所以本文所讨论的“原则(Principles)”和“价值观(Values, beliefs about what is right and wrong and what is important in life)”这两个概念在内涵上是一致的，都是主观的。
+</p>
+
+<p>
+在本文发布前的ThoughtWorks内部审阅期间，笔者的同事顾宇就已经提出了同样的问题，“我看到‘高于’就想到敏捷宣言，敏捷宣言是个价值观，就是对价值的取舍。能否把本文改叫DevOps价值观？” 我当时查到了一篇文章《What is the difference between a value and a principle?》，得到的结论是“Principles是客观的，比如重力这样的自然法则；而Values是主观的”。于是就着手开始把文中的“原则(Principle)”改为“价值观(Value)”。但是改到一半时，发现人们也会说“精益的原则”（PRINCIPLES OF LEAN），而一般不说“精益的价值观”（The values of Lean）。于是再查《牛津高阶英语词典》，发现Principle这个词有上述主观和客观的两个含义。于是就决定使用Principle的主观的含义。
+</p>
+
+<p>
+注：
+</p>
+
+<p>
+[1] The (Short) History of DevOps, <a href="https://www.youtube.com/watch?v=o7-IuYS0iSE">https://www.youtube.com/watch?v=o7-IuYS0iSE</a>
+</p>
+
+<p>
+[2] #DevOps的前世今生# 1. DevOps编年史, <a href="http://www.jianshu.com/p/f40209023006">http://www.jianshu.com/p/f40209023006</a>
+</p>
+
+<p>
+[3] 10+ Deploys Per Day: Dev and Ops Cooperation at Flickr, <a href="https://www.slideshare.net/jallspaw/10-deploys-per-day-dev-and-ops-cooperation-at-flickr,">https://www.slideshare.net/jallspaw/10-deploys-per-day-dev-and-ops-cooperation-at-flickr,</a> <a href="https://www.youtube.com/watch?v=LdOe18KhtT4">https://www.youtube.com/watch?v=LdOe18KhtT4</a>
+</p>
+
+<p>
+[4] Quantifying DevOps Capability: It’s Important To Keep CALMS, <a href="https://blog.rackspace.com/quantifying-devops-capability-its-important-to-keep-calms">https://blog.rackspace.com/quantifying-devops-capability-its-important-to-keep-calms</a>
+</p>
+
+<p>
+[5] THE PROBLEM WITH DEFINING DEVOPS, <a href="https://www.upguard.com/blog/the-problem-with-defining-devops">https://www.upguard.com/blog/the-problem-with-defining-devops</a>
+</p>
+
+<p>
+[6] The Three Ways: The Principles Underpinning DevOps, <a href="http://itrevolution.com/the-three-ways-principles-underpinning-devops/">http://itrevolution.com/the-three-ways-principles-underpinning-devops/</a>
+</p>
+
+<p>
+[7] 【冬吴相对论】144丰田之殇(下), <a href="http://blog.sina.com.cn/s/blog_7a25b1b00102ws84.html">http://blog.sina.com.cn/s/blog_7a25b1b00102ws84.html</a>
+</p>
+
+<p>
+[8] 丰田套路，<a href="https://read.douban.com/ebook/10138727/">https://read.douban.com/ebook/10138727/</a>
+</p>
+
+<p>
+更多精彩洞见，请关注微信公众号：思特沃克
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="http://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
