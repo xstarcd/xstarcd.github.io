@@ -168,7 +168,10 @@ cmd://"C:\SecureCRT\SecureFX.exe" sftp://{USERNAME}:{PASSWORD}@{TITLE}
 <pre class="brush:bash">
 #!/bin/sh
 #/usr/bin/ssh.cmd
-# KeepassXURL: cmd://ssh.cmd {TITLE} {USERNAME} {PASSWORD} SSHPort
+# KeepassX中网址URL设置方式：
+# cmd://ssh.cmd {TITLE} {USERNAME} {PASSWORD} SSHPort
+# 若不能正常执行，采用在KeepassX设置-高级中"自定义浏览器命令"的方式，URL中不要cmd://前缀
+# ssh.cmd {TITLE} {USERNAME} {PASSWORD} SSHPort
 SSHTOOL=SecureCRT
 #SSHTOOL=FileZilla
 #SSHTOOL=PuTTY
@@ -182,13 +185,24 @@ LogFile=~/$(basename $0).log
 exec 1&gt;&gt;"$LogFile"
 exec 2&gt;&amp;1
 
-HOST=$1
-USER=$2
-PW=$3
-PORT=$4
+echo "$1"|grep "http" &gt;/dev/null
+if [ "$?" = "0" ];then
+    line=$(echo "$1"|sed -e 's/%20/ /g' -e 's;http://ssh.cmd ;;g')
+    HOST=$(echo "$line"|awk '{print $1}')
+    USER=$(echo "$line"|awk '{print $2}')
+      PW=$(echo "$line"|awk '{print $3}')
+    PORT=$(echo "$line"|awk '{print $4}')
+    #echo "HOST=$HOST,USER=$USER,PW=$PW,PORT=$PORT"
+else
+    HOST=$1
+    USER=$2
+    PW=$3
+    PORT=$4
+fi
 Usage(){
     echo "Usage:"
     echo "ssh.cmd HOST USER PASSWD"
+    #echo "HOST=$HOST,USER=$USER,PW=$PW,PORT=$PORT"
     exit 1
 }
 [ -z "$HOST" -o -z "$USER" -o -z "$PW" ] &amp;&amp; Usage

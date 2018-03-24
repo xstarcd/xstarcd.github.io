@@ -25,6 +25,7 @@
 <li><a href="#toc_2.3">Cygwin支持系统剪贴板</a>
 <li><a href="#toc_2.4">vim寄存器</a>
 <li><a href="#toc_2.5">Ubuntu下使用系统剪贴板</a>
+<li><a href="#toc_2.6">mac的vim无法访问clipboard</a>
 </ul>
 </ul>
 </div>
@@ -337,6 +338,85 @@ ubuntu 和mint默认安装的vim是不支持系统剪切、粘贴版的，需要
 sudo apt-get install vim-gnome 
 # 查看链接到的版本
 update-alternatives --display vim
+</pre>
+
+<h2 id="toc_2.6">mac的vim无法访问clipboard</h2>
+
+<ul>
+<li>
+在mac terminal无法访问clipboard，原因可以看一下vim的版本信息：
+
+</ul>
+
+<p>
+-clipboard表示该版本不支持访问剪切板，需要重新编译。
+</p>
+
+<pre>
+vim --version|grep clipboard
+-clipboard       +job             +path_extra      +user_commands
++eval            -mouse_dec       +statusline      -xterm_clipboard
+</pre>
+
+<p>
+直接用homebrew安装：
+</p>
+
+<pre>
+brew install vim
+# OR
+brew install macvim --head --override-system-vim
+</pre>
+
+<p>
+或者：
+</p>
+
+<pre>
+" On OSX
+vmap &lt;C-c&gt; y:call system("pbcopy", getreg("\""))&lt;CR&gt;
+nmap &lt;C-v&gt; :call setreg("\"",system("pbpaste"))&lt;CR&gt;p
+</pre>
+
+<ul>
+<li>
+在vimrc里边加入下面几行，可以实现多个terminal间的复制粘贴。（只适用于Mac）
+
+</ul>
+
+<pre>
+" MACOS
+if !has('clipboard')
+vmap y :w !pbcopy&lt;CR&gt;&lt;CR&gt;
+nmap yy :.w !pbcopy&lt;CR&gt;&lt;CR&gt;
+" nmap p :r !pbpaste&lt;CR&gt;&lt;CR&gt;
+endif
+</pre>
+
+<p>
+【解说】
+</p>
+<pre>
+这里主要得益于mac下的一套好用的操作系统剪贴板的命令：
+pbcopy, pbpaste .
+比如说可以这样使用：
+cat foo.txt | pbcopy #将foo.txt的内容复制到系统剪贴板
+pbpaste &gt; bar.txt #将系统剪贴板的内容写到bar.txt
+
+然后vim的w !和r !（注意中间的空格）可以负责把某一段文字
+写入或从某一个命令读出，有点类似linux的管道功能。
+这里把vim默认的y和p功能改掉，让y直接复制到系统剪贴板，
+让p从系统剪贴板直接粘贴；故实现了多个terminal之间的剪贴板共享。
+而且由于操作的是系统剪贴板，同时也实现了terminal的vim与其他
+应用程序之间的剪贴板共享。
+</pre>
+
+<p>
+【问题】
+</p>
+<pre>
+第二行中的nmap，如果是前面有数字，比如说2yy复制两行的功能会失效。
+可在V模式下用y命令代替。
 </pre>
 
 </div>
