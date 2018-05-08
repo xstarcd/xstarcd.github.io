@@ -46,11 +46,13 @@ http://xstarcd.github.io/wiki/Cloud/Hadoop.html
 http://xstarcd.github.io/wiki/Cloud/Hadoop_Backup_Node.html
 http://xstarcd.github.io/wiki/Cloud/Kvm.html
 http://xstarcd.github.io/wiki/Cloud/LXC.html
+http://xstarcd.github.io/wiki/Cloud/MicroService_introduce.html
 http://xstarcd.github.io/wiki/Cloud/NM_system.html
 http://xstarcd.github.io/wiki/Cloud/OpenStack.html
 http://xstarcd.github.io/wiki/Cloud/Openstack_modeule_introduce.html
 http://xstarcd.github.io/wiki/Cloud/Opentsdb.html
 http://xstarcd.github.io/wiki/Cloud/SinglePort_VirtualMultiVlan_in_Xen.html
+http://xstarcd.github.io/wiki/Cloud/SpringCloud_introduce.html
 http://xstarcd.github.io/wiki/Cloud/Storm.html
 http://xstarcd.github.io/wiki/Cloud/Ubuntu_vmbuilder_kvm.html
 http://xstarcd.github.io/wiki/Cloud/VLAN_In_Cloud.html
@@ -72,6 +74,7 @@ http://xstarcd.github.io/wiki/Cloud/hbase_tips.html
 http://xstarcd.github.io/wiki/Cloud/hdfs_ha_comp.html
 http://xstarcd.github.io/wiki/Cloud/hdfs_version_comp.html
 http://xstarcd.github.io/wiki/Cloud/hengyunabc_zookeeper_maintenance.html
+http://xstarcd.github.io/wiki/Cloud/instantiate-the-principles-of-devops.html
 http://xstarcd.github.io/wiki/Cloud/kafka.html
 http://xstarcd.github.io/wiki/Cloud/kafka_Working_Principles.html
 http://xstarcd.github.io/wiki/Cloud/kvm_tap_bridge_virtio.html
@@ -182,7 +185,11 @@ http://xstarcd.github.io/wiki/MySQL/online_mysqlrepl_error.html
 http://xstarcd.github.io/wiki/MySQL/replicate-do-db_error.html
 http://xstarcd.github.io/wiki/MySQL/slave-skip-errors.html
 http://xstarcd.github.io/wiki/Others/index.html
+http://xstarcd.github.io/wiki/Others/34CoinTimeManagement.html
+http://xstarcd.github.io/wiki/Others/Funds_Plan.html
+http://xstarcd.github.io/wiki/Others/Funds_tips.html
 http://xstarcd.github.io/wiki/Others/Iphone.html
+http://xstarcd.github.io/wiki/Others/Leo_Classes_Plan.html
 http://xstarcd.github.io/wiki/Others/Primary_School_English.html
 http://xstarcd.github.io/wiki/Others/SugarMan.html
 http://xstarcd.github.io/wiki/Others/THE_EASY_WAY_TO_STOP_SMOKING.html
@@ -192,6 +199,7 @@ http://xstarcd.github.io/wiki/Others/THE_EASY_WAY_TO_STOP_SMOKING_21-30.html
 http://xstarcd.github.io/wiki/Others/THE_EASY_WAY_TO_STOP_SMOKING_31-40.html
 http://xstarcd.github.io/wiki/Others/THE_EASY_WAY_TO_STOP_SMOKING_41-48.html
 http://xstarcd.github.io/wiki/Others/grape.html
+http://xstarcd.github.io/wiki/Others/guoxuejindian_fu5.html
 http://xstarcd.github.io/wiki/Others/zizi_grape.html
 http://xstarcd.github.io/wiki/Python/index.html
 http://xstarcd.github.io/wiki/Python/Python-Paramiko.html
@@ -316,6 +324,7 @@ http://xstarcd.github.io/wiki/sysadmin/Subversion.html
 http://xstarcd.github.io/wiki/sysadmin/Varnish.html
 http://xstarcd.github.io/wiki/sysadmin/aboutLDAP.html
 http://xstarcd.github.io/wiki/sysadmin/awstats.html
+http://xstarcd.github.io/wiki/sysadmin/data_operating_maintenance.html
 http://xstarcd.github.io/wiki/sysadmin/dnsmasq.html
 http://xstarcd.github.io/wiki/sysadmin/ftp_active_passive_mode.html
 http://xstarcd.github.io/wiki/sysadmin/gen_htpasswd.html
@@ -339,10 +348,12 @@ http://xstarcd.github.io/wiki/sysadmin/lvs_nat.html
 http://xstarcd.github.io/wiki/sysadmin/lvs_persistence.html
 http://xstarcd.github.io/wiki/sysadmin/lvs_rrd.html
 http://xstarcd.github.io/wiki/sysadmin/lvs_tun.html
+http://xstarcd.github.io/wiki/sysadmin/md5_sha_pgp.html
 http://xstarcd.github.io/wiki/sysadmin/moinmoin.html
 http://xstarcd.github.io/wiki/sysadmin/mongodb.conf.html
 http://xstarcd.github.io/wiki/sysadmin/mongodb.html
 http://xstarcd.github.io/wiki/sysadmin/mongodb_migration.html
+http://xstarcd.github.io/wiki/sysadmin/mongodb_slowlog.html
 http://xstarcd.github.io/wiki/sysadmin/mongos_cluster.html
 http://xstarcd.github.io/wiki/sysadmin/named.html
 http://xstarcd.github.io/wiki/sysadmin/nginx.html

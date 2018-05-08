@@ -387,8 +387,9 @@ nmap &lt;C-v&gt; :call setreg("\"",system("pbpaste"))&lt;CR&gt;p
 <pre>
 " MACOS
 if !has('clipboard')
-vmap y :w !pbcopy&lt;CR&gt;&lt;CR&gt;
-nmap yy :.w !pbcopy&lt;CR&gt;&lt;CR&gt;
+vmap "+y :w !pbcopy&lt;CR&gt;&lt;CR&gt;
+" vmap y :w !pbcopy&lt;CR&gt;&lt;CR&gt;
+" nmap yy :.w !pbcopy&lt;CR&gt;&lt;CR&gt;
 " nmap p :r !pbpaste&lt;CR&gt;&lt;CR&gt;
 endif
 </pre>
