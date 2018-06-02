@@ -154,8 +154,27 @@ PageSpeed Insights: <a href="https://developers.google.com/speed/pagespeed/insig
 </pre>
 
 </ul>
-</ul>
+<li>
+修改默认html模版(将css加入到模版中，以便生成含样式的单文件)
 
+<ul>
+<li>
+<code>~/.vim/autoload/vimwiki/default.tpl</code>
+
+</ul>
+<li>
+修改默认html输出路径(当编译md文件时，html生成到当前md相同目录下)
+<pre class="brush:bash">
+# ~/.vim/autoload/vimwiki/base.vim
+diff base.vim.bak base.vim
+28c28,29
+&lt;     return substitute(path, '[/\\]\+$', '', '').'_html/'
+---
+&gt;     "return substitute(path, '[/\\]\+$', '', '').'_html/'
+&gt;     return substitute(path, '[/\\]\+$', '', '').'/'
+</pre>
+
+</ul>
 
 <h1 id="toc_2">Vim</h1>
 
