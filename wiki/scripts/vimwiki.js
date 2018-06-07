@@ -167,7 +167,7 @@ $(document).ready(function() {
     syntaxHighlight();
 
     //Google自定义搜索
-    /*
+
     //if(window.location.hostname=='' || window.location.hostname.indexOf('gdu.me') != -1)
     $.getScript('http://www.google.com/jsapi', function() {
         google.load('search', '1', {language: 'zh-CN', 'callback': cseloaded });
@@ -193,7 +193,6 @@ $(document).ready(function() {
             if (input.value == '') input.className = 'gsc-input cesbg';
         };
     };
-    */
 
     //评论:duoshuo,disqus
     //if (!$.browser.msie && window.location.hostname!='') kwiki.loadCmt('duoshuo');
