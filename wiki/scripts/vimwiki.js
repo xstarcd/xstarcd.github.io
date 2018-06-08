@@ -167,7 +167,19 @@ $(document).ready(function() {
     syntaxHighlight();
 
     //Google自定义搜索
-
+  (function() {
+    var cx = '002820686095557729470:clbefwouje4';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+/*
+<gcse:search></gcse:search>
+*/
+/*
     //if(window.location.hostname=='' || window.location.hostname.indexOf('gdu.me') != -1)
     $.getScript('http://www.google.com/jsapi', function() {
         google.load('search', '1', {language: 'zh-CN', 'callback': cseloaded });
@@ -199,6 +211,7 @@ $(document).ready(function() {
     //if (window.location.hostname!='') kwiki.loadCmt('duoshuo');
     //if (window.location.hostname!='') kwiki.loadCmt('disqus');
 });
+*/
 
 //Google 统计
 /*
