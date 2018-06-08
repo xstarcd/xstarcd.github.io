@@ -210,8 +210,8 @@ $(document).ready(function() {
     //if (!$.browser.msie && window.location.hostname!='') kwiki.loadCmt('duoshuo');
     //if (window.location.hostname!='') kwiki.loadCmt('duoshuo');
     //if (window.location.hostname!='') kwiki.loadCmt('disqus');
-});
 */
+});
 
 //Google 统计
 /*
