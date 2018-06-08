@@ -167,6 +167,7 @@ $(document).ready(function() {
     syntaxHighlight();
 
     //Google自定义搜索
+/*
   (function() {
     var cx = '002820686095557729470:clbefwouje4';
     var gcse = document.createElement('script');
@@ -176,16 +177,14 @@ $(document).ready(function() {
     var s = document.getElementsByTagName('script')[0];
     s.parentNode.insertBefore(gcse, s);
   })();
-/*
-<gcse:search></gcse:search>
-*/
-/*
+
     //if(window.location.hostname=='' || window.location.hostname.indexOf('gdu.me') != -1)
+    var googlecx = '002820686095557729470:clbefwouje4';
     $.getScript('http://www.google.com/jsapi', function() {
         google.load('search', '1', {language: 'zh-CN', 'callback': cseloaded });
     });
     function cseloaded() {
-        var customSearchControl = new google.search.CustomSearchControl('002820686095557729470:clbefwouje4');
+        var customSearchControl = new google.search.CustomSearchControl(googlecx);
         //customSearchControl.setResultSetSize(8);
         customSearchControl.setResultSetSize(google.search.Search.SMALL_RESULTSET);
         //customSearchControl.setLinkTarget(google.search.Search.LINK_TARGET_SELF);
@@ -210,8 +209,8 @@ $(document).ready(function() {
     //if (!$.browser.msie && window.location.hostname!='') kwiki.loadCmt('duoshuo');
     //if (window.location.hostname!='') kwiki.loadCmt('duoshuo');
     //if (window.location.hostname!='') kwiki.loadCmt('disqus');
-*/
 });
+*/
 
 //Google 统计
 /*
