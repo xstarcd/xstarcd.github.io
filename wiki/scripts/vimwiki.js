@@ -204,13 +204,13 @@ $(document).ready(function() {
             if (input.value == '') input.className = 'gsc-input cesbg';
         };
     };
+*/
 
     //评论:duoshuo,disqus
     //if (!$.browser.msie && window.location.hostname!='') kwiki.loadCmt('duoshuo');
     //if (window.location.hostname!='') kwiki.loadCmt('duoshuo');
     //if (window.location.hostname!='') kwiki.loadCmt('disqus');
 });
-*/
 
 //Google 统计
 /*
