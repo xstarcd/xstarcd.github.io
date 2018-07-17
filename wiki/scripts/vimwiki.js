@@ -106,10 +106,10 @@ $(document).ready(function() {
     if (window.location.hostname==''){
         //var loadpath=vimwiki_rootpath;
         //var loadpath='http://alexgorbatchev.com/pub/sh/current/';
-        var loadpath='http://cdn.bootcss.com/SyntaxHighlighter/3.0.83/';
+        var loadpath='https://cdn.bootcss.com/SyntaxHighlighter/3.0.83/';
     }else{
         //var loadpath='http://alexgorbatchev.com/pub/sh/current/';
-        var loadpath='http://cdn.bootcss.com/SyntaxHighlighter/3.0.83/';
+        var loadpath='https://cdn.bootcss.com/SyntaxHighlighter/3.0.83/';
     }
     function path() {
         var args = arguments,
