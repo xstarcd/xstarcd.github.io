@@ -197,7 +197,7 @@ textarea {
 
 .tocWrap {
     position: fixed; 
-    width: 200px;
+    width: 250px;
     z-index: 100;
     top: 5px;
     right: 10px;
