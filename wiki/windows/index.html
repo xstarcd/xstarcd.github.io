@@ -21,6 +21,7 @@
 <li><a href="#toc_0.1">运维工具</a>
 <li><a href="#toc_0.2">Office</a>
 <li><a href="#toc_0.3">Other</a>
+<li><a href="#toc_0.4">Win7使用L2TP VPN出现809错误</a>
 </ul>
 </ul>
 </div>
@@ -133,6 +134,46 @@ mDesktop: Hint: You can put in $0, but you will be served an ad suppored install
 
 </ul>
 </ul>
+</ul>
+
+<h2 id="toc_0.4">Win7使用L2TP VPN出现809错误</h2>
+
+<ul>
+<li>
+修改注册表:regedit
+<pre>
+Windows Registry Editor Version 5.00
+
+;[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\services\RasMan\Parameters]
+;"ProhibitIpSec"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\services\RasMan\Parameters]
+"ProhibitIpSec"=-
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PolicyAgent]
+"AssumeUDPEncapsulationContextOnSendRule"=dword:00000002
+
+</pre>
+
+</ul>
+
+<ul>
+<li>
+将以下几个服务设为自动：services.msc
+<pre>
+IPsec Policy Agent
+Routing and Remote Access
+Remote Access Auto Connection Manager
+Remote Access Connection Manager
+Secure Socket Tunneling Protocol Service
+</pre>
+
+</ul>
+
+<ul>
+<li>
+重启计算机，即可使用L2TP。
+
 </ul>
 
 </div>

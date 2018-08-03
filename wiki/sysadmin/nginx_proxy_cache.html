@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>nginx_proxy_cache</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>nginx_proxy_cache</h1>
+
+<ul>
+<li>
+<a href="https://blog.csdn.net/dengjiexian123/article/details/53386586">https://blog.csdn.net/dengjiexian123/article/details/53386586</a>
+
+</ul>
+
+<pre class="brush:bash">
+http {
+...
+# proxy_cache_path 缓存文件路径
+# levels 设置缓存文件目录层次；levels=1:2 表示两级目录
+# keys_zone 设置缓存名字和共享内存大小
+# inactive 在指定时间内没人访问则被删除
+# max_size 最大缓存空间，如果缓存空间满，默认覆盖掉缓存时间最长的资源
+# 当配置好之后，重启nginx，如果不报错，则配置的proxy_cache会生效
+# 查看proxy_cache_path目录，会发现生成了proxy_cache文件夹。
+proxy_cache_path /var/cache/openresty/proxy_cache levels=1:2 keys_zone=nginx_cache:256m inactive=1d max_size=10g;
+
+server {
+...
+# 缓存命中情况如何在http头中体现，以及在nginx日志中查看
+# 利用nginx $upstream_cache_status变量:该变量代表缓存命中的状态，如果命中，为HIT；如果未命中，为MISS
+# 在返回nginx server配置中添加：
+# add_header  Nginx-Cache "$upstream_cache_status";
+# 在nginxlog中添加：
+# log_format       combinedio ...$upstream_cache_status;
+
+    # UAT
+    location ~ ^(/test1|/test2) {
+        proxy_cache nginx_cache; #与keys_zone对应 
+        proxy_cache_methods GET POST;
+        proxy_cache_valid  200 1d;
+        proxy_cache_key  $host$server_port$request_body;
+        add_header X-Via $server_addr;
+        add_header X-Cache-status $upstream_cache_status;
+        proxy_pass http://127.0.0.1:8081/;
+    }
+    location ~ ^(/test3|/test4) {
+        proxy_cache nginx_cache;
+        proxy_cache_methods GET POST;
+        proxy_cache_valid  200 10m;
+        proxy_cache_key  $host$server_port$request_uri;
+        proxy_pass http://127.0.0.1:8081/;
+    }
+    location ~ ^(/testrange) {
+        proxy_cache nginx_cache;
+        proxy_cache_methods GET POST;
+        proxy_cache_valid  200 10m;
+        proxy_set_header Range $http_range;
+        proxy_cache_key  $host$server_port$http_range$request_uri;
+        if ( $http_range = ''){
+            expires 2592000s;
+        }
+        proxy_pass http://127.0.0.1:8081/;
+    }
+...
+ } #end site
+} # end http
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
