@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>mysql explain</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>mysql explain</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">EXPLAIN列的解释</a>
+<li><a href="#toc_0.2">实例</a>
+<ul>
+<li><a href="#toc_0.2.1">select_type的说明</a>
+<li><a href="#toc_0.2.2">type的说明</a>
+<li><a href="#toc_0.2.3">extra的说明</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="https://www.cnblogs.com/yycc/p/7338894.html">https://www.cnblogs.com/yycc/p/7338894.html</a>
+
+</ul>
+
+<p>
+转自：<a href="http://blog.chinaunix.net/uid-540802-id-3419311.html">http://blog.chinaunix.net/uid-540802-id-3419311.html</a>
+</p>
+
+
+<p>
+explain显示了mysql如何使用索引来处理select语句以及连接表。可以帮助选择更好的索引和写出更优化的查询语句。
+</p>
+
+<p>
+使用方法，在select语句前加上explain就可以了：
+</p>
+
+<p>
+如：
+</p>
+<pre>
+explain select surname,first_name form a,b where a.id=b.id 
+</pre>
+
+<h2 id="toc_0.1">EXPLAIN列的解释</h2>
+
+<ul>
+<li>
+table：显示这一行的数据是关于哪张表的
+
+<li>
+type：这是重要的列，显示连接使用了何种类型。从最好到最差的连接类型为const、eq_reg、ref、range、index和ALL
+
+<ul>
+<li>
+type显示的是访问类型，是较为重要的一个指标，结果值从好到坏依次是：
+
+<li>
+system &gt; const &gt; eq_ref &gt; ref &gt; fulltext &gt; ref_or_null &gt; index_merge &gt; unique_subquery &gt; index_subquery &gt; range &gt; index &gt; ALL
+
+<li>
+一般来说，得保证查询至少达到range级别，最好能达到ref。
+
+</ul>
+<li>
+possible_keys：显示可能应用在这张表中的索引。如果为空，没有可能的索引。可以为相关的域从WHERE语句中选择一个合适的语句
+
+<li>
+key：实际使用的索引。如果为NULL，则没有使用索引。
+
+<ul>
+<li>
+很少的情况下，MYSQL会选择优化不足的索引。这种情况下，可以在SELECT语句中使用USE INDEX（indexname）来强制使用一个索引或者用IGNORE INDEX（indexname）来强制MYSQL忽略索引
+
+</ul>
+<li>
+key_len：使用的索引的长度。在不损失精确性的情况下，长度越短越好
+
+<li>
+ref：显示索引的哪一列被使用了，如果可能的话，是一个常数
+
+<li>
+rows：MYSQL认为必须检查的用来返回请求数据的行数
+
+<li>
+Extra：关于MYSQL如何解析查询的额外信息。将在表4.3中讨论，但这里可以看到的坏的例子是Using temporary和Using filesort，意思MYSQL根本不能使用索引，结果是检索会很慢
+
+</ul>
+
+<ul>
+<li>
+extra列返回的描述的意义
+
+<ul>
+<li>
+Distinct:一旦MYSQL找到了与行相联合匹配的行，就不再搜索了
+
+<li>
+Not exists: MYSQL优化了LEFT JOIN，一旦它找到了匹配LEFT JOIN标准的行，就不再搜索了
+
+<li>
+Range checked for each Record（index map:#）:没有找到理想的索引，因此对于从前面表中来的每一个行组合，MYSQL检查使用哪个索引，并用它来从表中返回行。这是使用索引的最慢的连接之一
+
+<li>
+Using filesort: 看到这个的时候，查询就需要优化了。MYSQL需要进行额外的步骤来发现如何对返回的行排序。它根据连接类型以及存储排序键值和匹配条件的全部行的行指针来排序全部行
+
+<li>
+Using index: 列数据是从仅仅使用了索引中的信息而没有读取实际的行动的表返回的，这发生在对表的全部的请求列都是同一个索引的部分的时候
+
+<li>
+Using temporary 看到这个的时候，查询需要优化了。这里，MYSQL需要创建一个临时表来存储结果，这通常发生在对不同的列集进行ORDER BY上，而不是GROUP BY上
+
+<li>
+Where used 使用了WHERE从句来限制哪些行将与下一张表匹配或者是返回给用户。如果不想返回表中的全部行，并且连接类型ALL或index，这就会发生，或者是查询有问题不同连接类型的解释（按照效率高低的顺序排序）
+
+<li>
+system 表只有一行：system表。这是const连接类型的特殊情况
+
+<li>
+const:表中的一个记录的最大值能够匹配这个查询（索引可以是主键或惟一索引）。因为只有一行，这个值实际就是常数，因为MYSQL先读这个值然后把它当做常数来对待
+
+<li>
+eq_ref:在连接中，MYSQL在查询时，从前面的表中，对每一个记录的联合都从表中读取一个记录，它在查询使用了索引为主键或惟一键的全部时使用
+
+<li>
+ref:这个连接类型只有在查询使用了不是惟一或主键的键或者是这些类型的部分（比如，利用最左边前缀）时发生。对于之前的表的每一个行联合，全部记录都将从表中读出。这个类型严重依赖于根据索引匹配的记录多少—越少越好
+
+<li>
+range:这个连接类型使用索引返回一个范围中的行，比如使用&gt;或&lt;查找东西时发生的情况
+
+<li>
+index: 这个连接类型对前面的表中的每一个记录联合进行完全扫描（比ALL更好，因为索引一般小于表数据）
+
+<li>
+ALL:这个连接类型对于前面的每一个记录联合进行完全扫描，这一般比较糟糕，应该尽量避免
+
+</ul>
+</ul>
+
+<h2 id="toc_0.2">实例</h2>
+
+<p>
+先看一个例子：
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order; 
+    +----+-------------+---------+------+---------------+------+---------+------+--------+-------+ 
+    | id | select_type | table   | type | possible_keys | key  | key_len | ref  | rows   | Extra | 
+    +----+-------------+---------+------+---------------+------+---------+------+--------+-------+ 
+    |  1 | SIMPLE      | t_order | ALL  | NULL          | NULL | NULL    | NULL | 100453 |       | 
+    +----+-------------+---------+------+---------------+------+---------+------+--------+-------+ 
+    1 row in set (0.03 sec) 
+</pre>
+
+<p>
+加上extended后之后：
+</p>
+
+<pre>
+    mysql&gt; explain extended select * from t_order; 
+    +----+-------------+---------+------+---------------+------+---------+------+--------+----------+-------+ 
+    | id | select_type | table   | type | possible_keys | key  | key_len | ref  | rows   | filtered | Extra | 
+    +----+-------------+---------+------+---------------+------+---------+------+--------+----------+-------+ 
+    |  1 | SIMPLE      | t_order | ALL  | NULL          | NULL | NULL    | NULL | 100453 |   100.00 |       | 
+    +----+-------------+---------+------+---------------+------+---------+------+--------+----------+-------+ 
+    1 row in set, 1 warning (0.00 sec) 
+</pre>
+
+<p>
+有必要解释一下这个长长的表格里每一列的含义：
+</p>
+<ul>
+<li>
+id 	SELECT识别符。这是SELECT的查询序列号
+
+<li>
+select_type 	SELECT类型,可以为以下任何一种:
+<pre>
+    SIMPLE:简单SELECT(不使用UNION或子查询)
+    PRIMARY:最外面的SELECT
+    UNION:UNION中的第二个或后面的SELECT语句
+    DEPENDENT UNION:UNION中的第二个或后面的SELECT语句,取决于外面的查询
+    UNION RESULT:UNION 的结果
+    SUBQUERY:子查询中的第一个SELECT
+    DEPENDENT SUBQUERY:子查询中的第一个SELECT,取决于外面的查询
+    DERIVED:导出表的SELECT(FROM子句的子查询)
+</pre>
+
+<li>
+table 输出的行所引用的表
+
+<li>
+type 联接类型。下面给出各种联接类型,按照从最佳类型到最坏类型进行排序:
+<pre>
+    system:表仅有一行(=系统表)。这是const联接类型的一个特例。
+    const:表最多有一个匹配行,它将在查询开始时被读取。因为仅有一行,在这行的列值可被优化器剩余部分认为是常数。const表很快,因为它们只读取一次!
+    eq_ref:对于每个来自于前面的表的行组合,从该表中读取一行。这可能是最好的联接类型,除了const类型。
+    ref:对于每个来自于前面的表的行组合,所有有匹配索引值的行将从这张表中读取。
+    ref_or_null:该联接类型如同ref,但是添加了MySQL可以专门搜索包含NULL值的行。
+    index_merge:该联接类型表示使用了索引合并优化方法。
+    unique_subquery:该类型替换了下面形式的IN子查询的ref: value IN (SELECT primary_key FROM single_table WHERE some_expr) unique_subquery是一个索引查找函数,可以完全替换子查询,效率更高。
+    index_subquery:该联接类型类似于unique_subquery。可以替换IN子查询,但只适合下列形式的子查询中的非唯一索引: value IN (SELECT key_column FROM single_table WHERE some_expr)
+    range:只检索给定范围的行,使用一个索引来选择行。
+    index:该联接类型与ALL相同,除了只有索引树被扫描。这通常比ALL快,因为索引文件通常比数据文件小。
+    ALL:对于每个来自于先前的表的行组合,进行完整的表扫描。
+</pre>
+
+<li>
+possible_keys 指出MySQL能使用哪个索引在该表中找到行
+<pre>
+key 显示MySQL实际决定使用的键(索引)。如果没有选择索引,键是NULL。
+key_len 显示MySQL决定使用的键长度。如果键是NULL,则长度为NULL。
+ref 	显示使用哪个列或常数与key一起从表中选择行。
+rows 	显示MySQL认为它执行查询时必须检查的行数。多行之间的数据相乘可以估算要处理的行数。
+filtered 显示了通过条件过滤出的行数的百分比估计值。
+Extra 	
+</pre>
+
+<li>
+该列包含MySQL解决查询的详细信息
+<pre>
+    Distinct:MySQL发现第1个匹配行后,停止为当前的行组合搜索更多的行。
+    Not exists:MySQL能够对查询进行LEFT JOIN优化,发现1个匹配LEFT JOIN标准的行后,不再为前面的的行组合在该表内检查更多的行。
+    range checked for each record (index map: #):MySQL没有发现好的可以使用的索引,但发现如果来自前面的表的列值已知,可能部分索引可以使用。
+    Using filesort:MySQL需要额外的一次传递,以找出如何按排序顺序检索行。
+    Using index:从只使用索引树中的信息而不需要进一步搜索读取实际的行来检索表中的列信息。
+    Using temporary:为了解决查询,MySQL需要创建一个临时表来容纳结果。
+    Using where:WHERE 子句用于限制哪一个行匹配下一个表或发送到客户。
+    Using sort_union(...), Using union(...), Using intersect(...):这些函数说明如何为index_merge联接类型合并索引扫描。
+    Using index for group-by:类似于访问表的Using index方式,Using index for group-by表示MySQL发现了一个索引,可以用来查 询GROUP BY或DISTINCT查询的所有列,而不要额外搜索硬盘访问实际的表。
+</pre>
+
+</ul>
+ 
+<h3 id="toc_0.2.1">select_type的说明</h3>
+
+<ul>
+<li>
+UNION
+
+</ul>
+
+<p>
+当通过union来连接多个查询结果时，第二个之后的select其select_type为UNION。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order where order_id=100 union select * from t_order where order_id=200; 
+    +----+--------------+------------+-------+---------------+---------+---------+-------+------+-------+ 
+    | id | select_type  | table      | type  | possible_keys | key     | key_len | ref   | rows | Extra | 
+    +----+--------------+------------+-------+---------------+---------+---------+-------+------+-------+ 
+    |  1 | PRIMARY      | t_order    | const | PRIMARY       | PRIMARY | 4       | const |    1 |       | 
+    |  2 | UNION        | t_order    | const | PRIMARY       | PRIMARY | 4       | const |    1 |       | 
+    |NULL| UNION RESULT | &lt;union1,2&gt; | ALL   | NULL          | NULL    | NULL    | NULL  | NULL |       | 
+    +----+--------------+------------+-------+---------------+---------+---------+-------+------+-------+ 
+    3 rows in set (0.34 sec) 
+</pre>
+
+<ul>
+<li>
+DEPENDENT UNION与DEPENDENT SUBQUERY:
+
+</ul>
+
+<p>
+当union作为子查询时，其中第二个union的select_type就是DEPENDENT UNION。
+</p>
+
+<p>
+第一个子查询的select_type则是DEPENDENT SUBQUERY。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order where order_id in (select order_id from t_order where order_id=100 union select order_id from t_order where order_id=200); 
+    +----+--------------------+------------+-------+---------------+---------+---------+-------+--------+-------------+ 
+    | id | select_type        | table      | type  | possible_keys | key     | key_len | ref   | rows   | Extra       | 
+    +----+--------------------+------------+-------+---------------+---------+---------+-------+--------+-------------+ 
+    |  1 | PRIMARY            | t_order    | ALL   | NULL          | NULL    | NULL    | NULL  | 100453 | Using where | 
+    |  2 | DEPENDENT SUBQUERY | t_order    | const | PRIMARY       | PRIMARY | 4       | const |      1 | Using index | 
+    |  3 | DEPENDENT UNION    | t_order    | const | PRIMARY       | PRIMARY | 4       | const |      1 | Using index | 
+    |NULL| UNION RESULT       | &lt;union2,3&gt; | ALL   | NULL          | NULL    | NULL    | NULL  |   NULL |             | 
+    +----+--------------------+------------+-------+---------------+---------+---------+-------+--------+-------------+ 
+    4 rows in set (0.03 sec) 
+</pre>
+
+<ul>
+<li>
+SUBQUERY:
+
+</ul>
+
+<p>
+子查询中的第一个select其select_type为SUBQUERY。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order where order_id=(select order_id from t_order where order_id=100); 
+    +----+-------------+---------+-------+---------------+---------+---------+-------+------+-------------+ 
+    | id | select_type | table   | type  | possible_keys | key     | key_len | ref   | rows | Extra       | 
+    +----+-------------+---------+-------+---------------+---------+---------+-------+------+-------------+ 
+    |  1 | PRIMARY     | t_order | const | PRIMARY       | PRIMARY | 4       | const |    1 |             | 
+    |  2 | SUBQUERY    | t_order | const | PRIMARY       | PRIMARY | 4       |       |    1 | Using index | 
+    +----+-------------+---------+-------+---------------+---------+---------+-------+------+-------------+ 
+    2 rows in set (0.03 sec) 
+</pre>
+
+<ul>
+<li>
+DERIVED:
+
+</ul>
+
+<p>
+当子查询是from子句时，其select_type为DERIVED。
+</p>
+
+<pre>
+    mysql&gt; explain select * from (select order_id from t_order where order_id=100) a; 
+    +----+-------------+------------+--------+---------------+---------+---------+------+------+-------------+ 
+    | id | select_type | table      | type   | possible_keys | key     | key_len | ref  | rows | Extra       | 
+    +----+-------------+------------+--------+---------------+---------+---------+------+------+-------------+ 
+    |  1 | PRIMARY     | &lt;derived2&gt; | system | NULL          | NULL    | NULL    | NULL |    1 |             | 
+    |  2 | DERIVED     | t_order    | const  | PRIMARY       | PRIMARY | 4       |      |    1 | Using index | 
+    +----+-------------+------------+--------+---------------+---------+---------+------+------+-------------+ 
+    2 rows in set (0.03 sec) 
+</pre>
+
+<h3 id="toc_0.2.2">type的说明</h3>
+
+<ul>
+<li>
+system，const
+
+</ul>
+
+<p>
+见上面4.DERIVED的例子。其中第一行的type就是为system，第二行是const，这两种联接类型是最快的。
+</p>
+
+<ul>
+<li>
+eq_ref
+
+</ul>
+
+<p>
+在t_order表中的order_id是主键，t_order_ext表中的order_id也是主键，该表可以认为是订单表的补充信息表，他们的关系是1对1，在下面的例子中可以看到b表的连接类型是eq_ref，这是极快的联接类型。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order a,t_order_ext b where a.order_id=b.order_id; 
+    +----+-------------+-------+--------+---------------+---------+---------+-----------------+------+-------------+ 
+    | id | select_type | table | type   | possible_keys | key     | key_len | ref             | rows | Extra       | 
+    +----+-------------+-------+--------+---------------+---------+---------+-----------------+------+-------------+ 
+    |  1 | SIMPLE      | b     | ALL    | order_id      | NULL    | NULL    | NULL            |    1 |             | 
+    |  1 | SIMPLE      | a     | eq_ref | PRIMARY       | PRIMARY | 4       | test.b.order_id |    1 | Using where | 
+    +----+-------------+-------+--------+---------------+---------+---------+-----------------+------+-------------+ 
+    2 rows in set (0.00 sec) 
+</pre>
+
+<ul>
+<li>
+ref
+
+</ul>
+
+<p>
+下面的例子在上面的例子上略作了修改，加上了条件。此时b表的联接类型变成了ref。因为所有与a表中order_id=100的匹配记录都将会从b表获取。这是比较常见的联接类型。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order a,t_order_ext b where a.order_id=b.order_id and a.order_id=100; 
+    +----+-------------+-------+-------+---------------+----------+---------+-------+------+-------+ 
+    | id | select_type | table | type  | possible_keys | key      | key_len | ref   | rows | Extra | 
+    +----+-------------+-------+-------+---------------+----------+---------+-------+------+-------+ 
+    |  1 | SIMPLE      | a     | const | PRIMARY       | PRIMARY  | 4       | const |    1 |       | 
+    |  1 | SIMPLE      | b     | ref   | order_id      | order_id | 4       | const |    1 |       | 
+    +----+-------------+-------+-------+---------------+----------+---------+-------+------+-------+ 
+    2 rows in set (0.00 sec) 
+</pre>
+
+<ul>
+<li>
+ref_or_null
+
+</ul>
+
+<p>
+user_id字段是一个可以为空的字段，并对该字段创建了一个索引。在下面的查询中可以看到联接类型为ref_or_null，这是mysql为含有null的字段专门做的处理。在我们的表设计中应当尽量避免索引字段为NULL，因为这会额外的耗费mysql的处理时间来做优化。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order where user_id=100 or user_id is null; 
+    +----+-------------+---------+-------------+---------------+---------+---------+-------+-------+-------------+ 
+    | id | select_type | table   | type        | possible_keys | key     | key_len | ref   | rows  | Extra       | 
+    +----+-------------+---------+-------------+---------------+---------+---------+-------+-------+-------------+ 
+    |  1 | SIMPLE      | t_order | ref_or_null | user_id       | user_id | 5       | const | 50325 | Using where | 
+    +----+-------------+---------+-------------+---------------+---------+---------+-------+-------+-------------+ 
+    1 row in set (0.00 sec) 
+</pre>
+
+<ul>
+<li>
+index_merge
+
+</ul>
+
+<p>
+经常出现在使用一张表中的多个索引时。mysql会将多个索引合并在一起，如下例:
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order where order_id=100 or user_id=10; 
+    +----+-------------+---------+-------------+-----------------+-----------------+---------+------+------+-------------------------------------------+ 
+    | id | select_type | table   | type        | possible_keys   | key             | key_len | ref  | rows | Extra                                     | 
+    +----+-------------+---------+-------------+-----------------+-----------------+---------+------+------+-------------------------------------------+ 
+    |  1 | SIMPLE      | t_order | index_merge | PRIMARY,user_id | PRIMARY,user_id | 4,5     | NULL |    2 | Using union(PRIMARY,user_id); Using where | 
+    +----+-------------+---------+-------------+-----------------+-----------------+---------+------+------+-------------------------------------------+ 
+    1 row in set (0.09 sec) 
+</pre>
+
+<ul>
+<li>
+unique_subquery
+
+</ul>
+
+<p>
+该联接类型用于替换value IN (SELECT primary_key FROM single_table WHERE some_expr)这样的子查询的ref。注意ref列，其中第二行显示的是func，表明unique_subquery是一个函数，而不是一个普通的ref。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order where order_id in (select order_id from t_order where user_id=10); 
+    +----+--------------------+---------+-----------------+-----------------+---------+---------+------+--------+-------------+ 
+    | id | select_type        | table   | type            | possible_keys   | key     | key_len | ref  | rows   | Extra       | 
+    +----+--------------------+---------+-----------------+-----------------+---------+---------+------+--------+-------------+ 
+    |  1 | PRIMARY            | t_order | ALL             | NULL            | NULL    | NULL    | NULL | 100649 | Using where | 
+    |  2 | DEPENDENT SUBQUERY | t_order | unique_subquery | PRIMARY,user_id | PRIMARY | 4       | func |      1 | Using where | 
+    +----+--------------------+---------+-----------------+-----------------+---------+---------+------+--------+-------------+ 
+    2 rows in set (0.00 sec) 
+</pre>
+
+<ul>
+<li>
+index_subquery
+
+</ul>
+
+<p>
+该联接类型与上面的太像了，唯一的差别就是子查询查的不是主键而是非唯一索引。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order where user_id in (select user_id from t_order where order_id&gt;10); 
+    +----+--------------------+---------+----------------+-----------------+---------+---------+------+--------+--------------------------+ 
+    | id | select_type        | table   | type           | possible_keys   | key     | key_len | ref  | rows   | Extra                    | 
+    +----+--------------------+---------+----------------+-----------------+---------+---------+------+--------+--------------------------+ 
+    |  1 | PRIMARY            | t_order | ALL            | NULL            | NULL    | NULL    | NULL | 100649 | Using where              | 
+    |  2 | DEPENDENT SUBQUERY | t_order | index_subquery | PRIMARY,user_id | user_id | 5       | func |  50324 | Using index; Using where | 
+    +----+--------------------+---------+----------------+-----------------+---------+---------+------+--------+--------------------------+ 
+    2 rows in set (0.00 sec) 
+</pre>
+
+<ul>
+<li>
+range
+
+</ul>
+
+<p>
+按指定的范围进行检索，很常见。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order where user_id in (100,200,300); 
+    +----+-------------+---------+-------+---------------+---------+---------+------+------+-------------+ 
+    | id | select_type | table   | type  | possible_keys | key     | key_len | ref  | rows | Extra       | 
+    +----+-------------+---------+-------+---------------+---------+---------+------+------+-------------+ 
+    |  1 | SIMPLE      | t_order | range | user_id       | user_id | 5       | NULL |    3 | Using where | 
+    +----+-------------+---------+-------+---------------+---------+---------+------+------+-------------+ 
+    1 row in set (0.00 sec) 
+</pre>
+
+<ul>
+<li>
+index
+
+</ul>
+
+<p>
+在进行统计时非常常见，此联接类型实际上会扫描索引树，仅比ALL快些。
+</p>
+
+<pre>
+    mysql&gt; explain select count(*) from t_order; 
+    +----+-------------+---------+-------+---------------+---------+---------+------+--------+-------------+ 
+    | id | select_type | table   | type  | possible_keys | key     | key_len | ref  | rows   | Extra       | 
+    +----+-------------+---------+-------+---------------+---------+---------+------+--------+-------------+ 
+    |  1 | SIMPLE      | t_order | index | NULL          | user_id | 5       | NULL | 100649 | Using index | 
+    +----+-------------+---------+-------+---------------+---------+---------+------+--------+-------------+ 
+    1 row in set (0.00 sec) 
+</pre>
+
+<ul>
+<li>
+ALL
+
+</ul>
+
+<p>
+完整的扫描全表，最慢的联接类型，尽可能的避免。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order; 
+    +----+-------------+---------+------+---------------+------+---------+------+--------+-------+ 
+    | id | select_type | table   | type | possible_keys | key  | key_len | ref  | rows   | Extra | 
+    +----+-------------+---------+------+---------------+------+---------+------+--------+-------+ 
+    |  1 | SIMPLE      | t_order | ALL  | NULL          | NULL | NULL    | NULL | 100649 |       | 
+    +----+-------------+---------+------+---------------+------+---------+------+--------+-------+ 
+    1 row in set (0.00 sec) 
+</pre>
+
+<h3 id="toc_0.2.3">extra的说明</h3>
+
+<ul>
+<li>
+Distinct
+
+</ul>
+
+<p>
+MySQL发现第1个匹配行后,停止为当前的行组合搜索更多的行。对于此项没有找到合适的例子，求指点。
+</p>
+
+<ul>
+<li>
+Not exists
+
+</ul>
+
+<p>
+因为b表中的order_id是主键，不可能为NULL，所以mysql在用a表的order_id扫描t_order表，并查找b表的行时，如果在b表发现一个匹配的行就不再继续扫描b了，因为b表中的order_id字段不可能为NULL。这样避免了对b表的多次扫描。
+</p>
+
+<pre>
+    mysql&gt; explain select count(1) from t_order a left join t_order_ext b on a.order_id=b.order_id where b.order_id is null;  
+    +----+-------------+-------+-------+---------------+--------------+---------+-----------------+--------+--------------------------------------+ 
+    | id | select_type | table | type  | possible_keys | key          | key_len | ref             | rows   | Extra                                | 
+    +----+-------------+-------+-------+---------------+--------------+---------+-----------------+--------+--------------------------------------+ 
+    |  1 | SIMPLE      | a     | index | NULL          | express_type | 1       | NULL            | 100395 | Using index                          | 
+    |  1 | SIMPLE      | b     | ref   | order_id      | order_id     | 4       | test.a.order_id |      1 | Using where; Using index; Not exists | 
+    +----+-------------+-------+-------+---------------+--------------+---------+-----------------+--------+--------------------------------------+ 
+    2 rows in set (0.01 sec) 
+</pre>
+
+<ul>
+<li>
+Range checked for each record
+
+</ul>
+
+<p>
+这种情况是mysql没有发现好的索引可用，速度比没有索引要快得多。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order t, t_order_ext s where s.order_id&gt;=t.order_id and s.order_id&lt;=t.order_id and t.express_type&gt;5; 
+    +----+-------------+-------+-------+----------------------+--------------+---------+------+------+------------------------------------------------+ 
+    | id | select_type | table | type  | possible_keys        | key          | key_len | ref  | rows | Extra                                          | 
+    +----+-------------+-------+-------+----------------------+--------------+---------+------+------+------------------------------------------------+ 
+    |  1 | SIMPLE      | t     | range | PRIMARY,express_type | express_type | 1       | NULL |    1 | Using where                                    | 
+    |  1 | SIMPLE      | s     | ALL   | order_id             | NULL         | NULL    | NULL |    1 | Range checked for each record (index map: 0x1) | 
+    +----+-------------+-------+-------+----------------------+--------------+---------+------+------+------------------------------------------------+ 
+    2 rows in set (0.00 sec)
+</pre>
+
+<ul>
+<li>
+Using filesort
+
+</ul>
+
+<p>
+在有排序子句的情况下很常见的一种情况。此时mysql会根据联接类型浏览所有符合条件的记录，并保存排序关键字和行指针，然后排序关键字并按顺序检索行。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order order by express_type; 
+    +----+-------------+---------+------+---------------+------+---------+------+--------+----------------+ 
+    | id | select_type | table   | type | possible_keys | key  | key_len | ref  | rows   | Extra          | 
+    +----+-------------+---------+------+---------------+------+---------+------+--------+----------------+ 
+    |  1 | SIMPLE      | t_order | ALL  | NULL          | NULL | NULL    | NULL | 100395 | Using filesort | 
+    +----+-------------+---------+------+---------------+------+---------+------+--------+----------------+ 
+    1 row in set (0.00 sec) 
+</pre>
+
+<ul>
+<li>
+Using index
+
+</ul>
+
+<p>
+这是性能很高的一种情况。当查询所需的数据可以直接从索引树中检索到时，就会出现。上面的例子中有很多这样的例子，不再多举例了。
+</p>
+
+<ul>
+<li>
+Using temporary
+
+</ul>
+
+<p>
+发生这种情况一般都是需要进行优化的。mysql需要创建一张临时表用来处理此类查询。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order a left join t_order_ext b on a.order_id=b.order_id group by b.order_id; 
+    +----+-------------+-------+------+---------------+----------+---------+-----------------+--------+---------------------------------+ 
+    | id | select_type | table | type | possible_keys | key      | key_len | ref             | rows   | Extra                           | 
+    +----+-------------+-------+------+---------------+----------+---------+-----------------+--------+---------------------------------+ 
+    |  1 | SIMPLE      | a     | ALL  | NULL          | NULL     | NULL    | NULL            | 100395 | Using temporary; Using filesort | 
+    |  1 | SIMPLE      | b     | ref  | order_id      | order_id | 4       | test.a.order_id |      1 |                                 | 
+    +----+-------------+-------+------+---------------+----------+---------+-----------------+--------+---------------------------------+ 
+    2 rows in set (0.00 sec) 
+</pre>
+
+<ul>
+<li>
+Using where
+
+</ul>
+
+<p>
+当有where子句时，extra都会有说明。
+</p>
+
+<ul>
+<li>
+Using sort_union(...)/Using union(...)/Using intersect(...)
+
+</ul>
+
+<p>
+下面的例子中user_id是一个检索范围，此时mysql会使用sort_union函数来进行索引的合并。而当user_id是一个固定值时，请参看上面type说明5.index_merge的例子，此时会使用union函数进行索引合并。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order where order_id=100 or user_id&gt;10; 
+    +----+-------------+---------+-------------+-----------------+-----------------+---------+------+------+------------------------------------------------+ 
+    | id | select_type | table   | type        | possible_keys   | key             | key_len | ref  | rows | Extra                                          | 
+    +----+-------------+---------+-------------+-----------------+-----------------+---------+------+------+------------------------------------------------+ 
+    |  1 | SIMPLE      | t_order | index_merge | PRIMARY,user_id | user_id,PRIMARY | 5,4     | NULL |    2 | Using sort_union(user_id,PRIMARY); Using where | 
+    +----+-------------+---------+-------------+-----------------+-----------------+---------+------+------+------------------------------------------------+ 
+    1 row in set (0.00 sec) 
+</pre>
+
+<p>
+对于Using intersect的例子可以参看下例，user_id与express_type发生了索引交叉合并。
+</p>
+
+<pre>
+    mysql&gt; explain select * from t_order where express_type=1 and user_id=100; 
+    +----+-------------+---------+-------------+----------------------+----------------------+---------+------+------+----------------------------------------------------+ 
+    | id | select_type | table   | type        | possible_keys        | key                  | key_len | ref  | rows | Extra                                              | 
+    +----+-------------+---------+-------------+----------------------+----------------------+---------+------+------+----------------------------------------------------+ 
+    |  1 | SIMPLE      | t_order | index_merge | user_id,express_type | user_id,express_type | 5,1     | NULL |    1 | Using intersect(user_id,express_type); Using where | 
+    +----+-------------+---------+-------------+----------------------+----------------------+---------+------+------+----------------------------------------------------+ 
+    1 row in set (0.00 sec) 
+</pre>
+
+<ul>
+<li>
+Using index for group-by
+
+</ul>
+
+<p>
+表明可以在索引中找到分组所需的所有数据，不需要查询实际的表。
+</p>
+
+<pre>
+    mysql&gt; explain select user_id from t_order group by user_id; 
+    +----+-------------+---------+-------+---------------+---------+---------+------+------+--------------------------+ 
+    | id | select_type | table   | type  | possible_keys | key     | key_len | ref  | rows | Extra                    | 
+    +----+-------------+---------+-------+---------------+---------+---------+------+------+--------------------------+ 
+    |  1 | SIMPLE      | t_order | range | NULL          | user_id | 5       | NULL |    3 | Using index for group-by | 
+    +----+-------------+---------+-------+---------------+---------+---------+------+------+--------------------------+ 
+    1 row in set (0.00 sec) 
+</pre>
+
+<p>
+除了上面的三个说明，还需要注意rows的数值，多行之间的数值是乘积的关系，可以估算大概要处理的行数，如果乘积很大，那就很有优化的必要了。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

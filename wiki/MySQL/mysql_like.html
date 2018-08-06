@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>mysql like</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>mysql like </h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">like索引无效</a>
+<li><a href="#toc_0.2">MySQL比like语句更高效的写法</a>
+<ul>
+<li><a href="#toc_0.2.1">LOCATE语句</a>
+<li><a href="#toc_0.2.2">POSITION语句</a>
+<li><a href="#toc_0.2.3">INSTR语句</a>
+<li><a href="#toc_0.2.4">find_in_set</a>
+<li><a href="#toc_0.2.5">全文索引</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+关于Mysql模糊查询的优化-全文检索和Like的使用
+
+<li>
+<a href="https://www.cnblogs.com/qichao123/p/7802757.html">https://www.cnblogs.com/qichao123/p/7802757.html</a>
+
+</ul>
+
+<h2 id="toc_0.1">like索引无效</h2>
+
+<p>
+表A：
+</p>
+<pre>
+CREATE TABLE `tableA` (
+`id` int(11) NOT NULL auto_increment,
+`content` varchar(256) default NULL,
+PRIMARY KEY  (`id`);
+</pre>
+
+<p>
+如果我要在content中进行模糊查询，那么使用like的话，肯定要这样写:
+</p>
+<pre>
+select * from tableA from content like "%xxx%"
+</pre>
+
+<p>
+这里有个问题，即使我为content加了index索引，那么在下面这两种情况索引也是无效的
+<code>content like "%xxx"</code> / <code>like "%xxx%"</code> 都不能使用索引
+</p>
+
+<p>
+如果想索引作用只能使用<code>content like "xxx%"</code>
+</p>
+
+<p>
+这时候就要使用全文索引来处理了
+</p>
+<pre>
+ALTER TABLE `tableA` ADD FULLTEXT `fidx_content` (`content`)
+</pre>
+
+<p>
+然后用以下方式查询
+</p>
+<pre>
+SELECT * FROM `tableA`WHERE MATCH (content)AGAINST ('xxx')
+
+EXPLAIN SELECT * FROM `wf_master`WHERE MATCH (cpr_no)AGAINST ('801876')
+id  select_type  table       type      possible_keys  key         key_len  ref  rows  Extra
+1   SIMPLE       wf_master  fulltext  fidx_cpr_no     fidx_cpr_no  0       1          Using where
+</pre>
+
+<p>
+需要注意的是全文检索的对象是一个单词，被检索的词需要用非文本隔开的
+</p>
+
+<p>
+也就是说如果你在"abcd,efg,hijklmn"中检索"hi"，那么全文检索也没有用，如果你检索efg，那么可以使用全文检索
+</p>
+
+<p>
+再有一点需要说明的是无论建立哪种索引，MYSQL内建函数: FIND_IN_SET, POSITION，LOCATE都不能使用索引
+</p>
+
+
+<h2 id="toc_0.2">MySQL比like语句更高效的写法</h2>
+
+<ul>
+<li>
+<a href="https://blog.csdn.net/wpfphp/article/details/52584232">https://blog.csdn.net/wpfphp/article/details/52584232</a>
+
+</ul>
+
+<p>
+你是否一直在寻找比MySQL的LIKE语句更高效的方法的，下面我就为你介绍几种。
+</p>
+
+<p>
+LIKE语句
+</p>
+<pre>
+SELECT column FROM table where 'condition' like '%keyword%';
+</pre>
+
+<p>
+事实上，可以使用 locate(position) 和 instr 这两个函数来代替
+</p>
+
+<h3 id="toc_0.2.1">LOCATE语句</h3>
+
+<pre>
+SELECT column from table where locate('keyword','condition')&gt;0;
+</pre>
+
+
+<h3 id="toc_0.2.2">POSITION语句</h3>
+
+<p>
+或是 locate 的別名 position
+</p>
+<pre>
+SELECT column from table where position('keyword' IN 'condition');
+</pre>
+
+<h3 id="toc_0.2.3">INSTR语句</h3>
+
+<pre>
+SELECT column from table where instr('condition', 'keyword')&gt;0;
+</pre>
+
+<p>
+locate、position 和 instr 的差別只是参数的位置不同，同时locate多一个起始位置的参数外，两者是一样的。
+</p>
+
+<pre>
+mysql&gt; SELECT LOCATE('bar','foobarbar',5);
+-&gt; 7
+
+SELECT LOCATE('15207940555','XXXXXXXX15207940555',5);
+
+SELECT  position('15207940555' IN 'condition15207940555');
+</pre>
+
+<p>
+速度上这三个比用 like 稍快了一点。
+</p>
+
+
+<h3 id="toc_0.2.4">find_in_set</h3>
+
+<p>
+还要给大家介绍一个新成员，那就是find_in_set
+</p>
+
+<p>
+find_in_set(str1,str2) 函数：返回str2中str1所在的位置索引，其中str2必须以","分割开。
+</p>
+
+<p>
+表：
+</p>
+<pre>
+mysql&gt; select * from region; 
++----+-------------+ 
+| id | name        | 
++----+-------------+ 
+| 1  | name1,nam2  | 
+| 2  | name1       | 
+| 3  | name3       | 
+| 4  | name2,name4 | 
+| 5  | name3,name5 | 
++----+-------------+ 
+5 rows in set (0.00 sec)
+</pre>
+
+<p>
+FIND_IN_SET语句
+</p>
+
+<pre>
+mysql&gt; select * from test where find_in_set('name1',name); 
++----+------------+ 
+| id | name       | 
++----+------------+ 
+| 1  | name1,nam2 | 
+| 2  | name1      | 
++----+------------+ 
+2 rows in set (0.02 sec)
+</pre>
+
+<h3 id="toc_0.2.5">全文索引</h3>
+
+<p>
+当然，还有mysql的全文索引：<a href="http://dev.mysql.com/doc/refman/5.6/en/fulltext-search.html">http://dev.mysql.com/doc/refman/5.6/en/fulltext-search.html</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
