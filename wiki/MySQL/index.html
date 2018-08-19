@@ -247,7 +247,7 @@ from RemoteOperationCmdHistory limit 1;
 <a href="explain.html">explain</a>:<a href="https://www.cnblogs.com/yycc/p/7338894.html">https://www.cnblogs.com/yycc/p/7338894.html</a>
 
 <li>
-mysql_like
+<a href="mysql_like.html">mysql_like</a>
 
 </ul>
 
@@ -266,6 +266,95 @@ from DTC group by ecu_name;
 </ul>
 
 <h2 id="toc_2.6"><a href="MySQLslowlog.html">MySQLslowlog</a></h2>
+
+<ul>
+<li>
+测试字符串索引和整数索引速度脚本：
+<pre class="brush:sql">
+--字符串索引和整数索引，从查询效率来看，基本无差别
+--
+
+create table lish_test_index
+(
+int_var  integer,
+str_var  varchar2(36)
+)
+
+drop table lish_test_index;
+
+declare
+  int_temp integer;
+  str_temp varchar2(36);
+
+begin
+
+  for i in 1..10000000 loop
+    int_temp := 100000000000000000000000000000 + i;
+    str_temp := '' || (100000000000000000000000000000 + i);
+    insert into lish_test_index values(int_temp,str_temp);
+  end loop;
+  commit;
+
+end;
+
+create index IDX_INT_VAR on LISH_TEST_INDEX (INT_VAR);
+create index IDX_STR_VAR on LISH_TEST_INDEX (STR_VAR);
+
+--整数操作
+declare
+  int_temp integer;
+  str_temp varchar2(36);
+  int_con_temp integer;
+  int_random integer;
+
+begin
+
+  dbms_output.put_line('Int begin:' || CURRENT_TIMESTAMP);
+  for i in 1..1000000 loop
+
+    int_random := dbms_random.value(1,10000000);
+
+    int_con_temp := 100000000000000000000000000000 + int_random;
+
+    select str_var,int_var
+      into str_temp, int_temp
+      from lish_test_index
+     where int_var= int_con_temp;
+
+  end loop;
+  dbms_output.put_line('Int end:' || CURRENT_TIMESTAMP);
+
+end;
+
+--字符串操作
+declare
+  int_temp integer;
+  str_temp varchar2(36);
+  str_con_temp varchar2(36);
+  int_random integer;
+
+begin
+
+  dbms_output.put_line('Str begin:' || CURRENT_TIMESTAMP);
+  for i in 1..1000000 loop
+
+    int_random := dbms_random.value(1,10000000);
+
+    str_con_temp := '' || (100000000000000000000000000000 + int_random);
+
+    select str_var,int_var
+      into str_temp, int_temp
+      from lish_test_index
+     where str_var= str_con_temp;
+
+  end loop;
+
+  dbms_output.put_line('Str end:' || CURRENT_TIMESTAMP);
+
+end;
+</pre>
+
+</ul>
 
 </div>
 <div id="footer">

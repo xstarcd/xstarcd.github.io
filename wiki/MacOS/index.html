@@ -91,6 +91,31 @@ Mac OS X 11中的/usr/bin 的“Operation not permitted”:<a href="http://www.j
 <li>
 Mac键盘快捷键: <a href="https://support.apple.com/zh-cn/HT201236">https://support.apple.com/zh-cn/HT201236</a>
 
+<li>
+MacOS 删除.DS_Store并不再产生
+
+<ul>
+<li>
+DS_Store 是给Finder用来存储这个文件夹的显示属性的：比如文件图标的摆放位置。删除以后的副作用就是这些信息的失去。
+
+<li>
+关闭.DS_Store
+
+<ul>
+<li>
+步骤一：删除所有隐藏.DS_store文件，打开命令行窗口
+
+<li>
+<code>sudo find / -name ".DS_Store" -depth -exec rm {} \;</code>
+
+<li>
+步骤二： 设置不再产生选项, 执行如下命令
+
+<li>
+<code>defaults write com.apple.desktopservices DSDontWriteNetworkStores true</code>
+
+</ul>
+</ul>
 </ul>
 
 <h2 id="toc_0.1">软件包管理工具</h2>
