@@ -69,6 +69,9 @@ echo -ne "$str"|hexdump
 
 echo -ne "$str"|base64
 /wffxhkgug==
+
+# 用nc发送udp报文
+RMsg=`echo -n "$SendText"|base64 -d|nc -w 2 -u $IP $PORT 2&gt;&amp;1`
 </pre>
 
 </ul>
