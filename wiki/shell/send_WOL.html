@@ -35,16 +35,19 @@
 
 <h2 id="toc_0.1">shell发送WOL</h2>
 
+<ul>
+<li>
+shell下生成16进制报文
 <pre class="brush:bash">
 # MAC地址转换为16进制表示方式
-echo "7e:d1:c3:3f:da:00"|tr '[a-z]' '[A-Z]'\
+echo -n "7e:d1:c3:3f:da:00"|tr '[a-z]' '[A-Z]'\
 |sed -e 's/://g' -e 's/-//g' -e 's/\(..\)/\\x\1/g'
 \x7E\xD1\xC3\x3F\xDA\x00
 
 # 以16进制数方式输出
 # echo -ne '\xEF\xBB\xBF' &gt; b.txt
 
-str=$(echo "7e:d1:c3:3f:da:00"|tr '[a-z]' '[A-Z]'\
+str=$(echo -n "7e:d1:c3:3f:da:00"|tr '[a-z]' '[A-Z]'\
 |sed -e 's/://g' -e 's/-//g' -e 's/\(..\)/\\x\1/g')
 
 echo -ne "$str"|od -x
@@ -53,7 +56,22 @@ echo -ne "$str"|od -x
 echo -ne "$str"|hexdump 
 0000000 7e d1 c3 3f da 00                              
 0000006
+
+# 用原有确定报文对比验证
+# 健康检查报文数据：FF07DFC61920BA
+# 健康检查报文16进制Base64编码: /wffxhkgug== 
+str=$(echo -n "FF07DFC61920BA"|tr '[a-z]' '[A-Z]'\
+|sed -e 's/://g' -e 's/-//g' -e 's/\(..\)/\\x\1/g')
+
+echo -ne "$str"|hexdump
+0000000 07ff c6df 2019 00ba                    
+0000007
+
+echo -ne "$str"|base64
+/wffxhkgug==
 </pre>
+
+</ul>
 
 
 <h2 id="toc_0.2">python发送WOL</h2>
