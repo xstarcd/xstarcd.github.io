@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>发送WOL唤醒魔术报文</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>发送WOL唤醒魔术报文</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">python方式</a>
+<li><a href="#toc_0.2">C方式</a>
+<li><a href="#toc_0.3">shell下进制数据转换</a>
+<li><a href="#toc_0.4">shell socket通信</a>
+<ul>
+<li><a href="#toc_0.4.1">测试/dev/tcp/host/post文件</a>
+<li><a href="#toc_0.4.2">通过重定向读取远程web服务器头信息</a>
+<li><a href="#toc_0.4.3">用telnet方式</a>
+<li><a href="#toc_0.4.4">通过shell脚本重定向实现监控memcache状态</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+
+<h2 id="toc_0.1">python方式</h2>
+
+<ul>
+<li>
+Python WOL/WakeOnLan/网络唤醒数据包发送工具:<a href="http://blog.51cto.com/iplayit/1576048">http://blog.51cto.com/iplayit/1576048</a>
+
+</ul>
+
+<p>
+按照WOL协议规定，在电脑处于关机而网卡供电状态下，从网络上接收到WOL魔法包后会自动加电开机。这种方式能够很方便的使用在需要进行远程管理的环境中。此程序实现了网络唤醒的魔法数据包发送功能，可以实现远程开机。
+</p>
+
+<p>
+假设需要被唤醒PC网卡MAC地址为：01:02:03:04:05:06 则WOL魔法包结构如下：
+</p>
+<pre>
+FF FF FF FF FF FF | 01 02 03 04 05 06 ...重复16次... 01 02 03 04 05 06 | 00 00 00 00 00 00
+</pre>
+
+<p>
+前段的6字节0xff 和尾部的 6字节0x00 无需变化照抄即可，数据包总长度：108 字节
+</p>
+
+<p>
+通过把以上数据包发送到本地子网的广播地址（代码中为：192.168.1.255）的UDP端口9即可唤醒该PC
+</p>
+
+<p>
+注意：此代码需要python解释器运行，Windows/Linux/Mac OS 通用
+</p>
+
+<p>
+使用方法:
+</p>
+
+<ul>
+<li>
+wol.py
+<pre class="brush:python">
+#!/usr/bin/env python
+#coding=utf-8
+
+import socket, sys
+import struct
+def to_hex_int(s):
+    return int(s.upper(), 16)
+ 
+dest = ('192.168.1.255', 9)
+ 
+if len(sys.argv) &lt; 2:
+ print("usage: %s &lt;MAC Address to wakeup&gt;" % sys.argv[0])
+ sys.exit()
+ 
+mac = sys.argv[1]
+ 
+spliter = ""
+if mac.count(":") == 5: spliter = ":"
+if mac.count("-") == 5: spliter = "-"
+ 
+if spliter == "":
+ print("MAC address should be like XX:XX:XX:XX:XX:XX / XX-XX-XX-XX-XX-XX")
+ sys.exit()
+ 
+parts = mac.split(spliter)
+a1 = to_hex_int(parts[0])
+a2 = to_hex_int(parts[1])
+a3 = to_hex_int(parts[2])
+a4 = to_hex_int(parts[3])
+a5 = to_hex_int(parts[4])
+a6 = to_hex_int(parts[5])
+addr = [a1, a2, a3, a4, a5, a6]
+ 
+packet = chr(255) + chr(255) + chr(255) + chr(255) + chr(255) + chr(255)
+ 
+for n in range(0,16):
+ for a in addr:
+  packet = packet + chr(a)
+ 
+packet = packet + chr(0) + chr(0) + chr(0) + chr(0) + chr(0) + chr(0)
+ 
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
+s.sendto(packet,dest)
+ 
+print("WOL packet %d bytes sent !" % len(packet))
+</pre>
+
+<li>
+使用方法为命令行下执行（linux/Mac可以不需要写命令最开始的python）：
+<pre class="brush:bash">
+python ./wol.py 01:02:03:04:05:06
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">C方式</h2>
+
+<ul>
+<li>
+Wake-On-Lan程序解析: <a href="http://blog.lucode.net/backend-development/wol-analysis.html">http://blog.lucode.net/backend-development/wol-analysis.html</a>
+
+</ul>
+
+<pre class="brush:c">
+#include &lt;stdio.h&gt;  
+#include &lt;stdlib.h&gt;  
+#include &lt;string.h&gt;  
+#include &lt;stdint.h&gt;
+#include &lt;sys/socket.h&gt;  
+#include &lt;netinet/in.h&gt;  
+#include &lt;errno.h&gt;  
+#include &lt;unistd.h&gt;
+  
+#define PORT 53
+#define MAC_STRLEN 18
+
+static inline int is_hex(char ch) {
+    if(ch &gt;= '0' &amp;&amp; ch &lt;= '9' ||
+       ch &gt;= 'a' &amp;&amp; ch &lt;= 'f' ||
+       ch &gt;= 'A' &amp;&amp; ch &lt;= 'F') {
+        return 1;
+    }
+    return 0;
+}
+
+int parse_mac(const char* mac_str, char buf[]) {
+    static uint8_t HEX[128] = {
+        ['0'] = 0, ['1'] = 1, ['2'] = 2, ['3'] = 3, ['4'] = 4,
+        ['5'] = 5, ['6'] = 6, ['7'] = 7, ['8'] = 8, ['9'] = 9,
+        ['a'] = 10, ['b'] = 11, ['c'] = 12, ['d'] = 13, ['e'] = 14, ['f'] = 15,
+        ['A'] = 10, ['B'] = 11, ['C'] = 12, ['D'] = 13, ['E'] = 14, ['F'] = 15,
+    };
+    if(strlen(mac_str) != 17) {
+        return 0;
+    }
+    const char* p = mac_str;
+    uint8_t i = 0;
+    do {
+        if(p[2] != ':') {
+            return 0;
+        }
+        buf[i++] = (HEX[p[0]] &lt;&lt; 4) + HEX[p[1]];
+        p = mac_str + i * 3;
+    } while(i &lt; 5);
+    if(p[2] != '\0') {
+        return 0;
+    }
+    buf[i] = (HEX[p[0]] &lt;&lt; 4) + HEX[p[1]];
+    return 1;
+}
+
+void mac_to_string(char* buf, char res[]) {
+    snprintf(res, MAC_STRLEN, "%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX",
+        buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+}
+
+int create_socket() {
+    int s = socket(AF_INET, SOCK_DGRAM, 0);  
+    if (s == -1) {  
+        perror("socket");  
+        return -1;
+    }  
+    int optval = 1;  
+    int ret = setsockopt(s, SOL_SOCKET, SO_BROADCAST, &amp;optval, sizeof(int));   
+    if (ret == -1) {  
+        perror("setsockopt");  
+        return -1;
+    }  
+    return s;
+}
+
+void init_sockaddr(struct sockaddr_in* addr) {
+    memset(addr, 0, sizeof(struct sockaddr_in));  
+    addr-&gt;sin_family = AF_INET;  
+    addr-&gt;sin_addr.s_addr = htonl(INADDR_BROADCAST);  
+    addr-&gt;sin_port = htons(PORT);
+}
+
+int parse_args(int argc, char** argv, char* mac) {
+    int ch;
+    while((ch = getopt(argc, argv, "hm:")) != -1) {
+        switch(ch) {
+            case 'h':
+                fprintf(stdout,
+                    "Usage: \n"
+                    "  ./wol -h\n"
+                    "  ./wol -m XX:XX:XX:XX:XX:XX\n"
+                );
+                return -1;
+            case 'm':
+                if(parse_mac(optarg, mac) != 1) {
+                    fprintf(stderr, "Invalid MAC!\n");
+                    return -1;
+                }
+                break;
+            default:
+                fprintf(stderr, "Invalid option!\n");
+                return -1;
+        }
+    }
+    return 0;
+}
+
+int main(int argc, char **argv) {  
+    char mac[6] = {0};
+    if(parse_args(argc, argv, mac) == -1) {
+        return -1;
+    }
+
+    printf("Creating Socket...");
+    int s = create_socket();
+    if(s == -1) {
+        return -1;
+    }
+    printf("Done\n");
+
+    struct sockaddr_in addr;  
+    init_sockaddr(&amp;addr);
+
+    printf("Creating Packet...");
+    char pkt[6 + 16 * 6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    for(uint8_t i = 0; i &lt; 16; ++i) {
+        memcpy(pkt + 6 + i * 6, mac, 6);
+    }
+    printf("Done\n");
+
+    printf("Sending Packet...");
+    int len = sendto(s, pkt, sizeof(pkt), 0, (struct sockaddr*)&amp;addr, sizeof(addr));  
+    if (len == -1) {  
+        perror("sendto");  
+        return -1;
+    }
+    printf("Done\n");
+
+    char mac_str[MAC_STRLEN] = {0};
+    mac_to_string(mac, mac_str);
+    printf("Wake %s OK!\n", mac_str);  
+    return 0;  
+}
+</pre>
+
+<h2 id="toc_0.3">shell下进制数据转换</h2>
+
+<ul>
+<li>
+echo 命令
+
+</ul>
+
+<p>
+shell 内置各种进制表示方法非常简单。记得 base#number 即可。 base 为 2-64
+</p>
+
+<p>
+赋值语句 let 或(()) 不能直接用=号，直接用等号是字符串照印。不是付给数值。
+</p>
+<pre>
+let i=16#ff
+let j=8#37
+</pre>
+
+<p>
+通俗记法: 0x为16进制， 0开头为8进制
+</p>
+
+<p>
+echo 命令以十进制显示数据。
+</p>
+<pre>
+# 各种进制转换为十进制。
+为变量赋值： ((var=base#number))
+显示变量: echo $var
+例:
+((i=0xff10)); echo $i;
+((i=32#qfg; echo $i;
+</pre>
+
+<ul>
+<li>
+十进制转换为其它进制
+
+</ul>
+
+<p>
+利用bc 计算器。
+bc命令格式转换为：<code>echo "obase=进制;值" | bc</code>
+</p>
+
+<p>
+bc 是用来处理文件的，所以采用管道
+例如:
+</p>
+<pre>
+echo "obase=16;65536" | bc
+10000
+echo "obase=8;65536" | bc
+200000
+</pre>
+
+<p>
+郑重推荐bc 计算器， 它支持交互模式， 可以使得转换根据简单，方便。
+</p>
+
+<p>
+使用示例:
+</p>
+<pre>
+bc 1.06.95
+Copyright 1991-1994, 1997, 1998, 2000, 2004, 2006 Free Software Foundation, Inc.
+This is free software with ABSOLUTELY NO WARRANTY.
+For details type `warranty'.
+obase=16   设置16进制输出
+ibase=10   设置10进制输入
+65536      输入十进制 65536
+10000      输出16进制 10000
+obase      查看当前输出进制
+16
+ibase      查看当前输入进制
+</pre>
+
+<p>
+16 进制输入时 a-f 必需用大写， 小写会被视为变量，会报错。
+</p>
+
+<p>
+要密切注意obase, ibase 及其含义, 还有一个变量scale, 浮点数精度。除法时会用到。
+</p>
+
+
+<ul>
+<li>
+用printf 命令
+
+</ul>
+
+<pre>
+printf "%d\n" 0x10
+16
+printf "%x\n" 100
+64
+</pre>
+
+<ul>
+<li>
+linux 怎样查询一个字符的ascii码。 例如m的ascii是什么？反过来又怎样查?
+
+</ul>
+
+<pre>
+printf "%d\n" "'m'"
+109
+
+# 用xxd 或 hexdump 可以显示ascii.  例如:
+
+echo abc |hexdump -C
+00000000  61 62 63 0a                                       |abc.|
+
+
+# 用awk 下的printf 可以
+$ awk -v c=109 'BEGIN { printf "%c\n", c;}'
+m
+</pre>
+
+
+<h2 id="toc_0.4">shell socket通信</h2>
+
+<ul>
+<li>
+linux shell 脚本实现tcp/upd协议通讯（重定向应用）:<a href="http://www.cnblogs.com/chengmo/archive/2010/10/22/1858302.html">http://www.cnblogs.com/chengmo/archive/2010/10/22/1858302.html</a> 
+
+<li>
+这篇文章除了详细试验了shell下socket连接操作和分析，在管道上使用也非常值参考。 
+
+</ul>
+
+<p>
+linux 设备里面有个比较特殊的文件:
+</p>
+
+<p>
+/dev/[tcp|upd]/host/port 只要读取或者写入这个文件，相当于系统会尝试连接:host 这台机器，对应port端口。如果主机以及端口存在，就建立一个socket 连接。将在，/proc/self/fd目录下面，有对应的文件出现。 
+</p>
+
+
+<h3 id="toc_0.4.1">测试/dev/tcp/host/post文件</h3>
+
+<pre class="brush:bash">
+
+cat&lt;/dev/tcp/127.0.0.1/22
+SSH-2.0-OpenSSH_5.1
+
+#我的机器shell端口是：22
+#实际:/dev/tcp根本没有这个目录，这是属于特殊设备
+
+cat&lt;/dev/tcp/127.0.0.1/223
+-bash: connect: 拒绝连接
+-bash: /dev/tcp/127.0.0.1/223: 拒绝连接
+#223接口不存在,打开失败
+ 
+exec 8&lt;&gt;/dev/tcp/127.0.0.1/22
+ls -l /proc/self/fd/
+总计 0
+lrwx------ 1 chengmo chengmo 64 10-21 23:05 0 -&gt; /dev/pts/0
+lrwx------ 1 chengmo chengmo 64 10-21 23:05 1 -&gt; /dev/pts/0
+lrwx------ 1 chengmo chengmo 64 10-21 23:05 2 -&gt; /dev/pts/0
+lr-x------ 1 chengmo chengmo 64 10-21 23:05 3 -&gt; /proc/22185/fd
+lrwx------ 1 chengmo chengmo 64 10-21 23:05 8 -&gt; socket:[15067661]
+ 
+#文件描述符8，已经打开一个socket通讯通道，这个是一个可以读写socket通道,因为用："&lt;&gt;"打开
+
+exec 8&gt;&amp;-
+#关闭通道
+
+ls -l /proc/self/fd/
+总计 0
+lrwx------ 1 chengmo chengmo 64 10-21 23:08 0 -&gt; /dev/pts/0
+lrwx------ 1 chengmo chengmo 64 10-21 23:08 1 -&gt; /dev/pts/0
+lrwx------ 1 chengmo chengmo 64 10-21 23:08 2 -&gt; /dev/pts/0
+lr-x------ 1 chengmo chengmo 64 10-21 23:08 3 -&gt; /proc/22234/fd
+</pre>
+
+<ul>
+<li>
+从时间服务器读取时间：
+
+</ul>
+
+<pre>
+cat&lt;/dev/tcp/time-b.nist.gov/13
+
+55491 10-10-22 11:33:49 17 0 0 596.3 UTC(NIST) *
+</pre>
+
+<p>
+上面这条语句使用重定向输入语句就可以了。
+</p>
+
+<h3 id="toc_0.4.2">通过重定向读取远程web服务器头信息</h3>
+
+<ul>
+<li>
+testhttphead.sh
+<pre class="brush:bash">
+#!/bin/sh 
+#testhttphead.sh
+#实现通过主机名，端口读取web 服务器header信息
+#copyright chengmo,qq:8292669
+ 
+if(($#&lt;2));then
+    echo "usage:$0 host port";
+    exit 1;
+fi
+#如果参数缺失，退出程序，返回状态1
+ 
+exec 6&lt;&gt;/dev/tcp/$1/$2 2&gt;/dev/null;
+#打开host的port 可读写的socket连接，与文件描述符6连接
+ 
+if(($?!=0));then
+    echo "open $1 $2 error!";
+    exit 1;
+fi
+#如果打开失败，$?返回不为0，终止程序
+ 
+echo -e "HEAD / HTTP/1.1\n\n\n\n\n"&gt;&amp;6; 
+#将HEAD 信息，发送给socket连接
+ 
+cat&lt;&amp;6; 
+#从socket读取返回信息，显示为标准输出
+ 
+exec 6&lt;&amp;-;
+exec 6&gt;&amp;-; 
+#关闭socket的输入，输出
+ 
+exit 0;
+</pre>
+
+</ul>
+
+<pre>
+sh testhttphead.sh www.baidu.com 80
+HTTP/1.1 200 OK
+Date: Thu, 21 Oct 2010 15:17:23 GMT
+Server: BWS/1.0
+Content-Length: 6218
+Content-Type: text/html;charset=gb2312
+Cache-Control: private
+Expires: Thu, 21 Oct 2010 15:17:23 GMT
+Set-Cookie: BAIDUID=1C40B2F8C676180FD887379A6E286DC1:FG=1; expires=Thu, 21-Oct-40 15:17:23 GMT; path=/; domain=.baidu.com
+P3P: CP=" OTI DSP COR IVA OUR IND COM "
+Connection: Keep-Alive
+ 
+sh testhttphead.sh 127.0.0.1 8080
+open 127.0.0.1 8080 error!
+</pre>
+
+<h3 id="toc_0.4.3">用telnet方式</h3>
+
+<p>
+突然有个奇怪想法：我们在windows时代就通过telnet 可以实现tcp/upd协议通讯，那么如果用传统方法怎么实现呢？
+</p>
+
+<pre class="brush:bash">
+echo -e "HEAD / HTTP/1.1\n\n\n\n\n"|telnet www.baidu.com 80 
+Trying 220.181.6.175...
+Connected to www.baidu.com.
+Escape character is '^]'.
+Connection closed by foreign host.
+ 
+#直接给发送，失败
+[chengmo@centos5 ~/shell]$ (telnet www.baidu.com 80)&lt;&lt;EOF
+HEAD / HTTP/1.1
+ 
+  
+EOF
+Trying 220.181.6.175...
+Connected to www.baidu.com.
+Escape character is '^]'.
+Connection closed by foreign host.
+#重定向输入，还是失败？
+</pre>
+
+<ul>
+<li>
+正确的方法:加入sleep 居然可以了，sleep 改成1秒也可以
+
+</ul>
+
+<pre class="brush:bash">
+
+(echo -e "HEAD / HTTP/1.1\n\n\n\n\n";sleep 2)|telnet www.baidu.com 80 
+
+Trying 220.181.6.175...
+Connected to www.baidu.com.
+Escape character is '^]'.
+HTTP/1.1 200 OK
+Date: Thu, 21 Oct 2010 15:51:58 GMT
+Server: BWS/1.0
+Content-Length: 6218
+Content-Type: text/html;charset=gb2312
+Cache-Control: private
+Expires: Thu, 21 Oct 2010 15:51:58 GMT
+Set-Cookie: BAIDUID=0B6A01ACECD5353E4247E088A8CB345A:FG=1; expires=Thu, 21-Oct-40 15:51:58 GMT; path=/; domain=.baidu.com
+P3P: CP=" OTI DSP COR IVA OUR IND COM "
+Connection: Keep-Alive
+</pre>
+
+<p>
+是不是由于sleep后，echo会推出2秒发给通道：telnet呢？推论可以从这2个方面推翻：
+</p>
+
+<p>
+一个方面：通过()括的数据是一对命令，会作为一个子命令执行，一起执行完程序结束。每个命令echo语句，就直接发送到屏幕（也就是标准输出），只要有标准输出了，就会通过通道马上传个：telnet ，如果接下来命令还有输出，会注意传给telnet ，直到()内所有命令执行完，与通道连接就断开了。
+</p>
+
+ 
+
+<p>
+再一个方面：如果说是起到推迟发送的话，什么时候有数据过来，发给telnet，什么时候telnet命令启动。跟你推迟一点还是早一点发送过来。没有关系。
+</p>
+
+ 
+
+<p>
+这种类型命令，看出sleep，其实就是保持通道跟telnet 连接2秒钟。 通道连接着了，telnet终端输入也还在，因此可以保持从baidu服务器获得数据。
+</p>
+
+<p>
+所以,延迟多久，还是跟服务器处理速度有关系。
+</p>
+
+ 
+
+<p>
+如果通过echo 向telnet发送数据，保持通道联通，使用sleep是个很好方法。
+</p>
+
+<p>
+通过重定向给telnet输入参数这种方法，我还想不到怎么样实现延迟输入。有知道朋友，可以指点指点.
+</p>
+
+<p>
+区别：
+</p>
+
+<p>
+telnet与echo 实现 http访问，与通过打开读写socket是不一样的，打开socket通道，是可以进行交换处理的。传入命令，活动结果，再传入命令，再获得结果。telnet通过echo 就不能这样处理了。
+</p>
+
+
+<h3 id="toc_0.4.4">通过shell脚本重定向实现监控memcache状态</h3>
+
+<pre class="brush:bash">
+#!/bin/sh
+ 
+#通过传入ip 以及端口，发送指令获得返回数据
+#copyright chengmo qq:8292669
+ 
+#函数往往放到最上面
+function sendmsg()
+{
+    msg=$1;
+    echo  "$1"&gt;&amp;8;
+    getout;
+}
+#向socket通道发送指令，并且调用获得返回参数
+ 
+function getout()
+{   
+    #read 命令 -u 从打开文件描述符 8 读取数据，-d读取数据忽略掉:\r换行符 
+    while read -u 8 -d $'\r' name; 
+    do 
+        if [ "${name}" == "END"  -o "${name}" == "ERROR" ];then
+            break;
+        fi;
+        echo $name;
+    done
+}
+#由于：memcached每次通讯完毕，会返回：END或者ERROR(出错），通过判断是否是"END"觉得读取是不是结束，否则循环不会停止
+ 
+if [ $# -lt 2 ];then
+    echo "usage:$0 host port [command]";
+    exit 1;
+fi;
+ 
+[[ $# -gt 2 ]]&amp;&amp;command=$3;
+ 
+#设置默认值 如果command为定义则为：stats
+command="${command=stats}";
+host="$1";
+port="$2";
+ 
+exec 8&lt;&gt;/dev/tcp/${host}/${port};
+#打开通向通道是8
+ 
+if [ "$?" != "0" ];then
+    echo "open $host  $port fail!";
+    exit 1;
+fi
+ 
+sendmsg "$command";
+#发送指定命令
+ 
+sendmsg "quit";
+#发送退出通向命令
+ 
+exec 8&lt;&amp;-;
+exec 8&gt;&amp;-;
+#关闭socket通道
+ 
+exit 0;
+</pre>
+
+<p>
+这是通过重定向，实现socket通讯中，发送然后获取返回的例子。其实，上面代码看似一次只能发送一段。时间上。我们可以反复调用：sendmsg ，捕捉输出数据。实现连续的，读与写操作。
+</p>
+
+
+<ul>
+<li>
+其它实现方法
+
+</ul>
+
+<p>
+其实通过：telnet也可以实现的。
+</p>
+<pre>
+(echo "stats";sleep 2)|telnet 127.0.0.1 11211
+</pre>
+
+<p>
+通过nc命令实现：不需要加延迟，直接打开通道
+</p>
+<pre>
+(echo "stats")|nc 127.0.0.1 11211
+</pre>
+
+<p>
+第二个程序里面，看到shell完全可以处理交互设计了。如果按照这样，登陆ftp,pop3,stmp都可以类似实现。这些，我们通过shell socket类似程序实现，应该不困难，只是捕捉如发送解析的问题了。 
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
