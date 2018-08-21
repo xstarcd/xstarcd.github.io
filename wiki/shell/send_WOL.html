@@ -18,22 +18,45 @@
 <h1>发送WOL唤醒魔术报文</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">python方式</a>
-<li><a href="#toc_0.2">C方式</a>
-<li><a href="#toc_0.3">shell下进制数据转换</a>
-<li><a href="#toc_0.4">shell socket通信</a>
+<li><a href="#toc_0.1">shell发送WOL</a>
+<li><a href="#toc_0.2">python发送WOL</a>
+<li><a href="#toc_0.3">C方式</a>
+<li><a href="#toc_0.4">shell下进制数据转换</a>
+<li><a href="#toc_0.5">shell socket通信</a>
 <ul>
-<li><a href="#toc_0.4.1">测试/dev/tcp/host/post文件</a>
-<li><a href="#toc_0.4.2">通过重定向读取远程web服务器头信息</a>
-<li><a href="#toc_0.4.3">用telnet方式</a>
-<li><a href="#toc_0.4.4">通过shell脚本重定向实现监控memcache状态</a>
+<li><a href="#toc_0.5.1">测试/dev/tcp/host/post文件</a>
+<li><a href="#toc_0.5.2">通过重定向读取远程web服务器头信息</a>
+<li><a href="#toc_0.5.3">用telnet方式</a>
+<li><a href="#toc_0.5.4">通过shell脚本重定向实现监控memcache状态</a>
 </ul>
 </ul>
 </ul>
 </div>
 
+<h2 id="toc_0.1">shell发送WOL</h2>
 
-<h2 id="toc_0.1">python方式</h2>
+<pre class="brush:bash">
+# MAC地址转换为16进制表示方式
+echo "7e:d1:c3:3f:da:00"|tr '[a-z]' '[A-Z]'\
+|sed -e 's/://g' -e 's/-//g' -e 's/\(..\)/\\x\1/g'
+\x7E\xD1\xC3\x3F\xDA\x00
+
+# 以16进制数方式输出
+# echo -ne '\xEF\xBB\xBF' &gt; b.txt
+
+str=$(echo "7e:d1:c3:3f:da:00"|tr '[a-z]' '[A-Z]'\
+|sed -e 's/://g' -e 's/-//g' -e 's/\(..\)/\\x\1/g')
+
+echo -ne "$str"|od -x
+0000000      d17e    3fc3    00da                                        
+0000006
+echo -ne "$str"|hexdump 
+0000000 7e d1 c3 3f da 00                              
+0000006
+</pre>
+
+
+<h2 id="toc_0.2">python发送WOL</h2>
 
 <ul>
 <li>
@@ -128,7 +151,7 @@ python ./wol.py 01:02:03:04:05:06
 
 </ul>
 
-<h2 id="toc_0.2">C方式</h2>
+<h2 id="toc_0.3">C方式</h2>
 
 <ul>
 <li>
@@ -274,7 +297,7 @@ int main(int argc, char **argv) {
 }
 </pre>
 
-<h2 id="toc_0.3">shell下进制数据转换</h2>
+<h2 id="toc_0.4">shell下进制数据转换</h2>
 
 <ul>
 <li>
@@ -397,7 +420,7 @@ m
 </pre>
 
 
-<h2 id="toc_0.4">shell socket通信</h2>
+<h2 id="toc_0.5">shell socket通信</h2>
 
 <ul>
 <li>
@@ -417,7 +440,7 @@ linux 设备里面有个比较特殊的文件:
 </p>
 
 
-<h3 id="toc_0.4.1">测试/dev/tcp/host/post文件</h3>
+<h3 id="toc_0.5.1">测试/dev/tcp/host/post文件</h3>
 
 <pre class="brush:bash">
 
@@ -470,7 +493,7 @@ cat&lt;/dev/tcp/time-b.nist.gov/13
 上面这条语句使用重定向输入语句就可以了。
 </p>
 
-<h3 id="toc_0.4.2">通过重定向读取远程web服务器头信息</h3>
+<h3 id="toc_0.5.2">通过重定向读取远程web服务器头信息</h3>
 
 <ul>
 <li>
@@ -528,7 +551,7 @@ sh testhttphead.sh 127.0.0.1 8080
 open 127.0.0.1 8080 error!
 </pre>
 
-<h3 id="toc_0.4.3">用telnet方式</h3>
+<h3 id="toc_0.5.3">用telnet方式</h3>
 
 <p>
 突然有个奇怪想法：我们在windows时代就通过telnet 可以实现tcp/upd协议通讯，那么如果用传统方法怎么实现呢？
@@ -622,7 +645,7 @@ telnet与echo 实现 http访问，与通过打开读写socket是不一样的，�
 </p>
 
 
-<h3 id="toc_0.4.4">通过shell脚本重定向实现监控memcache状态</h3>
+<h3 id="toc_0.5.4">通过shell脚本重定向实现监控memcache状态</h3>
 
 <pre class="brush:bash">
 #!/bin/sh
