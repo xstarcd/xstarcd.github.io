@@ -25,17 +25,20 @@
 <ul>
 <li><a href="#toc_0.4.1">Install</a>
 <li><a href="#toc_0.4.2">简单命令</a>
-<li><a href="#toc_0.4.3">.mysqlsla Config File</a>
-<li><a href="#toc_0.4.4">Command Line Options</a>
-<li><a href="#toc_0.4.5">输出内容</a>
-<li><a href="#toc_0.4.6">功能说明</a>
-<li><a href="#toc_0.4.7">Log 分析步骤</a>
-<li><a href="#toc_0.4.8">开启General Log 与 Slow Log</a>
-<li><a href="#toc_0.4.9">分析 General Log</a>
-<li><a href="#toc_0.4.10">分析 Slow Log</a>
-<li><a href="#toc_0.4.11">使用说明</a>
 </ul>
-<li><a href="#toc_0.5">Percona Toolkit</a>
+<li><a href="#toc_0.5">常用分析</a>
+<ul>
+<li><a href="#toc_0.5.1">.mysqlsla Config File</a>
+<li><a href="#toc_0.5.2">Command Line Options</a>
+<li><a href="#toc_0.5.3">输出内容</a>
+<li><a href="#toc_0.5.4">功能说明</a>
+<li><a href="#toc_0.5.5">Log 分析步骤</a>
+<li><a href="#toc_0.5.6">开启General Log 与 Slow Log</a>
+<li><a href="#toc_0.5.7">分析 General Log</a>
+<li><a href="#toc_0.5.8">分析 Slow Log</a>
+<li><a href="#toc_0.5.9">使用说明</a>
+</ul>
+<li><a href="#toc_0.6">Percona Toolkit</a>
 </ul>
 </ul>
 </div>
@@ -213,7 +216,25 @@ mysqlsla -lt slow -top 20 -sort re_avg /data/slow/slow.log.20180806.1815 &gt;/da
 mysqlsla -lt slow -top 20 -sort rs_avg /data/slow/slow.log.20180806.1815 &gt;/data/slow/slow_rs_avg.log
 </pre>
 
-<h3 id="toc_0.4.3">.mysqlsla Config File</h3>
+<h2 id="toc_0.5">常用分析</h2>
+
+<pre class="brush:bash">
+#!/bin/sh
+# 累积用时最多top50
+# 平均扫描行数最多top50
+# 平均返回行数最多top50
+# 平均锁时间最长top50
+# 平均用时最长top50
+P=.
+F=slow.log.20180806.2201
+O="t_sum re_avg rs_avg l_avg t_avg"
+for o in $O;do
+    echo "mysqlsla -lt slow -top 50 -sort $o $P/$F &gt;$P/${F}_$o.log"
+    mysqlsla -lt slow -top 50 -sort $o $P/$F &gt;$P/${F}_$o.txt
+done
+</pre>
+
+<h3 id="toc_0.5.1">.mysqlsla Config File</h3>
 
 <p>
 Reading ~/.mysqlsla is the very first thing mysqlsla does when it starts. Command line options can be set in this file. Example:
@@ -228,7 +249,7 @@ Notice: no leading dashes (­ or ­­), no quotations marks ("), and the form op
 These options are overriden by those given on the real command line.
 </p>
 
-<h3 id="toc_0.4.4">Command Line Options</h3>
+<h3 id="toc_0.5.2">Command Line Options</h3>
 
 <p>
 Command line options are in the form ­­option but ­option works too.
@@ -302,7 +323,7 @@ Slow Logs
 
 </ul>
 
-<h3 id="toc_0.4.5">输出内容</h3>
+<h3 id="toc_0.5.3">输出内容</h3>
 
 <p>
 输出数据报表,非常有利于分析慢查询的原因, 包括执行频率, 数据量, 查询消耗等，格式说明如下:
@@ -328,7 +349,7 @@ Query sample, sql语句
 除了以上的输出, 官方还提供了很多定制化参数, 是一款不可多得的好工具。
 </p>
 
-<h3 id="toc_0.4.6">功能说明</h3>
+<h3 id="toc_0.5.4">功能说明</h3>
 
 <p>
 藉由分析 General Log，我们可以清楚的得知 MySQL Server 最常执行的 Query 有哪些；观察 Slow Log 则可以让我们得知到底是哪些 Query 造成 MySQL Server 效能低落。知道了这些信息以后我们才有办法对 MySQL Server 进行进一步的调整与最佳化，例如以适当的 Index 提高 MySQL 最常执行的 Query 的效率，或是去除造成 Slow Query 的成因(poor index, join...等)。视您的 MySQL Server 的忙录状态而定，您的 General Log(或 Slow Log) 有可能会非常的庞大，要以肉眼来分析是一项不可能的任务，比较实际的作法是自己撰写 Scripts 去进行 Log 分析。若您不想花时间自行开发程序，不妨试试由 Daniel Nichter 所提供的 mysqlsla。
@@ -343,7 +364,7 @@ Query sample, sql语句
 
 </ul>
 
-<h3 id="toc_0.4.7">Log 分析步骤</h3>
+<h3 id="toc_0.5.5">Log 分析步骤</h3>
 
 <ol>
 <li>
@@ -357,7 +378,7 @@ Query sample, sql语句
 
 </ol>
 
-<h3 id="toc_0.4.8">开启General Log 与 Slow Log</h3>
+<h3 id="toc_0.5.6">开启General Log 与 Slow Log</h3>
 
 <p>
 要分析 Log 档案之前，你当然要先有可以分析的 Log 档案。要开启 MySQL Server 的 General Log 与 Slow Log，需要修改 MySQL Server 的系统设定文件并重新启动 MySQL。
@@ -374,7 +395,7 @@ log-slow-queries=slow-log
 mysqlsla 其实是一支 Perl Scripts，使用方式很间单，语法如下：
 </p>
 
-<h3 id="toc_0.4.9">分析 General Log</h3>
+<h3 id="toc_0.5.7">分析 General Log</h3>
 
 <pre>
 mysqlsla -lt slow slow.log -R print-unique -mf "db=foo" -sf "+SELECT"
@@ -384,7 +405,7 @@ mysqlsla -lt slow slow.log -R print-unique -mf "db=foo" -sf "+SELECT"
 然后您就可以大致上了解 Server 都在处理些什么东西。
 </p>
 
-<h3 id="toc_0.4.10">分析 Slow Log</h3>
+<h3 id="toc_0.5.8">分析 Slow Log</h3>
 
 <pre>
 mysqlsla --user=root --password=bjzayh -ex --socket=/tmp/mysql.sock -lt slow slow.log
@@ -444,7 +465,7 @@ insert into poller_output (local_data_id, rrd_name, time, output) values (8, 'us
 有了这些信息后，下一步就是要进行 Query 的最佳化，与 Server 系统参数的调校。
 </p>
 
-<h3 id="toc_0.4.11">使用说明</h3>
+<h3 id="toc_0.5.9">使用说明</h3>
 
 <ul>
 <li>
@@ -574,7 +595,7 @@ select min(DOC_HIS_ID) AS DOC_HIS_ID from t_******** where DOC_HIS_ISTEAMMATE=1 
 在上述结果中，语句的执行情况(执行次数，对象信息，查询记录量，时间开销，来源统计)等信息一目了然，比较便于DBA进一步分析了。
 </p>
 
-<h2 id="toc_0.5">Percona Toolkit</h2>
+<h2 id="toc_0.6">Percona Toolkit</h2>
 
 <ul>
 <li>
