@@ -44,6 +44,7 @@
 </ul>
 <li><a href="#toc_1.3.5">自己撸吧</a>
 </ul>
+<li><a href="#toc_1.4">JSON.awk</a>
 </ul>
 </ul>
 </div>
@@ -281,18 +282,10 @@ $0
 </tr>
 <tr>
 <td>
-FS
-</td>
-<td>
-输入字段分隔符，默认是空格或Tab
-</td>
-</tr>
-<tr>
-<td>
 NF
 </td>
 <td>
-当前记录中的字段个数，就是有多少列(print $(NF-1打印倒数第二个字段)
+当前记录中的字段个数，就是有多少列(print $(NF-1)打印倒数第二个字段
 </td>
 </tr>
 <tr>
@@ -313,10 +306,10 @@ FNR
 </tr>
 <tr>
 <td>
-RS
+FS
 </td>
 <td>
-输入的记录分隔符，默认为换行符
+输入字段分隔符，默认是空格或Tab
 </td>
 </tr>
 <tr>
@@ -325,6 +318,14 @@ OFS
 </td>
 <td>
 输出字段分隔符，默认也是空格
+</td>
+</tr>
+<tr>
+<td>
+RS
+</td>
+<td>
+输入的记录分隔符，默认为换行符
 </td>
 </tr>
 <tr>
@@ -351,11 +352,11 @@ FILENAME
 <pre class="brush:bash">
 $ awk '$3==0 &amp;&amp; $6=="ESTABLISHED" || NR==1 {printf "%02s %s %-20s %-20s %s\n",NR, FNR, $4,$5,$6}' netstat.txt
 01 1 Local-Address        Foreign-Address      State
-07 7 coolshell.cn:80      110.194.134.189:1032 ESTABLISHED
+07 7 coolshell.cn:80      110.194.134.189:1032  ESTABLISHED
 08 8 coolshell.cn:80      123.169.124.111:49809 ESTABLISHED
-10 10 coolshell.cn:80      123.169.124.111:49829 ESTABLISHED
-14 14 coolshell.cn:80      110.194.134.189:4796 ESTABLISHED
-17 17 coolshell.cn:80      123.169.124.111:49840 ESTABLISHED
+10 10 coolshell.cn:80     123.169.124.111:49829 ESTABLISHED
+14 14 coolshell.cn:80     110.194.134.189:4796  ESTABLISHED
+17 17 coolshell.cn:80     123.169.124.111:49840 ESTABLISHED
 </pre>
 
 <h4 id="toc_1.3.2.3">指定分隔符</h4>
@@ -713,6 +714,9 @@ netstat -ntu | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -nr
 #打印99乘法表
 seq 9 | sed 'H;g' | awk -v RS='' '{for(i=1;i&lt;=NF;i++)printf("%dx%d=%d%s", i, NR, i*NR, i==NR?"\n":"\t")}'
 
+# 用system()调用系统命令
+echo "/"|awk '{system("ls -la "$1)}'
+
 * 将16进制串还原成字符
 {{{class="brush:bash"
 # 输入内容，为字符的ASCII码十六进制串
@@ -733,8 +737,6 @@ for s in $S;do echo -n "$s = ";echo $s|sed 's/\(..\)/0x\1\n/g'|xargs -I {} awk '
 date +%s|awk '{print strftime("%Y-%m-%d %H:%M:%S",$1)}'
 #2016-04-10 00:31:37
 </pre>
-
-
 
 <h3 id="toc_1.3.5">自己撸吧</h3>
 
@@ -764,6 +766,58 @@ date +%s|awk '{print strftime("%Y-%m-%d %H:%M:%S",$1)}'
 <p>
 （转载本站文章请注明作者和出处 <a href="http://coolshell.cn/">酷壳 – CoolShell.cn</a>，请勿用于任何商业用途）
 </p>
+
+<ul>
+<li>
+调用文件
+<pre class="brush:bash">
+cat &gt; funk.awk &lt;&lt;EOF 
+#!/usr/bin/awk
+function echo_hello() { print "hello"; }
+EOF
+echo Test|awk -f funk.awk --source '{print $1;echo_hello();}'
+</pre>
+<pre>
+Test
+hello
+</pre>
+
+</ul>
+
+<h2 id="toc_1.4">JSON.awk</h2>
+
+<ul>
+<li>
+<a href="https://github.com/step-/JSON.awk">https://github.com/step-/JSON.awk</a>
+
+</ul>
+
+<p>
+试用了一下并不方便，看来还是用Python操作JSON更方便一些。
+</p>
+
+<p>
+JSON.awk is a self-contained, single-file program with no external dependencies. It is similar to JSON.sh, a JSON parser written in Bash -- retrieved on 2013-03-13 to form the basis for JSON.awk. Since then, the two projects have taken separate paths, so you will not find all of JSON.sh features in JSON.awk, and viceversa.
+</p>
+
+<ul>
+<li>
+Usage Examples
+<pre class="brush:bash">
+awk -f JSON.awk -v file1.json file2.json
+
+echo -e "file1.json\nfile2.json\n" &gt; filenames &amp;&amp; awk -f JSON.awk &lt; filenames
+
+echo -e "file1.json\nfile2.json\n" | awk -f JSON.awk
+
+# pipe JSON data from stdin
+
+cat file1.json file2.json | awk -f JSON.awk
+
+{ echo -; echo; cat file1.json file2.json; } | awk -f JSON.awk
+</pre>
+
+</ul>
 
 </div>
 <div id="footer">
