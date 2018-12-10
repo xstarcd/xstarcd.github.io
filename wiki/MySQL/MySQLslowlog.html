@@ -178,8 +178,8 @@ mysqlsla 2.0.3:<a href="../files/hackmysql.com_mysqlsla_20180806_2.0.3.zip">hack
 <pre class="brush:bash">
 #安装依赖包
 yum install wget perl perl-DBI perl-DBD-MySQL mysql
-# Can't locate ExtUtils/MakeMaker.pm
-# 解决：yum install perl-ExtUtils-CBuilder perl-ExtUtils-MakeMaker
+# 解决Can't locate ExtUtils/MakeMaker.pm、Can't locate Time/HiRes.pm in @INC问题
+yum install perl-ExtUtils-CBuilder perl-ExtUtils-MakeMaker perl-Time-HiRes
 
 #进入软件包存放目录
 cd /usr/local/src
@@ -193,6 +193,19 @@ cd mysqlsla-2.03
 perl Makefile.PL
 make
 make install
+</pre>
+<pre>
+make
+cp lib/mysqlsla.pm blib/lib/mysqlsla.pm
+cp bin/mysqlsla blib/script/mysqlsla
+/usr/bin/perl -MExtUtils::MY -e 'MY-&gt;fixin(shift)' -- blib/script/mysqlsla
+Manifying blib/man3/mysqlsla.3pm
+
+make install
+Installing /usr/local/share/perl5/mysqlsla.pm
+Installing /usr/local/share/man/man3/mysqlsla.3pm
+Installing /usr/local/bin/mysqlsla
+Appending installation info to /usr/lib64/perl5/perllocal.pod
 </pre>
 
 <h3 id="toc_0.4.2">简单命令</h3>

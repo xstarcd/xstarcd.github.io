@@ -535,7 +535,7 @@ cygpath -d -m "`pwd`"
 用Explorer打开当前目录
 <pre class="brush:bash">
 #!/bin/sh
-# openexplorer.sh
+#/usr/local/bin/open
 d=$1;[ -z "$d" ] &amp;&amp; d=$(pwd)
 d=$(cd "$d" &gt; /dev/null 2&gt;&amp;1;pwd)
 Explorer /e,"$(cygpath -d -w $d)"
