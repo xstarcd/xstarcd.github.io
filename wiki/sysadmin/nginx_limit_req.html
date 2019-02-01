@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Nginx请求限制</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Nginx请求限制</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">基本原理</a>
+<li><a href="#toc_0.2">常规配置</a>
+<li><a href="#toc_0.3">在f5后端的配置</a>
+<ul>
+<li><a href="#toc_0.3.1">用x-forward-for代替$remote_addr</a>
+<li><a href="#toc_0.3.2">key换成$server_name</a>
+</ul>
+<li><a href="#toc_0.4">总结</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">基本原理</h2>
+
+
+<p>
+nginx的请求限制本质上是基于交换机上大量使用的QoS流量令牌桶技术做的流量整形。
+</p>
+
+<p>
+令牌桶是衡量流量是否超过额定请求的。令牌桶中的每一个令牌都代表一个请求。如果令牌桶中存在令牌，则允许发送请求；而如果令牌桶中不存在令牌，则不允许发送请求。
+</p>
+
+<p>
+令牌桶中的令牌不仅仅可以被移除，同样也可以往里添加，所以为了保证接口随时有数据通过，就必须不停地往桶里加令牌，由此可见，往桶里加令牌的速度，就决定了数据通过接口的速度。因此，我们通过控制往令牌桶里加令牌的速度从而控制用户流量的请求数。
+</p>
+
+<p>
+设置的这个用户传输数据的速率被称为承诺信息速率（CIR），通常以秒为单位。
+</p>
+
+<p>
+每秒钟需要往桶里加的令牌总数，能存在桶中，桶能保存的令牌数量被称为Burst size（峰值）
+</p>
+
+
+<h2 id="toc_0.2">常规配置</h2>
+
+<p>
+在nginx.conf文件中的http模块下配置
+</p>
+
+<pre>
+limit_req_zone $binary_remote_addr zone=one:10m rate=1r/s;
+</pre>
+
+<p>
+说明：区域名称为one（自定义），占用空间大小为10m，平均处理的请求频率不能超过每秒一次。
+</p>
+
+<p>
+<code>\(binary_remote_addr</code>是<code>\)remote_addr</code>（客户端IP）的二进制格式，固定占用4个字节。而<code>\(remote_addr</code>按照字符串存储，占用7-15个字节。用<code>\)binary_remote_addr</code>可以节省空间。
+</p>
+
+<p>
+第二，在http模块的子模块server下面配置
+</p>
+
+<pre>
+location ~* .htm$ {
+limit_req zone=one burst=5 ;
+proxy_pass http://backend_tomcat;
+}
+</pre>
+
+<p>
+这里是对uri后缀为htm的请求限流，其中zone=one和前面的定义对应。
+</p>
+
+<p>
+例子：
+</p>
+<pre>
+limit_req zone=one burst=5 ;（漏桶）
+burst=5表示桶的深度，此时可以有5个请求在桶中等待。超过桶的深度的返回503.
+
+limit_req zone=one burst=5 nodelay;     （令牌桶）
+表示超出的请求不延迟等待，直接响应。
+
+limit_req zone=one burst=5  delay=3;  （混合桶）
+最新版本的nginx 1.15 可以使用delay=3这样的语句，表示桶的深度是5，有三个延迟，2（+1）个马上处理。
+</pre>
+
+<h2 id="toc_0.3">在f5后端的配置</h2>
+
+<p>
+有两种方法：
+</p>
+
+<h3 id="toc_0.3.1">用x-forward-for代替$remote_addr</h3>
+<pre>
+## 这里取得原始用户的IP地址
+map $http_x_forwarded_for  $clientRealIp {
+"" $remote_addr;
+~^(?P&lt;firstAddr&gt;[0-9\.]+),?.*$$firstAddr;
+}
+
+## 针对原始用户 IP 地址做限制
+limit_req_zone $clientRealIp zone=one:10m  rate=1r/s;
+</pre>
+
+
+<h3 id="toc_0.3.2">key换成$server_name</h3>
+
+<pre>
+limit_req_zone $server_name_addr zone=one:10m rate=1r/s;
+</pre>
+
+<h2 id="toc_0.4">总结</h2>
+
+<ul>
+<li>
+我们的情况可能更适合server_name方式。
+
+<li>
+返回503有两种情况，key用完，桶用完
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
