@@ -36,8 +36,8 @@
 <li>
 配置邮件帐号:/etc/mail.rc
 <pre class="brush:bash">
-set from=youemail@163.com
-set smtp=smtp.163.com
+set from=youemail@abc.com
+set smtp=smtp.abc.com
 set smtp-auth-user=mymon
 set smtp-auth-password=111111
 set smtp-auth=login
@@ -60,14 +60,14 @@ mailx -eiIUdEFntBDNHRV~ -T FILE -u USER -h hops -r address -s SUBJECT
 <li>
 简单地发送
 <pre class="brush:bash">
-echo "hello word" | mail -v -s " mailx test" youemail@163.com 
+echo "hello word" | mail -v -s " mailx test" youemail@abc.com 
 
 # 从文件读取要发送的邮件内容
-cat body.txt | mail -v -s " mailx test" youemail@163.com 
-mail -q body.txt -v -s " mailx test" youemail@163.com 
+cat body.txt | mail -v -s " mailx test" youemail@abc.com 
+mail -q body.txt -v -s " mailx test" youemail@abc.com 
 
 # 发送附件
-echo "hello word" | mail -a body.txt -v -s " mailx test" youemail@163.com 
+echo "hello word" | mail -a body.txt -v -s " mailx test" youemail@abc.com 
 
 
     env MAILRC=/dev/null from=scriptreply@domain smtp=host \
@@ -112,7 +112,7 @@ Mutt中文手册: <a href="http://www.xhc.me/wp-content/uploads/mutt/manual_1.5.
 转载: mutt配置记述: <a href="http://blog.chinaunix.net/uid-145571-id-2798800.html">http://blog.chinaunix.net/uid-145571-id-2798800.html</a>
 
 <li>
-linux下利用mutt来发邮件: <a href="http://pandarabbit.blog.163.com/blog/static/209284144201392532123788/">http://pandarabbit.blog.163.com/blog/static/209284144201392532123788/</a>
+linux下利用mutt来发邮件: <a href="http://pandarabbit.blog.abc.com/blog/static/209284144201392532123788/">http://pandarabbit.blog.abc.com/blog/static/209284144201392532123788/</a>
 
 <li>
 傻瓜式配置mutt:<a href="http://chuansong.me/n/2630234">http://chuansong.me/n/2630234</a>
@@ -201,10 +201,10 @@ set ssl_verify_dates=no
 <li>
 发送邮件
 <pre class="brush:bash">
-echo 'test mutt'|mutt xing.yuan@timanetworks.com -s 'test mutt'
+echo 'test mutt'|mutt yourmail@abc.com -s 'test mutt'
 
 (echo -e "&lt;h1&gt;test mail&lt;/h1&gt;&lt;br&gt;\n";cat /data/www/logs/csm_dcs_list.html) \
-|mutt youmail@abc.com -s 'test mutt'
+|mutt yourmail@abc.com -s 'test mutt'
 </pre>
 
 </ul>
