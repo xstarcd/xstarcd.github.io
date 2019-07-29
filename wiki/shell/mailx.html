@@ -102,6 +102,91 @@ To: $RECIPIENT
 END
 </pre>
 
+<ul>
+<li>
+用mailx发html邮件
+
+</ul>
+
+<pre lcass="brush:bash">
+# 另还可用 -S sendcharsets=utf-8参数，但测试并无效果。
+# 没有LC_CTYPE设置，中文乱码。
+# 文件以附件方式加入，html展示成功，中文正常
+export LC_CTYPE=zh_CN.utf-8;echo ""|mailx -a ngxszqWchat.html -s testmail10 -v youmail@abc.com
+# 文件以附件方式加入，同时有body内容，html展示成功，中文正常
+export LC_CTYPE=zh_CN.utf-8;echo "test body"|mailx -a ngxszqWchat.html -s testmail12 -v youmail@abc.com
+# 文件以附件方式加入，同时有body内容，html展示成功，中文正常
+export LC_CTYPE=zh_CN.utf-8;echo "test body有中文"|mailx -a ngxszqWchat.html -s testmail12 -v youmail@abc.com
+
+--=_5d386fce.g5ugrxz+Ehh19s4kQAqN4QA/syPM/92w+c46HQwYezzhawAb
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
+
+test body有中文
+
+--=_5d386fce.g5ugrxz+Ehh19s4kQAqN4QA/syPM/92w+c46HQwYezzhawAb
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: attachment; filename="ngxszqWchat.html"
+
+&lt;html&gt;
+&lt;head&gt;
+...
+
+# 无法改Content-Type，html被按源码展示
+export LC_CTYPE=zh_CN.utf-8;mailx -s testmail11 -v youmail@abc.com &lt;ngxszqWchat.html
+
+# cat -v添加内容，html被按源码展示
+export LC_CTYPE=zh_CN.utf-8;cat -v ngxszqWchat.html|mailx -s testmail13 -v youmail@abc.com
+# cat -v添加内容，html被按源码展示
+export LC_CTYPE=zh_CN.utf-8;cat -v ngxszqWchat.html|mailx -s testmail13 -v youmail@abc.com
+# 仍然无效
+export LC_CTYPE=zh_CN.utf-8;(echo -e "
+Content-Type: text/html; charset='utf-8'
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
+";cat -v ngxszqWchat.html)|mailx -s testmail13 -v youmail@abc.com
+</pre>
+
+<ul>
+<li>
+Sending mail from scripts
+
+<ul>
+<li>
+<a href="http://heirloom.sourceforge.net/mailx/mailx.1.html#12">http://heirloom.sourceforge.net/mailx/mailx.1.html#12</a>
+<pre>
+    If you want to send mail from scripts, you must be aware that mailx reads the user's configuration files by default. So unless your script is only intended for your own personal use (as e.g. a cron job), you need to circumvent this by invoking mailx like
+
+
+MAILRC=/dev/null mailx -n
+
+
+    You then need to create a configuration for mailx for your script. This can be done by either pointing the MAILRC variable to a custom configuration file, or by passing the configuration in environment variables. Since many of the configuration options are not valid shell variables, the env command is useful in this situation. An invocation could thus look like
+
+
+        env MAILRC=/dev/null from=scriptreply@domain smtp=host \
+              smtp-auth-user=login smtp-auth-password=secret \
+              smtp-auth=login mailx -n -s "subject" \
+              -a attachment_file recipient@domain &lt;content_file
+
+</pre>
+<pre class="brush:bash">
+MAILCMD="
+env MAILRC=/dev/null LC_CTYPE=zh_CN.utf-8 charset=utf-8 send_charset='us-ascii:iso-8859-1:utf-8' \
+  from=myuser@test.com \
+  smtp=smtp.timanetworks.com \
+  smtp-auth-user=myuser \
+  smtp-auth-password=mypass \
+  smtp-auth=login mailx -n "
+echo "Test mail." | $MAILCMD -s 'test' youmail@test.com
+</pre>
+
+</ul>
+</ul>
+
+
 <h2 id="toc_0.2">mutt</h2>
 
 <ul>
