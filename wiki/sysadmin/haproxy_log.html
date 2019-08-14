@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>haproxy日志</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>haproxy日志</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">tcp日志</a>
+<li><a href="#toc_0.2">http格式日志</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="http://cbonte.github.io/haproxy-dconv/configuration-1.4.html#8">http://cbonte.github.io/haproxy-dconv/configuration-1.4.html#8</a>
+
+<li>
+<a href="https://www.tuicool.com/articles/2MfYVr">https://www.tuicool.com/articles/2MfYVr</a>
+
+</ul>
+
+<p>
+haproxy日志级别有tcp、http两种。
+</p>
+
+<h2 id="toc_0.1">tcp日志</h2>
+
+<pre>
+Aug 13 12:15:19 localhost haproxy[12520]: 172.22.16.44:39008 [13/Aug/2019:12:15:19.755] assterisk assterisk/&lt;NOSRV&gt; -1/-1/0 0 -- 2/2/1/0/5 0/0
+Aug 13 12:15:19 localhost haproxy[12520]: 172.22.16.44:39008 [13/Aug/2019:12:15:19.755] assterisk assterisk/&lt;NOSRV&gt; -1/-1/0 0 -- 2/2/1/0/5 0/0
+</pre>
+
+<ul>
+<li>
+haproxy[12520] haproxy pid
+
+<li>
+172.22.16.44:39008 请求源地址 源端口
+
+<li>
+[13/Aug/2019:12:15:19.755] haproxy 接受请求的时间
+
+<li>
+asterrisk 定义的frontend 名称
+
+<li>
+assterisk/&lt;NOSRV&gt; backend名称/后端server名称
+
+<li>
+-1/-1/0 Tw/Tc/Tt 时间 #时间都是ms级别的
+
+<ul>
+<li>
+Tw 是指在请求队列中等待的总时间（T代表总共 w代表waiting） 如果是-1的话 代表客服端主动断开请求
+
+<li>
+Tc 是指用来连接后端server tcp建联总时间（T代表总共 c代表connect） 如果是-1的话 代表客服端在tcp建联的时候断开请求
+
+<li>
+Tt 是指haproxy完成整个请求的总时间（包括接受请求 向后端发起 接收后端的内容 和重试的所有时间） (T代表总共 t也代表总共)
+
+</ul>
+<li>
+0 日志记录时 所以经过haproxy 传输的字节数
+
+<li>
+-- haproxy终止状态 （不知道是干啥的）
+
+<li>
+2/2/1/0/5 actconn/feconn/beconn/srv_conn/retries
+
+<ul>
+<li>
+actconn 是指会话记录过程中进程并发连接数（好像跟系统文件描述符相关）
+
+<li>
+feconn 是指会话记录过程中frontend中的并发连接数（frontend 级别的）
+
+<li>
+beconn 是指会话记录过程中backend中已经建立握手的并发连接数（backend 级别的）
+
+<li>
+srv_conn 是指会话记录过程中活跃的并发连接数
+
+<li>
+retries 是指会话记录过程中重试后端server的次数
+
+</ul>
+<li>
+0/0 srv_queue/backend_queue
+
+<ul>
+<li>
+srv_queue 处理改请求时 server端的队列正在处理的连接数
+
+<li>
+backend_queue 处理改请求时 backend队列正在处理的连接数
+
+</ul>
+</ul>
+
+<h2 id="toc_0.2">http格式日志</h2>
+
+<pre>
+Aug 13 11:57:04 localhost haproxy[12520]: 172.22.224.202:63603 [13/Aug/2019:11:57:04.638] stats stats/&lt;STATS&gt; 0/0/0/0/1 200 17060 - - LR-- 2/2/0/0/0 0/0 "GET
+/stats HTTP/1.1"
+</pre>
+
+<ul>
+<li>
+haproxy[12520]: haproxy pid
+
+<li>
+172.22.224.202:63603 客户端源地址 源端口
+
+<li>
+stats 定义的frontend 名称
+
+<li>
+stats/&lt;STATS&gt; backend名称/后端server名称
+
+<li>
+0/0/0/111/132 Tq/Tw/Tc/Tr/Tt （时间跟上面一样 ms级别的）
+
+<ul>
+<li>
+Tq 等待客户端发送完整的http请求的时间 （-1 表示在接收http响应之前断开连接）
+
+<li>
+Tw 请求在队列中等待的时间 （-1 表示请求到达队列之前 断开连接）
+
+<li>
+Tc 与后端server建联的总时间 包括重试时间 （-1 表示请求与后端建联过程中 断开连接）
+
+<li>
+Tr 等待后端server 发送一个完整http响应总时间 不包括实体内容（-1 代表在等待发送响应之前 断开连接）
+
+<li>
+Tt 从接受请求到关闭连接的总时间
+
+</ul>
+<li>
+200 HTTP响应代码
+
+<li>
+17060 接收到该请求返回的数据大小（包括HTTP头） 单位是字节
+
+<li>
+- - LR--
+
+<li>
+2/2/0/0/0 actconn/feconn/beconn/srv_conn/retries
+
+<ul>
+<li>
+actconn 是指会话记录过程中进程并发连接数（好像跟系统文件描述符相关）
+
+<li>
+feconn 是指会话记录过程中frontend中的并发连接数（frontend 级别的）
+
+<li>
+beconn 是指会话记录过程中backend中已经建立握手的并发连接数（backend 级别的）
+
+<li>
+srv_conn 是指会话记录过程中活跃的并发连接数
+
+<li>
+retries 是指会话记录过程中重试后端server的次数
+
+</ul>
+<li>
+0/0 srv_queue/backend_queue
+
+<ul>
+<li>
+srv_queue 处理改请求时 server端的队列正在处理的连接数
+
+<li>
+backend_queue 处理改请求是 backend队列正在处理的连接数
+
+</ul>
+<li>
+"GET /status HTTP/1.1" 请求URI协议版本
+
+<li>
+[1372251318.135/1372251318.267] 请求开始时间/请求结束时间 时间戳的格式
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
