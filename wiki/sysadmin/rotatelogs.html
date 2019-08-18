@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Linux下配置滚动日志之rotatelogs</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Linux下配置滚动日志之rotatelogs</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">rotatelogs 的安装</a>
+<li><a href="#toc_0.2">rotatelogs 的功能</a>
+<li><a href="#toc_0.3">应用举例</a>
+<li><a href="#toc_0.4">rotatelogs 使用参数</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="https://yanbin.blog/linux-config-log-ratation-rotatelogs/">https://yanbin.blog/linux-config-log-ratation-rotatelogs/</a>
+
+<ul>
+<li>
+2018-06-12 — Yanbin
+
+</ul>
+</ul>
+
+<pre>
+本文链接 https://yanbin.blog/linux-config-log-ratation-rotatelogs/, 来自 隔叶黄莺 Yanbin Blog
+[版权声明] Creative Commons License 本文采用 署名-非商业性使用-相同方式共享 2.5 通用 (CC BY-NC-SA 2.5) 进行许可。
+</pre>
+
+<p>
+logrotate 是目前流行 Linux 发行版内置的定时服务，默认每日根据配置文件来滚动日志文件。那么它可能有一个弊端就是，如果每日增长的日志超大，同时会暴盘，那么就必须调整 logrotate 这个 cron 定时服务为每小时，或自定义的 cron 表达式来控制。
+</p>
+
+<p>
+而本文所介绍的 rotatelogs 工具(与 logrotate 名称太过相似) 是采用管道操作的方式来控制日志的滚动，可以基于实时监控的日志文件大小来滚动日志，也可以配置像 logrotate 来定时滚动日志。rotatelogs 是出自于 Apache HTTP Server 家族的，它被用于 Apache HTTP Server 的就错误日志，访问日志的滚动控制。
+</p>
+
+<p>
+类似于 rotatelogs 的工具不有一个老旧的 <a href="http://oldzipsarchive.dreamhosters.com/apache/log_rotation/cronolog_faq.htm">cronolog</a> ，也是应用管道操作控制日志，它早已无人问津，最近更新在五年前，且功能很弱，只带滚动，不能清理旧归档，磁盘空间占用仍然是无上限。
+</p>
+
+<pre>
+rotatelogs is a simple program for use in conjunction with Apache's piped logfile feature. It supports rotation based on a time interval or maximum size of the log.
+</pre>
+
+<h2 id="toc_0.1">rotatelogs 的安装</h2>
+
+<p>
+安装了 Apache 2.4 及以上的版本就已经有了 rotatelogs 命令。在 Dabian 及其衍生版上可以单独安装:
+</p>
+<blockquote>
+sudo apt-get install apache2-utils
+</blockquote>
+
+<p>
+在红帽系列 Linux 上安装：
+</p>
+<blockquote>
+yum install httpd-tools
+</blockquote>
+
+<p>
+安装好后，用 man rotatelogs 查看帮助手册
+</p>
+
+<h2 id="toc_0.2">rotatelogs 的功能</h2>
+
+<p>
+关于 rotatelogs 的功能，可查看 <a href="https://httpd.apache.org/docs/2.4/programs/rotatelogs.html">rotatelogs - Piped logging program to rotate Apache logs</a>, 主要的功能描述如下
+</p>
+<blockquote>
+可基于时间间隔或文件心寸来滚动日志文件
+能同时指定间隔时间与文件最大小尺寸，那么两者中任意一个条件到达了都会进行日志滚动
+可以指定最多保留日志归档文件数目
+归档文件可以指文件名格式，如 /var/log/errorlog.%Y-%m-%d
+能够在发生日志滚动产生新文件后执行一条命令
+</blockquote>
+
+<p>
+缺陷是日志归档文件不支持压缩，使用了 -n 来达到删除旧日志归档时，不能在文件名中使用模式(%)。
+</p>
+
+<h2 id="toc_0.3">应用举例</h2>
+
+<p>
+假设有一个持续向控制台输出 "Hello World!" 的程序
+</p>
+
+<pre>
+public class Test {
+    public static void main(String[] args) {
+        while(true) {
+            System.out.println("Hello World!");
+        }
+    }
+}
+</pre>
+<blockquote>
+java Test | rotatelogs -n 5 stdout.log 5M
+</blockquote>
+
+<p>
+stdout.log 大小达到 5M 后滚动为 stdout.log.1，因为 -n 5 指定最多为五个文件，所以最后的日志文件只有 stdout.log, stdout.log.1, stdout.log.2, stdout.log.3 和 stdout.log.4
+</p>
+<blockquote>
+java Test | rotatelogs -n 5 stdout.log 3600
+</blockquote>
+
+<p>
+每一个小时滚动一次日志，最多 5 个文件
+</p>
+<blockquote>
+java Test | rotatelogs stdout.log.%Y-%m-%d-%H_%M_%S 5M
+</blockquote>
+
+<p>
+指定文件名模式生成日志归档，文件尺寸达到 5M 滚动一次，如: stdout.log.2018-06-12-04_43_03，但不产生 stdout.log 文件。但使用了文件名模式后便不能用 -n 指定保留日志文件数目，所以会一直在产生日志归档。必须另加定时任务去清队旧的日志文件
+</p>
+<blockquote>
+java Test | rotatelogs -L stdout.log stdout.log.%Y-%m-%d 86400 20M
+</blockquote>
+
+<p>
+当前正在输出的日志文件是 stdout.log，方便 tail -f stdout.log 查看实时日志输出。归档日志文件是 stdout.log.2018-06-12 那样的文件，每日一次日志滚动，或文件名达到上限 20 M 时。如果同一天产生的归档文件名相同则会进行覆盖
+</p>
+<blockquote>
+java Test | rotatelogs stdout.log 5M
+</blockquote>
+
+<p>
+文件大小 5M 时滚动，文件名是 stdout.out.1528779417, stdout.out.1528779420, ...。没有 stdout.log 文件，并且文件数目不限制
+</p>
+<blockquote>
+java Test | rotatelogs -t stdout.log 5M
+</blockquote>
+
+<p>
+日志不滚动，只会生成 stdout.log 一个文件，日志满了就清掉重来。
+</p>
+<blockquote>
+java Test | rotatelogs -L stdout.log stdout.log 5M
+</blockquote>
+
+<p>
+这条命令产生的日志输出很奇怪，如下的文件
+</p>
+<blockquote>
+stdout.1528780849
+stdout.1528780854
+stdout.1528780859
+stdout.log
+stdout.log.1528780850
+stdout.log.1528780856
+</blockquote>
+
+<p>
+两套文件名，不知道 stdout.1528780849 这样的文件名从何而来，连 log 字样都从文件名中移除了。
+</p>
+
+<h2 id="toc_0.4">rotatelogs 使用参数</h2>
+
+<pre>
+rotatelogs [ -l ] [ -L linkname ] [ -p program ] [ -f ] [ -D ] [ -t ] [ -v ] [ -e ] [ -c ] [ -n number-of-files ] logfile rotationtime|filesize(B|K|M|G) [ offset ]
+
+-l
+    Causes the use of local time rather than GMT as the base for the interval or for strftime(3) formatting with size-based rotation.
+-L linkname
+    Causes a hard link to be made from the current logfile to the specified link name. This can be used to watch the log continuously across rotations using a command like tail -F linkname.
+-p program
+    If given, rotatelogs will execute the specified program every time a new log file is opened. The filename of the newly opened file is passed as the first argument to the program. If executing after a rotation, the old log file is passed as the second argument. rotatelogs does not wait for the specified program to terminate before continuing to operate, and will not log any error code returned on termination. The spawned program uses the same stdin, stdout, and stderr as rotatelogs itself, and also inherits the environment.
+-f
+    Causes the logfile to be opened immediately, as soon as rotatelogs starts, instead of waiting for the first logfile entry to be read (for non-busy sites, there may be a substantial delay between when the server is started and when the first request is handled, meaning that the associated logfile does not "exist" until then, which causes problems from some automated logging tools)
+-D
+    Creates the parent directories of the path that the log file will be placed in if they do not already exist. This allows strftime(3) formatting to be used in the path and not just the filename.
+-t
+    Causes the logfile to be truncated instead of rotated. This is useful when a log is processed in real time by a command like tail, and there is no need for archived data. No suffix will be added to the filename, however format strings containing '%' characters will be respected.
+-v
+    Produce verbose output on STDERR. The output contains the result of the configuration parsing, and all file open and close actions.
+-e
+    Echo logs through to stdout. Useful when logs need to be further processed in real time by a further tool in the chain.
+-c
+    Create log file for each interval, even if empty.
+-n number-of-files
+    Use a circular list of filenames without timestamps. With -n 3, the series of log files opened would be "logfile", "logfile.1", "logfile.2", then overwriting "logfile". Available in 2.4.5 and later.
+logfile
+
+    The path plus basename of the logfile. If logfile includes any '%' characters, it is treated as a format string for strftime(3). Otherwise, the suffix .nnnnnnnnnn is automatically added and is the time in seconds (unless the -t option is used). Both formats compute the start time from the beginning of the current period. For example, if a rotation time of 86400 is specified, the hour, minute, and second fields created from the strftime(3) format will all be zero, referring to the beginning of the current 24-hour period (midnight).
+
+    When using strftime(3) filename formatting, be sure the log file format has enough granularity to produce a different file name each time the logs are rotated. Otherwise rotation will overwrite the same file instead of starting a new one. For example, if logfile was /var/log/errorlog.%Y-%m-%d with log rotation at 5 megabytes, but 5 megabytes was reached twice in the same day, the same log file name would be produced and log rotation would keep writing to the same file.
+rotationtime
+    The time between log file rotations in seconds. The rotation occurs at the beginning of this interval. For example, if the rotation time is 3600, the log file will be rotated at the beginning of every hour; if the rotation time is 86400, the log file will be rotated every night at midnight. (If no data is logged during an interval, no file will be created.)
+filesize(B|K|M|G)
+    The maximum file size in followed by exactly one of the letters B (Bytes), K (KBytes), M (MBytes) or G (GBytes).
+
+    When time and size are specified, the size must be given after the time. Rotation will occur whenever either time or size limits are reached.
+offset
+    The number of minutes offset from UTC. If omitted, zero is assumed and UTC is used. For example, to use local time in the zone UTC -5 hours, specify a value of -300 for this argument. In most cases, -l should be used instead of specifying an offset.
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
