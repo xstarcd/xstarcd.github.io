@@ -176,8 +176,11 @@ http://xstarcd.github.io/wiki/MySQL/MySQL_5.5.html
 http://xstarcd.github.io/wiki/MySQL/MySQL_5.5_cnf.html
 http://xstarcd.github.io/wiki/MySQL/MySQL_replicate.html
 http://xstarcd.github.io/wiki/MySQL/MySQL_replicate_error.html
+http://xstarcd.github.io/wiki/MySQL/MySQLslowlog.html
 http://xstarcd.github.io/wiki/MySQL/SchemaSpy.html
+http://xstarcd.github.io/wiki/MySQL/explain.html
 http://xstarcd.github.io/wiki/MySQL/mysql_isolation_level.html
+http://xstarcd.github.io/wiki/MySQL/mysql_like.html
 http://xstarcd.github.io/wiki/MySQL/mysql_manualsync.html
 http://xstarcd.github.io/wiki/MySQL/mysql_repl_error2.html
 http://xstarcd.github.io/wiki/MySQL/mysqlslap.html
@@ -189,6 +192,8 @@ http://xstarcd.github.io/wiki/Others/34CoinTimeManagement.html
 http://xstarcd.github.io/wiki/Others/Funds_Plan.html
 http://xstarcd.github.io/wiki/Others/Funds_tips.html
 http://xstarcd.github.io/wiki/Others/Iphone.html
+http://xstarcd.github.io/wiki/Others/LSD_bondfuns.html
+http://xstarcd.github.io/wiki/Others/LSD_fund_value_assessment.html
 http://xstarcd.github.io/wiki/Others/Leo_Classes_Plan.html
 http://xstarcd.github.io/wiki/Others/Primary_School_English.html
 http://xstarcd.github.io/wiki/Others/SugarMan.html
@@ -206,6 +211,7 @@ http://xstarcd.github.io/wiki/Python/Python-Paramiko.html
 http://xstarcd.github.io/wiki/Python/Python_IPy.html
 http://xstarcd.github.io/wiki/Python/Python_socket.html
 http://xstarcd.github.io/wiki/Python/python_cass_baseclass_method.html
+http://xstarcd.github.io/wiki/Python/python_getfundsdata.html
 http://xstarcd.github.io/wiki/Python/python_subprocess_study.html
 http://xstarcd.github.io/wiki/Python/python_system_command.html
 http://xstarcd.github.io/wiki/Python/python_weblogview.html
@@ -281,6 +287,7 @@ http://xstarcd.github.io/wiki/shell/rm.html
 http://xstarcd.github.io/wiki/shell/rsync.html
 http://xstarcd.github.io/wiki/shell/screen.html
 http://xstarcd.github.io/wiki/shell/sed.html
+http://xstarcd.github.io/wiki/shell/send_WOL.html
 http://xstarcd.github.io/wiki/shell/seq.html
 http://xstarcd.github.io/wiki/shell/shell_array.html
 http://xstarcd.github.io/wiki/shell/shell_computing_method.html
@@ -332,6 +339,7 @@ http://xstarcd.github.io/wiki/sysadmin/gitlab.html
 http://xstarcd.github.io/wiki/sysadmin/gitlib_add_ztree.html
 http://xstarcd.github.io/wiki/sysadmin/gitlib_add_ztree_ldgitlabToc.html
 http://xstarcd.github.io/wiki/sysadmin/haproxy_confs.html
+http://xstarcd.github.io/wiki/sysadmin/haproxy_log.html
 http://xstarcd.github.io/wiki/sysadmin/iptables_setup_tools.html
 http://xstarcd.github.io/wiki/sysadmin/keepalived_Principles.html
 http://xstarcd.github.io/wiki/sysadmin/keepalived_compile.html
@@ -365,8 +373,10 @@ http://xstarcd.github.io/wiki/sysadmin/nginx_compile_ubuntu.html
 http://xstarcd.github.io/wiki/sysadmin/nginx_conf_pitfalls.html
 http://xstarcd.github.io/wiki/sysadmin/nginx_configuring_https_servers.html
 http://xstarcd.github.io/wiki/sysadmin/nginx_confs.html
+http://xstarcd.github.io/wiki/sysadmin/nginx_limit_req.html
 http://xstarcd.github.io/wiki/sysadmin/nginx_logrotate.html
 http://xstarcd.github.io/wiki/sysadmin/nginx_lua_study.html
+http://xstarcd.github.io/wiki/sysadmin/nginx_proxy_cache.html
 http://xstarcd.github.io/wiki/sysadmin/nginx_proxy_redirect.html
 http://xstarcd.github.io/wiki/sysadmin/nginx_ssl.html
 http://xstarcd.github.io/wiki/sysadmin/nginx_stub_status.html
@@ -380,6 +390,7 @@ http://xstarcd.github.io/wiki/sysadmin/php.html
 http://xstarcd.github.io/wiki/sysadmin/redis.html
 http://xstarcd.github.io/wiki/sysadmin/redis_example.conf.html
 http://xstarcd.github.io/wiki/sysadmin/rinetd.html
+http://xstarcd.github.io/wiki/sysadmin/rotatelogs.html
 http://xstarcd.github.io/wiki/sysadmin/svn_apache.html
 http://xstarcd.github.io/wiki/sysadmin/svn_branch_tag_command.html
 http://xstarcd.github.io/wiki/sysadmin/svn_dump_move.html
@@ -406,12 +417,14 @@ http://xstarcd.github.io/wiki/vim/vimwiki-guide.html
 http://xstarcd.github.io/wiki/vim/vimwiki.html
 http://xstarcd.github.io/wiki/vim/vimwikiSyntax.html
 http://xstarcd.github.io/wiki/windows/index.html
+http://xstarcd.github.io/wiki/windows/Excel-IRR.html
 http://xstarcd.github.io/wiki/windows/Excel_tips.html
 http://xstarcd.github.io/wiki/windows/MobaXterm.html
 http://xstarcd.github.io/wiki/windows/PuTTY.html
 http://xstarcd.github.io/wiki/windows/SecureCRT_confs.html
 http://xstarcd.github.io/wiki/windows/Sublime_Text.html
 http://xstarcd.github.io/wiki/windows/Win7Srv_optimize.html
+http://xstarcd.github.io/wiki/windows/excel_vba_function.html
 http://xstarcd.github.io/wiki/windows/windows_cmd_special_character.html
 http://xstarcd.github.io/wiki/windows/windows_cmd_summary.html
 http://xstarcd.github.io/wiki/windows/windows_cmd_summary_commands.html
