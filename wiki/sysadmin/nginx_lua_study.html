@@ -18,7 +18,8 @@
 <h1>nginx_lua脚本学习</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">基本操作</a>
+<li><a href="#toc_0.1">NgxLua执行过程</a>
+<li><a href="#toc_0.2">基本操作</a>
 </ul>
 </ul>
 </div>
@@ -50,9 +51,241 @@ OpenResty最佳实践:<a href="https://moonbingbing.gitbooks.io/openresty-best-p
 <li>
 Ngx Lua入门: <a href="https://www.iteye.com/blog/jinnianshilongnian-2186448">https://www.iteye.com/blog/jinnianshilongnian-2186448</a>
 
+<li>
+由Lua 粘合的Nginx生态环境:
+
+<ul>
+<li>
+<a href="https://blog.csdn.net/ygm_linux/article/details/53561176">https://blog.csdn.net/ygm_linux/article/details/53561176</a> 
+
+<li>
+ ngx_openresty: an Nginx ecosystem glued by Lua:
+
+<ul>
+<li>
+<a href="http://agentzh.org/misc/slides/ngx-openresty-ecosystem/#1">http://agentzh.org/misc/slides/ngx-openresty-ecosystem/#1</a>
+
+</ul>
+<li>
+章亦春 (agentzh)
+
+<li>
+<a href="http://agentzh.org/">http://agentzh.org/</a>
+
+</ul>
 </ul>
 
-<h2 id="toc_0.1">基本操作</h2>
+<h2 id="toc_0.1">NgxLua执行过程</h2>
+
+<ul>
+<li>
+<a href="https://blog.csdn.net/ygm_linux/article/details/53534933">https://blog.csdn.net/ygm_linux/article/details/53534933</a>
+
+</ul>
+
+<p>
+<img src="../img/lua//Users/yuanxing/Desktop/ngx_lua.jpg">
+</p>
+
+<p>
+ngx_lua属于nginx的一部分，它的执行指令都包含在nginx的11个步骤之中了，相应的处理阶段可以做插入式处理，即可插拔式架构，不过ngx_lua并不是所有阶段都会运行的；另外指令可以在http、server、server if、location、location if几个范围进行配置：
+</p>
+
+<table>
+<tr>
+<th>
+指令
+</th>
+<th>
+所处处理阶段
+</th>
+<th>
+使用范围
+</th>
+<th>
+解释
+</th>
+</tr>
+<tr>
+<td>
+init_by_lua
+</td>
+<td rowspan="2">
+loading-config
+</td>
+<td rowspan="2">
+http
+</td>
+<td>
+nginx Master进程加载配置时执行；
+</td>
+</tr>
+<tr>
+<td>
+init_by_lua_file
+</td>
+<td>
+通常用于初始化全局配置/预加载Lua模块
+</td>
+</tr>
+<tr>
+<td>
+init_worker_by_lua
+</td>
+<td rowspan="2">
+starting-worker
+</td>
+<td rowspan="2">
+http
+</td>
+<td>
+每个Nginx Worker进程启动时调用的计时器,如果Master进程不允许则只会在init_by_lua之后调用；
+</td>
+</tr>
+<tr>
+<td>
+init_worker_by_lua_file
+</td>
+<td>
+通常用于定时拉取配置/数据,或者后端服务的健康检查
+</td>
+</tr>
+<tr>
+<td>
+set_by_lua
+</td>
+<td rowspan="2">
+rewrite
+</td>
+<td rowspan="2">
+server,server if,location,location if
+</td>
+<td rowspan="2">
+设置nginx变量,可以实现复杂的赋值逻辑；此处是阻塞的,Lua代码要做到非常快；
+</td>
+</tr>
+<tr>
+<td>
+set_by_lua_file
+</td>
+</tr>
+<tr>
+<td>
+rewrite_by_lua
+</td>
+<td rowspan="2">
+rewrite tail
+</td>
+<td rowspan="2">
+http,server,location,location if
+</td>
+<td rowspan="2">
+rrewrite阶段处理,可以实现复杂的转发/重定向逻辑；
+</td>
+</tr>
+<tr>
+<td>
+rewrite_by_lua_file
+</td>
+</tr>
+<tr>
+<td>
+access_by_lua
+</td>
+<td rowspan="2">
+access tail
+</td>
+<td rowspan="2">
+http,server,location,location if
+</td>
+<td rowspan="2">
+请求访问阶段处理,用于访问控制
+</td>
+</tr>
+<tr>
+<td>
+access_by_lua_file
+</td>
+</tr>
+<tr>
+<td>
+content_by_lua
+</td>
+<td rowspan="2">
+content
+</td>
+<td rowspan="2">
+location,location if
+</td>
+<td rowspan="2">
+内容处理器,接收请求处理并输出响应
+</td>
+</tr>
+<tr>
+<td>
+content_by_lua_file
+</td>
+</tr>
+<tr>
+<td>
+header_filter_by_lua
+</td>
+<td rowspan="2">
+output-header-filter
+</td>
+<td rowspan="2">
+http,server,location,location if
+</td>
+<td rowspan="2">
+设置header和cookie
+</td>
+</tr>
+<tr>
+<td>
+header_filter_by_lua_file
+</td>
+</tr>
+<tr>
+<td>
+body_filter_by_lua
+</td>
+<td rowspan="2">
+output-body-filter
+</td>
+<td rowspan="2">
+http,server,location,location if
+</td>
+<td rowspan="2">
+对响应数据进行过滤,比如截断、替换。
+</td>
+</tr>
+<tr>
+<td>
+body_filter_by_lua_file
+</td>
+</tr>
+<tr>
+<td>
+log_by_lua
+</td>
+<td rowspan="2">
+log
+</td>
+<td rowspan="2">
+http,server,location,location if
+</td>
+<td rowspan="2">
+log阶段处理,比如记录访问量/统计平均响应时间
+</td>
+</tr>
+<tr>
+<td>
+log_by_lua_file
+</td>
+</tr>
+</table>
+
+<h2 id="toc_0.2">基本操作</h2>
 
 <pre class="brush:bash">
     location /echo {
