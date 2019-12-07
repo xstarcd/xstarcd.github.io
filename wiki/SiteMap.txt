@@ -92,6 +92,8 @@ http://xstarcd.github.io/wiki/Cloud/ubuntu_kvm_virtualization_solution.html
 http://xstarcd.github.io/wiki/Cloud/virt-what.html
 http://xstarcd.github.io/wiki/Cloud/zookeeper_log_snapshot.html
 http://xstarcd.github.io/wiki/Cloud/zookeeper_python_client.html
+http://xstarcd.github.io/wiki/English/index.html
+http://xstarcd.github.io/wiki/English/PhoneticSymbol.html
 http://xstarcd.github.io/wiki/FreeBSD/index.html
 http://xstarcd.github.io/wiki/FreeBSD/FreeBSD_8.0_Install_Setup_Summary.html
 http://xstarcd.github.io/wiki/Java/index.html
