@@ -20,6 +20,7 @@
 <ul>
 <li><a href="#toc_0.1">NgxLua执行过程</a>
 <li><a href="#toc_0.2">基本操作</a>
+<li><a href="#toc_0.3">nginx映射到Lua的变量</a>
 </ul>
 </ul>
 </div>
@@ -339,6 +340,174 @@ log_by_lua_file
             end
         ';
     }
+</pre>
+
+<h2 id="toc_0.3">nginx映射到Lua的变量</h2>
+
+<pre>
+ngx.arg[1]                脚本参数
+ngx.var['arg_a']            取queryString的参数a #/nginx_var?a=hello,world
+ngx.say(...)                依次输出参数，带换行
+ngx.print(...)                格式化输出，不带换行
+ngx.var.name                取nginx里的name变量，如ngx.var.remote_addr
+locale res = ngx.location.capture()    请求内部location
+ngx.location.capture_multi()        同时请求多个内部location
+res.status                取上面请求返回的状态
+    取值为常量：
+    ngx.HTTP_OK = 200
+    ngx.HTTP_FORBIDDEN
+    ngx.HTTP_INTERNAL_SERVER_ERROR
+    ... ...
+res.body                去上面请求反回的页面内容
+ngx.exec(uri, args?)            内部重定向
+ngx.exit(ngx.HTTP_FORBIDDEN)        退出执行并返回状态常量值
+ngx.redirect(uri, status?)        301/302重定向
+    rewrite ^ /foo? redirect;  # nginx config
+    等价于
+    return ngx.redirect('/foo');  -- Lua code
+
+    rewrite ^ /foo? permanent;  # nginx config
+    等价于
+    return ngx.redirect('/foo', ngx.HTTP_MOVED_PERMANENTLY)  -- Lua code
+ngx.send_headers()            明确地发送response headers
+ngx.headers_sent            用此变量标识response headers是否已发送
+ngx.log(log_level, ...)            记录参数到error.log
+ngx.flush()                把response输出到客户端
+ngx.eof()                明确指定response输出流结束
+ngx.sleep(seconds)            非阻塞sleep指定秒（应该是指协程短期不调度）
+ngx.escape_uri(str)            url转义
+ngx.unescape_uri(str)            url转义还原
+ngx.encode_args()            把lua table编码为查询参数字符串
+ngx.decode_args(str,max_args?)        把查询字符串转为lua table
+ngx.encode_base64(str)            base64编码
+ngx.decode_base64(str)            base64解码
+ngx.crc32_short(str)            crc32 小于30~60字节更高效
+ngx.crc32_long(str)            crc32 大于30~60字节更高效
+ngx.hmac_sha1(secret_key, str)        HMAC-SHA1
+ngx.md5(str)                md5
+ngx.md5_bin(str)            bin 格式 md5
+ngx.sha1_bin(str)            bin 格式 sha1
+ngx.quote_sql_str(raw_val)        Returns a quoted SQL string literal according to the MySQL quoting rules.    ngx.today()                ngx缓存当前本地日期
+ngx.time()                从nginx当前缓存时间戳经过的秒数
+ngx.now()                同上，但返回浮点数，单位也是秒
+ngx.update_time()            强制更新nginx当前时间缓存。系统调用勿滥用
+ngx.localtime()                返回nginx当前时间缓存，本地时间，格式yyyy-mm-dd hh:mm:ss
+ngx.utctime()                同上，但为utc时间
+ngx.cookie_time(sec)            返回格式化后的字符串，可以用作cookie过期时间
+ngx.http_time(sec)            返回格式化后的字符串，可以用作http头时间，如Last-Modified
+ngx.parse_http_time(str)        上面的反操作
+ngx.is_subrequest            当前req如果是nginx subrequest，则为true
+captures, err = ngx.re.match(subject, regex, options?, ctx?, res_table?)         正则匹配
+from, to, err = ngx.re.find(subject, regex, options?, ctx?, nth?)                同上，但是返回匹配的起始和结束位置
+iterator, err = ngx.re.gmatch(subject, regex, options?)                            同上上，但返回的是lua iterator，可遍历所有匹配
+newstr, n, err = ngx.re.sub(subject, regex, replace, options?)                    正则匹配并替换
+newstr, n, err = ngx.re.gsub(subject, regex, replace, options?)                    同上，但是是全局替换
+dict = ngx.shared.DICT                访问lua_shared_dict定义的共享内存lua字典
+dict = ngx.shared[name_var]
+    get                    例如value, flags = ngx.shared.DICT:get(key)
+    get_stale            即时过期也返回数据
+    set                    例如success, err, forcible = ngx.shared.DICT:set(key, value, exptime?, flags?)
+    safe_set            内存不够也不覆盖未过期数据
+    add                    同set，但只当key不存在时存
+    safe_add            同add，但即使内存不够也不覆盖未过期数据
+    replace                同set，但只当key存在时存储
+    delete                无条件移除
+    incr                按指定步长增加数字值
+    flush_all            清洗所有数据，不释放空间，只标记过期
+    flush_expired        清晰过期数据
+    get_keys            获取指定数量的key列表
+udpsock = ngx.socket.udp()
+    setpeername                ok, err = udpsock:setpeername(host, port),ok, err = udpsock:setpeername("unix:/path/to/unix-domain.socket")
+    send
+    receive
+    close
+    settimeout
+tcpsock = ngx.socket.tcp()
+    connect
+    sslhandshake
+    send
+    receive
+    close
+    settimeout
+    setoption
+    receiveuntil
+    setkeepalive
+    getreusedtimes
+tcpsock, err = ngx.socket.connect(host, port)
+tcpsock, err = ngx.socket.connect("unix:/path/to/unix-domain.socket")
+str = ngx.get_phase()     //nginx当前处于哪个处理阶段
+    init
+    for the context of init_by_lua or init_by_lua_file.
+    set
+    for the context of set_by_lua or set_by_lua_file.
+    rewrite
+    for the context of rewrite_by_lua or rewrite_by_lua_file.
+    access
+    for the context of access_by_lua or access_by_lua_file.
+    content
+    for the context of content_by_lua or content_by_lua_file.
+    header_filter
+    for the context of header_filter_by_lua or header_filter_by_lua_file.
+    body_filter
+    for the context of body_filter_by_lua or body_filter_by_lua_file.
+    log
+    for the context of log_by_lua or log_by_lua_file.
+    timer
+    for the context of user callback functions for ngx.timer.*.
+co = ngx.thread.spawn(func, arg1, arg2, ...)
+ok, res1, res2, ... = ngx.thread.wait(thread1, thread2, ...)
+ok, err = ngx.thread.kill(thread)
+ok, err = ngx.on_abort(callback)                                    //注册回调函数，当客户端断开链接时执行
+ok, err = ngx.timer.at(delay, callback, user_arg1, user_arg2, ...)  //定时执行(一次）
+debug = ngx.config.debug                                            //标识nginx是不是debug build
+prefix = ngx.config.prefix()                                        //nginx "prefix"路径
+ver = ngx.config.nginx_version
+str = ngx.config.nginx_configure()                                    //返回编译时./configure的参数
+ver = ngx.config.ngx_lua_version
+exiting = ngx.worker.exiting()                                        //boolean值表示是否已经开始退出
+pid = ngx.worker.pid()                                                //当前nginx worker进程id，比ngx.var.pid更高效，可用面更广
+res = ndk.set_var.DIRECTIVE_NAME                                    //通过ndk的set_var调用ngx的其他C模块，安全相关
+    set_quote_sql_str
+    set_quote_pgsql_str
+    set_quote_json_str
+    set_unescape_uri
+    set_escape_uri
+    set_encode_base32
+    set_decode_base32
+    set_encode_base64
+    set_decode_base64
+    set_encode_hex
+    set_decode_hex
+    set_sha1
+    set_md5
+
+    set_encrypt_session
+    set_decrypt_session
+co = coroutine.create(f)                    //创建协程
+ok, ... = coroutine.resume(co, ...)            //唤醒（切换到）协程
+... = coroutine.yield(...)                    //切换回调用协程
+co = coroutine.wrap(f)                        //创建新协程，返回一个方法，每次调用唤醒协程，函数参数作为resume的额外参数
+co = coroutine.running()                    //返回正在运行的coroutine，如果是main thread则返回nil
+status = coroutine.status(co)                //返回协程co的状态
+    running
+    suspended            //yield
+    normal                //激活但没运行，也就是它唤醒了另一个协程
+    dead                //完成了它的函数体执行或已遇到错误停止
+
+redis2_query
+    set key val                赋值  成功显示 +OK
+    get key                    取值  成功返回 $长度 值  如"$3 abc"
+    lpush key val [val ...]    将一个或多个值 value 插入到列表 key 的表头                           LPUSH key value [value ...]
+    lrange key start stop      返回列表 key 中指定区间内的元素，区间以偏移量 start 和 stop 指定。   LRANGE key start stop
+redis2_pass                        指定redis服务器
+redis2_literal_raw_query         不能使用ngx变量，也就是你可以自由使用$字符
+redis2_raw_query                 raw查询
+redis2_raw_queries                可以处理多个raw_query，如redis2_raw_queries 3 "flushall\r\nget key1\r\nget key2\r\n";
+redis2_connect_timeout            设置连接redis服务器超时，单位秒
+redis2_send_timeout                发送tcp请求到redis服务器的超时时间
+redis2_read_timeout                从redis服务器读取tcp响应超时时间
+redis2_buffer_size                redis回复缓存，但不需要像可能的最大redis回复那么大，默认值同页面大小，可能是4k或8k
+redis2_next_upstream            指定哪些失败条件可以导致请求转发到另一个upstream服务器
 </pre>
 
 </div>
