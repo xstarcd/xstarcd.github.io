@@ -18,32 +18,31 @@
 <h1>nginx配置https后SNI引起连接失败问题排查</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">一次 TLS SNI 问题</a>
+<li><a href="#toc_1">一次 TLS SNI 问题</a>
 <ul>
-<li><a href="#toc_0.1.1">失败现象</a>
-<li><a href="#toc_0.1.2">openssl模拟跟踪</a>
-<li><a href="#toc_0.1.3">证实是否不支持 SNI</a>
-<li><a href="#toc_0.1.4">JDK 对 SNI 的支持</a>
-<li><a href="#toc_0.1.5">HttpClient 对 SNI 的支持</a>
+<li><a href="#toc_1.1">失败现象</a>
+<li><a href="#toc_1.2">openssl模拟跟踪</a>
+<li><a href="#toc_1.3">证实是否不支持 SNI</a>
+<li><a href="#toc_1.4">JDK 对 SNI 的支持</a>
+<li><a href="#toc_1.5">HttpClient 对 SNI 的支持</a>
 </ul>
-<li><a href="#toc_0.2">Nginx配置引起的SSL证书认证失败</a>
+<li><a href="#toc_2">Nginx配置引起的SSL证书认证失败</a>
 <ul>
-<li><a href="#toc_0.2.1">背景</a>
-<li><a href="#toc_0.2.2">部署架构</a>
-<li><a href="#toc_0.2.3">问题</a>
-<li><a href="#toc_0.2.4">解决过程</a>
+<li><a href="#toc_2.1">背景</a>
+<li><a href="#toc_2.2">部署架构</a>
+<li><a href="#toc_2.3">问题</a>
+<li><a href="#toc_2.4">解决过程</a>
 <ul>
-<li><a href="#toc_0.2.4.1">切换到本地测试</a>
-<li><a href="#toc_0.2.4.2">本地问题的解决</a>
-<li><a href="#toc_0.2.4.3">发布调试版本</a>
-<li><a href="#toc_0.2.4.4">Wireshark</a>
-<li><a href="#toc_0.2.4.5">协议分析</a>
-<li><a href="#toc_0.2.4.6">SNI</a>
+<li><a href="#toc_2.4.1">切换到本地测试</a>
+<li><a href="#toc_2.4.2">本地问题的解决</a>
+<li><a href="#toc_2.4.3">发布调试版本</a>
+<li><a href="#toc_2.4.4">Wireshark</a>
+<li><a href="#toc_2.4.5">协议分析</a>
+<li><a href="#toc_2.4.6">SNI</a>
 </ul>
-<li><a href="#toc_0.2.5">解决方法</a>
-<li><a href="#toc_0.2.6">安全考虑</a>
-<li><a href="#toc_0.2.7">总结</a>
-</ul>
+<li><a href="#toc_2.5">解决方法</a>
+<li><a href="#toc_2.6">安全考虑</a>
+<li><a href="#toc_2.7">总结</a>
 </ul>
 </ul>
 </div>
@@ -54,7 +53,7 @@
 
 </ul>
 
-<h2 id="toc_0.1">一次 TLS SNI 问题</h2>
+<h1 id="toc_1">一次 TLS SNI 问题</h1>
 
 <ul>
 <li>
@@ -68,7 +67,7 @@ by ylgrgyq
 
 </ul>
 
-<h3 id="toc_0.1.1">失败现象</h3>
+<h2 id="toc_1.1">失败现象</h2>
 
 <p>
 LeanCloud 的实时通信服务能实现类似客服机器人的功能，用户能自己提供一个 Web Hook 地址，有消息发给机器人的时候实时通信服务会将消息发到这个 Web Hook 上，用户从 Web Hook 收到消息之后能对消息进行解析和处理，构造出客服机器人的回答，再通过 REST API 发还给用户。从而用户能实现客服机器人自动应答功能。
@@ -87,7 +86,7 @@ at org.apache.http.conn.ssl.AbstractVerifier.verify(AbstractVerifier.java:220)
 看上去就是用户的 SSL 证书限定的 Host Name 和用户填的 Web Hook 域名不符，导致 SSL 握手的时候我们这边对证书校验失败。
 </p>
 
-<h3 id="toc_0.1.2">openssl模拟跟踪</h3>
+<h2 id="toc_1.2">openssl模拟跟踪</h2>
 
 <p>
 于是我去检查用户证书：
@@ -139,7 +138,7 @@ verify return:1
 从而确认是我们在调用用户 Web Hook 时候 SSL 握手一定是没有带着 SNI 导致握手时拿到的不是用户真实的证书，拿的是用户 CDN 的证书，最终导致握手失败。
 </p>
 
-<h3 id="toc_0.1.3">证实是否不支持 SNI</h3>
+<h2 id="toc_1.3">证实是否不支持 SNI</h2>
 
 <p>
 首先需要说的是，<a href="http://docs.oracle.com/javase/7/docs/technotes/guides/security/enhancements-7.html">从 JDK 是从 1.7 开始才真正支持 SNI</a>，也就是说还在使用 1.6 版本 JDK 的话是无论如何都无法使用 SNI 的。
@@ -200,7 +199,7 @@ Extension server_name, server_name: [type=host_name (0), value=leancloud.cn]
 这里就有疑问了，为什么 JDK 支持了 SNI，HttpClient 还得靠增加一套 API 来支持 SNI 呢？
 </p>
 
-<h3 id="toc_0.1.4">JDK 对 SNI 的支持</h3>
+<h2 id="toc_1.4">JDK 对 SNI 的支持</h2>
 
 <p>
 为了解开疑问，先来看看 JDK 是怎么支持 SNI 的。JDK 要创建 SSL 的 Socket 需要使用 javax.net.ssl.SSLSocketFactory。SSLSocketFactory 提供了几种构造 Socket 的方式：
@@ -267,7 +266,7 @@ sock.startHandshake();
 据说 JDK 不允许传递 InetAddress 的 createSocket 创建出来的 SSLSocket 在 SSL 握手时自动使用 SNI，是因为 InetAddress 构造的时候支持 getByName 函数，该函数可以传个 IP 而不是 Host。这种情况下用户真传个 IP 进来再允许开启 SNI 将这个 IP 放入 SNI 中就不符合 SNI 使用条件了，因为 SNI 只能填 Host Name。不过感觉理由还是比较牵强，总之就是这个 API 设计的有些诡异，藏得有点深。
 </p>
 
-<h3 id="toc_0.1.5">HttpClient 对 SNI 的支持</h3>
+<h2 id="toc_1.5">HttpClient 对 SNI 的支持</h2>
 
 <p>
 为了了解缘由需要看一下这个 <a href="https://issues.apache.org/jira/browse/HTTPCLIENT-1119">JIRA 讨论</a>。
@@ -420,7 +419,7 @@ DefaultHttpClientConnectionOperator 在调用 SSLConnectionSocketFactory 的 con
 </ul>
 </ul>
 
-<h2 id="toc_0.2">Nginx配置引起的SSL证书认证失败</h2>
+<h1 id="toc_2">Nginx配置引起的SSL证书认证失败</h1>
 
 <ul>
 <li>
@@ -437,7 +436,7 @@ DefaultHttpClientConnectionOperator 在调用 SSLConnectionSocketFactory 的 con
 
 </ul>
 
-<h3 id="toc_0.2.1">背景</h3>
+<h2 id="toc_2.1">背景</h2>
 
 <p>
 目前公司对外开放了一个云服务平台，提供一些功能供商户接入使用。整个项目的架构是基于Spring + MyBatis的。另外，商户端的服务接口是基于SOAP WebService的，这部分使用CXF实现。
@@ -455,7 +454,7 @@ DefaultHttpClientConnectionOperator 在调用 SSLConnectionSocketFactory 的 con
 另外，为了防止被作废的证书（例如给商户颁发了新证书后，原证书应该作废，但是原证书也是由指定CA产生的）再次使用，在代码层面对证书进行了进一步的验证（这一点是通过Nginx将客户端证书作为Header传递到Java后台实现的，有时间以后再讲）。
 </p>
 
-<h3 id="toc_0.2.2">部署架构</h3>
+<h2 id="toc_2.2">部署架构</h2>
 
 <p>
 云服务平台部署在aliyun上，大致上结构是这样的（只涉及到了网络访问层面的东西）：
@@ -477,7 +476,7 @@ aliyun的LB只负责TCP转发，不对协议进行分析。因此从aliyun到Ngi
 我们代码中实现了一个Filter（ClientCertificateFromProxyFilter），它的唯一作用是检查过来的HTTP请求中有没有变量SSL_CLIENT_CERT，如果有则把它转换成一个Certificate对象，添加到HTTP请求中，从而将一个HTTP请求模拟成一个HTTPS请求，这样Spring Security就能够进行证书认证了。
 </p>
 
-<h3 id="toc_0.2.3">问题</h3>
+<h2 id="toc_2.3">问题</h2>
 
 <p>
 在上线之前，按照以往的经验，我们测试了通过浏览器访问受保护的资源来测试HTTPS是否工作正常。因为提前在浏览器中导入了客户端证书，因此浏览器上能够弹出对话框选择客户端证书，选择之后就能够访问指定的资源了。
@@ -521,13 +520,13 @@ Caused by: org.apache.cxf.transport.http.HTTPException: HTTP response '401: Full
     ... 38 more
 </pre>
 
-<h3 id="toc_0.2.4">解决过程</h3>
+<h2 id="toc_2.4">解决过程</h2>
 
 <p>
 401错误代表未授权，所以首先怀疑是客户端证书不正确。
 </p>
 
-<h4 id="toc_0.2.4.1">切换到本地测试</h4>
+<h3 id="toc_2.4.1">切换到本地测试</h3>
 
 <p>
 收到客户反馈之后，首先想到的可能是证书发放的不正确，毕竟已经通过浏览器通过了测试。
@@ -541,7 +540,7 @@ Caused by: org.apache.cxf.transport.http.HTTPException: HTTP response '401: Full
 这下子有点着急了，担心有大的bug存在。毕竟产品已经上线，碰到这种bug可比较麻烦了。
 </p>
 
-<h4 id="toc_0.2.4.2">本地问题的解决</h4>
+<h3 id="toc_2.4.2">本地问题的解决</h3>
 
 <p>
 注：本地指请求客户端
@@ -555,7 +554,7 @@ Caused by: org.apache.cxf.transport.http.HTTPException: HTTP response '401: Full
 通过将本地证书替换之后，问题得到了解决。原来本地环境只是虚惊一场。
 </p>
 
-<h4 id="toc_0.2.4.3">发布调试版本</h4>
+<h3 id="toc_2.4.3">发布调试版本</h3>
 
 <p>
 本地环境问题解决之后，更加怀疑生产环境的问题来源于证书不匹配。但是经过仔细分析客户证书文件及数据库中的记录，发现并不能够支持这种想法。
@@ -565,7 +564,7 @@ Caused by: org.apache.cxf.transport.http.HTTPException: HTTP response '401: Full
 没有办法的情况下，只好在代码中（主要是ClientCertificateFromProxyFilter）添加了更多的调试信息，临时发布了调试版本。再次测试，发现在ClientCertificateFromProxyFilter中没有收到SSL_CLIENT_CERT这个变量。初步断定问题出在Nginx转发上（从Nginx到Jetty没有转发客户端证书）。
 </p>
 
-<h4 id="toc_0.2.4.4">Wireshark</h4>
+<h3 id="toc_2.4.4">Wireshark</h3>
 
 <p>
 确定问题出在Nginx层之后事情陷入了僵局，因为实在不知道为什么会产生这种情况。
@@ -575,7 +574,7 @@ Caused by: org.apache.cxf.transport.http.HTTPException: HTTP response '401: Full
 因为前一阵子研究过SSL握手的过程，当时使用过Wireshark进行过网络抓包。当事情陷入僵局的时候，想起来可以使用这种方法分析一下协议。经过抓包，比各个环境（测试环境、生产环境/浏览器及Java环境），发现了问题所在，原来在生产环境上Java根本没有发送客户端证书到Nginx上去！
 </p>
 
-<h4 id="toc_0.2.4.5">协议分析</h4>
+<h3 id="toc_2.4.5">协议分析</h3>
 
 <p>
 没有办法的情况下，只好回头又去分析SSL协议：
@@ -601,7 +600,7 @@ Caused by: org.apache.cxf.transport.http.HTTPException: HTTP response '401: Full
 但是在生产环境使用Java访问的时候，服务器没有发送该请求；但是奇怪的是当使用浏览器访问的时候，这个请求又出现了。
 </p>
 
-<h4 id="toc_0.2.4.6">SNI</h4>
+<h3 id="toc_2.4.6">SNI</h3>
 
 <p>
 再次陷入了僵局。同样的HTTPS请求为什么会导致不同的认证顺序和结果呢？经过漫长的，漫无目的的搜索后，终于找到了一点眉目。原来这是一个兼容性问题：SNI。
@@ -626,7 +625,7 @@ SNI（Server Name Indication）是为了解决一个服务器使用多个域名�
 <strong>但是当Java访问的时候，就碰到了问题：因为Java不能够自动支持SNI协议（Java8中提供了SNI的支持，但是需要手工编码），因此在上面的Spring配置中，并没有办法把域名发送给Nginx，因此Nginx不知道使用哪个配置中的证书及客户端证书CA配置信息。</strong>
 </p>
 
-<h3 id="toc_0.2.5">解决方法</h3>
+<h2 id="toc_2.5">解决方法</h2>
 
 <p>
 后来从网上找到了这样一篇文章：Using nginx and client certificate!，这才最终明白了怎么解决问题。
@@ -689,7 +688,7 @@ server {
 }
 </pre>
 
-<h3 id="toc_0.2.6">安全考虑</h3>
+<h2 id="toc_2.6">安全考虑</h2>
 
 <p>
 这里需要说明的一个问题是：因为我们服务器上有两个服务器要进行客户端证书认证，因此有两个自签名的CA存在。为了解决能够验证两个证书CA签名的证书，在/etc/nginx/keys/ca-certs.pem中需要同时包含两个CA证书。
@@ -703,7 +702,7 @@ server {
 但是因为我们目前的体系中，使用ClientCertificateFromProxyFilter对证书有效性进行了进一步的验证，所以这一问题在我们的系统中没有导致风险。如果其他系统中要用到这个功能，需要对这部分的风险性投入关注。
 </p>
 
-<h3 id="toc_0.2.7">总结</h3>
+<h2 id="toc_2.7">总结</h2>
 
 <p>
 问题终于解决了，看看时间已经是凌晨5点了。总结一下经验教训：
