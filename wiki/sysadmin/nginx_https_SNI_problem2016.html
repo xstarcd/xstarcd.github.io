@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>nginx配置https后SNI引起连接失败问题排查</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>nginx配置https后SNI引起连接失败问题排查</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">一次 TLS SNI 问题</a>
+<ul>
+<li><a href="#toc_0.1.1">失败现象</a>
+<li><a href="#toc_0.1.2">openssl模拟跟踪</a>
+<li><a href="#toc_0.1.3">证实是否不支持 SNI</a>
+<li><a href="#toc_0.1.4">JDK 对 SNI 的支持</a>
+<li><a href="#toc_0.1.5">HttpClient 对 SNI 的支持</a>
+</ul>
+<li><a href="#toc_0.2">Nginx配置引起的SSL证书认证失败</a>
+<ul>
+<li><a href="#toc_0.2.1">背景</a>
+<li><a href="#toc_0.2.2">部署架构</a>
+<li><a href="#toc_0.2.3">问题</a>
+<li><a href="#toc_0.2.4">解决过程</a>
+<ul>
+<li><a href="#toc_0.2.4.1">切换到本地测试</a>
+<li><a href="#toc_0.2.4.2">本地问题的解决</a>
+<li><a href="#toc_0.2.4.3">发布调试版本</a>
+<li><a href="#toc_0.2.4.4">Wireshark</a>
+<li><a href="#toc_0.2.4.5">协议分析</a>
+<li><a href="#toc_0.2.4.6">SNI</a>
+</ul>
+<li><a href="#toc_0.2.5">解决方法</a>
+<li><a href="#toc_0.2.6">安全考虑</a>
+<li><a href="#toc_0.2.7">总结</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">一次 TLS SNI 问题</h2>
+
+<ul>
+<li>
+Apr 14, 2017
+
+<li>
+by ylgrgyq
+
+<li>
+原文链接：<a href="https://ylgrgyq.github.io/2017/04/14/tls-sni/">https://ylgrgyq.github.io/2017/04/14/tls-sni/</a>
+
+</ul>
+
+<h3 id="toc_0.1.1">失败现象</h3>
+
+<p>
+LeanCloud 的实时通信服务能实现类似客服机器人的功能，用户能自己提供一个 Web Hook 地址，有消息发给机器人的时候实时通信服务会将消息发到这个 Web Hook 上，用户从 Web Hook 收到消息之后能对消息进行解析和处理，构造出客服机器人的回答，再通过 REST API 发还给用户。从而用户能实现客服机器人自动应答功能。
+</p>
+
+<p>
+前些天，有个用户反馈说 Web Hook 失效了，一直没有消息发过去。查看之下发现报类似这个样子的错误：
+</p>
+
+<pre>
+javax.net.ssl.SSLException: hostname in certificate didn't match: &lt;expectedhost&gt; != &lt;defaulthost&gt;
+at org.apache.http.conn.ssl.AbstractVerifier.verify(AbstractVerifier.java:220)
+</pre>
+
+<p>
+看上去就是用户的 SSL 证书限定的 Host Name 和用户填的 Web Hook 域名不符，导致 SSL 握手的时候我们这边对证书校验失败。
+</p>
+
+<h3 id="toc_0.1.2">openssl模拟跟踪</h3>
+
+<p>
+于是我去检查用户证书：
+</p>
+
+<pre>
+openssl s_client -connect target.host.name:443
+</pre>
+
+<p>
+执行下来显示:
+</p>
+<pre>
+CONNECTED(00000003)
+depth=2 C = US, O = "VeriSign, Inc.", OU = VeriSign Trust Network, OU = "(c) 2006 VeriSign, Inc. - For authorized use only", CN = VeriSign Class 3 Public Primary Certification Authority - G5
+verify return:1
+depth=1 C = US, O = Symantec Corporation, OU = Symantec Trust Network, CN = Symantec Class 3 Secure Server CA - G4
+verify return:1
+depth=0 C = CN, ST = guangdong, L = shenzhen, O = Shenzhen Tencent Computer Systems Company Limited, OU = R&amp;D, CN = *.cdn.myqcloud.com
+verify return:1
+---
+.......
+</pre>
+
+<p>
+看到这个证书是颁发给一个叫做 cdn.myqcloud.com 的，而不是用户的域名。从这个域名中能看出一个是证书属于腾讯云，另一个就是这是 CDN 的证书。说明这个用户将 CDN 托管给了腾讯云。此时开始怀疑是因为我们在发请求调用用户 Web Hook 的时候 SSL 握手没有带着 SNI。于是执行：
+</p>
+
+<pre>
+openssl s_client -connect target.host.name:443 -showcerts -servername target.host.name
+</pre>
+
+<p>
+此时看到了用户真正的证书:
+</p>
+
+<pre>
+CONNECTED(00000003)
+depth=2 O = Digital Signature Trust Co., CN = DST Root CA X3
+verify return:1
+depth=1 C = US, O = Let's Encrypt, CN = Let's Encrypt Authority X3
+verify return:1
+depth=0 CN = target.host.name
+verify return:1
+........
+</pre>
+
+<p>
+从而确认是我们在调用用户 Web Hook 时候 SSL 握手一定是没有带着 SNI 导致握手时拿到的不是用户真实的证书，拿的是用户 CDN 的证书，最终导致握手失败。
+</p>
+
+<h3 id="toc_0.1.3">证实是否不支持 SNI</h3>
+
+<p>
+首先需要说的是，<a href="http://docs.oracle.com/javase/7/docs/technotes/guides/security/enhancements-7.html">从 JDK 是从 1.7 开始才真正支持 SNI</a>，也就是说还在使用 1.6 版本 JDK 的话是无论如何都无法使用 SNI 的。
+</p>
+
+<p>
+而 <a href="https://hc.apache.org/httpcomponents-client-ga/">HttpClient</a> 是从 4.3.2 开始支持 SNI 的。即使你使用的是 JDK 1.7 或更新版本的 JDK，但还是使用 4.3.2 以前的 HttpClient 的话，也是无法使用 SNI 的。
+</p>
+
+<p>
+我们调用 Web Hook 的服务使用的是 clj-http 0.7.8，这个版本的 clj-http 刚好使用的是 4.3.1 的 HttpClient，所以才有了上面说的调用 Web Hook 进行 SSL 握手时没有带着 SNI 导致拿到错误证书。
+</p>
+
+<p>
+为了证实 clj-http 0.7.8 在请求 https 服务时，SSL 握手没有带着 SNI ，首先需要添加 JVM 参数:
+</p>
+
+<pre>
+-Djavax.net.debug=all
+</pre>
+
+<p>
+这个参数在调试 SSL 握手相关问题时非常有用，能把完整的握手过程，使用的证书等都打印出来。测试就是随意发了个 POST 请求到 <a href="https://leancloud.cn">https://leancloud.cn</a> 在打印出来的 ClientHello 阶段有如下信息：
+</p>
+
+<pre>
+*** ClientHello, TLSv1.2
+RandomCookie:  GMT: 1475193456 bytes = { 187, 13, 85, ...... }
+Session ID:  {}
+Cipher Suites: [TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, .......]
+Compression Methods:  { 0 }
+Extension elliptic_curves, curve names: {secp256r1, .......}
+Extension ec_point_formats, formats: [uncompressed]
+Extension signature_algorithms, signature_algorithms: SHA512withECDSA, ......
+</pre>
+
+<p>
+上面内容通过 tcpdump 抓包也能得到，但如果能增加 -Djavax.net.debug=all 这个配置的话还是打印出来会更方便一点。主要是看到上面 Extension 只有三行内容，少了：
+</p>
+
+<pre>
+Extension server_name, server_name: [type=host_name (0), value=leancloud.cn]
+</pre>
+
+<p>
+如果支持 SNI 的话是一定会打印上面这个 Extension 信息的。从而证实 clj-http 0.7.8 确实是不支持 SNI 的。
+</p>
+
+<p>
+那是不是将 clj-http 升级到最新版，HttpClient 也使用最新版就可以了呢？
+</p>
+
+<p>
+还不行。目前 HttpClient 对 SNI 的支持并不是向前兼容的，而是提供了一套新的 API 让用户使用。想要使用 SNI 就必须调用新的 HttpClient 的 API。clj-http 从 0.7.8 直到最新的发布版 2.3.0 都还在使用 HttpClient 老版本的 API，只有更新一些的还在开发中的 3.4.1 才真正切换到了新的 API。
+</p>
+
+<p>
+这里就有疑问了，为什么 JDK 支持了 SNI，HttpClient 还得靠增加一套 API 来支持 SNI 呢？
+</p>
+
+<h3 id="toc_0.1.4">JDK 对 SNI 的支持</h3>
+
+<p>
+为了解开疑问，先来看看 JDK 是怎么支持 SNI 的。JDK 要创建 SSL 的 Socket 需要使用 javax.net.ssl.SSLSocketFactory。SSLSocketFactory 提供了几种构造 Socket 的方式：
+</p>
+
+<pre>
+Socket createSocket()
+Socket createSocket(String host, int port)
+Socket createSocket(String host, int port, InetAddress localhost, int localPort) throws IOException, UnknownHostException;
+Socket createSocket(InetAddress address, int port)
+Socket createSocket(InetAddress address, int port, InetAddress remoteHost, int remotePort)
+Socket createSocket(Socket socket, String host, int port, boolean autoClose)
+</pre>
+
+<ul>
+<li>
+需要注意：
+
+<ul>
+<li>
+有 host 参数的都会在创建 Socket 的时候自动连接 host
+
+<li>
+只有直接以 String 传递 host 的方式才会在握手中使用 SNI，以 InetAddress 传递 host 的方式握手时都不会带着 SNI
+
+<li>
+第 6 行的 createSocket 很特殊，是传入一个 Socket (已连接或未连接)，然后建立一个新的 Socket layered over 原来的 Socket，如果原来的 Socket 没有建立连接，则在创建后会立即连接 host
+
+</ul>
+</ul>
+
+<p>
+第二条很关键，但在 JDK 文档上竟然完全没有说明。
+</p>
+
+<pre class="brush:c">
+javax.net.ssl.SSLSocketFactory socketfactory = (javax.net.ssl.SSLSocketFactory)javax.net.ssl.SSLSocketFactory.getDefault();
+SSLSocket sock;
+// 握手不会带着 SNI
+sock = (SSLSocket)socketfactory.createSocket();
+sock.connect(new InetSocketAddress("leancloud.cn", 443));
+sock.startHandshake();
+// 握手不会带着 SNI
+sock = (SSLSocket)socketfactory.createSocket(InetAddress.getByName("leancloud.cn"), 443);
+sock.startHandshake();
+// 握手会带着 SNI
+sock = (SSLSocket)socketfactory.createSocket("leancloud.cn", 443);
+sock.startHandshake();
+// 握手会带着 SNI
+Socket plainSocket = SocketFactory.getDefault().createSocket();
+// plainSocket 可以先执行 connect，并且这里可以传递 InetSocketAddress
+// 只要 Layered Socket 创建时用的传 String 的 createSocket 即可
+plainSocket.connect(new InetSocketAddress("leancloud.cn", 443), 30);
+// 因为 plainSocket 已经建立连接，所以这里传递 String 的 Host 只是为了将其填入 SNI
+sock = socketfactory.createSocket(plainSocket, "leancloud.cn", 443, true);
+sock.startHandshake();
+</pre>
+
+<p>
+从这里也能看出来是否使用 SNI 创建连接藏的很隐晦。
+</p>
+
+<p>
+据说 JDK 不允许传递 InetAddress 的 createSocket 创建出来的 SSLSocket 在 SSL 握手时自动使用 SNI，是因为 InetAddress 构造的时候支持 getByName 函数，该函数可以传个 IP 而不是 Host。这种情况下用户真传个 IP 进来再允许开启 SNI 将这个 IP 放入 SNI 中就不符合 SNI 使用条件了，因为 SNI 只能填 Host Name。不过感觉理由还是比较牵强，总之就是这个 API 设计的有些诡异，藏得有点深。
+</p>
+
+<h3 id="toc_0.1.5">HttpClient 对 SNI 的支持</h3>
+
+<p>
+为了了解缘由需要看一下这个 <a href="https://issues.apache.org/jira/browse/HTTPCLIENT-1119">JIRA 讨论</a>。
+</p>
+
+<p>
+注意：以下内容基于:
+</p>
+<pre>
+[org.apache.httpcomponents/httpcore “4.4.5”]
+[org.apache.httpcomponents/httpclient “4.5.2”]
+</pre>
+<p>
+来说。以后内部实现可能还会变化。
+</p>
+
+<p>
+在 HttpClient 的框架中，所有 Socket 都是先调用 SocketFactory (有新旧两个版本，org.apache.http.conn.scheme.SocketFactory 和 org.apache.http.conn.socket.ConnectionSocketFactory。两个版本都有 createSocket 和 connectSocket) 的 createSocket 方法先创建 Socket，之后对构造出来的 Socket 进行配置，添加比如 SO_TIMEOUT，SO_REUSEADDR，TCP_NODELAY 等，之后再调用 SocketFactory 的 connectSocket 方法去和 remote 地址建立连接。
+</p>
+
+<p>
+<strong>在老版本的 HttpClient 下，默认都是用 javax.net.ssl.SSLSocketFactory 无参的 createSocket 函数来创建 Socket 的。在完全不改动上层实现的情况下是无法支持 SNI 了，所以新建立了一套 API。</strong>
+</p>
+
+<ul>
+<li>
+clj-http 0.7.8 翻译为直接使用 HttpClient 的代码如下，这个是不支持 SNI 的：
+
+</ul>
+
+<pre class="brush:c">
+SchemeRegistry registry = new SchemeRegistry();
+registry.register(new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
+SSLSocketFactory sslFac = SSLSocketFactory.getSocketFactory();
+sslFac.setHostnameVerifier(SSLSocketFactory.STRICT_HOSTNAME_VERIFIER);
+registry.register(new Scheme("https", 443, sslFac));
+BasicClientConnectionManager manager = new BasicClientConnectionManager(registry);
+HttpPost post = new HttpPost("https://leancloud.cn");
+DefaultHttpClient httpClient = new DefaultHttpClient(manager);
+httpClient.execute(post);
+</pre>
+
+<ul>
+<li>
+clj-http 3.4.1 翻译为直接使用 HttpClient 的代码如下：
+
+</ul>
+
+<pre class="brush:bash">
+Registry&lt;ConnectionSocketFactory&gt; registry = RegistryBuilder.&lt;ConnectionSocketFactory&gt;create()
+	.register("http", PlainConnectionSocketFactory.getSocketFactory())
+	.register("https", SSLConnectionSocketFactory.getSocketFactory())
+	.build();
+BasicHttpClientConnectionManager manager = new BasicHttpClientConnectionManager(registry);
+HttpPost post = new HttpPost("https://leancloud.cn");
+HttpClient httpClient = HttpClients.custom()
+	.setConnectionManager(manager)
+	.build();
+httpClient.execute(post);
+</pre>
+
+<p>
+最关键的差别在于老的 clj-http 使用的是 SSLSocketFactory、而新的使用的是 SSLConnectionSocketFactory，再就是老版本使用的是 DefaultHttpClient，新版本使用的是 HttpClients 构造出来的 HttpClient。
+</p>
+
+<p>
+DefaultHttpClient 中，处理连接部分的是：org.apache.http.impl.conn.DefaultClientConnectionOperator
+</p>
+
+<table>
+<tr>
+<th>
+不同点
+</th>
+<th>
+新版
+</th>
+<th>
+老版
+</th>
+</tr>
+<tr>
+<td>
+创建 SSLSocket 的 Factory 不同
+</td>
+<td>
+SSLConnectionSocketFactory
+</td>
+<td>
+SSLSocketFactory
+</td>
+</tr>
+<tr>
+<td>
+使用的 HttpClient 不同
+</td>
+<td>
+HttpClients 构造出来的 HttpClient
+</td>
+<td>
+DefaultHttpClient
+</td>
+</tr>
+<tr>
+<td>
+HttpClient 构建连接的类不同
+</td>
+<td>
+DefaultHttpClientConnectionOperator
+</td>
+<td>
+DefaultClientConnectionOperator
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+DefaultClientConnectionOperator
+
+<ul>
+<li>
+使用 SSLSocketFactory 构造 SSLSocket，用的是 javax.net.ssl.SSLSocketFactory 的无参的 createSocket 构造 SSLSocket，
+
+<li>
+并且在 SSLSocketFactory 内使用创建出来的 SSLSocket 与目标 Host 建立连接时使用的 InetAddress 方式传递目标 Host Name，之后再开始握手流程，
+
+<li>
+这就无法使用 SNI 了。
+
+</ul>
+<li>
+DefaultHttpClientConnectionOperator
+
+<ul>
+<li>
+使用的 SSLConnectionSocketFactory 先构造出普通的 Socket，在 SSLConnectionSocketFactory 调用 Socket 的 connect 参数先与目标服务建立连接。
+
+<li>
+注意与 DefaultClientConnectionOperator 的不同：
+
+<ul>
+<li>
+DefaultClientConnectionOperator 在调用 SSLSocketFactory 的 connectSocket 时传入的 Socket 就是 SSLSocket，
+
+<li>
+DefaultHttpClientConnectionOperator 在调用 SSLConnectionSocketFactory 的 connectSocket 时传入的 socket 只是普通的 Socket。在这个普通的 Socket 与 remote host 建立连接之后，通过调用 SSLConnectionSocketFactory 内 createLayeredSocket 在普通 Socket 之上调用 javax.net.ssl.SSLSocketFactory 的传递 Socket 和普通 String 形式 Host Name 的 createSocket 函数构造出 SSLSocket，之后开始握手流程就能使用 SNI 了。
+
+</ul>
+</ul>
+</ul>
+
+<h2 id="toc_0.2">Nginx配置引起的SSL证书认证失败</h2>
+
+<ul>
+<li>
+版权声明：本文为CSDN博主「zhangliminqd」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+
+<li>
+原文链接：<a href="https://blog.csdn.net/zhangliminqd/article/details/51031146">https://blog.csdn.net/zhangliminqd/article/details/51031146</a>
+
+<li>
+作者：<a href="https://me.csdn.net/zhangliminqd">zhangliminqd</a>
+
+<li>
+发布于2016-03-31 23:21:59
+
+</ul>
+
+<h3 id="toc_0.2.1">背景</h3>
+
+<p>
+目前公司对外开放了一个云服务平台，提供一些功能供商户接入使用。整个项目的架构是基于Spring + MyBatis的。另外，商户端的服务接口是基于SOAP WebService的，这部分使用CXF实现。
+</p>
+
+<p>
+安全方面采用了Spring Security，可以对商户提供证书认证或密码认证。但是出于安全考虑，目前只开放了证书认证。
+</p>
+
+<p>
+为了使用证书认证商户，我们创建了一个自签名的CA，用来生成商户使用的客户端证书。在验证上，使用Nginx验证客户端证书是否是指定CA产生的。
+</p>
+
+<p>
+另外，为了防止被作废的证书（例如给商户颁发了新证书后，原证书应该作废，但是原证书也是由指定CA产生的）再次使用，在代码层面对证书进行了进一步的验证（这一点是通过Nginx将客户端证书作为Header传递到Java后台实现的，有时间以后再讲）。
+</p>
+
+<h3 id="toc_0.2.2">部署架构</h3>
+
+<p>
+云服务平台部署在aliyun上，大致上结构是这样的（只涉及到了网络访问层面的东西）：
+</p>
+
+<pre>
+商户 -https-&gt; aliyun负载均衡 -tcp转发-&gt; Nginx -http-&gt; Jetty --&gt; ClientCertificateFromProxyFilter
+</pre>
+
+<p>
+商户访问云服务的时候，需要使用我们提供的客户端证书来建立https链接。
+</p>
+
+<p>
+aliyun的LB只负责TCP转发，不对协议进行分析。因此从aliyun到Nginx之间实际的数据流是https数据流。Nginx接受到请求后，验证客户端证书是否正确，并将客户端证书设置为HTTP请求中的Header变量，然后请求后台的Jetty服务器。
+</p>
+
+<p>
+我们代码中实现了一个Filter（ClientCertificateFromProxyFilter），它的唯一作用是检查过来的HTTP请求中有没有变量SSL_CLIENT_CERT，如果有则把它转换成一个Certificate对象，添加到HTTP请求中，从而将一个HTTP请求模拟成一个HTTPS请求，这样Spring Security就能够进行证书认证了。
+</p>
+
+<h3 id="toc_0.2.3">问题</h3>
+
+<p>
+在上线之前，按照以往的经验，我们测试了通过浏览器访问受保护的资源来测试HTTPS是否工作正常。因为提前在浏览器中导入了客户端证书，因此浏览器上能够弹出对话框选择客户端证书，选择之后就能够访问指定的资源了。
+</p>
+
+<p>
+我们推荐商户使用CXF作为接入方式，一般的代码如下：
+</p>
+
+<pre class="brush:bash">
+&lt;jaxws:client id="uidService"
+    serviceClass="com.xwf.cloudauth...."
+    address="https://.../api/UidApiService"&gt;
+&lt;/jaxws:client&gt;
+&lt;http-conf:conduit name="*.http-conduit"&gt;
+    &lt;http-conf:tlsClientParameters disableCNCheck="true"&gt;
+            &lt;sec:keyManagers keyPassword="123456"&gt;
+            &lt;sec:keyStore type="PKCS12" password="123456" resource="...com.p12"/&gt;
+        &lt;/sec:keyManagers&gt;
+            &lt;sec:trustManagers&gt;
+            &lt;sec:keyStore type="JKS" password="changeit" resource="cacerts" /&gt;
+        &lt;/sec:trustManagers&gt;
+    &lt;/http-conf:tlsClientParameters&gt;
+    &lt;http-conf:client Connection="Keep-Alive"
+        MaxRetransmits="1" AllowChunking="false" /&gt;
+&lt;/http-conf:conduit&gt;
+</pre>
+
+<p>
+但是商户实际接入的时候却碰到了问题：
+</p>
+
+<pre>
+Caused by: org.apache.cxf.transport.http.HTTPException: HTTP response '401: Full authentication is required to access this resource' when communicating with https://...
+    at org.apache.cxf.transport.http.HTTPConduit$WrappedOutputStream.handleResponseInternal(HTTPConduit.java:1549)
+    at org.apache.cxf.transport.http.HTTPConduit$WrappedOutputStream.handleResponse(HTTPConduit.java:1504)
+    at org.apache.cxf.transport.http.HTTPConduit$WrappedOutputStream.close(HTTPConduit.java:1310)
+    at org.apache.cxf.transport.AbstractConduit.close(AbstractConduit.java:56)
+    at org.apache.cxf.transport.http.HTTPConduit.close(HTTPConduit.java:628)
+    at org.apache.cxf.interceptor.MessageSenderInterceptor$MessageSenderEndingInterceptor.handleMessage(MessageSenderInterceptor.java:62)
+    ... 38 more
+</pre>
+
+<h3 id="toc_0.2.4">解决过程</h3>
+
+<p>
+401错误代表未授权，所以首先怀疑是客户端证书不正确。
+</p>
+
+<h4 id="toc_0.2.4.1">切换到本地测试</h4>
+
+<p>
+收到客户反馈之后，首先想到的可能是证书发放的不正确，毕竟已经通过浏览器通过了测试。
+</p>
+
+<p>
+首先在本地测试环境进行了测试。因为之前测试坏境中配置的连接服务的代码中启用了用户名密码认证，因此首先做的是将用户名、密码认证部分屏蔽掉，然后进行测试，结果还真发现了问题。
+</p>
+
+<p>
+这下子有点着急了，担心有大的bug存在。毕竟产品已经上线，碰到这种bug可比较麻烦了。
+</p>
+
+<h4 id="toc_0.2.4.2">本地问题的解决</h4>
+
+<p>
+注：本地指请求客户端
+</p>
+
+<p>
+经过添加日志、断点在本地环境进行了调试，找到了本地报401错误的原因：本地环境中的证书是被废弃掉的了，本地环境证书重发后并没有同步到本地SVN中，因此才会出现401错误。证书通过了Nginx的验证，但是被Java层的代码拦截掉（因为客户提交过来的代码与数据库中用户相关的证书不一致）。
+</p>
+
+<p>
+通过将本地证书替换之后，问题得到了解决。原来本地环境只是虚惊一场。
+</p>
+
+<h4 id="toc_0.2.4.3">发布调试版本</h4>
+
+<p>
+本地环境问题解决之后，更加怀疑生产环境的问题来源于证书不匹配。但是经过仔细分析客户证书文件及数据库中的记录，发现并不能够支持这种想法。
+</p>
+
+<p>
+没有办法的情况下，只好在代码中（主要是ClientCertificateFromProxyFilter）添加了更多的调试信息，临时发布了调试版本。再次测试，发现在ClientCertificateFromProxyFilter中没有收到SSL_CLIENT_CERT这个变量。初步断定问题出在Nginx转发上（从Nginx到Jetty没有转发客户端证书）。
+</p>
+
+<h4 id="toc_0.2.4.4">Wireshark</h4>
+
+<p>
+确定问题出在Nginx层之后事情陷入了僵局，因为实在不知道为什么会产生这种情况。
+</p>
+
+<p>
+因为前一阵子研究过SSL握手的过程，当时使用过Wireshark进行过网络抓包。当事情陷入僵局的时候，想起来可以使用这种方法分析一下协议。经过抓包，比各个环境（测试环境、生产环境/浏览器及Java环境），发现了问题所在，原来在生产环境上Java根本没有发送客户端证书到Nginx上去！
+</p>
+
+<h4 id="toc_0.2.4.5">协议分析</h4>
+
+<p>
+没有办法的情况下，只好回头又去分析SSL协议：
+</p>
+
+<ul>
+<li>
+<a href="http://www.360doc.com/content/10/1102/10/2734308_65888370.shtml">SSL握手过程</a>
+
+<li>
+<a href="http://www.cnblogs.com/jifeng/archive/2010/11/30/1891779.html">SSL协议（HTTPS）握手、工作流程分析（双向HTTPS分析）</a>
+
+<li>
+<a href="http://blog.csdn.net/fw0124/article/details/40983787">使用Wireshark观察SSL/TLS握手过程-双向认证、单项认证</a>
+
+</ul>
+
+<p>
+发现在双向认证过程中，在server hello done结束之前，服务器应该发送certificate request 到客户端。这样客户端才能够决定发送客户端证书到服务器进行认证。
+</p>
+
+<p>
+但是在生产环境使用Java访问的时候，服务器没有发送该请求；但是奇怪的是当使用浏览器访问的时候，这个请求又出现了。
+</p>
+
+<h4 id="toc_0.2.4.6">SNI</h4>
+
+<p>
+再次陷入了僵局。同样的HTTPS请求为什么会导致不同的认证顺序和结果呢？经过漫长的，漫无目的的搜索后，终于找到了一点眉目。原来这是一个兼容性问题：SNI。
+</p>
+
+<p>
+这里先介绍一下SNI的概念：
+</p>
+<pre>
+SNI（Server Name Indication）是为了解决一个服务器使用多个域名和证书的SSL/TLS扩展。一句话简述它的工作原理就是，在连接到服务器建立SSL连接之前先发送要访问站点的域名（Hostname），这样服务器根据这个域名返回一个合适的证书。目前，大多数操作系统和浏览器都已经很好地支持SNI扩展，OpenSSL 0.9.8已经内置这一功能。
+</pre>
+
+<p>
+我们的云认证平台后台有很多台服务器，配置了多个域名，但是对外的出口是唯一的，都是使用Nginx作为代理/反向代理的。这样就用到了SNI技术，在一台机器上同时对多个域名提供服务。
+</p>
+
+<p>
+当浏览器访问的时候，因为浏览器支持SNI技术，因此会提供域名给Nginx，这样Nginx能够从配置好的多个域名配置文件中找到需要的证书及客户端证书CA配置信息进行验证。
+</p>
+
+<p>
+<strong>但是当Java访问的时候，就碰到了问题：因为Java不能够自动支持SNI协议（Java8中提供了SNI的支持，但是需要手工编码），因此在上面的Spring配置中，并没有办法把域名发送给Nginx，因此Nginx不知道使用哪个配置中的证书及客户端证书CA配置信息。</strong>
+</p>
+
+<h3 id="toc_0.2.5">解决方法</h3>
+
+<p>
+后来从网上找到了这样一篇文章：Using nginx and client certificate!，这才最终明白了怎么解决问题。
+</p>
+
+<p>
+Nginx有一个default server的概念。也就是说当出现不支持SNI协议的客户端时，将使用default server的配置进行验证。当没有配置default server的时候，Nginx将使用找到的第一个配置文件中的配置（经过测试，应该是按照字母顺序排序的）。
+</p>
+
+<p>
+而在我们生产环境的配置中，第一个找到的配置文件中没有指定客户端证书CA！！
+</p>
+
+<pre class="brush:bash">
+server {
+        listen 443;
+        server_name ...xwf-id.com;
+        ssl                  on;
+        ssl_certificate      /etc/nginx/keys/xwfserver.pem;
+        ssl_certificate_key  /etc/nginx/keys/xwfserver.key;
+        ssl_session_timeout  5m;
+        ssl_verify_client off;
+
+        location / {
+                proxy_buffer_size 8k;
+                proxy_buffers 8 64k;
+                proxy_buffering on;
+                proxy_pass http://prm_admin;
+                proxy_set_header Host            $host;
+                proxy_set_header   X-Real-IP        $remote_addr;
+                proxy_set_header X-Forwarded-Host $host;
+                proxy_set_header X-Forwarded-Server $host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+}
+</pre>
+
+<p>
+所以当Java访问的时候，服务器端告诉客户端，不需要提供客户端证书。。。
+</p>
+
+<p>
+最后，我们添加了一个default server来解决这个问题：
+</p>
+
+<pre class="brush:bash">
+server {
+        listen 443 default_server;
+        server_name a;
+        ssl                  on;
+        ssl_certificate      /etc/nginx/keys/xwfserver.pem;
+        ssl_certificate_key  /etc/nginx/keys/xwfserver.key;
+        ssl_session_timeout  5m;
+        ssl_client_certificate /etc/nginx/keys/ca-certs.pem;
+        ssl_verify_client optional_no_ca;
+
+        location / {
+                return 200;
+        }
+}
+</pre>
+
+<h3 id="toc_0.2.6">安全考虑</h3>
+
+<p>
+这里需要说明的一个问题是：因为我们服务器上有两个服务器要进行客户端证书认证，因此有两个自签名的CA存在。为了解决能够验证两个证书CA签名的证书，在/etc/nginx/keys/ca-certs.pem中需要同时包含两个CA证书。
+</p>
+
+<p>
+但是这也带来了一定的风险：使用网站A证书认证的用户有可能访问到网站B的内容！
+</p>
+
+<p>
+但是因为我们目前的体系中，使用ClientCertificateFromProxyFilter对证书有效性进行了进一步的验证，所以这一问题在我们的系统中没有导致风险。如果其他系统中要用到这个功能，需要对这部分的风险性投入关注。
+</p>
+
+<h3 id="toc_0.2.7">总结</h3>
+
+<p>
+问题终于解决了，看看时间已经是凌晨5点了。总结一下经验教训：
+</p>
+
+<pre>
+通过这次事故，对SSL通讯的握手过程有了进一步的了解。
+对Wireshark也有了更进一步的了解。
+以后产品上线的时候，还是要使用真正的代码进行以下测试，这样就能够今早发现这个Java的SNI兼容性问题了。
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
