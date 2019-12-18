@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>https的SNI部署方式支持哪些浏览器？</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>https的SNI部署方式支持哪些浏览器？</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">客户端不支持SNI如何解决</a>
+<li><a href="#toc_0.2">常见的SNI支持情况</a>
+<ul>
+<li><a href="#toc_0.2.1">桌面版浏览器支持</a>
+<li><a href="#toc_0.2.2">手机端浏览器支持</a>
+<li><a href="#toc_0.2.3">服务器支持</a>
+<li><a href="#toc_0.2.4">命令行支持</a>
+<li><a href="#toc_0.2.5">库支持</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<p>
+在搭建支持HTTPS的前端代理服务器时候，通常会遇到让人头痛的证书问题。根据HTTPS的工作原理，浏览器在访问一个HTTPS站点时，先与服务器建立SSL连接，建立连接的第一步就是请求服务器的证书。而服务器在发送证书的时候，是不知道浏览器访问的是哪个域名的，所以不能根据不同域名发送不同的证书。用过GoAgent的人都知道需要给浏览器导入证书才能使用HTTPS正常登录Twitter等网站
+</p>
+
+<p>
+SNI（Server Name Indication）是为了解决一个服务器使用多个域名和证书的SSL/TLS扩展。一句话简述它的工作原理就是，在连接到服务器建立SSL链接之前先发送要访问站点的域名（Hostname），这样服务器根据这个域名返回一个合适的证书。目前，大多数操作系统和浏览器都已经很好地支持SNI扩展，OpenSSL 0.9.8已经内置这一功能，新版的nginx也支持SNI。
+</p>
+
+<h2 id="toc_0.1">客户端不支持SNI如何解决</h2>
+
+<p>
+SNI是一个很便利的扩展，随着IPv4地址的耗尽，全面支持SNI是趋势。对于不支持SNI的客户端，我们有两个解决方案：
+</p>
+
+<pre>
+建议用户升级或使用新版本的浏览器，如Chrome、Firefox等（强烈推荐），或使用非Windows 7及更高版本Win操作系统。
+联系商务人员购买独享SSL服务。
+</pre>
+
+<h2 id="toc_0.2">常见的SNI支持情况</h2>
+
+<p>
+注意： SNI兼容TLS1.0及以上的协议，但不被SSL支持。
+</p>
+
+<h3 id="toc_0.2.1">桌面版浏览器支持</h3>
+
+<pre>
+Chrome 5及以上版本
+Chrome 6及以上版本（Windows XP）
+Firefox 2及以上版本
+IE 7及以上版本（运行在Windows Vista/Server 2008及以上版本版本系统中，在XP系统中任何版本的IE浏览器都不支持SNI）
+Konqueror 4.7 及以上版本
+Opera 8 及以上版本
+Safari 3.0 on Windows Vista/Server 2008 及以上版本, or Mac OS X 10.5.6 及以上版本
+</pre>
+
+<h3 id="toc_0.2.2">手机端浏览器支持</h3>
+
+<pre>
+Android Browser on 3.0 Honeycomb 及以上版本
+iOS Safari on iOS 4 及以上版本
+Windows Phone 7 及以上版本
+</pre>
+
+<h3 id="toc_0.2.3">服务器支持</h3>
+
+<pre>
+Apache 2.2.12 及以上版本
+Apache Traffic Server 3.2.0 及以上版本
+Cherokee
+HAProxy 1.5 及以上版本
+IIS 8.0 及以上版本
+lighttpd 1.4.24 及以上版本
+LiteSpeed 4.1 及以上版本
+nginx 0.5.32 及以上版本
+</pre>
+
+<h3 id="toc_0.2.4">命令行支持</h3>
+
+<pre>
+cURL 7.18.1 及以上版本
+wget 1.14 及以上版本
+</pre>
+
+<h3 id="toc_0.2.5">库支持</h3>
+
+<pre>
+GNU TLS
+JSSE (Oracle Java) 7 及以上版本, 仅作为客户端
+libcurl 7.18.1 及以上版本
+NSS 3.1.1 及以上版本
+OpenSSL 0.9.8j 及以上版本
+OpenSSL 0.9.8f 及以上版本，需配置flag
+Qt 4.8 及以上版本
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
