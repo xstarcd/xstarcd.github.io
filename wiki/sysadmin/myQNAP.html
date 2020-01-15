@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>myQNAP</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>myQNAP</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">QNAP威联通磁盘分区探索与数据导出</a>
+<ul>
+<li><a href="#toc_0.1.1">磁盘分区信息</a>
+<li><a href="#toc_0.1.2">mount信息和RAID信息</a>
+<li><a href="#toc_0.1.3">LVM2中的物理卷</a>
+<li><a href="#toc_0.1.4">LVM2卷组</a>
+<li><a href="#toc_0.1.5">LVM2逻辑卷</a>
+<li><a href="#toc_0.1.6">flashcache</a>
+<li><a href="#toc_0.1.7">在Linux环境下挂载数据分区</a>
+<li><a href="#toc_0.1.8">在Windows环境下挂载数据分区</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">QNAP威联通磁盘分区探索与数据导出</h2>
+
+<p>
+原文:<a href="http://www.7po.com/thread-563132-1-1.html">http://www.7po.com/thread-563132-1-1.html</a>
+</p>
+
+<p>
+Qnap的磁盘分区采用的是md RAID+LVM2的两层组织结构，即使我使用的是Single模式分区也是一样的结构。我觉得这样是因为比较容易统一管理。
+</p>
+
+<h3 id="toc_0.1.1">磁盘分区信息</h3>
+
+<p>
+两块盘分别被识别为/dev/sda和/dev/sdb，两块盘的分区完全相同。
+</p>
+
+<p>
+可以看到磁盘被分成了五个区，分别对应/dev/sda1、/dev/sda2、/dev/sda3、/dev/sda4、/dev/sda5。
+</p>
+
+<pre>
+parted /dev/sda print
+Model: WDC WD40EFRX-68N32N0 (scsi)
+Disk /dev/sda: 4001GB
+Sector size (logical/physical): 512B/512B
+Partition Table: gpt
+Disk Flags: 
+
+Number  Start   End     Size    File system     Name     Flags
+ 1      20.5kB  543MB   543MB   ext3            primary
+ 2      543MB   1086MB  543MB   linux-swap(v1)  primary
+ 3      1086MB  3992GB  3991GB                  primary
+ 4      3992GB  3992GB  543MB   ext3            primary
+ 5      3992GB  4001GB  8554MB  linux-swap(v1)  primary
+
+parted /dev/sdb print
+Model: WDC WD40EFRX-68N32N0 (scsi)
+Disk /dev/sdb: 4001GB
+Sector size (logical/physical): 512B/512B
+Partition Table: gpt
+Disk Flags:
+
+Number  Start   End     Size    File system     Name     Flags
+ 1      20.5kB  543MB   543MB   ext3            primary
+ 2      543MB   1086MB  543MB   linux-swap(v1)  primary
+ 3      1086MB  3992GB  3991GB                  primary
+ 4      3992GB  3992GB  543MB   ext3            primary
+ 5      3992GB  4001GB  8554MB  linux-swap(v1)  primary
+</pre>
+
+<ul>
+<li>
+fdisk -l
+<pre>
+[admin@NAS... etc]# fdisk -l
+
+Disk /dev/sda: 4000.7 GB, 4000787030016 bytes
+255 heads, 63 sectors/track, 486401 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1               1      267350  2147483647+  ee  EFI GPT
+
+Disk /dev/sdb: 4000.7 GB, 4000787030016 bytes
+255 heads, 63 sectors/track, 486401 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sdb1               1      267350  2147483647+  ee  EFI GPT
+
+Disk /dev/sdc: 515 MB, 515899392 bytes
+8 heads, 32 sectors/track, 3936 cylinders
+Units = cylinders of 256 * 512 = 131072 bytes
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sdc1               1          17        2160   83  Linux
+/dev/sdc2   *          18        1910      242304   83  Linux
+/dev/sdc3            1911        3803      242304   83  Linux
+/dev/sdc4            3804        3936       17024    5  Extended
+/dev/sdc5            3804        3868        8304   83  Linux
+/dev/sdc6            3869        3936        8688   83  Linux
+
+Disk /dev/md9: 542 MB, 542769152 bytes
+2 heads, 4 sectors/track, 132512 cylinders
+Units = cylinders of 8 * 512 = 4096 bytes
+
+Disk /dev/md9 doesn't contain a valid partition table
+
+Disk /dev/md13: 469 MB, 469893120 bytes
+2 heads, 4 sectors/track, 114720 cylinders
+Units = cylinders of 8 * 512 = 4096 bytes
+
+Disk /dev/md13 doesn't contain a valid partition table
+
+Disk /dev/md256: 542 MB, 542834688 bytes
+2 heads, 4 sectors/track, 132528 cylinders
+Units = cylinders of 8 * 512 = 4096 bytes
+
+Disk /dev/md256 doesn't contain a valid partition table
+
+Disk /dev/md322: 7516 MB, 7516192768 bytes
+2 heads, 4 sectors/track, 1835008 cylinders
+Units = cylinders of 8 * 512 = 4096 bytes
+
+Disk /dev/md322 doesn't contain a valid partition table
+
+Disk /dev/md1: 3990.5 GB, 3990593142784 bytes
+2 heads, 4 sectors/track, 974265904 cylinders
+Units = cylinders of 8 * 512 = 4096 bytes
+
+Disk /dev/md1 doesn't contain a valid partition table
+
+Disk /dev/md2: 3990.5 GB, 3990593142784 bytes
+2 heads, 4 sectors/track, 974265904 cylinders
+Units = cylinders of 8 * 512 = 4096 bytes
+
+Disk /dev/md2 doesn't contain a valid partition table
+
+Disk /dev/dm-1: 3950.6 GB, 3950686240768 bytes
+255 heads, 63 sectors/track, 480310 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+Disk /dev/dm-1 doesn't contain a valid partition table
+
+Disk /dev/dm-3: 3950.6 GB, 3950686240768 bytes
+255 heads, 63 sectors/track, 480310 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+Disk /dev/dm-3 doesn't contain a valid partition table
+
+Disk /dev/dm-0: 3950.6 GB, 3950686240768 bytes
+255 heads, 63 sectors/track, 480310 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+Disk /dev/dm-0 doesn't contain a valid partition table
+
+Disk /dev/dm-2: 3950.6 GB, 3950686240768 bytes
+255 heads, 63 sectors/track, 480310 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+Disk /dev/dm-2 doesn't contain a valid partition table
+</pre>
+
+</ul>
+
+
+
+<h3 id="toc_0.1.2">mount信息和RAID信息</h3>
+
+<ul>
+<li>
+sda1和sdb1被做成了RAID1，挂载在/mnt/HDA_ROOT上；
+
+<li>
+sda4和sdb4被做成了RAID1，被挂载到了/mnt/ext上。
+
+</ul>
+ 
+<p>
+这两个QTS系统运行时所有必备应用所在位置。
+</p>
+
+<p>
+通过上面的parted命令还可以看到这两个分区在RAID之上也是直接格式化成了ext3格式，如果搞坏了系统文件可以直接在RAID上挂载sda1和sda4就行了。
+</p>
+
+<p>
+但是我们发现最关键的分区/dev/sda3，并不是这么简单组织的，而这个分区中才真正存储的NAS中的数据，我们希望恢复的也是这个分区。通过mdstat可以看到，sda3被做成了单盘的RAID1（其实就是没有做RAID），设备文件是md1。
+</p>
+
+<pre>
+df -h
+Filesystem                Size      Used Available Use% Mounted on
+none                    290.0M    255.1M     34.9M  88% /
+devtmpfs                  1.8G      8.0K      1.8G   0% /dev
+tmpfs                    64.0M    472.0K     63.5M   1% /tmp
+tmpfs                     1.9G     24.0K      1.9G   0% /dev/shm
+tmpfs                    16.0M         0     16.0M   0% /share
+tmpfs                    16.0M         0     16.0M   0% /mnt/snapshot/export
+/dev/md9                499.5M    121.3M    378.3M  24% /mnt/HDA_ROOT
+cgroup_root               1.9G         0      1.9G   0% /sys/fs/cgroup
+/dev/mapper/cachedev1
+                          3.5T      1.5T      2.0T  42% /share/CACHEDEV1_DATA
+/dev/mapper/cachedev2
+                          3.5T    216.8G      3.3T   6% /share/CACHEDEV2_DATA
+/dev/md13               355.0M    337.1M     17.9M  95% /mnt/ext
+tmpfs                    16.0M     96.0K     15.9M   1% /share/CACHEDEV1_DATA/.samba/lock/msg.lock
+tmpfs                    16.0M         0     16.0M   0% /mnt/ext/opt/samba/private/msg.sock
+tmpfs                     1.0M         0      1.0M   0% /mnt/rf/nd
+tmpfs                    16.0M         0     16.0M   0% /share/NFSv=4
+/dev/mapper/cachedev1
+                          3.5T      1.5T      2.0T  42% /share/NFSv=4/Public
+
+mount
+none on /new_root type tmpfs (rw,mode=0755,size=296960k)
+/proc on /proc type proc (rw)
+devpts on /dev/pts type devpts (rw)
+sysfs on /sys type sysfs (rw)
+tmpfs on /tmp type tmpfs (rw,size=64M)
+tmpfs on /dev/shm type tmpfs (rw)
+tmpfs on /share type tmpfs (rw,size=16M)
+tmpfs on /mnt/snapshot/export type tmpfs (rw,size=16M)
+/dev/md9 on /mnt/HDA_ROOT type ext4 (rw,data=ordered,barrier=1,nodelalloc)
+cgroup_root on /sys/fs/cgroup type tmpfs (rw)
+none on /sys/fs/cgroup/memory type cgroup (rw,memory)
+/dev/mapper/cachedev1 on /share/CACHEDEV1_DATA type ext4 (rw,usrjquota=aquota.user,jqfmt=vfsv0,user_xattr,data=ordered,data_err=abort,delalloc,nopriv,nodiscard,noacl)
+/dev/mapper/cachedev2 on /share/CACHEDEV2_DATA type ext4 (rw,usrjquota=aquota.user,jqfmt=vfsv0,user_xattr,data=ordered,data_err=abort,delalloc,nopriv,nodiscard,noacl)
+/dev/md13 on /mnt/ext type ext4 (rw,data=ordered,barrier=1,nodelalloc)
+nfsd on /proc/fs/nfsd type nfsd (rw)
+rpc_pipefs on /var/lib/nfs/rpc_pipefs type rpc_pipefs (rw)
+tmpfs on /share/CACHEDEV1_DATA/.samba/lock/msg.lock type tmpfs (rw,size=16M)
+tmpfs on /mnt/ext/opt/samba/private/msg.sock type tmpfs (rw,size=16M)
+tmpfs on /mnt/rf/nd type tmpfs (rw,size=1m)
+tmpfs on /share/NFSv=4 type tmpfs (rw,size=16M)
+/share/CACHEDEV1_DATA/Public on /share/NFSv=4/Public type none (rw,bind)
+</pre>
+
+<pre>
+cat /proc/mdstat
+Personalities : [linear] [raid0] [raid1] [raid10] [raid6] [raid5] [raid4] [multipath]
+md2 : active raid1 sdb3[0]
+      3897063616 blocks super 1.0 [1/1] [U]
+
+md1 : active raid1 sda3[0]
+      3897063616 blocks super 1.0 [1/1] [U]
+
+md322 : active raid1 sdb5[1] sda5[0]
+      7340032 blocks super 1.0 [2/2] [UU]
+      bitmap: 0/1 pages [0KB], 65536KB chunk
+
+md256 : active raid1 sdb2[1] sda2[0]
+      530112 blocks super 1.0 [2/2] [UU]
+      bitmap: 0/1 pages [0KB], 65536KB chunk
+
+md13 : active raid1 sda4[0] sdb4[32]
+      458880 blocks super 1.0 [32/2] [UU______________________________]
+      bitmap: 1/1 pages [4KB], 65536KB chunk
+
+md9 : active raid1 sda1[0] sdb1[32]
+      530048 blocks super 1.0 [32/2] [UU______________________________]
+      bitmap: 1/1 pages [4KB], 65536KB chunk
+
+unused devices: &lt;none&gt;
+</pre>
+
+<h3 id="toc_0.1.3">LVM2中的物理卷</h3>
+
+<p>
+可以看到/dev/md1(/dev/brbd1)被做成了物理卷vg288，对应sdb3的md2(dev/drbd2)被做成了物理卷vg289。
+</p>
+
+<ul>
+<li>
+pvscan
+<pre>
+pvscan
+  Found duplicate PV ZCUbm5sto1yxUiJI3MfpQckp7FR7tmCZ: using /dev/drbd2 not /dev/md2
+  Using duplicate PV /dev/drbd2 from subsystem DRBD, ignoring /dev/md2
+  
+  Found duplicate PV H8JCivSoGBiaCueJpiYHEQwW8zi1Qcq3: using /dev/drbd1 not /dev/md1
+  Using duplicate PV /dev/drbd1 from subsystem DRBD, ignoring /dev/md1
+  
+  Found duplicate PV H8JCivSoGBiaCueJpiYHEQwW8zi1Qcq3: using /dev/drbd1 not /dev/md1
+  Using duplicate PV /dev/drbd1 from subsystem DRBD, ignoring /dev/md1
+  PV /dev/drbd1   VG vg288           lvm2 [3.63 TiB / 0    free]
+  
+  Found duplicate PV ZCUbm5sto1yxUiJI3MfpQckp7FR7tmCZ: using existing dev /dev/drbd2
+  
+  PV /dev/drbd2   VG vg289           lvm2 [3.63 TiB / 0    free]
+  Total: 2 [7.26 TiB] / in use: 2 [7.26 TiB] / in no VG: 0 [0   ]
+
+lvm pvdisplay
+  Found duplicate PV ZCUbm5sto1yxUiJI3MfpQckp7FR7tmCZ: using /dev/drbd2 not /dev/md2
+  Using duplicate PV /dev/drbd2 from subsystem DRBD, ignoring /dev/md2
+  Found duplicate PV H8JCivSoGBiaCueJpiYHEQwW8zi1Qcq3: using /dev/drbd1 not /dev/md1
+  Using duplicate PV /dev/drbd1 from subsystem DRBD, ignoring /dev/md1
+  Found duplicate PV H8JCivSoGBiaCueJpiYHEQwW8zi1Qcq3: using /dev/drbd1 not /dev/md1
+  Using duplicate PV /dev/drbd1 from subsystem DRBD, ignoring /dev/md1
+  --- Physical volume ---
+  PV Name               /dev/drbd1
+  VG Name               vg288
+  PV Size               3.63 TiB / not usable 1.15 MiB
+  Allocatable           yes (but full)
+  PE Size               4.00 MiB
+  Total PE              951431
+  Free PE               0
+  Allocated PE          951431
+  PV UUID               H8JCiv-SoGB-iaCu-eJpi-YHEQ-wW8z-i1Qcq3
+
+  Found duplicate PV ZCUbm5sto1yxUiJI3MfpQckp7FR7tmCZ: using existing dev /dev/drbd2
+  --- Physical volume ---
+  PV Name               /dev/drbd2
+  VG Name               vg289
+  PV Size               3.63 TiB / not usable 1.15 MiB
+  Allocatable           yes (but full)
+  PE Size               4.00 MiB
+  Total PE              951431
+  Free PE               0
+  Allocated PE          951431
+  PV UUID               ZCUbm5-sto1-yxUi-JI3M-fpQc-kp7F-R7tmCZ
+</pre>
+
+</ul>
+
+<h3 id="toc_0.1.4">LVM2卷组</h3>
+
+<ul>
+<li>
+lvm vgs
+<pre>
+  Found duplicate PV H8JCivSoGBiaCueJpiYHEQwW8zi1Qcq3: using /dev/drbd1 not /dev/md1
+  Using duplicate PV /dev/drbd1 from subsystem DRBD, ignoring /dev/md1
+  Found duplicate PV ZCUbm5sto1yxUiJI3MfpQckp7FR7tmCZ: using existing dev /dev/drbd2
+  VG    #PV #LV #SN Attr   VSize VFree
+  vg288   1   2   0 wz--n- 3.63t    0 
+  vg289   1   2   0 wz--n- 3.63t    0 
+</pre>
+
+</ul>
+
+<h3 id="toc_0.1.5">LVM2逻辑卷</h3>
+
+<p>
+这里每个物理卷分别对应了两个逻辑卷，其中：
+</p>
+<ul>
+<li>
+37.16G的那个逻辑卷是预留出来的，没有用。
+
+<li>
+3.59TB的那个才是我们真正需要的，也就是ACTIVE的两个vg288/lv1和vg289/lv2。这两个逻辑卷就是被格式化成ext4格式，可以直接挂载到某个文件夹上。
+
+</ul>
+
+<ul>
+<li>
+lvscan
+<pre>
+lvscan
+  Found duplicate PV H8JCivSoGBiaCueJpiYHEQwW8zi1Qcq3: using /dev/drbd1 not /dev/md1
+  Using duplicate PV /dev/drbd1 from subsystem DRBD, ignoring /dev/md1
+  inactive          '/dev/vg288/lv544' [37.16 GiB] inherit
+  ACTIVE            '/dev/vg288/lv1' [3.59 TiB] inherit
+  Found duplicate PV ZCUbm5sto1yxUiJI3MfpQckp7FR7tmCZ: using existing dev /dev/drbd2
+  inactive          '/dev/vg289/lv545' [37.16 GiB] inherit
+  ACTIVE            '/dev/vg289/lv2' [3.59 TiB] inherit
+
+lvs
+  Found duplicate PV H8JCivSoGBiaCueJpiYHEQwW8zi1Qcq3: using /dev/drbd1 not /dev/md1
+  Using duplicate PV /dev/drbd1 from subsystem DRBD, ignoring /dev/md1
+  Found duplicate PV ZCUbm5sto1yxUiJI3MfpQckp7FR7tmCZ: using existing dev /dev/drbd2
+  LV    VG    Attr       LSize  Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  lv1   vg288 -wi-ao----  3.59t                                                    
+  lv544 vg288 -wi------- 37.16g                                                    
+  lv2   vg289 -wi-ao----  3.59t                                                    
+  lv545 vg289 -wi------- 37.16g                                                    
+</pre>
+
+</ul>
+
+<h3 id="toc_0.1.6">flashcache</h3>
+
+<p>
+上面mount信息中mount到/share/CACHEDEV1_DATA上的并不是/dev/vg288/lv1，而是/dev/mapper/cachedev1。这是因为在逻辑卷之上Qnap为了提高性能又加了一层flashcache，可以通过dmsetup命令看到flashcache的状况。
+</p>
+
+<p>
+可以看到cachedev1就是/dev/mapper/vg288-lv1的flashcache，而/dev/vg288/lv1是/dev/mapper/vg288-lv1的符号链接。
+</p>
+
+<p>
+所以总结来说，我们如果通过Linux自己挂载磁盘分区的化，需要先挂载好RAID，然后再挂载LVM逻辑卷。
+</p>
+
+<p>
+不过幸好目前很多Linux的发行版（比如我用的是Ubuntu 14.04）可以支持自动挂载，大家只要准备好环境即可。
+</p>
+
+<ul>
+<li>
+dmsetup ls --tree
+<pre>
+dmsetup ls --tree
+cachedev2 (252:2)
+ └─vg289-lv2 (252:3)
+    └─ (147:2)
+cachedev1 (252:0)
+ └─vg288-lv1 (252:1)
+    └─ (147:1)
+</pre>
+
+</ul>
+
+<ul>
+<li>
+dmsetup status
+<pre>
+dmsetup status
+vg288-lv1: 0 7716184064 linear
+vg289-lv2: 0 7716184064 linear
+
+cachedev2: 0 7716184064 flashcache
+conf:
+	flashcache_disk2vdev /dev/mapper/vg289-lv2 cachedev2
+	flashcache_vdev2disk cachedev2 /dev/mapper/vg289-lv2
+	flashcache_plugin CG0 NO
+	flashcache_enabled /dev/mapper/vg289-lv2 DISABLED
+	total blocks(0), cached blocks(0), cache percent(0)
+stats:
+	reads(0), writes(0)
+	read hits(0), read hit percent(0)
+	replacement(0), write replacement(0)
+	invalidates(0)
+	pending enqueues(0), pending inval(0)
+	no room(0)
+	disk reads(0), disk writes(0) ssd reads(0) ssd writes(0)
+	uncached reads(0), uncached writes(0), uncached IO requeue(0)
+	disk read errors(0), disk write errors(0) ssd read errors(0) ssd write errors(0)
+	uncached sequential reads(0), uncached sequential writes(0)
+	lru hot blocks(0), lru warm blocks(0)
+	lru promotions(0), lru demotions(0)
+
+cachedev1: 0 7716184064 flashcache
+conf:
+	flashcache_disk2vdev /dev/mapper/vg288-lv1 cachedev1
+	flashcache_vdev2disk cachedev1 /dev/mapper/vg288-lv1
+	flashcache_plugin CG0 NO
+	flashcache_enabled /dev/mapper/vg288-lv1 DISABLED
+	total blocks(0), cached blocks(0), cache percent(0)
+stats:
+	reads(0), writes(0)
+	read hits(0), read hit percent(0)
+	replacement(0), write replacement(0)
+	invalidates(0)
+	pending enqueues(0), pending inval(0)
+	no room(0)
+	disk reads(0), disk writes(0) ssd reads(0) ssd writes(0)
+	uncached reads(0), uncached writes(0), uncached IO requeue(0)
+	disk read errors(0), disk write errors(0) ssd read errors(0) ssd write errors(0)
+	uncached sequential reads(0), uncached sequential writes(0)
+	lru hot blocks(0), lru warm blocks(0)
+	lru promotions(0), lru demotions(0)
+</pre>
+
+</ul>
+
+<h3 id="toc_0.1.7">在Linux环境下挂载数据分区</h3>
+
+<ul>
+<li>
+把硬盘装进硬盘盒
+
+<ul>
+<li>
+首先得有一个能够把硬盘连到USB的设备。
+
+</ul>
+</ul>
+
+<p>
+上文提到Ubuntu可以支持自动挂载分区，唯一需要做的是准备好RAID和LVM2相关的软件包。打开Terminal执行以下命令：
+</p>
+<pre>
+sudo apt-get install lvm2 mdadm
+</pre>
+
+<p>
+在Ubuntu下如果想自动挂载分区需要执行玩上述命令安装好RAID和LVM2支持之后再插上USB。一般情况下系统可以自动识别该硬盘的情况并将数据分区自动挂载好。
+</p>
+
+<p>
+挂载好之后会在桌面上有一个DataVol2，里面就是我们需要的数据了。
+</p>
+
+<p>
+如果在一个没有自动挂载的Linux下，或者是自动挂载出了一些问题，那么还可以使用手动挂载的方式。
+</p>
+
+<p>
+采用手动挂载的方式之前，首先要能够获得root权限。
+</p>
+  
+<p>
+首先看一下设备情况，执行指令：
+</p>
+<pre>
+mdadm --examine --scan /dev/sdc3
+</pre>
+
+<p>
+的电脑识别的是/dev/sdc，大家需要确定到底是sda3、sdb3还是sdc3，也有可能是sdd3，总之就是都试一下，直到某个盘能够识别出RAID来打印出上述信息为止，那块盘就是我们需要的数据盘。
+</p>
+
+
+<p>
+之后执行指令：
+</p>
+<pre>
+mdadm -A --verbose --run /dev/md100 /dev/sdc3
+</pre>
+
+<p>
+执行之后，就可以执行 cat /proc/mdstat看到我们准备好的RAID了。
+</p>
+
+<p>
+执行：lvdisplay 命令，可以看到目前已经准备好的逻辑卷。由于我拆下来的是第二块盘，所以识别的物理卷是vg2，逻辑卷是lv2。
+</p>
+
+<p>
+然后执行指令：
+</p>
+<pre>
+mkdir /mnt/nas_tmp
+mount /dev/vg2/lv2 /mnt/nas_tmp
+</pre>
+
+<p>
+之后，就可以在/mnt/nas_tmp文件夹中看到所有的数据了。我使用rsync拷贝了下数据，在我破电脑USB 2.0接口上最快只有30MB/s的速度，使用USB 3.0的化会更快一些。
+</p>
+
+<p>
+上面就是用Linux挂载Qnap NAS磁盘的全过程。此外需要注意上述过程只适用于Single或者RAID1的方式，不适合其它RAID。
+</p>
+
+<h3 id="toc_0.1.8">在Windows环境下挂载数据分区</h3>
+  
+<p>
+在Windows下也可以挂载数据分区并且读出文件，唯一的差别是在Windows下并不方便向磁盘写文件，并且需要第三方的软件支持。
+</p>
+
+<p>
+首先，需要下载DiskInternals Linux Reader，官方下载页面：<a href="http://www.diskinternals.com/linux-reader/">http://www.diskinternals.com/linux-reader/</a>
+</p>
+
+<p>
+其次，需要将硬盘盒的USB接口插到Windows电脑上。这是Windows会识别出五块硬盘，但是分区格式都不能识别出来，所以会出现格式化的提示，此时一定要点取消！！！
+</p>
+
+<p>
+之后打开Linux Reader软件，该软件会识别出各种格式的分区。
+</p>
+
+<p>
+可以看到第一排第二个大小为3696GB，名为DataVol2的就是我们需要的数据分区。点击左边栏第二个DataVol2，即可进入到其中。
+</p>
+
+<p>
+之后选择你需要读出来的数据，先点击左键选择，再点击右键选择保存即可。
+</p>
+
+<p>
+然后遵循引导的流程将数据保存在本机的位置就可以了。
+</p>
+
+<p>
+以上介绍了如何用硬盘盒在Linux和Windows上导出Qnap NAS磁盘中的数据。目前我还没有找到在Mac上导出磁盘数据的方式，所以Mac用户可以运行一个虚拟机虚拟Linux或者Windows环境来做这件事情。上述Windows环境下的测试就是在Mac上PD10虚拟出来的Win 7下面进行测试的。
+</p>
+
+<p>
+最后还是希望大家永远都不需要我上面介绍的这些恢复手段。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
