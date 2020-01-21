@@ -366,6 +366,7 @@ http://xstarcd.github.io/wiki/sysadmin/mongodb.html
 http://xstarcd.github.io/wiki/sysadmin/mongodb_migration.html
 http://xstarcd.github.io/wiki/sysadmin/mongodb_slowlog.html
 http://xstarcd.github.io/wiki/sysadmin/mongos_cluster.html
+http://xstarcd.github.io/wiki/sysadmin/myQNAP.html
 http://xstarcd.github.io/wiki/sysadmin/named.html
 http://xstarcd.github.io/wiki/sysadmin/nginx.html
 http://xstarcd.github.io/wiki/sysadmin/nginx_IfIsEvil.html

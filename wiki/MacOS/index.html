@@ -19,6 +19,7 @@
 <div class="toc">
 <ul>
 <li><a href="#toc_0.1">软件包管理工具</a>
+<li><a href="#toc_0.2">macOS挂载NTFS只读问题解决</a>
 </ul>
 </ul>
 </div>
@@ -134,6 +135,52 @@ rsync编译安装:<a href="http://blog.csdn.net/cneducation/article/details/4353
 gcc安装:安装Xcode后，Xcode –&gt; Preferences –&gt; Downloads 的Components下，选择安装Command Line Tools 即可。
 
 </ul>
+
+<h2 id="toc_0.2">macOS挂载NTFS只读问题解决</h2>
+
+<p>
+由于移动硬盘默认是NTFS类型，导致连接到MAC后为只读状态，无法进行写入操作。
+</p>
+
+<p>
+使用命令将移动硬盘的目录重新挂载即可。
+</p>
+
+<pre class="brush:bash">
+# 查看mount信息
+mount
+...
+/dev/disk2s2 on /Volumes/D2 (ntfs, local, nodev, nosuid, read-only, noowners)
+/dev/disk2s1 on /Volumes/D1 (ntfs, local, nodev, nosuid, read-only, noowners)
+
+df -h
+/dev/disk2s2   496Gi  194Gi  302Gi    40%     214           317135634    0%   /Volumes/D2
+/dev/disk2s1   100Gi  107Mi  100Gi     1%      43           104748329    0%   /Volumes/D1
+
+diskutil info /Volumes/D1
+   Device Identifier:        disk2s1
+   Device Node:              /dev/disk2s1
+   Whole:                    No
+   Part of Whole:            disk2
+   ...
+
+# 移出移动硬盘挂载
+sudo umount /Volumes/D1
+# 或
+sudo hdiutil eject /Volumes/D1
+
+# 将移动硬盘挂载到指定目录
+sudo mkdir /Volumes/myd1
+
+sudo mount -t ntfs -o rw,auto,nobrowse /dev/disk2s1 /Volumes/myd1
+# 或
+sudo mount_ntfs -o rw,auto,nobrowse /dev/disk2s1 /Volumes/myd1
+
+# 查看mount状态，myd1已经没有read-only标识
+mount
+/dev/disk2s2 on /Volumes/D2 (ntfs, local, nodev, nosuid, read-only, noowners)
+/dev/disk2s1 on /Volumes/myd1 (ntfs, local, noowners, nobrowse)
+</pre>
 
 </div>
 <div id="footer">
