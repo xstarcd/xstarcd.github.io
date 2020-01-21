@@ -143,11 +143,7 @@ gcc安装:安装Xcode后，Xcode –&gt; Preferences –&gt; Downloads 的Compon
 </p>
 
 <p>
-Mac OS系统下经常遇NTFS格式硬盘无法写入的问题。NTFS 是 Windows环境的文件系统格式，因为竞品和专利等原因，Mac OS上的NTFS读写功能被隐藏了。只要通以下方法设置，就可以完美支持NTFS格式读写。
-</p>
-
-<p>
-使用命令将移动硬盘的目录重新挂载即可。
+只要通以下方法重新mount为rw，就可以实现对NTFS格式的读写挂载(但是有文件丢失风险，请特别注意！)。
 </p>
 
 <pre>
