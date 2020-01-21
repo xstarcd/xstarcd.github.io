@@ -158,13 +158,51 @@ Mac OS系统下经常遇NTFS格式硬盘无法写入的问题。NTFS 是 Windows
 在我用两个NTFS文件系统的移动硬盘做数据倒换时，按如下方式做RW挂载倒换数据，在拷贝30GB左右数据量后，出现文件系统无法识别现象：
 
 1.源盘目录为空，目标盘上只拷贝了约30GB的文件。
-2.将源盘重新挂载，文件和目录都没有了；在Windows主机上挂载，提示没有文件系统、格式化。
+2.将源盘重新挂载，文件和目录都没有了；在Windows主机上挂载，提示没有文件系统、格式化，磁盘管理显示RAW格式。
 3.将目标盘在Windows上挂载，也出现同样情况。
 4.用diskgenius查看，分区、文件系统正常，但检测不出问题。diskgenius中查看目录、文件都正常，并可把文件复制出来，赶紧做了备份。
     - http://www.diskgenius.cn/
-    - 没有再深入测试需要怎么修复在操作系统中修改文件系统无法识别问题，建议慎用。
+
+没有再深入测试需要怎么修复在操作系统中修改文件系统无法识别问题，因此建议大家在macOS上慎用ntfs rw挂载。
+网上可搜到有人遇到相同情况，在Windows上用CHKDSK I:/F实现了恢复(I:为盘符)，执行周期可能比较长(287GB数据、51小时)，修复完成后需重设置文件的安全访问授权。
 </pre>
 
+<ul>
+<li>
+ntfs rw mount工具： <a href="https://mounty.app/">https://mounty.app/</a>
+
+<ul>
+<li>
+采取相关的方式实现rw挂载，在工具图标上操作即可。也有提到出现所有文件丢失的情况。
+<pre>
+Suddenly all my files disappeared - please help!
+
+This is usually happen when not all files are written properly due to an unmount operation not finishing. The NTFS partition might be marked as "dirty" and the Apple NTFS driver cannot recover from that situation. Mounty will not delete anything by itself, please try to restore your files on a Windows PC using usual recovery s/w, i.e. chkdsk command line utility or professional tools like GetDataBack for Windows. If you do not own any Windows you can use tools for macOS that can deal with NTFS partition maintenance, like Paraogn Harddisk Manager or Tuxera Disk Manager.
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+Paragon 驱动程序
+
+<ul>
+<li>
+适用于 macOS (10.10 及以上) 的 Paragon 驱动程序
+
+<li>
+该驱动程序在 Mac OS 中提供对 Seagate 外置硬盘的写访问权，无需重新格式化。
+
+<li>
+<a href="https://www.seagate.com/files/www-content/support-content/external-products/backup-plus/_shared/downloads/NTFS_for_Mac.dmg">https://www.seagate.com/files/www-content/support-content/external-products/backup-plus/_shared/downloads/NTFS_for_Mac.dmg</a>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+手动重新挂载为rw的操作方式(请关注以上风险说明，慎用！)
 <pre class="brush:bash">
 # 查看mount信息
 diskutil list
@@ -212,6 +250,8 @@ mount
 # 添加在桌面快捷方式，方便在finder中使用
 ln -s /Volumes ~/Desktop/Volumes
 </pre>
+
+</ul>
 
 </div>
 <div id="footer">
