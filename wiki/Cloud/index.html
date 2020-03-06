@@ -19,19 +19,20 @@
 <div class="toc">
 <ul>
 <li><a href="#toc_1">LBS/GEO</a>
-<li><a href="#toc_2">微服务</a>
-<li><a href="#toc_3">云计算</a>
-<li><a href="#toc_4">虚拟化</a>
-<li><a href="#toc_5">大数据</a>
+<li><a href="#toc_2">Dock</a>
+<li><a href="#toc_3">微服务</a>
+<li><a href="#toc_4">云计算</a>
+<li><a href="#toc_5">虚拟化</a>
+<li><a href="#toc_6">大数据</a>
 <ul>
-<li><a href="#toc_5.1">Hadoop</a>
-<li><a href="#toc_5.2">HBase</a>
-<li><a href="#toc_5.3">Zookeeper</a>
-<li><a href="#toc_5.4">Hive</a>
-<li><a href="#toc_5.5">Opentsdb</a>
-<li><a href="#toc_5.6">Storm</a>
-<li><a href="#toc_5.7">kafka</a>
-<li><a href="#toc_5.8">Flume</a>
+<li><a href="#toc_6.1">Hadoop</a>
+<li><a href="#toc_6.2">HBase</a>
+<li><a href="#toc_6.3">Zookeeper</a>
+<li><a href="#toc_6.4">Hive</a>
+<li><a href="#toc_6.5">Opentsdb</a>
+<li><a href="#toc_6.6">Storm</a>
+<li><a href="#toc_6.7">kafka</a>
+<li><a href="#toc_6.8">Flume</a>
 </ul>
 </ul>
 </div>
@@ -56,40 +57,46 @@
 地球是一个近乎标准的椭球体，它的赤道半径为6378.140千米，极半径为 6356.755千米，平均半径6371.004千米。
 
 <li>
-在纬线上，经度每差1度，实际距离为111×cosθkm（其中θ表示该纬线的纬度，在不同纬线上,经度每差1度的实际距离是不相等的）。
+在纬线上，经度：
 
 <ul>
 <li>
-赤道上经度差1度大约距离111km。 
+每差1度实际距离为111×cosθkm（其中θ表示该纬线的纬度，在不同纬线上,经度每差1度的实际距离是不相等的）
+
+<li>
+赤道上经度差1度大约距离111km
 
 </ul>
 <li>
-在经线上，纬度每差1度，实地距离大约为111km，纬度：
+在经线上，纬度：
 
 <ul>
 <li>
-每隔0.00001度，距离相差约1.1米；
+纬度每差1度，实地距离大约为111km 
 
 <li>
-每隔0.0001度，距离相差约11米；
+每隔0.00001度，距离相差约1.1米
 
 <li>
-每隔0.001度，距离相差约111米；
+每隔0.0001度，距离相差约11米
 
 <li>
-每隔0.01度，距离相差约1113米；
+每隔0.001度，距离相差约111米
 
 <li>
-每隔0.1度，距离相差约11132米。
+每隔0.01度，距离相差约1113米
+
+<li>
+每隔0.1度，距离相差约11132米
 <pre>
 从理论上讲，所有的经线长度都相等，无论沿那条经线到南北极的距离都相等。
 地球上的纬度以赤道为界，向南向北各划分出90个纬度，全球总共划分为180个纬度。
-一条经线的长度大约20000千米，每1°经度地表面的实地长度大约就是111千米。
+一条经线的长度大约20000千米，每1°经度地表面的实地长度大约就是111千米(20000/180.0=111.11km)。
 
 纬线的长度不相等，赤道是最长的纬线圈，从赤道向两极纬线长度减小。
 每一条纬线都划分为360个经度，因此每1°经度地表面的实地距离不相等。
 在赤道处1°经度地表面的实地距离最大，由赤道向两极缩小。
-赤道周长: 40076千米。
+赤道周长: 40076千米。在赤道上每差1经度，距离为40076/360.0=111.32km)。
 </pre>
 
 </ul>
@@ -102,8 +109,20 @@ GPS距离测量：<a href="http://www.gpsspg.com/distance.htm">http://www.gpsspg
 
 </ul>
 
+<h1 id="toc_2">Dock</h1>
 
-<h1 id="toc_2">微服务</h1>
+<ul>
+<li>
+Calico 网络通信原理揭秘:<a href="https://www.cnblogs.com/ryanyangcs/p/11273040.html">https://www.cnblogs.com/ryanyangcs/p/11273040.html</a>
+<pre>
+Calico 是一个纯三层的数据中心网络方案，而且无缝集成像 OpenStack 这种 Iaas 云架构，能够提供可控的 VM、容器、裸机之间的 IP 通信。为什么说它是纯三层呢？因为所有的数据包都是通过路由的形式找到对应的主机和容器的，然后通过 BGP 协议来将所有路由同步到所有的机器或数据中心，从而完成整个网络的互联。
+
+简单来说，Calico 在主机上创建了一堆的 veth pair，其中一端在主机上，另一端在容器的网络命名空间里，然后在容器和主机中分别设置几条路由，来完成网络的互联。
+</pre>
+
+</ul>
+
+<h1 id="toc_3">微服务</h1>
 
 <p>
 学习微服务相关概念、架构，收集相关设计思路。
@@ -161,7 +180,7 @@ RESTful API设计确实比较不多，对于一些简单的APP来说，能够快
 </pre>
 
 
-<h1 id="toc_3">云计算</h1>
+<h1 id="toc_4">云计算</h1>
 
 <ul>
 <li>
@@ -201,7 +220,7 @@ SaaS(Software-as-a-Service)：软件即服务。
 </ul>
 </ul>
 
-<h1 id="toc_4">虚拟化</h1>
+<h1 id="toc_5">虚拟化</h1>
 
 <ul>
 <li>
@@ -257,7 +276,7 @@ kubernetes入门:<a href="https://www.jianshu.com/p/63ffc2214788">https://www.ji
 
 </ul>
 
-<h1 id="toc_5">大数据</h1>
+<h1 id="toc_6">大数据</h1>
 
 <ul>
 <li>
@@ -280,21 +299,21 @@ prestodb:<a href="http://prestodb-china.com/docs/current/connector/kafka-tutoria
 
 </ul>
 
-<h2 id="toc_5.1"><a href="Hadoop.html">Hadoop</a></h2>
+<h2 id="toc_6.1"><a href="Hadoop.html">Hadoop</a></h2>
 
-<h2 id="toc_5.2"><a href="HBase.html">HBase</a></h2>
+<h2 id="toc_6.2"><a href="HBase.html">HBase</a></h2>
 
-<h2 id="toc_5.3"><a href="Zookeeper.html">Zookeeper</a></h2>
+<h2 id="toc_6.3"><a href="Zookeeper.html">Zookeeper</a></h2>
 
-<h2 id="toc_5.4">Hive</h2>
+<h2 id="toc_6.4">Hive</h2>
 
-<h2 id="toc_5.5"><a href="Opentsdb.html">Opentsdb</a></h2>
+<h2 id="toc_6.5"><a href="Opentsdb.html">Opentsdb</a></h2>
 
-<h2 id="toc_5.6"><a href="Storm.html">Storm</a></h2>
+<h2 id="toc_6.6"><a href="Storm.html">Storm</a></h2>
 
-<h2 id="toc_5.7"><a href="kafka.html">kafka</a></h2>
+<h2 id="toc_6.7"><a href="kafka.html">kafka</a></h2>
 
-<h2 id="toc_5.8">Flume</h2>
+<h2 id="toc_6.8">Flume</h2>
 
 <ul>
 <li>
