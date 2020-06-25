@@ -206,6 +206,41 @@ Press RETURN to continue or any other key to abort
 
 <ul>
 <li>
+2020-06-25安装信息
+<pre>
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+==&gt; This script will install:
+/usr/local/bin/brew
+/usr/local/share/doc/homebrew
+/usr/local/share/man/man1/brew.1
+/usr/local/share/zsh/site-functions/_brew
+/usr/local/etc/bash_completion.d/brew
+/usr/local/Homebrew
+==&gt; The following new directories will be created:
+/usr/local/bin
+/usr/local/etc
+/usr/local/include
+/usr/local/lib
+/usr/local/sbin
+/usr/local/share
+/usr/local/var
+/usr/local/opt
+/usr/local/share/zsh
+/usr/local/share/zsh/site-functions
+/usr/local/var/homebrew
+/usr/local/var/homebrew/linked
+/usr/local/Cellar
+/usr/local/Caskroom
+/usr/local/Homebrew
+/usr/local/Frameworks
+
+Press RETURN to continue or any other key to abort
+</pre>
+
+</ul>
+
+<ul>
+<li>
 手动安装
 
 </ul>
@@ -373,9 +408,17 @@ and then set it as HOMEBREW_GITHUB_API_TOKEN.
 <li>
 访问 <a href="https:&#47;&#47;github.com&#47;settings&#47;tokens">https://github.com/settings/tokens</a> 
 
+<ul>
 <li>
-在Personal settings -&gt; Personal access tokens中点击"Generate new token"创建token
+进入：Settings -&gt; Developer settings -&gt; Personal access tokens
 
+<li>
+"Generate new token"创建token
+
+</ul>
+</ul>
+
+<ul>
 <li>
 Make sure to copy your new personal access token now. You won't be able to see it again!
 
@@ -413,6 +456,34 @@ brew tap homebrew/dupes
 brew info homebrew/dupes/rsync
 brew install homebrew/dupes/rsync
 </pre>
+
+<div id="安装openvpn-connect"><h2 id="安装openvpn-connect">安装openvpn-connect</h2></div>
+
+<pre>
+brew search openvpn-connect
+==&gt; Casks
+homebrew/cask-versions/openvpn-connect-beta                                     homebrew/cask/openvpn-connect
+
+openvpn-connect
+Name: OpenVPN Connect client
+https://openvpn.net/client-connect-vpn-for-mac-os/
+</pre>
+
+<pre>
+brew tap homebrew/cask
+==&gt; Tapping homebrew/cask
+Cloning into '/usr/local/Homebrew/Library/Taps/homebrew/homebrew-cask'...
+remote: Enumerating objects: 49, done.
+remote: Counting objects: 100% (49/49), done.
+remote: Compressing objects: 100% (37/37), done.
+Receiving objects:   4% (22346/447900), 7.56 MiB | 18.00 KiB/s
+</pre>
+
+
+
+<p>
+}}}
+</p>
 
 </div>
 <div id="footer">
