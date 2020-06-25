@@ -295,11 +295,26 @@ curl: (7) Failed to connect to raw.githubusercontent.com port 443: Connection re
 fatal: the remote end hung up unexpectedly
 fatal: early EOF
 fatal: index-pack failed
+
+error: RPC failed; curl 18 transfer closed with outstanding read data remaining
+fatal: The remote end hung up unexpectedly
+fatal: early EOF
+fatal: index-pack failed
 </pre>
 
-<p>
-要 pull 的文件过大，http方式需要增大缓存，或者修改install.sh中的下载地址<code>https://</code>为<code>git://</code>即可解决（我用的第二种方式）。
-</p>
+<ul>
+<li>
+原因：要 pull 的文件过大:
+
+<ul>
+<li>
+http方式需要增大缓存:<code>git config --global http.postBuffer 524288000</code>
+
+<li>
+或者修改install.sh中的下载地址<code>https://</code>为<code>git://</code>即可解决（我用的第二种方式）。
+
+</ul>
+</ul>
 
 <div id="Homebrew使用"><h2 id="Homebrew使用">Homebrew使用</h2></div>
 
@@ -478,12 +493,6 @@ remote: Counting objects: 100% (49/49), done.
 remote: Compressing objects: 100% (37/37), done.
 Receiving objects:   4% (22346/447900), 7.56 MiB | 18.00 KiB/s
 </pre>
-
-
-
-<p>
-}}}
-</p>
 
 </div>
 <div id="footer">
