@@ -15,18 +15,9 @@
 <div id="cse"></div>
 <div id="main">
 
-<h1>MacOS软件包管理工具-HomeBrew</h1>
-<div class="toc">
-<ul>
-<li><a href="#toc_0.1">优点和缺陷</a>
-<li><a href="#toc_0.2">Install Homebrew</a>
-<li><a href="#toc_0.3">Homebrew使用</a>
-<li><a href="#toc_0.4">定制自己的软件包</a>
-<li><a href="#toc_0.5">GitHub API rate limit</a>
-<li><a href="#toc_0.6">brew tap</a>
-</ul>
-</ul>
-</div>
+<p>
+%toc MacOS软件包管理工具-HomeBrew
+</p>
 
 <p>
 虽然 Mac OS X 自带了不少 Unix 下的开源软件，比如 vim, ruby, python, perl 等等，也自带了许多常用的库，包括 iconv, zlib 等等，但我们仍然有时会需要自己动手安装一些这样的软件或者库，要自动化这样的安装，现有最常见的选择是 MacPorts、Fink、HomeBrew。
@@ -41,7 +32,7 @@
 </p>
 
 
-<h2 id="toc_0.1">优点和缺陷</h2>
+<div id="优点和缺陷"><h2 id="优点和缺陷">优点和缺陷</h2></div>
 
 <ul>
 <li>
@@ -99,7 +90,7 @@ Homebrew
 推荐程度：Homebrew &gt; MacPorts &gt; pkgsrc &gt; gentoo-prefix，Rudix 可以作为备胎，Fink 目前来看挺鸡肋。
 </p>
 
-<h2 id="toc_0.2">Install Homebrew</h2>
+<div id="Install Homebrew"><h2 id="Install Homebrew">Install Homebrew</h2></div>
 
 <ul>
 <li>
@@ -107,14 +98,14 @@ Homebrew
 
 <ul>
 <li>
-<a href="http://brew.sh/">http://brew.sh/</a>
+<a href="http:&#47;&#47;brew.sh&#47;">http://brew.sh/</a>
 
 <li>
-<a href="http://brew.sh/index_zh-cn.html">http://brew.sh/index_zh-cn.html</a>
+<a href="http:&#47;&#47;brew.sh&#47;index_zh-cn.html">http://brew.sh/index_zh-cn.html</a>
 
 </ul>
 <li>
-文档：<a href="https://github.com/Homebrew/homebrew/tree/master/share/doc/homebrew#readme">https://github.com/Homebrew/homebrew/tree/master/share/doc/homebrew#readme</a>
+文档：<a href="https:&#47;&#47;github.com&#47;Homebrew&#47;homebrew&#47;tree&#47;master&#47;share&#47;doc&#47;homebrew#readme">https://github.com/Homebrew/homebrew/tree/master/share/doc/homebrew#readme</a>
 
 <li>
 首先确保你的系统满足如下要求：
@@ -180,6 +171,41 @@ Run `brew help` to get started
 
 <ul>
 <li>
+2020-06-24安装提示：
+<pre>
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+==&gt; This script will install:
+/usr/local/bin/brew
+/usr/local/share/doc/homebrew
+/usr/local/share/man/man1/brew.1
+/usr/local/share/zsh/site-functions/_brew
+/usr/local/etc/bash_completion.d/brew
+/usr/local/Homebrew
+==&gt; The following new directories will be created:
+/usr/local/bin
+/usr/local/etc
+/usr/local/include
+/usr/local/lib
+/usr/local/sbin
+/usr/local/share
+/usr/local/var
+/usr/local/opt
+/usr/local/share/zsh
+/usr/local/share/zsh/site-functions
+/usr/local/var/homebrew
+/usr/local/var/homebrew/linked
+/usr/local/Cellar
+/usr/local/Caskroom
+/usr/local/Homebrew
+/usr/local/Frameworks
+
+Press RETURN to continue or any other key to abort
+</pre>
+
+</ul>
+
+<ul>
+<li>
 手动安装
 
 </ul>
@@ -209,7 +235,38 @@ git pull origin master
 这样安装会在 /usr/local 下创建 Library 这个目录，然后在 /usr/local/bin 中加入 brew 这个 ruby 脚本。
 </p>
 
-<h2 id="toc_0.3">Homebrew使用</h2>
+<div id="安装中问题解决"><h2 id="安装中问题解决">安装中问题解决</h2></div>
+
+<div id="安装中问题解决-Connection refused错误"><h3 id="Connection refused错误">Connection refused错误</h3></div>
+
+<pre>
+curl: (7) Failed to connect to raw.githubusercontent.com port 443: Connection refused
+</pre>
+<p>
+打开网站<a href="https:&#47;&#47;www.ipaddress.com&#47;">https://www.ipaddress.com/</a>
+</p>
+
+<p>
+查询一下 raw.githubusercontent.com对应的IP 地址，添加到/etc/hosts中后再试就可以了。
+</p>
+
+<div id="安装中问题解决-安装过程下载失败"><h3 id="安装过程下载失败">安装过程下载失败</h3></div>
+
+<p>
+安装过程说明：<a href="https:&#47;&#47;www.jianshu.com&#47;p&#47;3f521887543b">https://www.jianshu.com/p/3f521887543b</a>
+</p>
+
+<pre>
+fatal: the remote end hung up unexpectedly
+fatal: early EOF
+fatal: index-pack failed
+</pre>
+
+<p>
+要 pull 的文件过大，http方式需要增大缓存，或者修改install.sh中的下载地址<code>https://</code>为<code>git://</code>即可解决（我用的第二种方式）。
+</p>
+
+<div id="Homebrew使用"><h2 id="Homebrew使用">Homebrew使用</h2></div>
 
 <p>
 Homebrew的可执行命令是brew，命令参数说明如下。
@@ -267,7 +324,7 @@ brew upgrade      # 更新过时的软件包（全部）
 brew upgrade wget # 更新过时的软件包（指定）
 </pre>
 
-<h2 id="toc_0.4">定制自己的软件包</h2>
+<div id="定制自己的软件包"><h2 id="定制自己的软件包">定制自己的软件包</h2></div>
 
 <p>
 如果自己需要的软件包并不能在Homebrew中找到，怎么办呢，毕竟Homebrew是一个新生项目，不可能满足所有人的需求。当然，我们可以自行编译安装，但手工安装的软件包游离于Homebrew之外，管理起来不是很方便。
@@ -279,7 +336,7 @@ brew upgrade wget # 更新过时的软件包（指定）
 
 <ol>
 <li>
-首先找到待安装软件的源码下载地址:<a href="http://foo.com/bar-1.0.tgz">http://foo.com/bar-1.0.tgz</a>
+首先找到待安装软件的源码下载地址:<a href="http:&#47;&#47;foo.com&#47;bar-1.0.tgz">http://foo.com/bar-1.0.tgz</a>
 
 <li>
 建立自己的formula: <code>brew create http://foo.com/bar-1.0.tgz</code>
@@ -300,7 +357,7 @@ Homebrew自动建立的formula已经包含了基本的configure和make install�
 </p>
 
 
-<h2 id="toc_0.5">GitHub API rate limit</h2>
+<div id="GitHub API rate limit"><h2 id="GitHub API rate limit">GitHub API rate limit</h2></div>
 
 <pre>
 Error: GitHub API rate limit exceeded for 220.166.254.65. (But here's the good news: Authenticated requests get a higher rate limit. Check out the documentation for more details.)
@@ -314,7 +371,7 @@ and then set it as HOMEBREW_GITHUB_API_TOKEN.
 注册、登录github.com
 
 <li>
-访问 <a href="https://github.com/settings/tokens">https://github.com/settings/tokens</a> 
+访问 <a href="https:&#47;&#47;github.com&#47;settings&#47;tokens">https://github.com/settings/tokens</a> 
 
 <li>
 在Personal settings -&gt; Personal access tokens中点击"Generate new token"创建token
@@ -335,7 +392,7 @@ fi
 
 </ul>
 
-<h2 id="toc_0.6">brew tap</h2>
+<div id="brew tap"><h2 id="brew tap">brew tap</h2></div>
 
 <p>
 brew 有个默认的仓库，brew tap 你可以看成是第三方的仓库。
@@ -343,7 +400,7 @@ brew 有个默认的仓库，brew tap 你可以看成是第三方的仓库。
 
 <ul>
 <li>
-Interesting Taps &amp; Branches: <a href="https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Interesting-Taps-%26-Branches.md">https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Interesting-Taps-%26-Branches.md</a>
+Interesting Taps &amp; Branches: <a href="https:&#47;&#47;github.com&#47;Homebrew&#47;homebrew&#47;blob&#47;master&#47;share&#47;doc&#47;homebrew&#47;Interesting-Taps-%26-Branches.md">https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Interesting-Taps-%26-Branches.md</a>
 
 </ul>
 
