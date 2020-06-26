@@ -492,7 +492,29 @@ remote: Enumerating objects: 49, done.
 remote: Counting objects: 100% (49/49), done.
 remote: Compressing objects: 100% (37/37), done.
 Receiving objects:   4% (22346/447900), 7.56 MiB | 18.00 KiB/s
+
+brew cask install openvpn-connect
+
+brew install homebrew/cask/openvpn-connect
+==&gt; brew cask install homebrew/cask/openvpn-connect
+==&gt; Downloading https://swupdate.openvpn.net/as/clients/openvpn-connect-2.7.1.107_signed.dmg
+-=O=-               #    #     #     #
+curl: (7) Failed to connect to swupdate.openvpn.net port 443: Operation timed out
+Error: Download failed on Cask 'openvpn-connect' with message: Download failed: https://swupdate.openvpn.net/as/clients/openvpn-connect-2.7.1.107_signed.dmg
 </pre>
+
+
+<ul>
+<li>
+另一个openvpn client，是有UI界面的，先直接下载dmg包安装这个用上:
+<pre>
+https://tunnelblick.org/downloads.html
+Tunnelblick_3.7.7_build_5150.dmg
+
+brew cask install tunnelblick
+</pre>
+
+</ul>
 
 </div>
 <div id="footer">
