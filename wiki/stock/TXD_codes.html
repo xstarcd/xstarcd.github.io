@@ -20,22 +20,30 @@
 <ul>
 <li><a href="#toc_0.1">通达信热键</a>
 <li><a href="#toc_0.2">其他公式</a>
-<li><a href="#toc_0.3">主图公式</a>
+<li><a href="#toc_0.3">计算RPS公式</a>
+<li><a href="#toc_0.4">主图公式</a>
 <ul>
-<li><a href="#toc_0.3.1">主图附加基本指标</a>
-<li><a href="#toc_0.3.2">主图显示150日内最大回撤幅度</a>
+<li><a href="#toc_0.4.1">主图附加基本指标</a>
+<li><a href="#toc_0.4.2">主图显示150日内最大回撤幅度</a>
 </ul>
-<li><a href="#toc_0.4">选股公式</a>
+<li><a href="#toc_0.5">选股公式</a>
 <ul>
-<li><a href="#toc_0.4.1">陶博士年度金股侯选</a>
-<li><a href="#toc_0.4.2">港资增仓选股</a>
-<li><a href="#toc_0.4.3">一线翻红条件</a>
-<li><a href="#toc_0.4.4">股魔第二阶段选股</a>
-<li><a href="#toc_0.4.5">口袋支点公式</a>
-<li><a href="#toc_0.4.6">均线买点-月线反转首下10日线</a>
-<li><a href="#toc_0.4.7">关于第二买点</a>
+<li><a href="#toc_0.5.1">陶博士年度金股侯选</a>
+<li><a href="#toc_0.5.2">上市一年以上</a>
+<li><a href="#toc_0.5.3">北向持股3000W及基金持股3%</a>
+<li><a href="#toc_0.5.4">在120日线上</a>
+<li><a href="#toc_0.5.5">月线反转选股</a>
+<li><a href="#toc_0.5.6">港资增仓选股</a>
+<li><a href="#toc_0.5.7">一线红及三线红小黄人条件</a>
+<li><a href="#toc_0.5.8">一年新高及接近一年新高</a>
+<li><a href="#toc_0.5.9">股魔第二阶段选股</a>
+<li><a href="#toc_0.5.10">口袋支点公式</a>
+<li><a href="#toc_0.5.11">均线买点-月线反转首下10日线</a>
+<li><a href="#toc_0.5.12">关于第二买点</a>
 </ul>
-<li><a href="#toc_0.5">MA3:月线反转+三线红+基本信息</a>
+<li><a href="#toc_0.6">MA3:月线反转+三线红主图叠加</a>
+<li><a href="#toc_0.7">RPS副图曲线</a>
+<li><a href="#toc_0.8">港资持股副图曲线</a>
 </ul>
 </ul>
 </div>
@@ -83,9 +91,22 @@ PEG:<a href="http://www.360doc.com/content/19/0406/02/2426004_826703784.shtml">h
 
 </ul>
 
-<h2 id="toc_0.3">主图公式</h2>
+<h2 id="toc_0.3">计算RPS公式</h2>
 
-<h3 id="toc_0.3.1">主图附加基本指标</h3>
+<ul>
+<li>
+EXTRS:计算股票涨跌幅
+<pre>
+{变量N:1-500，缺省:250}
+{输出计算股票涨跌幅:(收盘价-N日前的收盘价)/N日前的收盘价}
+EXTRS:(C-REF(C,N))/REF(C,N);
+</pre>
+
+</ul>
+
+<h2 id="toc_0.4">主图公式</h2>
+
+<h3 id="toc_0.4.1">主图附加基本指标</h3>
 
 <ul>
 <li>
@@ -97,334 +118,7 @@ PEG:<a href="http://www.360doc.com/content/19/0406/02/2426004_826703784.shtml">h
 <img src=../img/stock/TXD_ZT_CWZB.png>
 </p>
 <pre>
-{距形}
-DRAWRECTREL(0,0,375,348,RGB(68,52,75));
-{基本资料}
-品种类型:=FINANCE(3);
-所属板块:=HYBLOCK;
-上市天数:=FINANCE(42);
-股总市值:=ROUND(FINANCE(41)/100000000);
-流通市值:=ROUND(FINANCE(40)/100000000);
-股东人数:=FINANCE(8);
-人均持股:=ROUND(FINANCE(7)/FINANCE(8));
-{}
-DRAWTEXT_FIX(1,0.008,0.01,0,'基本资料：'),COLORFFCC99;
-DRAWTEXT_FIX(1,0.008,0.05,0,'品种类型：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.008,0.09,0,'行业板块：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.008,0.13,0,'上市天数：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.008,0.17,0,'股东人数：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.008,0.21,0,'人均持股：'),COLOR99CCFF;
-{}
-DRAWTEXT_FIX(品种类型=1,0.055,0.05,0,'沪深A股'),COLORYELLOW;
-DRAWTEXT_FIX(品种类型=2,0.055,0.05,0,'中小板'),COLORYELLOW;
-DRAWTEXT_FIX(品种类型=3,0.055,0.05,0,'创业板'),COLORYELLOW;
-DRAWTEXT_FIX(1,0.055,0.09,0,HYBLOCK),COLORYELLOW;{行业板块}
-{数值}
-DRAWNUMBER_FIX(1,0.050,0.13,0,上市天数),COLORGREEN;
-DRAWNUMBER_FIX(1,0.050,0.17,0,股东人数),COLORGREEN;
-DRAWNUMBER_FIX(1,0.050,0.21,0,人均持股),COLORGREEN;
-{单位}
-DRAWTEXT_FIX(1,0.08,0.13,0,'天'),COLORWHITE;
-DRAWTEXT_FIX(1,0.08,0.17,0,'人'),COLORWHITE;
-DRAWTEXT_FIX(1,0.08,0.21,0,'股'),COLORWHITE;
-{所属板块}
-DRAWTEXT_FIX(1,0.008,0.25,0,'地区板块：')COLOR99CCFF;
-DRAWTEXT_FIX(1,0.048,0.25,0,DYBLOCK)COLORGREEN;
-DRAWTEXT_FIX(1,0.088,0.25,0,'概念板块：')COLOR99CCFF;
-DRAWTEXT_FIX(1,0.128,0.25,0,GNBLOCK)COLORGREEN;
-DRAWTEXT_FIX(1,0.008,0.29,0,'风格板块：')COLOR99CCFF;
-DRAWTEXT_FIX(1,0.048,0.29,0,FGBLOCK)COLORGREEN;
-{业绩指标}
-净资收益率:=(FINANCE(33)/FINANCE(34)*100);
-主营利润率:=(FINANCE(23)/FINANCE(20)*100);
-现金负债比:=(FINANCE(25)/FINANCE(15));
-收入同比:=FINANCE(44);{主营收入同比增长率}
-利润同比:=FINANCE(43);{净利润同比增长率}
-{}
-DRAWTEXT_FIX(1,0.108,0.01,0,'业绩资料：'),COLORFFCC99;
-DRAWTEXT_FIX(1,0.108,0.05,0,'净资产收益率：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.108,0.09,0,'主营业务利润率：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.108,0.13,0,'现金流动负债比：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.092,0.17,0,'主营收入同比增长率：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.099,0.21,0,'净利润同比增长率：'),COLOR99CCFF;
-{}
-DRAWNUMBER_FIX(1,0.173,0.05,0,净资收益率),COLORYELLOW;
-DRAWNUMBER_FIX(1,0.173,0.09,0,主营利润率),COLORGREEN;
-DRAWNUMBER_FIX(1,0.173,0.13,0,现金负债比),COLORGREEN;
-DRAWNUMBER_FIX(1,0.173,0.17,0,收入同比),COLORYELLOW;
-DRAWNUMBER_FIX(1,0.173,0.21,0,利润同比),COLORYELLOW;
-{财务指标}
-每股收益季:=CONST(FINANCE(33)/(5-FINANCE(37)));
-每股收益年:=CONST(FINANCE(33));
-每股收益:=CONST(FINANCE(38));
-每股净资产:=CONST(FINANCE(34));
-每股现金流:=CONST((FINANCE(25)/FINANCE(1)));
-每股未分配:=CONST(FINANCE(32));
-每股公积金:=CONST(FINANCE(18));
-{}
-DRAWTEXT_FIX(1,0.207,0.01,0,'财务资料：'),COLORFFCC99;
-DRAWTEXT_FIX(1,0.207,0.05,0,'每股收益：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.207,0.09,0,'每股净资产：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.207,0.13,0,'每股现金流：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.207,0.17,0,'每股未分配：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.207,0.21,0,'每股公积金：'),COLOR99CCFF;
-{}
-DRAWNUMBER_FIX(1,0.278,0.05,1,每股收益),COLORGREEN;
-DRAWNUMBER_FIX(1,0.278,0.09,1,每股净资产),COLORGREEN;
-DRAWNUMBER_FIX(1,0.278,0.13,1,每股现金流),COLORGREEN;
-DRAWNUMBER_FIX(1,0.278,0.17,1,每股未分配),COLORGREEN;
-DRAWNUMBER_FIX(1,0.278,0.21,1,每股公积金),COLORGREEN;
-{估值指标:}
-市盈率:=CONST(C/FINANCE(33));{收盘价/每股收益(全年折算)的最后一日取值设为常数}
-市盈率动:=CONST(DYNAINFO(39));{市盈(动)的最后一日取值设为常数}
-市盈率静:=CONST(DYNAINFO(38));{市盈(静)的最后一日取值设为常数}
-市盈率TTMX:=CONST(DYNAINFO(40));{市盈(TTM)的最后一日取值设为常数}
-
-市净率:=CONST(DYNAINFO(7) / FINANCE(34));
-市销率:=CONST(FINANCE(1)*DYNAINFO(7)/FINANCE(20));
-
-DRAWTEXT_FIX(1,0.282,0.01,0,'估值指标：'),COLORFFCC99;
-DRAWTEXT_FIX(1,0.282,0.05,0,'市盈率-动：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.282,0.09,0,'市盈率-静：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.282,0.13,0,'市盈率TTM：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.282,0.17,0,'市净率：'),COLOR99CCFF;
-DRAWTEXT_FIX(1,0.282,0.21,0,'市销率：'),COLOR99CCFF;
-{}
-DRAWNUMBER_FIX(1,0.370,0.05,1,市盈率动),COLORGREEN;
-DRAWNUMBER_FIX(1,0.370,0.09,1,市盈率静),COLORGREEN;
-DRAWNUMBER_FIX(1,0.370,0.13,1,市盈率TTMX),COLORGREEN;
-DRAWNUMBER_FIX(1,0.370,0.17,1,市净率),COLORGREEN;
-DRAWNUMBER_FIX(1,0.370,0.21,1,市销率),COLORGREEN;
-</pre>
-
-<h3 id="toc_0.3.2">主图显示150日内最大回撤幅度</h3>
-
-<p>
-在主图添加以下代码，显示150日内的最大回撤幅度（也是来源于热心的网友）：
-</p>
-<pre>
-{忘情公子:在主图添加以下代码，显示150日内的最大回撤幅度（也是来源于热心的网友）}
-B11:=CONST(HHV(H,150));
-B12:=HHVBARS(H,150)+1;
-B13:=CONST(LLV(LOW,B12));
-B4:=B13/B11;
-B15:=B4*100-100;
-最大回撤幅度:B15,NODRAW;
-IF(B15&lt;=-30,B15,DRAWNULL),NODRAW,COLORRED;
-</pre>
-
-<h2 id="toc_0.4">选股公式</h2>
-
-<h3 id="toc_0.4.1">陶博士年度金股侯选</h3>
-
-<ul>
-<li>
-金股候选大名单2.0版（20191209） :<a href="https://mp.weixin.qq.com/s/hk4SDnXS4rzMrvUh8nA8qg">https://mp.weixin.qq.com/s/hk4SDnXS4rzMrvUh8nA8qg</a>
-
-</ul>
-
-<p>
-金股要求必须是9月1日以来，拥有三线红的条件。
-</p>
-
-<ol>
-<li>
-3个月以来拥有三线红(9月1日)：首先在<code>基金持股3%+北向持股三千万</code>的大名单1787只股，增加小黄人（三线红）条件（时间段是2019-9-1开始），然后只剩下291只股票。
-
-<li>
-2个月以来港资增仓条件（时间段是2019-11-1开始），就只剩下152只。
-
-<li>
-一线翻红的条件，要求最新收盘日，至少有一条RPS曲线是红的，就只剩下131只。
-
-<li>
-在120日线上，要求最新收盘价在120日线上方，只剩下123只。
-
-</ol>
-
-<p>
-A股总共3755只股票，我仅仅用这5个量化条件（全部是电脑自行选择），用电脑操作，一两分钟就缩减到了123只股票。
-</p>
-
-<p>
-这123只股票就是2020年金股的候选大名单。若干年前选股，那个费劲啊，通常翻很多股票也找不到心仪的好股。
-</p>
-
-<p>
-现在好了，一两分钟选出123只候选大名单之后，就只在这个大名单挑选了，感觉效率一下子提高了很多。
-</p>
-
-<p>
-未来一个月的工作，就是将现下面的X替代为具体的数字。模拟测试一个数字600XXX601XXX603XXX000XXX002XXX300XXX000XXX002XXX300XXX300XXX。
-</p>
-
-<p>
-当然今年年底的时候，上述量化选股结果会发生变化，因此具体的金股名单要等最后一个交易日结束之后才能最终确定。
-</p>
-
-
-<h3 id="toc_0.4.2">港资增仓选股</h3>
-
-<pre>
-{参数N:默认30}
-{GPJYVALUE(6,1,1)*C-REF((GPJYVALUE(6,1,1)*C),N)&gt;0.5*100000000;}
-
-{30天内港资增仓流通股份0.5%以上}
-占流通比增加:=((GPJYVALUE(6,1,1)/FINANCE(7))*100-REF((GPJYVALUE(6,1,1)/FINANCE(7))*100,30))&gt;=0.5;
-{30天内港资持仓市值增加5千万元以上}
-市值增加:=GPJYVALUE(6,1,1)*C-REF((GPJYVALUE(6,1,1)*C),30)&gt;0.5*100000000;
-市值增加 OR 占流通比增加;
-</pre>
-
-<h3 id="toc_0.4.3">一线翻红条件</h3>
-
-<pre>
-{一线翻红的条件选股公式如下，要求最新收盘日，至少有一条RPS曲线是红的。}
-K120:=EXTDATA_USER(1,0);{120天的RPS}
-RPSK120:=K120/10;
-K01:=IF(RPSK120&lt;=90,0,1);{RPS120大于90};
-K250:=EXTDATA_USER(2,0);{250天的RPS}
-RPSK250:=K250/10;
-K02:=IF(RPSK250&lt;=90,0,1);{RPS250大于90};
-K50:=EXTDATA_USER(3,0);{50天的RPS}
-RPSK50:=K50/10;
-K03:=IF(RPSK50&lt;=90,0,1);{RPS50大于90};
-
-K01 OR K02 OR K03;
-</pre>
-
-<h3 id="toc_0.4.4">股魔第二阶段选股</h3>
-
-<pre>
-{忘情公子:股魔第二阶段公式趋势模板的8个条件(来自网络)，没有参数：
-根据以下条件，可以量化选出处于第二阶段的股票，但是还需要考虑是什么导致了第二阶段股价的加速上涨，这时就要通过基本面来再次做过滤。
-1、当前的股价处在150日和200日线上方
-2、150日均线处在200日均线上方
-3、200日均线至少上涨了1个月（大多数情况下，上涨4--5个月更好）
-4、50日移动平均值高于150日及200日移动平均值
-5、当前价格高于50日移动平均值
-6、当前股价比最近一年最低股价至少高30%
-7、当前价格至少处在最近一年最高价的75%以内(距离最高价越接近越好)
-8、RPS排名＞90}
-MA50:=MA(C,50);
-MA150:=MA(C,150);
-MA200:=MA(C,200);
-MA22:=REF(MA200,20); {200日均线至少上涨1个月，大多数情况下，上涨4-5个月更好} 
-L250:=LLV(LOW,250); 
-H250:=HHV(HIGH,250); 
-Y:=EXTDATA_USER(2,0)/10;{250天的RPS} 
-股票魔法师:MA200&gt;MA22 AND C&gt;MA50 AND C&gt;MA150 AND C&gt;MA200 AND MA50&gt;MA150 AND MA50&gt;MA200 AND C&gt;L250*1.3 AND {当前价比最后一年最低股价到少高30%} C&gt;H250*0.9 AND {当前价至少在最近一年最高价的75%以内，距离最高价越近越好} Y&gt;90;
-</pre>
-
-<h3 id="toc_0.4.5">口袋支点公式</h3>
-
-<p>
-口袋支点公式也是来自网络，并非我所创。另这个口袋支点并不是陶博所说的口袋支点，仅仅是参考而已，大家不要根据公式选出结果就直接操作，一定综合判断。
-</p>
-
-<pre>
-{忘情公子:口袋支点公式，断层要求配合强度和换手，N默认为90天（并不是陶博所说的口袋支点）：
-仅仅是参考而已，大家不要根据公式选出结果就直接操作，一定综合判断。}
-1、有跳空缺口，未补。
-2、近期（一周内），创250日新高；
-3、换手持续低于10%；}
-A1:=(C&gt;=ZTPRICE(REF(CLOSE,1),0.1))&amp;&amp;LOW&gt;(REF(HIGH,1)+0.001);{跳空涨停}
-A2:=BARSLAST(A1);
-A3:=EVERY(L&gt;REF(H,A2+1),A2);{缺口未补}
-B1:=EXIST(A1,30) AND A3;
-;
-HS:=100*V/CAPITAL;
-B2:=COUNT(HS&gt;10,30)=0;{30天内换手不超过10%}
-;
-B3:=HHV(H,5)=HHV(H,250) AND BARSCOUNT(C)&gt;=250;{一周内创一年新高}
-;
-XG:B1 AND B2 AND B3;
-</pre>
-
-
-<h3 id="toc_0.4.6">均线买点-月线反转首下10日线</h3>
-
-<pre>
-{忘情公子:
-均线买点-根据陶博的月线反转公式加工的首下10日线下买点筛选参考,目前并不完整，也不完善}
-Z2:=EXTDATA_USER(3,0);{50天的RPS}
-RPS5O:=Z2/10;
-D:=IF(RPS5O&lt;=85,0,1);{RPS50大于85}
-A:=C/MA(C,250)&gt;1;{站上年线}
-NH:=IF(H&lt;HHV(H,50),0,1);
-B:=COUNT(NH,30);{一月内曾创50日新高}
-NN:=IF(C&gt;MA(C,250),1,0);
-AA:=COUNT(NN,30);
-AB:=HIGH/HHV(HIGH,120)&gt;0.9;{最高价距离120日内的最高价不到10%}
-DDD:=A AND B AND D AND  AA&gt;3 AND AA&lt;30 AND AB;
-B10:=L/MA(C,10)&lt;=1;
-BARSSINCEN(DDD,30)&lt;=N AND B10 AND FILTER(B10,1);
-</pre>
-
-
-<h3 id="toc_0.4.7">关于第二买点</h3>
-
-<ul>
-<li>
-估值与逻辑 回复 西南瓜农:
-<pre>
-呃，博士的买点并不是单纯的10日线就买。你可以查看一下以往的总结。我理解的就是:
-
-底部起涨关键转折的K线附近买入。
-底部可能是第一阶段长期底部后第二阶段起涨的关键k线，也可能是第二阶段中某个基底调整后的起涨k线。
-我认为的关键k线一定是倍量涨幅5点以上的大阳，让关键均线如20，30，60日线甚至120日线拐头向上的k线（这可以配合均线抵扣价判断），有催化剂或者事件配合确定性就更强（比如业绩预告）。
-
-宁德时代我是看着涨起来的，但当时有拓普还有其他股，就没买入，这就是沉没成本吧。
-
-回到宁德时代来说，如果我要买我会在11月19号盘中或者后几天买入，包括11月26日后都是加仓点。
-
-关键k线出来后买法不一定要等调整10日线，当天早盘放量拉升，第一波或者第二波回调到分时均线出就可以买。或者过后3-5天回调到关键k线那天放量处也是买点。其实就是单阳不破k线组合。
-
-回到宁德时代，现在回调到10日线，我觉得不是很好买点了，至少不是中线买点。
-1.涨幅过大，底部起涨120%多了，获利盘巨大，热度太高，需要一个中期调整。
-2.配合其他特斯拉产业链看，比如美股特斯拉，都经历了几次变斜率，最后一波陡峭斜率并且放巨量，这都是不好的信号。
-当然，宁德时代这里目前维持放量，可能短线还能有些机会，但我是不会现阶段买入的。
-</pre>
-
-</ul>
-
-
-<h2 id="toc_0.5">MA3:月线反转+三线红+基本信息</h2>
-
-<pre>
-{月线反转5.0}
-MA10:MA(CLOSE,10);
-MA20:MA(CLOSE,20);
-MA50:MA(CLOSE,50);
-MA120:MA(CLOSE,120);
-MA250:MA(CLOSE,250);
-
-Z:=EXTDATA_USER(3,0);{50天的RPS}
-RPS50:=Z/10;
-D:=IF(RPS50&lt;=85,0,1);{RPS50大于85}
-A:=C/MA(C,250)&gt;1;{站上年线}
-NH:=IF(H&lt;HHV(H,50),0,1);
-B:=COUNT(NH,30);{一月内曾创50日新高}
-NN:=IF(C&gt;MA(C,250),1,0);
-AA:=COUNT(NN,30);
-AB:=HIGH/HHV(HIGH,120)&gt;0.9;{最高价距离120日内的最高价不到10%}
-
-DRAWICON(BARSSINCEN((A AND B AND D AND  AA&gt;2  AND AA&lt;30 AND AB),30)=0,LOW,34);
-
-{小黄人:三线红}
-K120:=EXTDATA_USER(1,0);{120天的RPS}
-RPSK120:=K120/10;
-K01:=IF(RPSK120&lt;=90,0,1);{RPS120大于90};
-K250:=EXTDATA_USER(2,0);{250天的RPS}
-RPSK250:=K250/10;
-K02:=IF(RPSK250&lt;=90,0,1);{RPS250大于90};
-K50:=EXTDATA_USER(3,0);{50天的RPS}
-RPSK50:=K50/10;
-K03:=IF(RPSK50&lt;=90,0,1);{RPS50大于90};
-
-DRAWICON(BARSSINCEN((K01 AND K02 AND K03),20)=0,LOW*0.95,15);
-
-{距形}
+{矩形}
 DRAWRECTREL(0,0,375,348,RGB(68,52,75));
 {基本资料}
 品种类型:=FINANCE(3);
@@ -534,6 +228,485 @@ IF(HCRATE&lt;0,HCRATE,DRAWNULL),NODRAW,COLORGREEN;
 IF(HCRATE&gt;=0,HCRATE,DRAWNULL),NODRAW,COLORRED;
 最高价:HCMAX,NODRAW,COLOR99CCFF;
 回撤价:HCMIN,NODRAW,COLOR99CCFF;
+</pre>
+
+<h3 id="toc_0.4.2">主图显示150日内最大回撤幅度</h3>
+
+<p>
+在主图添加以下代码，显示150日内的最大回撤幅度（也是来源于热心的网友）：
+</p>
+<pre>
+{忘情公子:在主图添加以下代码，显示150日内的最大回撤幅度（也是来源于热心的网友）}
+B11:=CONST(HHV(H,150));
+B12:=HHVBARS(H,150)+1;
+B13:=CONST(LLV(LOW,B12));
+B4:=B13/B11;
+B15:=B4*100-100;
+最大回撤幅度:B15,NODRAW;
+IF(B15&lt;=-30,B15,DRAWNULL),NODRAW,COLORRED;
+</pre>
+
+<h2 id="toc_0.5">选股公式</h2>
+
+<h3 id="toc_0.5.1">陶博士年度金股侯选</h3>
+
+<ul>
+<li>
+金股候选大名单2.0版（20191209） :<a href="https://mp.weixin.qq.com/s/hk4SDnXS4rzMrvUh8nA8qg">https://mp.weixin.qq.com/s/hk4SDnXS4rzMrvUh8nA8qg</a>
+
+</ul>
+
+<p>
+金股要求必须是9月1日以来，拥有三线红的条件。
+</p>
+
+<ol>
+<li>
+3个月以来拥有三线红(9月1日)：首先在<code>基金持股3%+北向持股三千万</code>的大名单1787只股，增加小黄人（三线红）条件（时间段是2019-9-1开始），然后只剩下291只股票。
+
+<li>
+2个月以来港资增仓条件（时间段是2019-11-1开始），就只剩下152只。
+
+<li>
+一线翻红的条件，要求最新收盘日，至少有一条RPS曲线是红的，就只剩下131只。
+
+<li>
+在120日线上，要求最新收盘价在120日线上方，只剩下123只。
+
+</ol>
+
+<p>
+A股总共3755只股票，我仅仅用这5个量化条件（全部是电脑自行选择），用电脑操作，一两分钟就缩减到了123只股票。
+</p>
+
+<p>
+这123只股票就是2020年金股的候选大名单。若干年前选股，那个费劲啊，通常翻很多股票也找不到心仪的好股。
+</p>
+
+<p>
+现在好了，一两分钟选出123只候选大名单之后，就只在这个大名单挑选了，感觉效率一下子提高了很多。
+</p>
+
+<p>
+未来一个月的工作，就是将现下面的X替代为具体的数字。模拟测试一个数字600XXX601XXX603XXX000XXX002XXX300XXX000XXX002XXX300XXX300XXX。
+</p>
+
+<p>
+当然今年年底的时候，上述量化选股结果会发生变化，因此具体的金股名单要等最后一个交易日结束之后才能最终确定。
+</p>
+
+<h3 id="toc_0.5.2">上市一年以上</h3>
+
+<pre>
+{上市一年以上:
+参数N:1-250,缺省250
+收盘价的有效数据周期数&gt;N
+}
+BARSCOUNT(C)&gt;N;
+</pre>
+
+<h3 id="toc_0.5.3">北向持股3000W及基金持股3%</h3>
+
+<pre>
+{北向持股3000W选股:
+陆股通每日持股数量=GPJYVALUE(6,1,1)}
+GPJYVALUE(6,1,1)*C&gt;30000000;
+</pre>
+
+<pre>
+{基金持有3%:
+基金持股量:FINVALUE(255)
+已上市流通A股:FINVALUE(239)
+}
+FINVALUE(255)/FINVALUE(239)&gt;=3/100;
+</pre>
+
+<h3 id="toc_0.5.4">在120日线上</h3>
+
+<pre>
+{在120日线上:
+参数D:1-250,缺省:120
+收盘价&gt;收盘价的120日简单移动平均}
+C&gt;MA(C,D);
+</pre>
+
+<h3 id="toc_0.5.5">月线反转选股</h3>
+
+<pre>
+{月线反转选股:
+月线反转信号5.0版本(MA3)条件：
+    日线收盘价站上年线；
+    一月内曾创50日新高；
+    50日的RPS大于85；
+    收盘价站上年线的天数大于2，小于30；
+    最高价距离120日内的最高价不到10%；
+    30天内第一次满足月线反转的信号时，将在该日K线下方画黄色图标。
+}
+{50日的RPS大于85}
+Z:=EXTDATA_USER(3,0);{RPS50}
+RPS50:=Z/10;
+D:=IF(RPS50&lt;=85,0,1);{RPS50大于85=1}
+
+{日线收盘价站上年线}
+A:=C/MA(C,250)&gt;1;{收盘价/250日均线&gt;1}
+
+{一月内曾创50日新高}
+NH:=IF(H&lt;HHV(H,50),0,1);{最高价&gt;=50日内最高价的最高值=1}
+B:=COUNT(NH,30);{30天中满足NH的天数}
+
+{收盘价站上年线的天数大于2，小于30}
+NN:=IF(C&gt;MA(C,250),1,0);{收盘价&gt;收盘价的250日简单移动平均=1}
+AA:=COUNT(NN,30);{30天中满足NN的天数}
+
+{最高价距离120日内的最高价不到10%}
+AB:=HIGH/HHV(HIGH,120)&gt;0.9;
+
+{选出刚刚站上年线小于30天，大于2天的}
+A  AND  B  AND  D  AND  AA&gt;2  AND  AA&lt;30  AND  AB;
+</pre>
+
+<h3 id="toc_0.5.6">港资增仓选股</h3>
+
+<pre>
+{港资增仓选股条件:
+参数D:1-250,默认30
+计算规则:满足以下两个条件之一
+1.D(30)天内港资增仓流通股份0.5%以上
+    陆股通每日持股数量=GPJYVALUE(6,1,1)
+    流通股本(股)=FINANCE(7)
+    REF:D日前的...
+    陆股通持股占比=陆股通每日持股数量/流通股本(股)*100
+    陆股通持股占比增加=陆股通持股占比-D日前的陆股通持股占比&gt;=0.5
+2.D(30)天内港资持仓市值增加5千万元以上
+    陆股通市值=陆股通每日持股数量*收盘价
+    陆股通市值增加=陆股通市值-D日前的陆股通市值&gt;5000万
+}
+LGT持股占比增加:=((GPJYVALUE(6,1,1)/FINANCE(7))*100-REF((GPJYVALUE(6,1,1)/FINANCE(7))*100,D))&gt;=0.5;
+LGT市值增加:=GPJYVALUE(6,1,1)*C-REF((GPJYVALUE(6,1,1)*C),D)&gt;0.5*100000000;
+LGT持股占比增加 OR LGT市值增加;
+</pre>
+
+<pre>
+赋值:((引用6号ID的序列数据/流通股本(股))*100-D日前的(引用6号ID的序列数据/流通股本(股))*100)&gt;=0.5
+LGT市值增加赋值:引用6号ID的序列数据*收盘价-D日前的(引用6号ID的序列数据*收盘价)&gt;0.5*100000000
+LGT持股占比增加 OR LGT市值增加
+</pre>
+
+<h3 id="toc_0.5.7">一线红及三线红小黄人条件</h3>
+
+<pre>
+{一线翻红的条件选股公式，要求最新收盘日，至少有一条RPS曲线是红的。}
+{参数N:1-100，缺省:90}
+K120:=EXTDATA_USER(1,0);{120天的RPS}
+RPSK120:=K120/10;
+K01:=IF(RPSK120&lt;=N,0,1);{RPS120大于90};
+K250:=EXTDATA_USER(2,0);{250天的RPS}
+RPSK250:=K250/10;
+K02:=IF(RPSK250&lt;=N,0,1);{RPS250大于90};
+K50:=EXTDATA_USER(3,0);{50天的RPS}
+RPSK50:=K50/10;
+K03:=IF(RPSK50&lt;=N,0,1);{RPS50大于90};
+
+K01 OR K02 OR K03;
+</pre>
+
+<pre>
+K120赋值:引用1号ID的序列数据
+RPSK120赋值:K120/10
+K01赋值:如果RPSK120&lt;=N,返回0,否则返回1
+
+K250赋值:引用2号ID的序列数据
+RPSK250赋值:K250/10
+K02赋值:如果RPSK250&lt;=N,返回0,否则返回1
+
+K50赋值:引用3号ID的序列数据
+RPSK50赋值:K50/10
+K03赋值:如果RPSK50&lt;=N,返回0,否则返回1
+
+K01 OR K02 OR K03
+</pre>
+
+<pre>
+{小黄人-三线红-条件}
+{参数N:1-100,默认90}
+K120:=EXTDATA_USER(1,0);{120天的RPS}
+RPSK120:=K120/10;
+K01:=IF(RPSK120&lt;=N,0,1);{RPS120大于90};
+
+K250:=EXTDATA_USER(2,0);{250天的RPS}
+RPSK250:=K250/10;
+K02:=IF(RPSK250&lt;=N,0,1);{RPS250大于90};
+
+K50:=EXTDATA_USER(3,0);{50天的RPS}
+RPSK50:=K50/10;
+K03:=IF(RPSK50&lt;=N,0,1);{RPS50大于90};
+
+K01 AND K02 AND K03;
+</pre>
+
+<h3 id="toc_0.5.8">一年新高及接近一年新高</h3>
+
+<pre>
+{一年新高选股:
+参数D:1-500，缺省:250
+输出NH:如果最高价&lt;D日内最高价的最高值,返回0,否则返回1}
+NH:IF(H&lt;HHV(H,D),0,1);
+</pre>
+
+<pre>
+{接近一年新高选股:
+参数D:1-500，缺省:250
+收盘价/D日内最高价的最高值&gt;0.9
+}
+CLOSE/HHV(HIGH,D)&gt;0.9;
+</pre>
+
+<h3 id="toc_0.5.9">股魔第二阶段选股</h3>
+
+<pre>
+{忘情公子:股魔第二阶段公式趋势模板的8个条件(来自网络)，没有参数：
+根据以下条件，可以量化选出处于第二阶段的股票，但是还需要考虑是什么导致了第二阶段股价的加速上涨，这时就要通过基本面来再次做过滤。
+1、当前的股价处在150日和200日线上方
+2、150日均线处在200日均线上方
+3、200日均线至少上涨了1个月（大多数情况下，上涨4--5个月更好）
+4、50日移动平均值高于150日及200日移动平均值
+5、当前价格高于50日移动平均值
+6、当前股价比最近一年最低股价至少高30%
+7、当前价格至少处在最近一年最高价的75%以内(距离最高价越接近越好)
+8、RPS排名＞90}
+MA50:=MA(C,50);
+MA150:=MA(C,150);
+MA200:=MA(C,200);
+MA22:=REF(MA200,20); {200日均线至少上涨1个月，大多数情况下，上涨4-5个月更好} 
+L250:=LLV(LOW,250); 
+H250:=HHV(HIGH,250); 
+Y:=EXTDATA_USER(2,0)/10;{250天的RPS} 
+股票魔法师:MA200&gt;MA22 AND C&gt;MA50 AND C&gt;MA150 AND C&gt;MA200 AND MA50&gt;MA150 AND MA50&gt;MA200 AND C&gt;L250*1.3 AND {当前价比最后一年最低股价到少高30%} C&gt;H250*0.9 AND {当前价至少在最近一年最高价的75%以内，距离最高价越近越好} Y&gt;90;
+</pre>
+
+<pre>
+MA50赋值:收盘价的50日简单移动平均
+MA150赋值:收盘价的150日简单移动平均
+MA200赋值:收盘价的200日简单移动平均
+MA22赋值:20日前的MA200
+L250赋值:250日内最低价的最低值
+H250赋值:250日内最高价的最高值
+Y赋值:引用2号ID的序列数据/10
+输出 股票魔法师:MA200&gt;MA22 AND 收盘价&gt;MA50 AND 收盘价&gt;MA150 AND 收盘价&gt;MA200 AND MA50&gt;MA150 AND MA50&gt;MA200 AND 收盘价&gt;L250*1.3 AND  收盘价&gt;H250*0.9 AND  Y&gt;90
+</pre>
+
+<h3 id="toc_0.5.10">口袋支点公式</h3>
+
+<p>
+口袋支点公式也是来自网络，并非我所创。另这个口袋支点并不是陶博所说的口袋支点，仅仅是参考而已，大家不要根据公式选出结果就直接操作，一定综合判断。
+</p>
+
+<pre>
+{忘情公子:口袋支点公式，断层要求配合强度和换手，N默认为90天（并不是陶博所说的口袋支点）：
+仅仅是参考而已，大家不要根据公式选出结果就直接操作，一定综合判断。}
+1、有跳空缺口，未补。
+2、近期（一周内），创250日新高；
+3、换手持续低于10%；}
+A1:=(C&gt;=ZTPRICE(REF(CLOSE,1),0.1))&amp;&amp;LOW&gt;(REF(HIGH,1)+0.001);{跳空涨停}
+A2:=BARSLAST(A1);
+A3:=EVERY(L&gt;REF(H,A2+1),A2);{缺口未补}
+B1:=EXIST(A1,30) AND A3;
+;
+HS:=100*V/CAPITAL;
+B2:=COUNT(HS&gt;10,30)=0;{30天内换手不超过10%}
+;
+B3:=HHV(H,5)=HHV(H,250) AND BARSCOUNT(C)&gt;=250;{一周内创一年新高}
+;
+XG:B1 AND B2 AND B3;
+</pre>
+
+
+<h3 id="toc_0.5.11">均线买点-月线反转首下10日线</h3>
+
+<pre>
+{忘情公子:
+均线买点-根据陶博的月线反转公式加工的首下10日线下买点筛选参考,目前并不完整，也不完善}
+Z2:=EXTDATA_USER(3,0);{50天的RPS}
+RPS5O:=Z2/10;
+D:=IF(RPS5O&lt;=85,0,1);{RPS50大于85}
+A:=C/MA(C,250)&gt;1;{站上年线}
+NH:=IF(H&lt;HHV(H,50),0,1);
+B:=COUNT(NH,30);{一月内曾创50日新高}
+NN:=IF(C&gt;MA(C,250),1,0);
+AA:=COUNT(NN,30);
+AB:=HIGH/HHV(HIGH,120)&gt;0.9;{最高价距离120日内的最高价不到10%}
+DDD:=A AND B AND D AND  AA&gt;3 AND AA&lt;30 AND AB;
+B10:=L/MA(C,10)&lt;=1;
+BARSSINCEN(DDD,30)&lt;=N AND B10 AND FILTER(B10,1);
+</pre>
+
+
+<h3 id="toc_0.5.12">关于第二买点</h3>
+
+<ul>
+<li>
+估值与逻辑 回复 西南瓜农:
+<pre>
+呃，博士的买点并不是单纯的10日线就买。你可以查看一下以往的总结。我理解的就是:
+
+底部起涨关键转折的K线附近买入。
+底部可能是第一阶段长期底部后第二阶段起涨的关键k线，也可能是第二阶段中某个基底调整后的起涨k线。
+我认为的关键k线一定是倍量涨幅5点以上的大阳，让关键均线如20，30，60日线甚至120日线拐头向上的k线（这可以配合均线抵扣价判断），有催化剂或者事件配合确定性就更强（比如业绩预告）。
+
+宁德时代我是看着涨起来的，但当时有拓普还有其他股，就没买入，这就是沉没成本吧。
+
+回到宁德时代来说，如果我要买我会在11月19号盘中或者后几天买入，包括11月26日后都是加仓点。
+
+关键k线出来后买法不一定要等调整10日线，当天早盘放量拉升，第一波或者第二波回调到分时均线出就可以买。或者过后3-5天回调到关键k线那天放量处也是买点。其实就是单阳不破k线组合。
+
+回到宁德时代，现在回调到10日线，我觉得不是很好买点了，至少不是中线买点。
+1.涨幅过大，底部起涨120%多了，获利盘巨大，热度太高，需要一个中期调整。
+2.配合其他特斯拉产业链看，比如美股特斯拉，都经历了几次变斜率，最后一波陡峭斜率并且放巨量，这都是不好的信号。
+当然，宁德时代这里目前维持放量，可能短线还能有些机会，但我是不会现阶段买入的。
+</pre>
+
+</ul>
+
+
+<h2 id="toc_0.6">MA3:月线反转+三线红主图叠加</h2>
+
+<pre>
+{月线反转5.0}
+MA10:MA(CLOSE,10);
+MA20:MA(CLOSE,20);
+MA50:MA(CLOSE,50);
+MA120:MA(CLOSE,120);
+MA250:MA(CLOSE,250);
+
+Z:=EXTDATA_USER(3,0);{50天的RPS}
+RPS50:=Z/10;
+D:=IF(RPS50&lt;=85,0,1);{RPS50大于85}
+A:=C/MA(C,250)&gt;1;{站上年线}
+NH:=IF(H&lt;HHV(H,50),0,1);
+B:=COUNT(NH,30);{一月内曾创50日新高}
+NN:=IF(C&gt;MA(C,250),1,0);
+AA:=COUNT(NN,30);
+AB:=HIGH/HHV(HIGH,120)&gt;0.9;{最高价距离120日内的最高价不到10%}
+
+DRAWICON(BARSSINCEN((A AND B AND D AND  AA&gt;2  AND AA&lt;30 AND AB),30)=0,LOW,34);
+
+{小黄人:三线红}
+K120:=EXTDATA_USER(1,0);{120天的RPS}
+RPSK120:=K120/10;
+K01:=IF(RPSK120&lt;=90,0,1);{RPS120大于90};
+K250:=EXTDATA_USER(2,0);{250天的RPS}
+RPSK250:=K250/10;
+K02:=IF(RPSK250&lt;=90,0,1);{RPS250大于90};
+K50:=EXTDATA_USER(3,0);{50天的RPS}
+RPSK50:=K50/10;
+K03:=IF(RPSK50&lt;=90,0,1);{RPS50大于90};
+
+DRAWICON(BARSSINCEN((K01 AND K02 AND K03),20)=0,LOW*0.95,15);
+
+{板块指数三线红小黄人图标}
+BK10:=EXTDATA_USER(6,0);{10天的RPS}
+RPSBK10:=BK10/10;
+BK01:=IF(RPSBK10&lt;=90,0,1);{RPS10大于90}
+
+BK20:=EXTDATA_USER(7,0);{20天的RPS}
+RPSBK20:=BK20/10;
+BK02:=IF(RPSBK20&lt;=90,0,1);{RPS20大于90}
+
+BK60:=EXTDATA_USER(8,0);{60天的RPS}
+RPSBK60:=BK60/10;
+BK03:=IF(RPSBK60&lt;=90,0,1);{RPS60大于90}
+
+{板块指数的三线翻红画图标15}
+DRAWICON(BARSSINCEN((BK01 AND BK02 AND BK03),20)=0,LOW*0.95,15);
+</pre>
+
+<h2 id="toc_0.7">RPS副图曲线</h2>
+
+<pre>
+Z10:=EXTDATA_USER(5,0);{10天的}
+RPS10:Z10/10,LINETHICK1,COLORWHITE;
+IF(RPS10&gt;=M,RPS10,DRAWNULL),LINETHICK2,COLORLIMAGENTA;
+
+Z20:=EXTDATA_USER(4,0);{20天的}
+RPS20:Z20/10,LINETHICK1,COLORYELLOW;
+IF(RPS20&gt;=M,RPS20,DRAWNULL),LINETHICK2,COLORLIMAGENTA;
+
+Z50:=EXTDATA_USER(3,0);{50天的}
+RPS50:Z50/10,LINETHICK2,COLORMAGENTA;
+IF(RPS50&gt;=M,RPS50,DRAWNULL),LINETHICK2,COLORRED;
+
+Z120:=EXTDATA_USER(1,0);{120天的}
+RPS120:Z120/10,LINETHICK2,COLORGREEN;
+IF(RPS120&gt;=M,RPS120,DRAWNULL),LINETHICK2,COLORRED;
+
+Z250:=EXTDATA_USER(2,0);{250天的}
+RPS250:Z250/10,LINETHICK2,COLORLIGRAY;
+IF(RPS250&gt;=M,RPS250,DRAWNULL),LINETHICK2,COLORRED;
+</pre>
+
+<ul>
+<li>
+板块股价相对强度RPS
+<pre>
+U1:=EXTDATA_USER(6,0);{10天的}
+RPS10:U1/10,LINETHICK2,COLORWHITE;{COLORLICYAN}
+IF(RPS10&gt;=M,RPS10,DRAWNULL),LINETHICK2,COLORRED;
+
+W1:=EXTDATA_USER(7,0);{20天的}
+RPS20:W1/10,LINETHICK2,COLORYELLOW;{COLORBROWN}
+IF(RPS20&gt;=M,RPS20,DRAWNULL),LINETHICK2,COLORRED;
+
+X1:=EXTDATA_USER(8,0);{60天的}
+RPS60:X1/10,LINETHICK2,COLORMAGENTA;{COLORYELLOW}
+IF(RPS60&gt;=M,RPS60,DRAWNULL),LINETHICK2,COLORRED;
+</pre>
+
+</ul>
+
+<pre>
+U1赋值:引用6号ID的序列数据
+输出RPS10:U1/10,线宽为2,画白色
+如果RPS10&gt;=M,返回RPS10,否则返回无效数,线宽为2,画红色
+W1赋值:引用7号ID的序列数据
+输出RPS20:W1/10,线宽为2,画黄色
+如果RPS20&gt;=M,返回RPS20,否则返回无效数,线宽为2,画红色
+X1赋值:引用8号ID的序列数据
+输出RPS60:X1/10,线宽为2,画洋红色
+如果RPS60&gt;=M,返回RPS60,否则返回无效数,线宽为2,画红色
+</pre>
+
+<h2 id="toc_0.8">港资持股副图曲线</h2>
+
+<pre>
+NOTEXT曲线:GPJYVALUE(6,1,1),COLORFFFF00;
+IF((GPJYVALUE(6,1,1)/FINANCE(7))&gt;0.01,NOTEXT曲线,DRAWNULL),LINETHICK1,COLORRED;
+IF((GPJYVALUE(6,1,1)/FINANCE(7))=0,NOTEXT曲线,DRAWNULL),LINETHICK1,COLORWHITE;
+IF((GPJYVALUE(6,1,1)/FINANCE(7))&gt;0 AND (GPJYVALUE(6,1,1)/FINANCE(7))&lt;0.01,NOTEXT曲线,DRAWNULL),LINETHICK1,COLORCYAN;
+持股量:GPJYVALUE(6,1,1)/10000,COLORLIBLUE;
+万股:DRAWNULL;
+占流通比:(GPJYVALUE(6,1,1)/FINANCE(7))*100,NODRAW;
+占总股比:(GPJYVALUE(6,1,1)/FINANCE(1))*100,NODRAW;
+增减万股:(GPJYVALUE(6,1,1)-REF(GPJYVALUE(6,1,1),1))/10000;
+增减:=GPJYVALUE(6,1,1)-REF(GPJYVALUE(6,1,1),1);
+IF(增减&lt;0,增减,DRAWNULL),STICK,LINETHICK4,COLORCYAN;
+IF(增减=0,增减,DRAWNULL),STICK,LINETHICK4,COLORWHITE;
+IF(增减&gt;0,增减,DRAWNULL),STICK,LINETHICK4,COLORRED;
+</pre>
+
+<pre>
+输出NOTEXT曲线:引用6号ID的序列数据,COLORFFFF00
+如果(引用6号ID的序列数据/流通股本(股))&gt;0.01,返回NOTEXT曲线,否则返回无效数,线宽为1,画红色
+如果(引用6号ID的序列数据/流通股本(股))=0,返回NOTEXT曲线,否则返回无效数,线宽为1,画白色
+如果(引用6号ID的序列数据/流通股本(股))&gt;0AND(引用6号ID的序列数据/流通股本(股))&lt;0.01,返回NOTEXT曲线,否则返回无效数,线宽为1,画青色
+输出持股量:引用6号ID的序列数据/10000,画淡蓝色
+输出万股:无效数
+输出占流通比:(引用6号ID的序列数据/流通股本(股))*100,NODRAW
+输出占总股比:(引用6号ID的序列数据/总股本(股))*100,NODRAW
+输出增减万股:(引用6号ID的序列数据-1日前的引用6号ID的序列数据)/10000
+增减赋值:引用6号ID的序列数据-1日前的引用6号ID的序列数据
+如果增减&lt;0,返回增减,否则返回无效数,STICK,线宽为4,画青色
+如果增减=0,返回增减,否则返回无效数,STICK,线宽为4,画白色
+如果增减&gt;0,返回增减,否则返回无效数,STICK,线宽为4,画红色
 </pre>
 
 </div>
