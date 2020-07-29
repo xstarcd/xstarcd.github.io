@@ -164,6 +164,10 @@ PageSpeed Insights: <a href="https://developers.google.com/speed/pagespeed/insig
 </ul>
 <li>
 修改默认html输出路径(当编译md文件时，html生成到当前md相同目录下)
+
+<ul>
+<li>
+Vimwiki 2.1
 <pre class="brush:bash">
 # ~/.vim/autoload/vimwiki/base.vim
 diff base.vim.bak base.vim
@@ -174,6 +178,19 @@ diff base.vim.bak base.vim
 &gt;     return substitute(path, '[/\\]\+$', '', '').'/'
 </pre>
 
+<li>
+Vimwiki 2.2.1
+<pre class="brush:bash">
+# diff .vim/plugin/vimwiki.vim*
+28,30c28
+&lt;     "motify by XStar
+&lt;     "return substitute(path, '[/\\]\+$', '', '').'_html/'
+&lt;     return substitute(path, '[/\\]\+$', '', '').'/'
+---
+&gt;     return substitute(path, '[/\\]\+$', '', '').'_html/'
+</pre>
+
+</ul>
 <li>
 jQuery-Visualize-Demo:<a href="http://www.17sucai.com/preview/1/2013-04-29/jQuery-Visualize-fa7fb07/demo.html">http://www.17sucai.com/preview/1/2013-04-29/jQuery-Visualize-fa7fb07/demo.html</a>
 
