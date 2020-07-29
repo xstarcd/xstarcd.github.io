@@ -30,10 +30,9 @@
 <li><a href="#toc_1.3.5">输出结果介绍</a>
 <li><a href="#toc_1.3.6">wireshark查看</a>
 <li><a href="#toc_1.3.7">其他</a>
-</ul>
-<li><a href="#toc_1.4">TCP协议状态</a>
-<ul>
-<li><a href="#toc_1.4.1">概念补充-TCP三次握手</a>
+<li><a href="#toc_1.3.8">混杂模式</a>
+<li><a href="#toc_1.3.9">TCP协议状态</a>
+<li><a href="#toc_1.3.10">概念补充-TCP三次握手</a>
 </ul>
 </ul>
 </ul>
@@ -637,6 +636,8 @@ ip.addr eq 192.168.2.1
 
 <h3 id="toc_1.3.7">其他</h3>
 
+<h3 id="toc_1.3.8">混杂模式</h3>
+
 <ul>
 <li>
 device eth0/eth1 entered promiscuous mode
@@ -668,7 +669,7 @@ TCP Keepalive HOWTO:<a href="http://www.tldp.org/HOWTO/html_single/TCP-Keepalive
 </ul>
 
 
-<h2 id="toc_1.4">TCP协议状态</h2>
+<h3 id="toc_1.3.9">TCP协议状态</h3>
 
 <p>
 TCP的状态 (SYN, FIN, ACK, PSH, RST, URG)
@@ -727,7 +728,7 @@ PSH为1的情况，一般只出现在DATA内容不为0的包中，也就是说PS
 TCP的连接建立和连接关闭，都是通过请求－响应的模式完成的。
 </p>
 
-<h3 id="toc_1.4.1">概念补充-TCP三次握手</h3>
+<h3 id="toc_1.3.10">概念补充-TCP三次握手</h3>
 
 <p>
 TCP(Transmission Control Protocol)传输控制协议
