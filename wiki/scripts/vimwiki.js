@@ -59,7 +59,7 @@ var kwiki = {
 
 $(document).ready(function() {
     if (window.innerWidth >= 460) {
-        var toggler = $('<div class="toggler" title="点击展开/收起，Shift+Z 隐藏或打开">目录</div>'),
+        var toggler = $('<div class="toggler" title="点击展开/收起，Shift+Z 隐藏或打开；双击放大/缩小">目录</div>'),
         toc = $('.toc');
         toc.wrap('<div class="tocWrap">');
 
@@ -79,8 +79,18 @@ $(document).ready(function() {
             }
         });
 
+        if( toc.outerHeight(true) >= window.innerHeight-50) toc.css({height:window.innerHeight*0.9+'px'});
         toggler.click(function() {
             $('div.toc').slideToggle(300);
+        });
+        toggler.dblclick(function(){
+            if ($('.tocWrap').width() < 300 ) 
+            {
+                tocWrapHeight=window.innerWidth*0.5;
+            }else{
+                tocWrapHeight=250;
+            }
+            $('.tocWrap').css({width:tocWrapHeight+'px'});
         });
     }
 
