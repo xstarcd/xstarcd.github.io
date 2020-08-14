@@ -67,9 +67,9 @@ $(document).ready(function() {
         .delay(500)
         .fadeTo(500, '0.25')
         .hover(function() {
-            $(this).stop().fadeTo(300, '0.9');
+            $(this).stop().fadeTo(300, 1.00);
         }, function() {
-            $(this).stop().fadeTo(300, '0.25');
+            $(this).stop().fadeTo(300, 0.15);
         });
 
         $('html').keypress(function(e) {
