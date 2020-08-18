@@ -319,6 +319,7 @@ http://xstarcd.github.io/wiki/stock/TBS_How_I_Selected_Ushimata_202002015.html
 http://xstarcd.github.io/wiki/stock/TBS_my_stock_selectCodes.html
 http://xstarcd.github.io/wiki/stock/TBS_value_Momentum_trend.html
 http://xstarcd.github.io/wiki/stock/TXD_codes.html
+http://xstarcd.github.io/wiki/stock/stockMagician.html
 http://xstarcd.github.io/wiki/stock/stock_test.html
 http://xstarcd.github.io/wiki/sysadmin/index.html
 http://xstarcd.github.io/wiki/sysadmin/Apache.html
