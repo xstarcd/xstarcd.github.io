@@ -26,6 +26,7 @@
 <li><a href="#toc_1.2.2">激活分区</a>
 <li><a href="#toc_1.2.3">缩小home分区</a>
 <li><a href="#toc_1.2.4">扩大根分区</a>
+<li><a href="#toc_1.2.5">resize2fs报错:xfs</a>
 </ul>
 <li><a href="#toc_1.3">其他操作</a>
 <ul>
@@ -109,7 +110,7 @@ lvchange -ay /dev/vg_db/lv_root
 先检查下分区: e2fsck -f /dev/vg_db/lv_home
 
 <li>
-缩小文件系统大小：resize2fs /dev/vg_db/lv_home 10G
+缩小文件系统大小：resize2fs /dev/vg_db/lv_home 10G（其中10G为new_size，指修改为10GB。resize2fs不能用xfs文件系统，需用xfs_growfs)
 
 <li>
 缩小逻辑卷
@@ -164,6 +165,41 @@ resize2fs -p /dev/vg_db/lv_root
 </ul>
 <li>
 查看修改结果: lvscan
+
+</ul>
+
+<h3 id="toc_1.2.5">resize2fs报错:xfs</h3>
+
+<ul>
+<li>
+resize2fs报如下错误，有可能是文件系统不对：
+<pre>
+resize2fs /dev/centos/root 
+
+resize2fs 1.42.9 (28-Dec-2013)
+resize2fs: Bad magic number in super-block while trying to open /dev/centos/root
+Couldn't find valid filesystem superblock.
+</pre>
+
+</ul>
+
+<ul>
+<li>
+检查 /dev/centos/root 文件系统，发现是xfs，如下;
+<pre>
+mount |grep root
+
+/dev/mapper/centos-root on / type xfs (rw,relatime,attr2,inode64,noquota)
+</pre>
+
+</ul>
+
+<ul>
+<li>
+xfs的文件系统重新定义大小用如下命令：
+<pre>
+xfs_growfs /dev/mapper/centos-root 
+</pre>
 
 </ul>
 
