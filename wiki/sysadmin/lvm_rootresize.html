@@ -24,8 +24,8 @@
 <ul>
 <li><a href="#toc_1.2.1">进入rescue模式</a>
 <li><a href="#toc_1.2.2">激活分区</a>
-<li><a href="#toc_1.2.3">缩小home分区:缩小时先改文件系统、再改分区</a>
-<li><a href="#toc_1.2.4">扩大根分区：扩大时先改分区、再改文件系统</a>
+<li><a href="#toc_1.2.3">缩小home分区:缩小时先改文件系统、再改LVM逻辑卷</a>
+<li><a href="#toc_1.2.4">扩大根分区:扩大时先改LVM逻辑卷、再改文件系统</a>
 <li><a href="#toc_1.2.5">resize2fs报错:xfs</a>
 </ul>
 <li><a href="#toc_1.3">其他操作</a>
@@ -54,6 +54,10 @@ CentOS 5 LVM逻辑卷管理: <a href="http://sunshyfangtian.blog.51cto.com/14057
 
 </ol>
 </ul>
+
+<p>
+<img src=../img/LVM.png alt="LVM结构" width=500px>
+</p>
 
 <h2 id="toc_1.1">目标</h2>
 
@@ -103,7 +107,7 @@ lvchange -ay /dev/vg_db/lv_home
 lvchange -ay /dev/vg_db/lv_root
 </pre>
 
-<h3 id="toc_1.2.3">缩小home分区:缩小时先改文件系统、再改分区</h3>
+<h3 id="toc_1.2.3">缩小home分区:缩小时先改文件系统、再改LVM逻辑卷</h3>
 
 <ul>
 <li>
@@ -141,7 +145,7 @@ lvchange -ay /dev/vg_db/lv_root
 
 </ul>
 
-<h3 id="toc_1.2.4">扩大根分区：扩大时先改分区、再改文件系统</h3>
+<h3 id="toc_1.2.4">扩大根分区:扩大时先改LVM逻辑卷、再改文件系统</h3>
 
 <ul>
 <li>
@@ -201,8 +205,8 @@ mount |grep root
 <li>
 xfs的文件系统重新定义大小用如下命令：
 <pre>
-resize2fs命令         针对的是ext2、ext3、ext4文件系统
-xfs_growfs命令        针对的是xfs文件系统
+resize2fs  针对的是ext2、ext3、ext4文件系统
+xfs_growfs 针对的是xfs文件系统
 
 xfs_growfs /dev/mapper/centos-root 
 &lt;path&gt; is not a mounted XFS filesystem.
@@ -224,7 +228,23 @@ xfs_growfs /
 
 <li>
 利用xfsdump / xfsrestore备份恢复功能缩小xfs分区：<a href="https://segmentfault.com/a/1190000008377274">https://segmentfault.com/a/1190000008377274</a>
+
+</ul>
+
+<p>
+XFS是一个开源的（GPL）日志文件系统，最初由硅谷图形（SGI）开发，现在大多数的Linux发行版都支持。事实上，XFS已被最新的CentOS/RHEL 7采用，成为其默认的文件系统。在其众多的特性中，包含了“在线调整大小”这一特性，使得现存的XFS文件系统在已经挂载的情况下可以进行扩展。然而，对于XFS文件系统的缩减却还没有支持。
+</p>
+
+<p>
+要扩展一个现存的XFS文件系统，你可以使用命令行工具xfs_growfs，这在大多数Linux发行版上都默认可用。由于XFS支持在线调整大小，目标文件系统可以挂在，也可以不挂载。
+</p>
+
 <pre class="brush:bash">
+# xfs_growfs info /dev/centos/root        #检查数据块大小和数量
+# xfs_growfs /dev/centos/root -D 1986208  #将XFS文件扩展到1986208
+# xfs_growfs /dev/centos/root             #自动扩展XFS文件系统到最大的可用大小
+
+# 安装xfs备份恢复工具
 yum -y install xfsdump
 
 #备份/home
@@ -233,6 +253,7 @@ xfsdump -f /home.xfsdump /home
 # 将 /home 分区缩减为 5GB
 umount /home
 lvreduce -L 5G /dev/mapper/centos-home
+
 # 将/home分出来的空间分给/dev/mapper/centos-root，并延展xfs文件系统
 lvextend -l +100%FREE /dev/centos/root
 xfs_growfs /dev/centos/root
@@ -242,8 +263,6 @@ mkfs.xfs -f /dev/mapper/centos-home
 mount /home
 xfsrestore -f /home.xfsdump /home
 </pre>
-
-</ul>
 
 <h2 id="toc_1.3">其他操作</h2>
 
