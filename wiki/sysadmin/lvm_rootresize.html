@@ -196,7 +196,7 @@ mount |grep root
 
 <ul>
 <li>
-xfs的文件系统重新定义大小用如下命令：
+xfs的文件系统重新定义大小用如下命令(注意：xfs文件系统只能扩大、不支持减小，减小只能用mkfs.xfs重新格式化)：
 <pre>
 xfs_growfs /dev/mapper/centos-root 
 </pre>
