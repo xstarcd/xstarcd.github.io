@@ -222,6 +222,27 @@ xfs_growfs /
     （缩小操作需要先改文件系统、再改分区，是否有可能是这个操作顺序引起的失败？）
 </pre>
 
+<li>
+利用xfsdump / xfsrestore备份恢复功能缩小xfs分区：<a href="https://segmentfault.com/a/1190000008377274">https://segmentfault.com/a/1190000008377274</a>
+<pre class="brush:bash">
+yum -y install xfsdump
+
+#备份/home
+xfsdump -f /home.xfsdump /home
+
+# 将 /home 分区缩减为 5GB
+umount /home
+lvreduce -L 5G /dev/mapper/centos-home
+# 将/home分出来的空间分给/dev/mapper/centos-root，并延展xfs文件系统
+lvextend -l +100%FREE /dev/centos/root
+xfs_growfs /dev/centos/root
+
+# 重新格式化home分区，恢复/home的内容
+mkfs.xfs -f /dev/mapper/centos-home
+mount /home
+xfsrestore -f /home.xfsdump /home
+</pre>
+
 </ul>
 
 <h2 id="toc_1.3">其他操作</h2>
