@@ -282,6 +282,7 @@ http://xstarcd.github.io/wiki/shell/od.html
 http://xstarcd.github.io/wiki/shell/pipe.html
 http://xstarcd.github.io/wiki/shell/pkill.html
 http://xstarcd.github.io/wiki/shell/pmap.html
+http://xstarcd.github.io/wiki/shell/printf.html
 http://xstarcd.github.io/wiki/shell/procfs.html
 http://xstarcd.github.io/wiki/shell/ps.html
 http://xstarcd.github.io/wiki/shell/rkhunter.html
