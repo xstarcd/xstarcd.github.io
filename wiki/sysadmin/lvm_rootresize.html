@@ -24,8 +24,8 @@
 <ul>
 <li><a href="#toc_1.2.1">进入rescue模式</a>
 <li><a href="#toc_1.2.2">激活分区</a>
-<li><a href="#toc_1.2.3">缩小home分区</a>
-<li><a href="#toc_1.2.4">扩大根分区</a>
+<li><a href="#toc_1.2.3">缩小home分区:缩小时先改文件系统、再改分区</a>
+<li><a href="#toc_1.2.4">扩大根分区：扩大时先改分区、再改文件系统</a>
 <li><a href="#toc_1.2.5">resize2fs报错:xfs</a>
 </ul>
 <li><a href="#toc_1.3">其他操作</a>
@@ -103,9 +103,12 @@ lvchange -ay /dev/vg_db/lv_home
 lvchange -ay /dev/vg_db/lv_root
 </pre>
 
-<h3 id="toc_1.2.3">缩小home分区</h3>
+<h3 id="toc_1.2.3">缩小home分区:缩小时先改文件系统、再改分区</h3>
 
 <ul>
+<li>
+减小需先umount分区：umount /home，若提示"device is busy."，用<code>fuser -m -k /home</code>终止占用进程后再试。
+
 <li>
 先检查下分区: e2fsck -f /dev/vg_db/lv_home
 
@@ -138,7 +141,7 @@ lvchange -ay /dev/vg_db/lv_root
 
 </ul>
 
-<h3 id="toc_1.2.4">扩大根分区</h3>
+<h3 id="toc_1.2.4">扩大根分区：扩大时先改分区、再改文件系统</h3>
 
 <ul>
 <li>
@@ -196,9 +199,27 @@ mount |grep root
 
 <ul>
 <li>
-xfs的文件系统重新定义大小用如下命令(注意：xfs文件系统只能扩大、不支持减小，减小只能用mkfs.xfs重新格式化)：
+xfs的文件系统重新定义大小用如下命令：
 <pre>
+resize2fs命令         针对的是ext2、ext3、ext4文件系统
+xfs_growfs命令        针对的是xfs文件系统
+
 xfs_growfs /dev/mapper/centos-root 
+&lt;path&gt; is not a mounted XFS filesystem.
+
+需要改为挂载后的路径：
+xfs_growfs /
+</pre>
+
+<li>
+<a href="https://www.cnblogs.com/kevingrace/p/5825963.html">https://www.cnblogs.com/kevingrace/p/5825963.html</a>
+<pre>
+这个链里中，做xfs卷缩小实验时，操作顺序是先缩小分区、再用xfs_growfs改文件系统，有可能是操作顺序不对引起文件系统数据丢失造成?
+第一步：lvreduce缩小分区，操作时提示了：THIS MAY DESTROY YOUR DATA，可能会丢数据。
+第二步：
+    xfs_growfs /dev/mapper/centos-home调整文件系统，报不是一个已挂载的文件系统错误
+    然后去mount失败，只能mkfs.xfs重新格式化了
+    （缩小操作需要先改文件系统、再改分区，是否有可能是这个操作顺序引起的失败？）
 </pre>
 
 </ul>
