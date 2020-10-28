@@ -545,7 +545,7 @@ server:
     #最多可以有多少个socket连接到tomcat上，NIO模式下默认是10000
     max-connections: 20000
     accesslog:
-      directory: /var/log/tima/api-gateway
+      directory: /var/log/api-gateway
       enabled: true
       pattern: '%{X-Real-IP}i %l %u %t &amp;quot;%r&amp;quot; %s %b %{Referer}i %{User-Agent}i %D %a'
       prefix: ${spring.application.name}_access
@@ -620,7 +620,7 @@ server:
     #最多可以有多少个socket连接到tomcat上，NIO模式下默认是10000
     max-connections: 20000
     accesslog:
-      directory: /var/log/tima/api-gateway
+      directory: /var/log/api-gateway
       enabled: true
       pattern: '%{X-Real-IP}i %l %u %t &amp;quot;%r&amp;quot; %s %b %{Referer}i %{User-Agent}i %D %a'
       prefix: ${spring.application.name}_access
