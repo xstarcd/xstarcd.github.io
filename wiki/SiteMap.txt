@@ -52,6 +52,7 @@ http://xstarcd.github.io/wiki/Cloud/OpenStack.html
 http://xstarcd.github.io/wiki/Cloud/Openstack_modeule_introduce.html
 http://xstarcd.github.io/wiki/Cloud/Opentsdb.html
 http://xstarcd.github.io/wiki/Cloud/SinglePort_VirtualMultiVlan_in_Xen.html
+http://xstarcd.github.io/wiki/Cloud/SpringCloud_api_gateway.html
 http://xstarcd.github.io/wiki/Cloud/SpringCloud_introduce.html
 http://xstarcd.github.io/wiki/Cloud/Storm.html
 http://xstarcd.github.io/wiki/Cloud/Ubuntu_vmbuilder_kvm.html
@@ -86,6 +87,7 @@ http://xstarcd.github.io/wiki/Cloud/openvz.html
 http://xstarcd.github.io/wiki/Cloud/pssh.html
 http://xstarcd.github.io/wiki/Cloud/qcow2_raw_vmdk.html
 http://xstarcd.github.io/wiki/Cloud/redhat_libvirt_kvm.html
+http://xstarcd.github.io/wiki/Cloud/springCloud_zuulGateway_confs_collect.html
 http://xstarcd.github.io/wiki/Cloud/storm-realtime-big-data-analysis_from_csdn.html
 http://xstarcd.github.io/wiki/Cloud/storm_config_detail.html
 http://xstarcd.github.io/wiki/Cloud/ubuntu_kvm_virtualization_solution.html

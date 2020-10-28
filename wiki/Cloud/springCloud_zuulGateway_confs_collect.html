@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>springCloud zuulGateway配置项收集</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>springCloud zuulGateway配置项收集</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Springcloud的性能问题</a>
+<li><a href="#toc_0.2">Feign-Ribbon-Hystrix关系</a>
+<li><a href="#toc_0.3">Feign典型配置说明</a>
+<li><a href="#toc_0.4">Hystrix配置说明</a>
+<li><a href="#toc_0.5">Ribbon配置说明</a>
+<li><a href="#toc_0.6">Zuul配置</a>
+<li><a href="#toc_0.7">tomcat配置</a>
+<li><a href="#toc_0.8">Servlet容器</a>
+<li><a href="#toc_0.9">整体配置项</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+相关原文：
+
+<ul>
+<li>
+Hystrix Configuration:
+
+<ul>
+<li>
+<a href="https://github.com/Netflix/Hystrix/wiki/Configuration#queueSizeRejectionThreshold">https://github.com/Netflix/Hystrix/wiki/Configuration#queueSizeRejectionThreshold</a>
+
+<li>
+Hystrix完整配置列表:<a href="https://www.cnblogs.com/throwable/p/11961016.html">https://www.cnblogs.com/throwable/p/11961016.html</a>
+
+</ul>
+<li>
+Springcloud配置讲解:
+
+<ul>
+<li>
+Springcloud 配置 | 史上最全,一文全懂:<a href="https://www.cnblogs.com/crazymakercircle/p/11674597.html">https://www.cnblogs.com/crazymakercircle/p/11674597.html</a>
+
+<li>
+Feign Ribbon Hystrix 三者关系 | 史上最全, 深度解析:<a href="https://www.cnblogs.com/crazymakercircle/p/11664812.html">https://www.cnblogs.com/crazymakercircle/p/11664812.html</a>
+
+<li>
+tomcat的maxConnections、maxThreads、acceptCount 图解:<a href="https://www.cnblogs.com/crazymakercircle/p/11748214.html">https://www.cnblogs.com/crazymakercircle/p/11748214.html</a>
+
+<li>
+spring cloud性能调优:<a href="https://blog.csdn.net/w1014074794/article/details/88571880">https://blog.csdn.net/w1014074794/article/details/88571880</a>
+
+</ul>
+<li>
+SpringCloud gateway （史上最全）:<a href="https://www.cnblogs.com/crazymakercircle/p/11704077.html">https://www.cnblogs.com/crazymakercircle/p/11704077.html</a>
+
+<li>
+踩坑 Spring Cloud Hystrix 线程池队列配置:<a href="https://www.cnblogs.com/seifon/p/9921774.html">https://www.cnblogs.com/seifon/p/9921774.html</a>
+
+<li>
+SpringCloud、Nginx高并发核心编程 【2020年11月新书 】:<a href="https://www.cnblogs.com/crazymakercircle/p/13878143.html">https://www.cnblogs.com/crazymakercircle/p/13878143.html</a>
+
+<li>
+Hystrix仪表盘（Finchley.RC2版本）:<a href="https://blog.csdn.net/WYA1993/article/details/82419131">https://blog.csdn.net/WYA1993/article/details/82419131</a>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.1">Springcloud的性能问题</h2>
+
+<p>
+Springcloud 原始的配置，性能是很低的，大家可以使用Jmeter测试一下，QPS不会到50。要做到高并发，需要做不少的配置优化，主要的配置优化有以下几点：
+</p>
+
+<ul>
+<li>
+hystrix熔断器并发调优
+
+<li>
+zuul网关的并发参数控制
+
+<li>
+Feign客户端和连接数参数调优
+
+<li>
+Tomcat并发连接数调优
+
+<li>
+timeout超时参数调优
+
+<li>
+JVM参数调优
+
+<li>
+ribbon和hystrix的请求超时，重试以及幂等性配置
+
+<li>
+Servlet容器优化
+
+</ul>
+
+<h2 id="toc_0.2">Feign-Ribbon-Hystrix关系</h2>
+
+<p>
+在微服务架构的应用中， Feign、Hystrix，Ribbon三者都是必不可少的，可以说已经成为铁三角。
+</p>
+
+<p>
+疯狂创客圈（笔者尼恩创建的高并发研习社群）中，有不少小伙伴问到尼恩，关于Feign、Hystrix，Ribbon三者之间的关系，以及三者的超时配置。截止目前，全网没有篇文章介绍清楚的，故，尼恩特写一篇详细一点的文章，剖析一下。
+</p>
+
+<ul>
+<li>
+Feign介绍
+
+</ul>
+
+<p>
+Feign是一款Java语言编写的HttpClient绑定器，在Spring Cloud微服务中用于实现微服务之间的声明式调用。Feign 可以定义请求到其他服务的接口，用于微服务间的调用，不用自己再写http请求，在客户端实现，调用此接口就像远程调用其他服务一样，当请求出错时可以调用接口的实现类来返回
+</p>
+
+<p>
+Feign是一个声明式的web service客户端，它使得编写web service客户端更为容易。创建接口，为接口添加注解，即可使用Feign。Feign可以使用Feign注解或者JAX-RS注解，还支持热插拔的编码器和解码器。Spring Cloud为Feign添加了Spring MVC的注解支持，并整合了Ribbon和Eureka来为使用Feign时提供负载均衡。
+</p>
+
+<p>
+feign源码的github地址： <a href="https://github.com/OpenFeign/feign">https://github.com/OpenFeign/feign</a>
+</p>
+
+<ul>
+<li>
+Ribbon介绍
+
+</ul>
+
+<p>
+Ribbon 作为负载均衡，在客户端实现，服务段可以启动两个端口不同但servername一样的服务
+</p>
+
+<p>
+Ribbon是Netflix发布的开源项目，主要功能是提供客户端的软件负载均衡算法，将Netflix的中间层服务连接在一起。Ribbon客户端组件提供一系列完善的配置项如连接超时，重试等。简单的说，就是在配置文件中列出Load Balancer后面所有的机器，Ribbon会自动的帮助你基于某种规则（如简单轮询，随机连接等）去连接这些机器。我们也很容易使用Ribbon实现自定义的负载均衡算法。简单地说，Ribbon是一个客户端负载均衡器。
+</p>
+
+<p>
+Ribbon工作时分为两步：第一步先选择 Eureka Server, 它优先选择在同一个Zone且负载较少的Server；第二步再根据用户指定的策略，在从Server取到的服务注册列表中选择一个地址。其中Ribbon提供了多种策略，例如轮询、随机、根据响应时间加权等。
+</p>
+
+<p>
+ribbon源码的github地址： <a href="https://github.com/Netflix/ribbon">https://github.com/Netflix/ribbon</a>
+</p>
+
+<ul>
+<li>
+Hystrix介绍
+
+</ul>
+
+<p>
+Hystrix作为熔断流量控制，在客户端实现，在方法上注解，当请求出错时可以调用注解中的方法返回
+</p>
+
+<p>
+Hystrix熔断器，容错管理工具，旨在通过熔断机制控制服务和第三方库的节点,从而对延迟和故障提供更强大的容错能力。在Spring Cloud Hystrix中实现了线程隔离、断路器等一系列的服务保护功能。它也是基于Netflix的开源框架 Hystrix实现的，该框架目标在于通过控制那些访问远程系统、服务和第三方库的节点，从而对延迟和故障提供更强大的容错能力。Hystrix具备了服务降级、服务熔断、线程隔离、请求缓存、请求合并以及服务监控等强大功能。
+</p>
+
+<p>
+Hystrix源码的github地址： <a href="https://github.com/Netflix/hystrix">https://github.com/Netflix/hystrix</a>
+</p>
+
+<ul>
+<li>
+重点： 三者之间的关系图
+
+</ul>
+
+<p>
+如果微服务项目加上了spring-cloud-starter-netflix-hystrix依赖，那么，feign会通过代理模式， 自动将所有的方法用 hystrix 进行包装。
+</p>
+
+<p>
+在Spring Cloud微服务体系下，微服务之间的互相调用可以通过Feign进行声明式调用，在这个服务调用过程中Feign会通过Ribbon从服务注册中心获取目标微服务的服务器地址列表，之后在网络请求的过程中Ribbon就会将请求以负载均衡的方式打到微服务的不同实例上，从而实现Spring Cloud微服务架构中最为关键的功能即服务发现及客户端负载均衡调用。
+</p>
+
+<p>
+另一方面微服务在互相调用的过程中，为了防止某个微服务的故障消耗掉整个系统所有微服务的连接资源，所以在实施微服务调用的过程中我们会要求在调用方实施针对被调用微服务的熔断逻辑。而要实现这个逻辑场景在Spring Cloud微服务框架下我们是通过Hystrix这个框架来实现的。
+</p>
+
+<p>
+调用方会针对被调用微服务设置调用超时时间，一旦超时就会进入熔断逻辑，而这个故障指标信息也会返回给Hystrix组件，Hystrix组件会根据熔断情况判断被调微服务的故障情况从而打开熔断器，之后所有针对该微服务的请求就会直接进入熔断逻辑，直到被调微服务故障恢复，Hystrix断路器关闭为止。
+</p>
+
+<p>
+三者之间的关系图，大致如下：
+</p>
+
+<p>
+<img src=../img/zuulgw/Feign-Ribbon-Hystrix.png>
+</p>
+
+<h2 id="toc_0.3">Feign典型配置说明</h2>
+
+<p>
+在默认情况下 spring cloud feign在进行各个子服务之间的调用时，http组件使用的是jdk的HttpURLConnection，没有使用线程池。
+</p>
+
+<p>
+Feign自身可以支持多种HttpClient工具包，例如OkHttp及Apache HttpClient。
+</p>
+
+<pre class="brush:bash">
+feign:
+  #启用okhttp
+  #okhttp:
+  #  enabled: true #启用okhttp
+  #  max-connections: 1000
+  #  max-connections-per-route: 200
+
+  #启用Apache httpClient
+  httpclient:
+    enabled: true
+    #设置整个连接池最大连接数（该值默认为200）， 根据自己的场景决定
+    max-connections: 1000
+    #设置路由的默认最大连接（该值默认为50），限制数量实际使用
+    max-connections-per-route: 200
+  hystrix:
+    enabled: true # feign默认不启用hystrix?
+  client:
+    config:
+      default:
+        connectTimeout: 3000 #连接超时时间,ms
+        readTimeout: 30000   #读取超时时间,ms
+  # 启用压缩
+  #compression:
+  #  request:
+  #    enabled: true
+  #    mime-types: text/xml,application/xml,application/json
+  #  response:
+  #    enabled: true
+</pre>
+
+<h2 id="toc_0.4">Hystrix配置说明</h2>
+
+<p>
+在Spring Cloud微服务体系中Hystrix主要被用于实现实现微服务之间网络调用故障的熔断、过载保护及资源隔离等功能。
+</p>
+
+<pre class="brush:bash">
+hystrix:
+  threadpool:
+    default:
+      # 核心线程池数，默认10，指定熔断隔离的线程数，这个数需要调优，经测试线程数我们设置为和提供方的容器线程差不多，吞吐量高许多。
+      coreSize: 500
+      # allowMaximumSizeToDivergeFromCoreSize true # 是否允许最大线程数生效，默认false
+      # maximumSize 1000 # 最大线程数，默认值10，只有在allowMaximumSizeToDivergeFromCoreSize为true的时候才生效。
+
+      # BlockingQueue的最大队列数，默认值-1，此属性配置为-1时使用的是SynchronousQueue，配置为大于1的整数时使用的是LinkedBlockingQueue。
+      maxQueueSize: 1000
+      # 任务拒绝的任务队列阈值，当maxQueueSize配置为-1的时候，此配置项不生效。
+      # #即使没有达到maxQueueSize限值，若达到queueSizeRejectionThreshold值后，请求也会被拒绝，默认值5
+      queueSizeRejectionThreshold: 1000
+  command:
+    default: #全局默认配置,作用的所有的hystrix的客户端,如果需要对某个微服务，可以写serviceId
+      execution: #线程隔离相关
+        timeout:
+          enabled: true #是否给方法执行设置超时时间，默认为true。一般我们不要改。
+        isolation:
+          #Hystrix隔离策略：THREAD以及SEMAPHORE，Zuul默认是使用信号量隔离，默认信号量100，请求的并发线程超过100就会报错
+          #THREAD: 在单独的线程上执行，并发请求受线程池中的线程数限制
+          #SEMAPHORE: 在调用线程上执行，并发请求量受信号量计数限制
+          #在默认情况下，推荐HystrixCommands 使用 thread 隔离策略，HystrixObservableCommand 使用 semaphore 隔离策略。
+          #只有在高并发(单个实例每秒达到几百个调用)的调用时，才需要修改HystrixCommands 的隔离策略为semaphore。semaphore隔离策略通常只用于非网络调用。
+          strategy: THREAD
+          semaphore:
+            #SEMAPHORE隔离策略下并发请求数量的最高上限，达到该值后的请求会被拒绝，默认10
+            maxConcurrentRequests: 1000
+          thread:
+            #方式执行的超时时间，默认为1000毫秒，在实际场景中需要根据情况设置( 默认1秒超时，很多服务第一次访问时容易失败)
+            #同时，该值也应与ribbon中的timeout、retry值相匹配
+            timeoutInMilliseconds: 10000
+            #发生超时时是否中断方法的执行，默认值为true。不要改。
+            interruptOnTimeout: true
+            #是否在方法执行被取消时中断方法，默认值为false。没有实际意义，默认就好！
+            interruptOnCancel: false
+  circuitBreaker:   #熔断器相关配置
+    enabled: true   #是否启动熔断器，默认为true，false表示不要引入Hystrix。
+    requestVolumeThreshold: 1000     #熔断器失败的个数，进入熔断器的请求达到1000时服务降级（之后的请求直接进入熔断器）
+    sleepWindowInMilliseconds: 5000  #所以此配置的作用是指定熔断器打开后多长时间内允许一次请求尝试执行，官方默认配置为5秒。
+    errorThresholdPercentage: 50     #窗口时间内超过50%的请求失败后就会打开熔断器将后续请求快速失败掉,默认配置为50
+</pre>
+
+<p>
+其他：
+</p>
+<pre>
+hystrix.command.default.fallback.isolation.semaphore.maxConcurrentRequests 回退最大线程数
+</pre>
+
+<h2 id="toc_0.5">Ribbon配置说明</h2>
+
+<p>
+Ribbon在Spring Cloud中对于支持微服之间的通信发挥着非常关键的作用，其主要功能包括客户端负载均衡器及用于中间层通信的客户端。
+</p>
+
+<p>
+在Spring Cloud中使用Feign进行微服务调用分为两层：Hystrix的调用和Ribbon的调用，Feign自身的配置会被覆盖。
+</p>
+
+<pre class="brush:bash">
+ribbon:
+  # 开启Ribbon的饥饿加载模式
+  # Ribbon进行客户端负载均衡的Client并不是在服务启动的时候就初始化好的，而是在调用的时候才会去创建相应的Client，
+  # 所以第一次调用的耗时不仅仅包含发送HTTP请求的时间，还包含了创建RibbonClient的时间，这样一来如果创建时间速度较慢，
+  # 若设置的超时时间又比较短的话，首次调用很容易出现失败。
+  #eager-load:
+    #enabled: true
+    # 指定需要饥饿加载的服务名，如果不指定服务名称，饥饿加载模式无效
+    #clients：service-1,service-2,service-n
+
+  # Ribbon的超时时间应小于Hystrix的超时时间，否则会出现以下错误：
+  # The Hystrix timeout of 10000ms for the command operation is set lower than the combination of the Ribbon read and connect timeout, 24000ms.
+  # 整体超时时间最大值估算：(ReadTimeout+ConnectTimeout)*retry次数*重试后端节点数。
+  # 系统架构中，只要涉及到了重试，那么必须上接口的幂等性保障机制，否则不要开启重试。
+  ServerListRefreshInterval: 2000 # 从注册中心刷新服务器列表信息的时间间隔，默认为2000毫秒，即2秒
+  MaxAutoRetries: 0               # 同一台实例的最大自动重试次数，默认为1，不包括首次
+  MaxAutoRetriesNextServer: 0     # 要重试的下一个实例的最大数量，默认为1，不包括第一次被调用的实例
+  OkToRetryOnAllOperations: false # 是否所有的操作都重试，默认为true
+  ConnectTimeout: 3000   # 连接超时时间，单位为毫秒
+  ReadTimeout: 30000     # 读取的超时时间，单位为毫秒
+</pre>
+
+
+<ul>
+<li>
+Zuul的饥饿加载，没有设计专门的参数来配置，而是直接采用了读取路由配置来进行饥饿加载。
+
+</ul>
+
+<p>
+所以，如果我们使用默认路由，而没有通过配置的方式指定具体路由规则，那么 zuul.ribbon.eager-load.enabled=true 的配置就没有什么作用了。
+</p>
+
+<p>
+如果需要真正启用Zuul的饥饿加载，需要通过<code>zuul.ignored-services=*</code>来忽略所有的默认路由，让所有路由配置均维护在配置文件中，以达到网关启动的时候就加载好各个路由的负载均衡对象。
+</p>
+
+<p>
+关于Zuul 的默认路由：注册服务中心存在的服务，在zuul中未配置映射，因zuul有默认映射机制，也可以被访问。
+</p>
+
+<ul>
+<li>
+Ribbon和Hystrix的超时时间配置的关系
+
+</ul>
+
+<p>
+如果不启用Hystrix，Feign的超时时间则是Ribbon的超时时间，Feign自身的配置也会被覆盖。
+</p>
+
+<pre>
+Ribbon重试次数(包含首次)= 1 + ribbon.MaxAutoRetries + ribbon.MaxAutoRetriesNextServer  +  (ribbon.MaxAutoRetries * ribbon.MaxAutoRetriesNextServer)
+
+Hystrix的超时时间=Ribbon的重试次数(包含首次) * (ribbon.ReadTimeout + ribbon.ConnectTimeout)
+
+MaxAutoRetries:1
+MaxAutoRetriesNextServer:1
+ConnectTimeout:3000
+ReadTimeout:3000
+
+Ribbon重试次数=1 + 1 + 1 + ( 1*1) = 4
+Hystrix的超时时间配置应该大于等于：4*(3000+3000)=24000ms
+
+重试期间如果时间超过了Hystrix的超时配置则会立即被熔断（fallback）。
+</pre>
+
+<h2 id="toc_0.6">Zuul配置</h2>
+
+<p>
+默认配置可以去HystrixThreadPoolProperties和ZuulProperties这两个java文件中查找。
+</p>
+
+<ul>
+<li>
+<strong>疑问：zuul中的ribbonIsolationStrategy和max-semaphores与hystrix的strategy、semaphore.maxConcurrentRequests设置是什么关系？</strong>
+
+<ul>
+<li>
+网上有看到这两个值设置差别较大，处理能力会受小的那个限制。
+
+<li>
+zuul和strategy中的隔离策略、信号量是否应保持一致？
+
+</ul>
+</ul>
+
+<ul>
+<li>
+信号量策略
+<pre class="brush: bash">
+zuul:
+  #Hystrix隔离策略：THREAD 以及SEMAPHORE。
+  #zuul默认每个路由直接用信号量做隔离，并且默认值是100，也就是当一个路由请求的信号量高于100那么就拒绝服务了，返回500。
+  #线程池提供了比信号量更好的隔离机制，并且从实际测试发现高吞吐场景下可以完成更多的请求。
+  #但是信号量隔离的开销更小，对于本身就是10ms以内的系统，显然信号量更合适。
+  # 设置Zuul的隔离策略为SEMAPHORE
+  ribbon-isolation-strategy=SEMAPHORE
+  # 全局设置默认最大信号量
+  semaphore:
+    max-semaphores: 5000 #设置默认信号量最大值
+  # 设置指定服务的最大信号量
+  eureka:
+    &lt;commandKey&gt;:
+      semaphore:
+        max-semaphores: 5000
+  # 对路由linkflow和oauth单独设置最大信号量
+  routes:
+      linkflow:
+        path: /api1/**
+        serviceId: lf
+        stripPrefix: false
+        semaphore:
+          maxSemaphores: 2000
+      oauth:
+        path: /api2/**
+        serviceId: lf
+        stripPrefix: false
+        semaphore:
+          maxSemaphores: 1000
+</pre>
+
+</ul>
+
+<ul>
+<li>
+线程策略
+<pre class="brush:bash">
+zuul:
+  # 全局关闭重试机制
+  # 系统架构中，只要涉及到了重试，那么必须上接口的幂等性保障机制。
+  # 指定路由关闭重试机制 #routes.&lt;route&gt;.retryable=false
+  retryable=false
+
+  #当zuul.ribbonIsolationStrategy=THREAD时，Hystrix的线程隔离策略将会作用于所有路由。
+  #这种场景下，就需要调大hystrix线程池线程大小，该线程池默认10个线程
+  #设置线程隔离为线程隔离，SEMAPHORE表示信号量隔离
+  ribbonIsolationStrategy: THREAD
+
+  #此时，HystrixThreadPoolKey默认为"RibbonCommand"。这意味着，所有路由的HystrixCommand都会在相同的Hystrix线程池中执行。
+  #可使用以下配置，让每个路由使用独立的线程池：
+  #threadPool:
+  #  useSeparateThreadPools: true
+
+hystrix:
+  threadpool:
+    default:
+      coreSize: 100
+      maximumSize: 400 # 最大线程数量
+      allowMaximumSizeToDivergeFromCoreSize: true #让maximumSize生效，false的话则只有coreSize会生效
+      maxQueueSize: -1 # 线程池的队列大小，-1代表使用SynchronousQueue队列
+</pre>
+
+</ul>
+
+
+<ul>
+<li>
+zuul并发连接参数
+<pre class="brush:bash">
+zuul:
+  # 针对url的路由配置
+  host:
+    max-total-connections: 200    # 默认值
+    max-per-route-connections: 20 # 默认值
+
+  # 针对serviceId的路由配置
+  serviceId:
+    ribbon:
+      MaxTotalConnections: 0   # 默认值
+      MaxConnectionsPerHost: 0 # 默认值
+</pre>
+
+</ul>
+
+<ul>
+<li>
+Zuul超时: 如果要为通过Zuul代理的请求配置套接字超时和读取超时，则有两种选择，具体取决于你的配置：
+
+<ul>
+<li>
+如果Zuul使用服务发现，则需要使用ribbon.ReadTimeout和ribbon.SocketTimeout功能区属性配置这些超时。
+
+<li>
+如果通过指定URL配置了Zuul路由，则需要使用zuul.host.connect-timeout-millis和zuul.host.socket-timeout-millis。
+
+</ul>
+<li>
+其他
+<pre>
+# 全局关闭重试机制
+zuul.retryable=false
+# 指定路由关闭重试机制
+zuul.routes.&lt;route&gt;.retryable=false
+</pre>
+
+</ul>
+
+<h2 id="toc_0.7">tomcat配置</h2>
+
+<p>
+如果使用的是内嵌的tomcat，由于默认的最大连接数，最大线程数都是0，没有限制。
+</p>
+
+<pre class="brush:bash">
+server.tomcat.max-connections=0      # Maximum number of connections that the server accepts and processes at any given time.
+server.tomcat.max-http-header-size=0 # Maximum size, in bytes, of the HTTP message header.
+server.tomcat.max-http-post-size=0   # Maximum size, in bytes, of the HTTP post content.
+server.tomcat.max-threads=0          # Maximum number of worker threads.
+server.tomcat.min-spare-threads=0    # Minimum number of worker threads.
+</pre>
+
+<pre class="brush:bash">
+server:
+  tomcat:
+    max-threads: 2000      #最大线程数
+    min-spare-threads: 100 #最大空闲线程
+	#Connector从接受连接到提交URI的等待的时间。
+	#The number of milliseconds this Connector will wait, after accepting a connection, for the request URI line to be presented. 
+	#The default value is 60000 (i.e. 60 seconds).
+    connection-timeout: 30000 #是否太大？有文件上传功能时，过小是否会出问题？
+    #等待队列长度，默认100
+    accept-count: 1000
+    #最多可以有多少个socket连接到tomcat上，NIO模式下默认是10000
+    max-connections: 20000
+    accesslog:
+      directory: /var/log/tima/api-gateway
+      enabled: true
+      pattern: '%{X-Real-IP}i %l %u %t &amp;quot;%r&amp;quot; %s %b %{Referer}i %{User-Agent}i %D %a'
+      prefix: ${spring.application.name}_access
+</pre>
+
+
+<h2 id="toc_0.8">Servlet容器</h2>
+
+<p>
+Zuul使用的内置容器默认是Tomcat，可以将其换成undertow(红帽公司开发的一款基于 NIO 的高性能Web嵌入)，可以显著减少线程的数量，替换方式即在pom中添加以下内容：
+</p>
+
+<pre class="brush:xml">
+&lt;!--移除Tomcat 依赖--&gt;
+&lt;!--
+&lt;dependency&gt;
+   &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+   &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+   &lt;exclusions&gt;
+      &lt;exclusion&gt;
+         &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+         &lt;artifactId&gt;spring-boot-starter-tomcat&lt;/artifactId&gt;
+      &lt;/exclusion&gt;
+   &lt;/exclusions&gt;
+&lt;/dependency&gt;
+--&gt;
+
+&lt;!--增加Untertow 依赖--&gt;
+&lt;dependency&gt;
+   &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+   &lt;artifactId&gt;spring-boot-starter-undertow&lt;/artifactId&gt;
+&lt;/dependency&gt;
+</pre>
+
+
+<ul>
+<li>
+Undertow 的属性配置
+<pre class="brush:bash">
+server:
+  undertow:
+     # 设置IO线程数, 它主要执行非阻塞的任务,它们会负责多个连接,
+     # 默认设置每个CPU核心一个线程，不要设置过大，如果过大，启动项目会报错：打开文件数过多
+     io-threads: 16
+     # 阻塞任务线程池, 当执行类似servlet请求阻塞IO操作, undertow会从这个线程池中取得线程
+     # 它的值设置取决于系统线程执行任务的阻塞系数，默认值是IO线程数*8
+     worker-threads: 256
+     # 影响buffer,buffer会用于服务器连接的IO操作,有点类似netty的池化内存管理,每块buffer的空间越小的空间被利用越充分
+     # 不要设置太大，以免影响其他应用，合适即可
+     buffer-size: 1024
+     # 每个区分配的buffer数量, 所以pool的大小是buffer-size * buffers-per-region
+     buffers-per-region: 1024
+     # 是否分配直接内存(NIO直接分配的堆外内存)
+     direct-buffers: true
+</pre>
+
+</ul>
+
+<h2 id="toc_0.9">整体配置项</h2>
+
+<pre class="brush:bash">
+server:
+  tomcat:
+    max-threads: 2000      #最大线程数
+    min-spare-threads: 100 #最大空闲线程
+	#Connector从接受连接到提交URI的等待的时间。
+	#The number of milliseconds this Connector will wait, after accepting a connection, for the request URI line to be presented. 
+	#The default value is 60000 (i.e. 60 seconds).
+    connection-timeout: 30000 #是否太大？有文件上传功能时，过小是否会出问题？
+    #等待队列长度，默认100
+    accept-count: 1000
+    #最多可以有多少个socket连接到tomcat上，NIO模式下默认是10000
+    max-connections: 20000
+    accesslog:
+      directory: /var/log/tima/api-gateway
+      enabled: true
+      pattern: '%{X-Real-IP}i %l %u %t &amp;quot;%r&amp;quot; %s %b %{Referer}i %{User-Agent}i %D %a'
+      prefix: ${spring.application.name}_access
+
+zuul:
+  # 全局关闭重试机制
+  # 系统架构中，只要涉及到了重试，那么必须上接口的幂等性保障机制。
+  # 指定路由关闭重试机制 #routes.&lt;route&gt;.retryable=false
+  retryable=false
+
+  #当zuul.ribbonIsolationStrategy=THREAD时，Hystrix的线程隔离策略将会作用于所有路由。
+  #这种场景下，就需要调大hystrix线程池线程大小，该线程池默认10个线程
+  #设置线程隔离为线程隔离，SEMAPHORE表示信号量隔离
+  ribbonIsolationStrategy: THREAD
+
+  #此时，HystrixThreadPoolKey默认为"RibbonCommand"。这意味着，所有路由的HystrixCommand都会在相同的Hystrix线程池中执行。
+  #可使用以下配置，让每个路由使用独立的线程池：
+  #threadPool:
+  #  useSeparateThreadPools: true
+
+ribbon:
+  # 开启Ribbon的饥饿加载模式
+  # Ribbon进行客户端负载均衡的Client并不是在服务启动的时候就初始化好的，而是在调用的时候才会去创建相应的Client，
+  # 所以第一次调用的耗时不仅仅包含发送HTTP请求的时间，还包含了创建RibbonClient的时间，这样一来如果创建时间速度较慢，
+  # 若设置的超时时间又比较短的话，首次调用很容易出现失败。
+  #eager-load:
+    #enabled: true
+    # 指定需要饥饿加载的服务名，如果不指定服务名称，饥饿加载模式无效
+    #clients：service-1,service-2,service-n
+
+  # Ribbon的超时时间应小于Hystrix的超时时间，否则会出现以下错误：
+  # The Hystrix timeout of 10000ms for the command operation is set lower than the combination of the Ribbon read and connect timeout, 24000ms.
+  # 整体超时时间最大值估算：(ReadTimeout+ConnectTimeout)*retry次数*重试后端节点数。
+  # 系统架构中，只要涉及到了重试，那么必须上接口的幂等性保障机制，否则不要开启重试。
+  ServerListRefreshInterval: 2000 # 从注册中心刷新服务器列表信息的时间间隔，默认为2000毫秒，即2秒
+  MaxAutoRetries: 0               # 同一台实例的最大自动重试次数，默认为1，不包括首次
+  MaxAutoRetriesNextServer: 0     # 要重试的下一个实例的最大数量，默认为1，不包括第一次被调用的实例
+  OkToRetryOnAllOperations: false # 是否所有的操作都重试，默认为true
+  ConnectTimeout: 3000   # 连接超时时间，单位为毫秒
+  ReadTimeout: 30000     # 读取的超时时间，单位为毫秒
+
+hystrix:
+  threadpool:
+    default:
+      # 核心线程池数，默认10，指定熔断隔离的线程数，这个数需要调优，经测试线程数我们设置为和提供方的容器线程差不多，吞吐量高许多。
+      coreSize: 500
+      # allowMaximumSizeToDivergeFromCoreSize true # 是否允许最大线程数生效，默认false
+      # maximumSize 1000 # 最大线程数，默认值10，只有在allowMaximumSizeToDivergeFromCoreSize为true的时候才生效。
+
+      # BlockingQueue的最大队列数，默认值-1，此属性配置为-1时使用的是SynchronousQueue，配置为大于1的整数时使用的是LinkedBlockingQueue。
+      maxQueueSize: 1000
+      # 任务拒绝的任务队列阈值，当maxQueueSize配置为-1的时候，此配置项不生效。
+      # #即使没有达到maxQueueSize限值，若达到queueSizeRejectionThreshold值后，请求也会被拒绝，默认值5
+      queueSizeRejectionThreshold: 1000
+  command:
+    default: #全局默认配置,作用的所有的hystrix的客户端,如果需要对某个微服务，可以写serviceId
+      execution:
+        timeout:
+          enabled: true #是否给方法执行设置超时时间，默认为true。一般我们不要改。
+        isolation:
+          #Hystrix隔离策略：THREAD以及SEMAPHORE，Zuul默认是使用信号量隔离，默认信号量100，请求的并发线程超过100就会报错
+          #THREAD: 在单独的线程上执行，并发请求受线程池中的线程数限制
+          #SEMAPHORE: 在调用线程上执行，并发请求量受信号量计数限制
+          #在默认情况下，推荐HystrixCommands 使用 thread 隔离策略，HystrixObservableCommand 使用 semaphore 隔离策略。
+          #只有在高并发(单个实例每秒达到几百个调用)的调用时，才需要修改HystrixCommands 的隔离策略为semaphore。semaphore隔离策略通常只用于非网络调用。
+          strategy: THREAD
+          #semaphore:
+            #SEMAPHORE隔离策略下并发请求数量的最高上限，达到该值后的请求会被拒绝，默认10
+            #maxConcurrentRequests: 1000
+          thread:
+            #方式执行的超时时间，默认为1000毫秒，在实际场景中需要根据情况设置( 默认1秒超时，很多服务第一次访问时容易失败)
+            #同时，该值也应与ribbon中的timeout、retry值相匹配
+            timeoutInMilliseconds: 30000
+            #发生超时时是否中断方法的执行，默认值为true。不要改。
+            interruptOnTimeout: true
+            #是否在方法执行被取消时中断方法，默认值为false。没有实际意义，默认就好！
+            interruptOnCancel: false
+  #circuitBreaker:   #熔断器相关配置
+  #  enabled: true   #是否启动熔断器，默认为true，false表示不要引入Hystrix。
+  #  requestVolumeThreshold: 1000     #熔断器失败的个数，进入熔断器的请求达到1000时服务降级（之后的请求直接进入熔断器）
+  #  sleepWindowInMilliseconds: 5000  #所以此配置的作用是指定熔断器打开后多长时间内允许一次请求尝试执行，官方默认配置为5秒。
+  #  errorThresholdPercentage: 50     #窗口时间内超过50%的请求失败后就会打开熔断器将后续请求快速失败掉,默认配置为50
+
+feign:
+  #启用okhttp
+  #okhttp:
+  #  enabled: true #启用okhttp
+  #  max-connections: 1000
+  #  max-connections-per-route: 200
+
+  #启用Apache httpClient
+  httpclient:
+    enabled: true
+    #设置整个连接池最大连接数（该值默认为200）， 根据自己的场景决定
+    max-connections: 1000
+    #设置路由的默认最大连接（该值默认为50），限制数量实际使用
+    max-connections-per-route: 200
+  hystrix:
+    enabled: true # feign默认不启用hystrix?
+  client:
+    config:
+      default:
+        connectTimeout: 3000 #连接超时时间,ms
+        readTimeout: 30000   #读取超时时间,ms
+  # 启用压缩
+  #compression:
+  #  request:
+  #    enabled: true
+  #    mime-types: text/xml,application/xml,application/json
+  #  response:
+  #    enabled: true
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

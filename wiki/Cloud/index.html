@@ -21,6 +21,9 @@
 <li><a href="#toc_1">LBS/GEO</a>
 <li><a href="#toc_2">Dock</a>
 <li><a href="#toc_3">微服务</a>
+<ul>
+<li><a href="#toc_3.1">工具</a>
+</ul>
 <li><a href="#toc_4">云计算</a>
 <li><a href="#toc_5">虚拟化</a>
 <li><a href="#toc_6">大数据</a>
@@ -135,6 +138,47 @@ Calico 是一个纯三层的数据中心网络方案，而且无缝集成像 Ope
 <li>
 <a href="SpringCloud_introduce.html">SpringCloud介绍</a>
 
+<ul>
+<li>
+Hystrix完整配置列表:
+
+<ul>
+<li>
+<a href="http://throwable.club/2019/05/29/framework-hystrix-full-configuration/">http://throwable.club/2019/05/29/framework-hystrix-full-configuration/</a>
+
+<li>
+<a href="https://www.cnblogs.com/throwable/p/11961016.html">https://www.cnblogs.com/throwable/p/11961016.html</a> 
+
+</ul>
+<li>
+<a href="SpringCloud_api_gateway.html">SpringCloud API Gateway相关</a>
+
+<li>
+queueSizeRejectionThreshold属性: <a href="https://www.cnblogs.com/seifon/p/9921774.html">https://www.cnblogs.com/seifon/p/9921774.html</a>
+
+<li>
+Hystrix参数:<a href="https://github.com/Netflix/Hystrix/wiki/Configuration#ThreadPool">https://github.com/Netflix/Hystrix/wiki/Configuration#ThreadPool</a>
+
+<ul>
+<li>
+<img src=../img/zuulgw/thread-configuration.png width=800px>
+
+<li>
+聊聊hystrix的queueSizeRejectionThreshold参数:<a href="https://www.jianshu.com/p/3cfee3106268">https://www.jianshu.com/p/3cfee3106268</a>
+<pre>
+hystrix提供了queueSizeRejectionThreshold属性(hystrix.threadpool.default.queueSizeRejectionThreshold)来动态控制线程池队列的上限，而线程池本身队列的大小，则是由maxQueueSize属性(hystrix.threadpool.default.maxQueueSize)来决定，默认为-1，创建的队列是SynchronousQueue，如果设置大于0则根据其大小创建LinkedBlockingQueue。
+</pre>
+
+</ul>
+<li>
+<a href="springCloud_zuulGateway_confs_collect.html">springCloud zuulGateway配置项收集</a>
+
+</ul>
+</ul>
+ 
+<h2 id="toc_3.1">工具</h2>
+
+<ul>
 <li>
 HTTP抓包分析工具：Fiddler
 
