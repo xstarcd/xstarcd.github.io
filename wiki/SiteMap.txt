@@ -367,6 +367,7 @@ http://xstarcd.github.io/wiki/sysadmin/lvm_rootresize.html
 http://xstarcd.github.io/wiki/sysadmin/lvs_irq.html
 http://xstarcd.github.io/wiki/sysadmin/lvs_keepalived_conclusion.html
 http://xstarcd.github.io/wiki/sysadmin/lvs_nat.html
+http://xstarcd.github.io/wiki/sysadmin/lvs_network_delay_and_gro_lro.html
 http://xstarcd.github.io/wiki/sysadmin/lvs_persistence.html
 http://xstarcd.github.io/wiki/sysadmin/lvs_rrd.html
 http://xstarcd.github.io/wiki/sysadmin/lvs_tun.html
