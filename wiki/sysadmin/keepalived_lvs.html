@@ -60,7 +60,10 @@
 <a href="Heartbeat.html">Heartbeat</a>
 
 <li>
-<a href="lvs_irq.html">lvs_irq</a>
+<a href="lvs_irq.html">LVS IRQ引起网卡性能问题与Google RPS和RFS优化</a>
+
+<li>
+<a href="lvs_network_delay_and_gro_lro.html">LVS怪异网络延迟现象与GRO/LRO</a>
 
 <li>
 <a href="IPVS_FULLNAT_and_SYNPROXY.html">IPVS_FULLNAT_and_SYNPROXY</a>
@@ -94,28 +97,6 @@ CONFIG_IP_VS_SH=m
 CONFIG_IP_VS_SED=m
 CONFIG_IP_VS_NQ=m
 CONFIG_IP_VS_FTP=m
-</pre>
-
-</ul>
-
-<ul>
-<li>
-lvs怪异的网络延现象(gro/lro引起的)
-<pre>
-ethtool -k eth0
-Features for eth0:
-rx-checksumming: on
-tx-checksumming: on
-scatter-gather: on
-tcp-segmentation-offload: on
-udp-fragmentation-offload: off
-generic-segmentation-offload: on
-generic-receive-offload: off
-large-receive-offload: off
-rx-vlan-offload: off
-tx-vlan-offload: off
-ntuple-filters: off
-receive-hashing: off
 </pre>
 
 </ul>

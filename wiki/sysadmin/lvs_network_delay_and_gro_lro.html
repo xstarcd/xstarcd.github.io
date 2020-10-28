@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>LVS怪异网络延迟现象与GRO/LRO</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>LVS怪异网络延迟现象与GRO/LRO</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_1">关于GRO</a>
+<li><a href="#toc_2">网络数据包分析网卡Offload</a>
+<ul>
+<li><a href="#toc_2.1">MTU</a>
+<li><a href="#toc_2.2">IP分片</a>
+<li><a href="#toc_2.3">MSS</a>
+<li><a href="#toc_2.4">网卡offload机制</a>
+<ul>
+<li><a href="#toc_2.4.1">发送模式</a>
+<li><a href="#toc_2.4.2">接收模式</a>
+</ul>
+</ul>
+<li><a href="#toc_3">[转]2.6.29-2.6.39之间的kernel不要在LVS Director的网卡开启GRO</a>
+<li><a href="#toc_4">LVS、Nginx压测与性能调优</a>
+<ul>
+<li><a href="#toc_4.1">可能的性能因素</a>
+<li><a href="#toc_4.2">系统参数调优</a>
+<ul>
+<li><a href="#toc_4.2.1">网卡多队列与CPU核绑定</a>
+<li><a href="#toc_4.2.2">关注系统链接跟踪表大小</a>
+<li><a href="#toc_4.2.3">关闭网卡LRO、GRO特性</a>
+<li><a href="#toc_4.2.4">增大网卡的ring buffer值</a>
+<li><a href="#toc_4.2.5">内核参数</a>
+</ul>
+<li><a href="#toc_4.3">增大ipvs模块hash table的大小</a>
+<li><a href="#toc_4.4">Nginx参数调优</a>
+<li><a href="#toc_4.5">硬件与网络配置调优</a>
+<li><a href="#toc_4.6">性能分析工具</a>
+<li><a href="#toc_4.7">性能压测工具</a>
+<ul>
+<li><a href="#toc_4.7.1">安装方法</a>
+<li><a href="#toc_4.7.2">使用方法</a>
+<li><a href="#toc_4.7.3">示例</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+怀疑：lvs怪异的网络延迟现象(GRO/LRO引起的)，文件上传失败(较大的request内容时，WebServer端长时间收不到请求)
+<pre class="brush:bash">
+ethtool -k eth0
+
+Features for eth0:
+rx-checksumming: on
+tx-checksumming: on
+scatter-gather: on
+tcp-segmentation-offload: on
+udp-fragmentation-offload: off
+generic-segmentation-offload: on
+generic-receive-offload: off #GRO
+large-receive-offload: off   #LRO
+rx-vlan-offload: off
+tx-vlan-offload: off
+ntuple-filters: off
+receive-hashing: off
+
+# 设置开启gro，如果报错就说明网卡驱动本身就不支持GRO。
+ethtool -K gro on
+</pre>
+
+</ul>
+
+<h1 id="toc_1">关于GRO</h1>
+
+<ul>
+<li>
+linux kernel 网络协议栈之GRO(Generic receive offload): <a href="https://blog.csdn.net/lucien_cc/article/details/11731463">https://blog.csdn.net/lucien_cc/article/details/11731463</a>
+<pre>
+GRO(Generic receive offload)在内核2.6.29之后合并进去的，作者是一个华裔Herbert Xu ,GRO的简介可以看这里：
+
+http://lwn.net/Articles/358910/
+
+先来描述一下GRO的作用，GRO是针对网络接受包的处理的，并且只是针对NAPI类型的驱动，因此如果要支持GRO，不仅要内核支持，而且驱动也必须调用相应的借口，用ethtool -K gro on来设置，如果报错就说明网卡驱动本身就不支持GRO。
+
+GRO类似tso，可是tso只支持发送数据包，这样你tcp层大的段会在网卡被切包，然后再传递给对端，而如果没有gro，则小的段会被一个个送到协议栈，有了gro之后，就会在接收端做一个反向的操作(想对于tso).也就是将tso切好的数据包组合成大包再传递给协议栈。
+</pre>
+
+</ul>
+
+<h1 id="toc_2">网络数据包分析网卡Offload</h1>
+
+<ul>
+<li>
+网卡的offload概念:<a href="https://www.cnblogs.com/victor-ma/p/5363786.html">https://www.cnblogs.com/victor-ma/p/5363786.html</a>
+
+</ul>
+
+<p>
+对于网络安全来说，网络传输数据包的捕获和分析是个基础工作，绿盟科技研究员在日常工作中，经常会捕获到一些大小远大于MTU值的数据包，经过分析这些大包的特性，发现和网卡的offload特性有关，本文对网卡Offload技术做简要描述。
+</p>
+
+<h2 id="toc_2.1">MTU</h2>
+
+<p>
+最大传输单元，指一种通信协议的某一层上面所能通过的最大数据包大小（以字节为单位）。
+</p>
+
+<p>
+在以太网通信中，MTU规定了经过网络层封装的数据包的最大长度。例如，若某个接口的MTU值为1500，则通过此接口传送的IP数据包的最大长度为1500字节。
+</p>
+
+<p>
+小编注：对于普通用户来说，如果你优化过迅雷的下载速度，可能通过这篇文章《合理设置MTU，提升下载速度》，对MTU的基础知识有所了解。
+</p>
+
+<h2 id="toc_2.2">IP分片</h2>
+
+<p>
+当IP层需要传送的数据包长度超过MTU值时，则IP层需要对该数据包进行分片，使每一片的长度小于或等于MTU值。在分片过程中，除了对payload进行分片外，数据包的IP首部也需要进行相应的更改：
+</p>
+
+<pre>
+将identifier字段的值复制给每个分片；
+将分片数据包的Flags中的DF位置为0；
+除最后一个分片之外的其他分片，将MF位置为1；
+将Fragment Offset字段设置正确的值。
+</pre>
+
+<h2 id="toc_2.3">MSS</h2>
+
+<p>
+最大分段长度，TCP数据包每次能够传输的最大数据分段长度，在TCP协议的实际实现中，MSS往往用MTU-(IP Header Length + TCP Header Length)来代替。
+</p>
+
+<p>
+在TCP通信建立连接时，取两端提供的MSS的最小值作为会话的MSS值。
+</p>
+
+<p>
+由于TCP分段有MSS值的限制，通常情况下TCP数据包经IP层封装后的长度不会大于MTU，因此一般情况下，TCP数据包不会进行IP分片。
+</p>
+
+<h2 id="toc_2.4">网卡offload机制</h2>
+
+<p>
+早先TCP设计的目标是为了解决低速网络传输的不可靠性问题（拨号上网的年代），但随着互联网骨干传输速度的提升（光纤、千兆以太、万兆以太）以及用户端更可靠的访问机制的出现（ADSL等），相关的数据中心及客户端桌面环境上的TCP软件常常需要面临大量的计算需求。
+</p>
+
+<p>
+当网络速度超过1Gb的时候，这些计算会耗费大量的CPU时间，有数据表明，即便使用千兆全双工网卡，TCP通信也将消耗CPU的80%的使用率（以2.4GHz奔腾4处理器为例），这样留给其他应用程序的时间就很少了，表现出来就是用户可能感觉到很慢。
+</p>
+
+<p>
+小编注：当年的蠕虫病毒对CPU的影响与此近似。
+</p>
+
+<p>
+为了解决性能问题，就产生了TOE技术（TCP offload engine），将TCP连接过程中的相关计算工作转移到专用硬件上（比如网卡），从而释放CPU资源。从2012年开始，这项技术开始在普通用户的网卡上应用。
+</p>
+
+<p>
+随着技术的日趋成熟，目前越来越多的网卡设备开始支持offload特性，以便提升网络收发和处理的性能。本文所描述的offload特性，主要是指将原本 在协议栈中进行的IP分片、TCP分段、重组、checksum校验等操作，转移到网卡硬件中进行，降低系统CPU的消耗，提高处理性能。
+</p>
+
+<h3 id="toc_2.4.1">发送模式</h3>
+
+<ul>
+<li>
+**TSO （tcp-segmentation-offload） **
+
+</ul>
+
+<p>
+从名字来看很直观，就是把tcp分段的过程转移到网卡中进行。当网卡支持TSO机制时，可以直接把不超过滑动窗口大小的payload下传给协议栈，即使数 据长度大于MSS，也不会在TCP层进行分段，同样也不会进行IP分片，而是直接传送给网卡驱动，由网卡驱动进行tcp分段操作，并执行checksum 计算和包头、帧头的生成工作。例如：
+</p>
+
+<p>
+当TSO模式关闭时，在本地主机上（10.8.55.1）发送一个超长的HTTP请求，当TSO模式关闭时，10.8.55.1抓包，可以看到超过MSS的包被拆分为多个包。
+</p>
+
+<p>
+当TSO模式开启时，10.8.55.1抓包，则为一个包。
+</p>
+
+<ul>
+<li>
+**UFO（udp-fragmentation-offload） **
+
+</ul>
+
+<p>
+是一种专门针对udp协议的特性，主要机制就是将IP分片的过程转移到网卡中进行，用户层可以发送任意大小的udp数据包（udp数据包总长度最大不超过64k），而不需要协议栈进行任何分片操作。目前貌似没找到有支持UFO机制的网卡，主要是应用在虚拟化设备上。
+</p>
+
+<ul>
+<li>
+**GSO（generic-segmentation-offload） **
+
+</ul>
+
+<p>
+相对于TSO和UFO，GSO机制是针对所有协议设计的，更为通用。同时，与TSO、UFO不同的是，GSO主要依靠软件的方式实现，对于网卡硬件没有过多 的要求。其基本思想就是把数据分片的操作尽可能的向底层推迟直到数据发送给网卡驱动之前，并先检查网卡是否支持TSO或UFO机制，如果支持就直接把数据 发送给网卡，否则的话再进行分片后发送给网卡，以此来保证最少次数的协议栈处理，提高数据传输和处理的效率。
+}}}
+</p>
+
+<h3 id="toc_2.4.2">接收模式</h3>
+
+<ul>
+<li>
+**LRO（large-receive-offload） **
+
+</ul>
+<p>
+在网卡驱动层面上将接受到的多个TCP数据包聚合成一个大的数据包，然后上传给协议栈处理。这样可以减少协议栈处理的开销，提高系统接收TCP数据的能力和效率。
+</p>
+
+<ul>
+<li>
+**GRO generic-receive-offload **
+
+</ul>
+<p>
+基本思想和LRO类似，只是改善了LRO的一些缺点，比LRO更加通用。目前及后续的网卡都采用GRO机制，不再使用LRO机制。
+</p>
+
+<ul>
+<li>
+**RSS（Receive Side Scaling） **
+
+</ul>
+<p>
+具备多个RSS队列的网卡，可以将不同的网络流分成不同的队列，再将这些队列分配到多个CPU核心上进行处理，从而将负荷分散，充分利用多核处理器的能力，提交数据接收的能力和效率。
+</p>
+
+<h1 id="toc_3">[转]2.6.29-2.6.39之间的kernel不要在LVS Director的网卡开启GRO</h1>
+
+<p>
+(2014-04-29 10:35:49)
+</p>
+
+<ul>
+<li>
+原文地址：
+
+<ul>
+<li>
+<a href="http://www.sbear.cn/archives/599">http://www.sbear.cn/archives/599</a>
+
+<li>
+<a href="http://blog.sina.com.cn/s/blog_6c2e6f1f0101kwlk.html">http://blog.sina.com.cn/s/blog_6c2e6f1f0101kwlk.html</a>
+
+</ul>
+</ul>
+
+
+<p>
+我还没有遇到，并且在服务器上看默认也是关闭的，暂且记录下来
+</p>
+
+<pre>
+ethtool -k eth0
+
+Offload parameters for eth0:
+rx-checksumming: on
+tx-checksumming: off
+scatter-gather: off
+tcp-segmentation-offload: off
+udp-fragmentation-offload: off
+generic-segmentation-offload: off
+generic-receive-offload: off
+large-receive-offload: off
+
+uname -a
+Linux localhost.localdomain 2.6.32-220.el6.x86_64 #1 SMP Tue Dec 6 19:48:22 GMT 2011 x86_64 x86_64 x86_64 GNU/Linux
+</pre>
+
+
+<p>
+在 LVS 下，POST 请求总是 socket timeout ，而直接 POST 到 real server 没有问题。
+</p>
+
+<p>
+Linux 在 2.6.29 的时候，引入了一个 GRO (Generic receive offload) 。
+</p>
+
+<p>
+MTU 一般都是 1500 字节，如果一个包超过了 MTU ，就会被分片。
+</p>
+
+<p>
+1500 这个数字，估计是基于当时的网络环境制定的，而现在，10Gbps 的网卡都普遍使用了，可能就不太适用了。如果 10Gbps 的网卡满载地来跑，一个完整的数据包会被分片 800w 片。
+</p>
+
+<p>
+我们可以通过调整 client 和 server 端的 MTU 令到分片尽可能减少，提高吞吐量。但是，如果 client 端（例如用户）不受我们控制呢，那我们就无法提高性能了。于是有人想到通过网卡的行为来间接实现相当于提高 MTU 的作用，这就是 GRO [1] 。
+</p>
+
+<p>
+GRO 就是在网卡中将满足一定的条件（比较严格）的包，将分片的包组装合并了，才一次性交给上面的协议栈。现在的网卡一般都支持了，除了网卡支持，还要驱动也支持才可以。如果网卡和驱动都支持，那么在 2.6.29 以后的 kernel，都会默认开启。
+</p>
+
+<p>
+<code>ethtool -k eth0</code>查看是否有 generic-receive-offload: on，如果是 off ，也不一定是不支持，可以通过<code>ethtool -K eth0 gro on</code>来尝试开启。
+</p>
+
+<p>
+<strong>但是 GRO 和 LVS 协作得并不好，具体表现就是，POST 数据到 LVS 很慢。</strong>
+</p>
+<pre>
+抓包看我的 POST 请求，握手阶段用了较长时间，出现了数次 incorrect 后才真正开始传输。
+POST 小于 MTU 的数据，并不会触发这个问题，而 POST 大于 MTU 的数据，就会。证明了这里肯定是 GRO 惹的祸。
+</pre>
+
+<p>
+没有 google 到最根本的原因，但也有一些说法 [2] ，就是 GRO 和 LVS 之间的兼容没有做好，直到 2.6.39 已经修复了这个问题。
+</p>
+<ul>
+<li>
+LVS、Nginx压测与性能调优:<a href="https://www.jianshu.com/p/853d3b160f92">https://www.jianshu.com/p/853d3b160f92</a>
+<pre>
+现在大多数网卡都具有LRO/GRO功能，即 网卡收包时将同一流的小包合并成大包 （tcpdump抓包可以看到&gt;MTU 1500bytes的数据包）交给内核协议栈；
+LVS内核模块在处理&gt;MTU的数据包时，会丢弃；
+因此，如果我们用LVS来传输大文件，很容易出现丢包，传输速度慢；
+解决方法，关闭LRO/GRO功能，命令：（注意查看命令是小k，修改命令是大K）
+ethtool -k eth0 查看LRO/GRO当前是否打开
+ethtool -K eth0 lro off 关闭GRO
+ethtool -K eth0 gro off 关闭GRO
+</pre>
+
+</ul>
+
+<p>
+经验主义一点，就是 LVS 的 director 一律关闭网卡的GRO。
+</p>
+<pre>
+ethtool -k eth0 gro off
+</pre>
+
+<p>
+这个情况我遇到的，一般发生在内网 POST 的时候，而用户 POST 给我的情况太慢的不太多，也有可能是他们网络根本就慢，手机的网络环境变数太多，而我暂时也没有办法把他们过滤出来一一查看。我猜想，是因为内网的网络环境正好符合了 GRO 的 merge 的条件，GRO 起作用了，所以我的 POST 很慢。而用户的请求不符合条件，所以还是比较正常的。
+</p>
+
+<ul>
+<li>
+Reference:
+
+<ul>
+<li class="done0">
+<a href="http://lwn.net/Articles/358910/">http://lwn.net/Articles/358910/</a>
+
+<li class="done0">
+<a href="http://archive.linuxvirtualserver.org/html/lvs-users/2011-05/msg00004.html">http://archive.linuxvirtualserver.org/html/lvs-users/2011-05/msg00004.html</a>
+
+</ul>
+</ul>
+
+<h1 id="toc_4">LVS、Nginx压测与性能调优</h1>
+
+<ul>
+<li>
+LVS、Nginx压测与性能调优:<a href="https://www.jianshu.com/p/853d3b160f92">https://www.jianshu.com/p/853d3b160f92</a>
+<pre>
+作者：Mr萝卜
+链接：https://www.jianshu.com/p/853d3b160f92
+来源：简书
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+2018.07.14 21:03:50
+</pre>
+
+</ul>
+
+<h2 id="toc_4.1">可能的性能因素</h2>
+
+<ul>
+<li>
+硬件方面
+
+</ul>
+
+<p>
+CPU、内存、网卡。
+</p>
+
+<p>
+其中最主要的是CPU和网卡，短连接业务场景下cpu软中断(si)可能成为性能瓶颈；网卡的最大流量值也可能限制负载均衡器性能的发挥，如常见的千兆网卡，理论最大数据传输速率为1000Mb/s，即125MB/S。LVS对于内存消耗并不多，Nginx相对会消耗内存一些，不过内存一般不会成为瓶颈。
+</p>
+
+<ul>
+<li>
+系统方面
+
+</ul>
+
+<p>
+Linux系统默认有许多限制，对于在业务流量较大的情况下发挥负载均衡器的性能有很大影响。常见的如：服务端可接受的最大连接数、可接受的最大半连接数、本地可用端口范围、time-wait连接数、可打开的最大文件句柄数、网卡等待队列大小等。
+</p>
+
+<ul>
+<li>
+软件方面
+
+</ul>
+
+<p>
+LVS的hash table值，Nginx的nginx.conf调优等。
+</p>
+
+<ul>
+<li>
+网络方面
+
+</ul>
+
+<p>
+负载均衡器和真实服务器都是通过网络进行通信，如果条件允许，最好将它们置于同机房、同网段下，减小网络时延带来的影响。
+</p>
+
+<h2 id="toc_4.2">系统参数调优</h2>
+
+<h3 id="toc_4.2.1">网卡多队列与CPU核绑定</h3>
+
+<p>
+网卡多队列是一种硬件技术，即一个物理网卡可以有多个队列通道，需要多队列网卡驱动支持。默认情况下各个队列的请求都是由cpu0核处理，所以很容易因为cpu0核si(软中断)满造成性能瓶颈，用top可以看到软中断(si)集中在单个核上。
+</p>
+
+<p>
+多队列网卡在系统中有多个中断号，通过CPU核绑定，将各个中断号对应的网卡队列绑定到指定的CPU核处理，这样可以发挥多核CPU的优势，将中断请求分摊到多个cpu核上，提升cpu处理性能。
+</p>
+
+<ul>
+<li>
+配置方法：
+<pre class="brush:bash">
+# 检查系统是否已开启irqbanlance服务，如果有，则关闭该服务，手动进行cpu核绑定。
+ps -ef | grep irqbalance
+
+# 检查网卡是否支持多队列
+# 检查是否存在 MSI-X: Enable+ Count&gt;0，如果存在，说明网卡支持多队列。
+lspci -vvv | grep -A 30 "Ethernet controller"
+
+# 查询网卡各队列对应的中断号
+# 可以看到对应网卡有多个队列，分别对应中断号187~194。
+cat /proc/interrupts | grep eth0
+
+# 将各队列绑定到指定的CPU核
+# PS: 这里传入的值为16进制。转换为2进制后对应绑定的cpu核。
+# 如：echo 80 &gt;  cat /proc/irq/194/smp_affinity
+# 16进制80转换为2进制为1000 0000，表示将中断号194绑定到cpu7核上面。
+echo 1 &gt; /proc/irq/187/smp_affinity
+echo 2 &gt; /proc/irq/188/smp_affinity
+echo 4 &gt; /proc/irq/189/smp_affinity
+echo 8 &gt; /proc/irq/190/smp_affinity
+echo 10 &gt; /proc/irq/191/smp_affinity
+echo 20 &gt; /proc/irq/192/smp_affinity
+echo 40 &gt; /proc/irq/193/smp_affinity
+echo 80 &gt; /proc/irq/194/smp_affinity
+</pre>
+
+</ul>
+
+<p>
+做了网卡多队列与CPU核绑定后，两次查看CPU软中断状态，中断处理分摊到了cpu0~7核，处理能力得到提升。
+</p>
+
+<h3 id="toc_4.2.2">关注系统链接跟踪表大小</h3>
+
+<p>
+系统链接跟踪表记录了经过系统转发的连接信息，通过加载nf_conntrack模块启用，对于iptables、SNAT/DNAT等功能是必须启用链接跟踪表的。
+</p>
+
+<p>
+但是如果链接跟踪表的值设置的太小，容易造成链接跟踪表满导致丢包的问题。所以需要关注系统的链接跟踪表最大值和当前值的大小，当二者相等时，说明表满，系统会drop新的连接请求。
+</p>
+
+<p>
+ps: 链接跟踪表设置大一些虽然不会造成丢包，但是在业务量很大的情况下，如果表过大（上百万的级别），系统查询链接跟踪表会消耗大量的cpu资源，可能会导致系统挂死。
+</p>
+
+<pre class="brush:bash">
+#查询系统链接跟踪表最大值、当前值
+#如果链接跟踪表最大值为65536就太小了，很容易造成丢包。
+sysctl -a | grep -E 'nf_conntrack_max|nf_conntrack_count'
+
+net.netfilter.nf_conntrack_max = 65536
+net.netfilter.nf_conntrack_count = 0
+net.nf_conntrack_max = 65536
+</pre>
+
+<h3 id="toc_4.2.3">关闭网卡LRO、GRO特性</h3>
+
+<p>
+现在大多数网卡都具有LRO/GRO功能，即网卡收包时将同一流的小包合并成大包 （tcpdump抓包可以看到&gt;MTU 1500bytes的数据包）交给 内核协议栈；
+</p>
+
+<p>
+LVS内核模块在处理&gt;MTU的数据包时，会丢弃；
+</p>
+
+<p>
+因此，如果我们用LVS来传输大文件，很容易出现丢包，传输速度慢；
+</p>
+
+<ul>
+<li>
+解决方法，关闭LRO/GRO功能，命令：（注意查看命令是小k，修改命令是大K）
+<pre class="brush:bash">
+# 查看LRO/GRO当前是否打开
+ethtool -k eth0|grep offload
+
+tcp-segmentation-offload: on
+udp-fragmentation-offload: off [fixed]
+generic-segmentation-offload: on
+generic-receive-offload: on        #GRO
+large-receive-offload: off [fixed] #LRO
+rx-vlan-offload: on [fixed]
+tx-vlan-offload: on [fixed]
+
+# 关闭LRO/GRO
+ethtool -K eth0 lro off
+ethtool -K eth0 gro off
+</pre>
+
+</ul>
+
+<h3 id="toc_4.2.4">增大网卡的ring buffer值</h3>
+
+<pre class="brush:bash">
+# 查看TX/RX
+ethtool -g eth0
+
+Ring parameters for eth0:
+Pre-set maximums:
+RX:		4096
+RX Mini:	0
+RX Jumbo:	0
+TX:		4096
+Current hardware settings:
+RX:		256
+RX Mini:	0
+RX Jumbo:	0
+TX:		256
+
+# 修改、查看
+ethtool -G eth0 rx 4096
+ethtool -G eth0 tx 4096
+ethtool -g eth0
+</pre>
+
+<h3 id="toc_4.2.5">内核参数</h3>
+
+
+<pre class="brush:bash">
+# 增大网卡等待队列大小
+# netdev_max_backlog参数表示每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目。当网卡流量很大时，可以调大这个参数值。
+sysctl -w net.core.netdev_max_backlog=262144
+
+# 增大服务端全连接队列大小
+# somaxconn参数表示服务端已完成3次握手连接的队列大小，即单个服务可建立的tcp连接最大值。当需要增大服务端处理并发连接的能力时，需要调大该参数值。
+sysctl -w net.core.somaxconn=262144
+
+# 增大服务端半连接队列大小
+# tcp_max_syn_backlog参数表示服务端接收syn消息队列的大小。如果该队列未满，则响应(syn,ack)消息；否则将丢弃客户端的syn包。
+sysctl -w net.ipv4.tcp_max_syn_backlog=262144
+
+# 增大系统可用的本地端口范围
+sysctl -w net.ipv4.ip_local_port_range="1024 65535"
+
+# 增大系统time_wait状态连接数限制
+# tcp_max_tw_buckets表示系统允许存在的time_wait状态连接数。Time wait状态是tcp断连中一个正常的状态，它存在的作用主要包括：
+# 确保tcp连接可靠的断开和旧连接的报文在网络中彻底消失。
+# 如果这个值过小，则客户端不会进入time_wait状态，而是直接从FIN_WAIT状态结束。这时候服务端最后一次挥手的FIN消息会以收到RST结束，可能会导致服务端断连异常。
+sysctl -w net.ipv4.tcp_max_tw_buckets=262144
+
+# 启用time_wait状态连接复用
+# 增大tcp_max_tw_buckets值有一个负面影响，就是系统time_wait状态连接过多，将可用端口耗尽，导致没有足够的可用端口新建连接。
+# 这时候可以启用time_wait状态连接复用。注意需要同时启用时间戳tcp_timestamps。（注意开启tcp_timestamps后要确认关闭tcp_tw_recycle）
+sysctl -w net.ipv4.tcp_timestamps=1
+sysctl -w net.ipv4.tcp_tw_reuse=1
+
+# 增大系统最大文件句柄数
+# fs.file-max表示系统整体允许打开的最大文件句柄数。这个值一般只需关注一下，如果配置过小，可以增大。
+sysctl -a | grep fs.file-max
+
+# 增大系统进程最大文件句柄数
+# ulimit -n查询的结果表示单个进程允许打开的最大文件句柄数，可用ulimit -n xxx调大该参数值。
+ulimit -n
+ulimit -n xxx
+
+# 注意这只是在当前shell下生效的，系统重启后会丢失，
+# 需要同时修改/etc/security/limits.conf中的nofile值。其中，* 这行的配置表示对非root用户生效。
+    *  soft nofile 1024000
+    *  hard nofile 1024000
+    root soft nofile 1024000
+    root hard nofile 1024000
+</pre>
+
+<h2 id="toc_4.3">增大ipvs模块hash table的大小</h2>
+
+<p>
+ipvs模块hash table默认值为2<sup><small>12=4096，改为2</small></sup>20=1048576。
+</p>
+
+<p>
+可以用ipvsadm -l命令查询当前hash table的大小:
+</p>
+<pre>
+IP Virtual Server version 1.2.1 (size:4096)
+</pre>
+
+<p>
+修改方法：在/etc/modprobe.d/目录下添加文件ip_vs.conf，内容如下，并重新加载ipvs模块。
+</p>
+<pre>
+options ip_vs conn_tab_bits=20
+</pre>
+
+<h2 id="toc_4.4">Nginx参数调优</h2>
+
+<p>
+Nginx的参数配置都在nginx.conf文件中。
+</p>
+
+<pre class="brush:bash">
+#配置worker进程数等于系统cpu核数，并配置cpu核绑定。
+#这里比较方便的是配置为auto，但是根据实际的系统情况指定worker进程数和手动绑定cpu核可能性能会更高一些，比如避开中断irq处理的cpu核，将worker进程绑定到其它空闲的cpu核上。
+worker_processes auto;
+worker_cpu_affinity auto;
+
+#使用epoll模型
+use epoll;
+
+#关闭TCP的Nagle算法:Nagle算法规定了一个TCP连接中最多只能存在一个未被确认的小包，这可能会和系统的延迟ACK机制产生冲突，造成较为严重的时延。
+tcp_nodelay on;
+
+#增大单个worker进程的文件句柄数限制
+worker_rlimit_nofile 1024000;
+
+#增大单个worker进程的最大并发连接数限制
+#这里的最大并发连接包括前后端的连接，且该参数值不能大于worker_rlimit_nofile。
+worker_connections 1024000;
+</pre>
+
+<h2 id="toc_4.5">硬件与网络配置调优</h2>
+
+<ul>
+<li>
+对物理网卡做多网卡绑定
+
+</ul>
+
+<p>
+采用mode 0或mode 4对多块物理网卡做绑定，提升网卡整体的传输速率。如将两块传输速率为1000MB/S的网卡做mode0绑定，则理论上bond网卡的传输速率为2000MB/S。
+</p>
+
+<ul>
+<li>
+将负载均衡器和真实服务器放在一个局域网内
+
+</ul>
+
+<p>
+负载均衡器和真实服务器靠网络传输数据，如果条件允许，将它们放在一个局域网内，避免数据传输走路由器传输。
+</p>
+
+<h2 id="toc_4.6">性能分析工具</h2>
+
+<pre class="brush:bash">
+# 分析cpu性能
+# sar和mastat需要安装sysstat工具包。
+top       #按1可以看到每个cpu核的cpu使用情况，同时还能看到各个进程的情况。
+sar -u 1  #每隔1秒打印出当前cpu的整体使用情况。
+mpstat -P ALL 1 #每隔1秒打印出所有cpu核的使用情况。
+
+# 分析网卡流量
+# 每隔1秒打印出所有网卡的流量传输情况。
+sar -n DEV 1
+
+# 查看网卡配置,注意这里的单位是小b。
+ethtool xxx
+
+# 查看bond网卡绑定模式
+cat /proc/net/bonding/xxx
+</pre>
+
+<h2 id="toc_4.7">性能压测工具</h2>
+
+<p>
+这里介绍一个很好用的http压测工具：wrk。
+</p>
+
+<h3 id="toc_4.7.1">安装方法</h3>
+
+<pre class="brush:bash">
+git clone https://github.com/wg/wrk
+make
+ ln -s xxx/wrk /usr/sbin/wrk
+</pre>
+
+<h3 id="toc_4.7.2">使用方法</h3>
+
+<p>
+使用方法: wrk &lt;选项&gt; &lt;被测HTTP服务的URL&gt;                              
+</p>
+
+<ul>
+<li>
+Options:                                           
+<pre>
+-c, --connections  跟服务器建立并保持的TCP连接数量 
+-d, --duration     压测时间         
+-t, --threads      使用多少个线程进行压测 
+-s, --script       指定Lua脚本路径     
+-H, --header       为每一个HTTP请求添加HTTP头     
+--latency          在压测结束后，打印延迟统计信息 
+--timeout          超时时间   
+-v, --version      打印正在使用的wrk的详细版本信息
+
+代表数字参数，支持国际单位 (1k, 1M, 1G)
+代表时间参数，支持时间单位 (2s, 2m, 2h)
+</pre>
+
+</ul>
+
+<h3 id="toc_4.7.3">示例</h3>
+
+<p>
+wrk默认为http长连接。
+</p>
+
+<ul>
+<li>
+使用10个线程、1000个长连接对指定URL压测60s，并打印时延信息。
+<pre>
+wrk -t10 -c1000 -d60s --latency "http://xxx/test.html"
+
+Requests/sec: 149863.60  # 每秒的请求数，即QPS
+Transfer/sec: 67.02MB    # 每秒传输的字节数
+</pre>
+
+</ul>
+
+<ul>
+<li>
+指定头域实现http短连接测试。
+<pre>
+wrk -t10 -c1000 -d60s -H "Connection: Close" --latency “http://xxx/test.html”
+</pre>
+
+</ul>
+
+<p>
+注意压测客户端也会遇到性能问题，也需要对其进行性能调优。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2015 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
