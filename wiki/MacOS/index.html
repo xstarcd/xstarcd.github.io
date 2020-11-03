@@ -20,6 +20,7 @@
 <ul>
 <li><a href="#toc_0.1">软件包管理工具</a>
 <li><a href="#toc_0.2">macOS挂载NTFS只读问题解决</a>
+<li><a href="#toc_0.3">diskutil</a>
 </ul>
 </ul>
 </div>
@@ -248,6 +249,45 @@ ln -s /Volumes ~/Desktop/Volumes
 </pre>
 
 </ul>
+
+<h2 id="toc_0.3">diskutil</h2>
+
+<ul>
+<li>
+作者：Daeva_Song
+
+<li>
+链接：<a href="https://www.jianshu.com/p/d8aa1c5be741">https://www.jianshu.com/p/d8aa1c5be741</a>
+
+<li>
+来源：简书
+
+</ul>
+
+<p>
+之前用bootcamp安装了windows10，后来卸载了。但卸载之后磁盘分区仍然有Microsoft reserved 和BOOT CAMP两个分区仍然在磁盘里，且和OSX主分区磁道不连续，无法在分区管理工具中合并分区，删除不掉MR分区（错误提示是 couldn't read partition map），现在要删除这两个分区把空间合并给OSX主分区。
+</p>
+
+<p>
+解决方案：
+</p>
+<ol>
+<li>
+打开终端，命令行输入<code>diskutil list</code>查看当前磁盘所有分区。
+
+<li>
+出现问题的情况是在/dev/disk0分区下有名为Microsoft Reserved的16.8M的分区和BOOT CAMP的分区（大小是当时你自己设定的），首先删除MR分区
+<pre>
+sudo diskutil eraseVolume JHFS+ deleteme /dev/disk0sX (deleteme是重置分区名随便写，/dev/disk0sX是指你要删除的分区号)
+</pre>
+
+<li>
+磁盘分区工具删除MR分区就可以删除掉。
+
+<li>
+MR分区合并掉后，再合并BOOTCAMP分区就可以了。
+
+</ol>
 
 </div>
 <div id="footer">

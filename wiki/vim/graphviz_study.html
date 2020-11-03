@@ -20,6 +20,19 @@
 <ul>
 <li><a href="#toc_0.1">资料收集</a>
 <li><a href="#toc_0.2">范例</a>
+<li><a href="#toc_0.3">其他参考</a>
+<ul>
+<li><a href="#toc_0.3.1">图的属性</a>
+<li><a href="#toc_0.3.2">Record-based节点</a>
+<li><a href="#toc_0.3.3">节点属性</a>
+<li><a href="#toc_0.3.4">连线样式属性</a>
+<li><a href="#toc_0.3.5">html表格</a>
+<li><a href="#toc_0.3.6">使dot支持中文</a>
+<li><a href="#toc_0.3.7">生成图形</a>
+<li><a href="#toc_0.3.8">命令行全局设置</a>
+<li><a href="#toc_0.3.9">添加注释</a>
+<li><a href="#toc_0.3.10">关于graphviz结点的布局</a>
+</ul>
 </ul>
 </ul>
 </div>
@@ -47,6 +60,9 @@ graphviz的基本语法及使用:<a href="https://blog.csdn.net/mouday/article/d
 
 <li>
 graphviz dot语言学习笔记:<a href="https://www.jianshu.com/p/e44885a777f0">https://www.jianshu.com/p/e44885a777f0</a>
+
+<li>
+Dot脚本语言语法整理:<a href="https://blog.csdn.net/jy692405180/article/details/52077979">https://blog.csdn.net/jy692405180/article/details/52077979</a>
 
 </ul>
 <li>
@@ -196,17 +212,62 @@ digraph ws {
 <img src='https://g.gravizo.com/svg? digraph ws { nodesep = .5; node[shape=record, width=.1, height=.1]; node[color="blue"]; site[label="{WebSite|http://mysite.com|http://www.mysite.com}"]; logs[label="{logFile|mysite.access.log|mysite.error.log}"]; uri1[label="{user|role}"]; uri2[label="{app|commdata}"]; uri3[label="{pushrouter|message}"]; spBase[label="{spBase|192.168.1.100:8080|192.168.1.101:8080}"]; spData[label="{spData|192.168.1.102:8080|192.168.1.103:8080}"]; spPush[label="{spPush|192.168.1.104:8080|192.168.1.105:8080}"]; site -> {logs,uri1,uri2,uri3}; uri1 -> spBase; uri2 -> spData; uri3 -> spPush; }' width=500px />
 </p>
 
+<h2 id="toc_0.3">其他参考</h2>
+
+<h3 id="toc_0.3.1">图的属性</h3>
+
+<pre class="brush:bash">
+digraph graph1 {
+    bgcolor = red;
+    graph [bgcolor = red];
+}
+</pre>
+
 <ul>
 <li>
-其他参考
-<pre>
+bgcolor：设置图的背景颜色，可以使用red、blue、green等形式，或者使用"#rrggbb"形式。
+
+<li>
+label：设置图的描述。label会继承到子图，子图里如果不想重复显示必须手动设置
+
+<li>
+rankdir：设置图的方向，包括：TB（top to bottom）、BT（bottom to top）、LR（left to right）、RL（right to left）。
+
+<li>
+rotate：设置图的旋转。如：rotate = 90便是逆时针旋转90度。
+
+<li>
+ratio：设置图的长宽比，可以是一个浮点数，也可以是：fill、compress或者auto。
+
+</ul>
+
+<h3 id="toc_0.3.2">Record-based节点</h3>
+
+<p>
+<a href="https://graphviz.org/doc/info/shapes.html">https://graphviz.org/doc/info/shapes.html</a>
+</p>
+
+<p>
+设置为record和Mrecord的结点的label属性可以很方便地生成单列的表格和UML图等。（类似于XAML里面的stack）
+</p>
+
+<p>
+用一对双引号+一对花括号包含起来的就是表格内容，不同的格子之间用符号 | 隔开，尖括号里的内容表示一个锚点（具体讲解见下文）。
+</p>
+<pre class="brush:bash">
+//其中&lt;head&gt;是定义的锚点名称，不会显示。
+example [ shape = record, label = "{&lt;head&gt;cell1 | cell2 | cell3}" ];
+</pre>
+
+<pre class="brush:bash">
 digraph g {
+    nodesep = .5;
+    rankdir = LR;  //指定绘图的方向 (LR从左到右绘制)
     //定义竖直节点
     node[shape=record, width=.1, height=.1];
-    //node0[label="&lt;f0&gt; |&lt;f1&gt; |&lt;f2&gt; |&lt;f3&gt; |&lt;f4&gt; |&lt;f5&gt; |&lt;f6&gt;", height=2.5]; //我是一个属性, 我有7个属性
-    node0[label="&lt;f0&gt; |f1 |f2 |f3 |f4 |f5 |f6", height=.5]; //我是一个属性, 我有7个属性
- 
-
+    //我是一个属性, 我有7个属性，&lt;f0&gt;表示链接点
+    node0[label="&lt;f0&gt; f0 |&lt;f1&gt; f1 |&lt;f2&gt; f2 |&lt;f3&gt; f3 |&lt;f4&gt; f4 |&lt;f5&gt; f5 |&lt;f6&gt; f6", height=2.5];
+    
     //定义横向节点
     node[shape=record,width=1.5,color=black];
     node1[label="{&lt;n&gt; a13 | 111 | &lt;p&gt; good }"]; //我也是一个节点, 定义了3个属性
@@ -214,7 +275,6 @@ digraph g {
     node3[label="{&lt;n&gt; g23 | 344 | &lt;p&gt;}"];
     node4[label="{&lt;n&gt; k535 | 246 | &lt;p&gt;}"];
     node5[label="{&lt;n&gt; h25 | 13 | &lt;p&gt;}"];
-    
     node6[label="{&lt;n&gt; dj | 04 | &lt;p&gt;}"];
     node7[label="{&lt;n&gt; sbd | 0x543 | &lt;p&gt;}"];
 
@@ -231,7 +291,311 @@ digraph g {
 }
 </pre>
 
+<h3 id="toc_0.3.3">节点属性</h3>
+
+<p>
+使用node []和edge []可以分别设置结点和边的全局设置：
+</p>
+<pre class="brush:bash">
+digraph graph1 {
+    node [shape = egg];
+    edge [style = dashed];
+
+    a -&gt; b;
+}
+</pre>
+
+<p>
+结点的常用属性：
+</p>
+<ul>
+<li>
+shape：设置结点形状。包括：
+
+<ul>
+<li>
+Mrecord（圆角矩形）、record（矩形）、circle（圆形）、box（矩形，和record略有区别，下面会讲到）、egg（蛋形）、doublecircle（双圆形）、plaintext（纯文本）、 ellipse（椭圆，默认）。
+
 </ul>
+<li>
+label：设置结点的显示内容，内容用双引号包含，可以使用转义字符。当结点内容!=结点名时使用
+
+<li>
+style：设置结点的样式。包括：
+
+<ul>
+<li>
+filled(填充)、dotted（点状边框）、solid（普通边框）、dashed（虚线边框）、bold（边框加粗）、invis（隐形）。
+
+</ul>
+<li>
+color：设置边框颜色。可以使用单词形式或者"#rrggbb"形式。
+
+<ul>
+<li>
+如果设置了style=filled，此时设置的color是代表整体颜色。
+
+<li>
+但是如果设置了fillcolor再设置color的话，color代表边框颜色。 
+
+</ul>
+<li>
+fillcolor：设置填充颜色，仅style=filled时有效。
+
+<li>
+width：设置结点宽度。
+
+<li>
+height：设置结点高度。
+
+<li>
+peripheries：设置结点边框个数。
+
+<li>
+fontcolor：设置结点内容颜色。可以使用单词形式或者"#rrggbb"形式。
+
+</ul>
+
+<pre class="brush:bash">
+//定义a节点为长方形, 节点显示的文本为"Hello world"样式为填充, 填充颜色为#ABACBA
+a[shape=box,label="Hello world",style=filled,fillcolor="#ABACBA"];
+
+//设置以下节点默认属性
+node[shape=record, width=.1, height=.1];
+</pre>
+
+<pre class="brush:bash">
+digraph g {
+      //==========定义节点关系============
+      a-&gt;b;
+      b-&gt;c;
+      c-&gt;a;
+      c-&gt;d-&gt;e-&gt;f;
+      d-&gt;g;
+      e-&gt;h;
+      //==========定义节点属性============
+      //定义a节点为长方形, 样式为填充, 填充颜色为#ABACBA
+      a[shape=box,label="Server1\nWebServer",fillcolor="#ABACBA",style=filled];
+
+      //定义b为5边形, 标签为"bb", 样式为填充, 填充色为red
+      b[shape=polygon,sides=5,label="bb",style=filled,fillcolor=red];
+
+      //c, 默认为椭圆
+      d[shape=circle]; //园
+      e[shape=triangle]; //三角形
+      f[shape=polygon, sides=4, skew=0.5]; //平行四边形
+      g[shape=polygon, distortion=0.5]; //梯形, 上边长
+      h[shape=polygon, distortion=-.5]; //梯形, 下边长
+  }
+</pre>
+
+<h3 id="toc_0.3.4">连线样式属性</h3>
+
+<p>
+边的常用属性：
+</p>
+<ul>
+<li>
+style：设置边的形状。包括：solid（实线）、dashed（虚线）、dotted（点线）、bold（加粗）、invis（隐形）。
+
+<li>
+label：设置边标签。内容用双引号包含，可以使用转义字符。
+
+<li>
+color：设置边颜色。可以使用单词形式或者"#rrggbb"形式。
+
+<li>
+arrowhead：设置结点箭头样式。包括：none、empty、odiamond等。
+
+</ul>
+
+<pre class="brush: bash">
+# graph无向图，连接线--
+# digraph有向图，连接用-&gt;
+digraph g {
+  //edge[style=dashed]; //定义边的样式, 虚线
+  node[peripheries=2, style=filled, color="#eecc80"];
+  a-&gt;b [color=red, style=dashed]; //定义边的颜色, 红色 (b和方括号之间必须有空格)
+  b-&gt;c; //箭头, 三角形; 箭尾, 菱形
+  b-&gt;d [arrowhead=box]; //箭头, 长方形
+  b-&gt;e [dir=none]; //没有箭头
+  d-&gt;f [dir=both]; //双向箭头
+  f-&gt;h [label=go]; //定义edge的标签
+  f-&gt;k [arrowhead=diamond]; //更改箭头形状 (更多箭头形状请参考官方文档: http://www.graphviz.org/content/arrow-shapes)
+  k-&gt;y [headlabel="哈哈", taillabel="洗洗"];
+}
+</pre>
+
+<h3 id="toc_0.3.5">html表格</h3>
+
+<p>
+如果record生成的表格不符合预期，还可以使用html标签生成表格。只需要将结点的label属性设置为相应的html代码（用一对尖括号包含）即可。
+</p>
+
+<p>
+port属性可以为td增加一个锚点。
+</p>
+
+<pre class="brush:bash">
+table1 [label=&lt;
+&lt;table&gt;
+    &lt;tr&gt;
+        &lt;td port="one"&gt;1&lt;/td&gt;
+        &lt;td&gt;2&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;3&lt;/td&gt;
+        &lt;td&gt;4&lt;/td&gt;
+    &lt;/tr&gt;
+&lt;/table&gt;
+&gt;];
+</pre>
+
+<p>
+cell的锚点可以让使用者在cell之间画线。
+</p>
+
+<p>
+引用cell的锚点的语法为：table: anchor_name
+</p>
+
+<pre class="brush:bash">
+digraph example2 {
+    node [shape = record];
+    table1 [label = "{&lt;head&gt;cell1 | cell2 | cell3}"];
+    table2 [label = "{&lt;head&gt;cell1 | cell2}"];
+
+    table1: head -&gt; table2: head;
+}
+</pre>
+
+
+<pre class="brush:bash">
+digraph structs {
+    node [shape=plaintext]
+    struct1 [label=&lt;
+&lt;TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0"&gt;
+  &lt;TR&gt;&lt;TD&gt;left&lt;/TD&gt;&lt;TD PORT="f1"&gt;middle&lt;/TD&gt;&lt;TD PORT="f2"&gt;right&lt;/TD&gt;&lt;/TR&gt;
+&lt;/TABLE&gt;&gt;];
+    struct2 [label=&lt;
+&lt;TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0"&gt;
+  &lt;TR&gt;&lt;TD PORT="f0"&gt;one&lt;/TD&gt;&lt;TD&gt;two&lt;/TD&gt;&lt;/TR&gt;
+&lt;/TABLE&gt;&gt;];
+    struct3 [label=&lt;
+&lt;TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4"&gt;
+  &lt;TR&gt;
+    &lt;TD ROWSPAN="3"&gt;hello&lt;BR/&gt;world&lt;/TD&gt;
+    &lt;TD COLSPAN="3"&gt;b&lt;/TD&gt;
+    &lt;TD ROWSPAN="3"&gt;g&lt;/TD&gt;
+    &lt;TD ROWSPAN="3"&gt;h&lt;/TD&gt;
+  &lt;/TR&gt;
+  &lt;TR&gt;
+    &lt;TD&gt;c&lt;/TD&gt;&lt;TD PORT="here"&gt;d&lt;/TD&gt;&lt;TD&gt;e&lt;/TD&gt;
+  &lt;/TR&gt;
+  &lt;TR&gt;
+    &lt;TD COLSPAN="3"&gt;f&lt;/TD&gt;
+  &lt;/TR&gt;
+&lt;/TABLE&gt;&gt;];
+    struct1:f1 -&gt; struct2:f0;
+    struct1:f2 -&gt; struct3:here;
+}}}}
+
+=== subgraph定义子图 ===
+
+{{{class="brush:bash"
+digraph g {
+    //定义一个子图, subgraph定义子图
+	//注意：子图的名字必须以cluster开始，否则解析引擎无法进行识别
+    subgraph cluster0 {
+        node[style=filled, color=white];  //定义子图中的节点的样式
+        style=filled; //定义子图的样式
+        color=red; //定义子图的填充色
+        a0-&gt;a1-&gt;a2-&gt;a3; //定义节点, 及节点之间的关系
+        label="process #1"; //定义子图的标签
+     }
+
+   //又定义一个子图
+   subgraph cluster1 {
+      node[style=filled, color=white];
+      style=filled;
+      color=blue; //定义子图的填充色
+      b0-&gt;b1-&gt;b2-&gt;b3; //定义节点及其关系
+      label="process #2";
+      labelColor=white;
+   }
+
+   //定义子图之间的关系
+   start-&gt;a0;
+   start-&gt;b0;
+   a1-&gt;b3;
+   b2-&gt;a3;
+   a3-&gt;end;
+   b3-&gt;end;
+</pre>
+
+<h3 id="toc_0.3.6">使dot支持中文</h3>
+
+<p>
+Graphviz默认是不支持中文的，输入的中文在生成的图中显示为一个空方块。如果想要让其支持中文，可以尝试以下方法：
+</p>
+
+<p>
+方法一：在命令行里指定-Nfontname=xxx.ttf，在gv文件中输入utf-8编码的汉字。
+</p>
+
+<p>
+方法二：给graph、node和edge均设置fontname = xxx.ttf然后设置label。
+</p>
+
+
+<h3 id="toc_0.3.7">生成图形</h3>
+
+<p>
+我们还可以巧妙地使用结点的某些属性来生成图形。如：
+</p>
+<pre>
+circle [label="", shape="circle", width=0.5, fixedsize=true, style=filled, color=black];
+</pre>
+<p>
+就生成了一个实心黑色圆形。
+</p>
+
+
+<h3 id="toc_0.3.8">命令行全局设置</h3>
+
+<p>
+不仅可以使用代码里的全局设置，还可以在命令行里进行全局设置，这样做的好处就是可以根据不同要求来生成图形。
+</p>
+<pre>
+dot -Grankdir=LR -Nshape="plaintext" -Earrowhead="odiamond" -Tpng example.dot -o example.png
+
+# Grankdir  = graph rankdir
+# Nshape    = node shape
+# Earrowhead= edge arrowhead
+</pre>
+
+<p>
+其他的属性均按照这种规则进行填写。
+</p>
+
+<h3 id="toc_0.3.9">添加注释</h3>
+
+<p>
+Dot的注释使用//（单行）或者/**/（多行）。
+</p>
+<pre>
+// 这是单行注释
+
+/*
+这是多行注释
+*/
+</pre>
+
+<h3 id="toc_0.3.10">关于graphviz结点的布局</h3>
+
+<p>
+graphviz的节点出现在画布上的位置事实上是不确定的，依赖于所使用的布局算法，而不是在脚本中出现的位置，这可能使刚开始接触graphviz的开发人员有点不适应。graphviz的强项在于自动布局，当图中的顶点和边的数目变得很多的时候，才能很好的体会这一特性的好处。
+</p>
 
 </div>
 <div id="footer">
