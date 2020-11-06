@@ -23,6 +23,8 @@
 <li><a href="#toc_1.2">如何查看这些值？</a>
 <li><a href="#toc_1.3">他们是如何工作的？</a>
 <li><a href="#toc_1.4">如何设置这些值？</a>
+<li><a href="#toc_1.5">lvs持久性用途</a>
+<li><a href="#toc_1.6">应如何取值</a>
 </ul>
 <li><a href="#toc_2">lvs的持久连接</a>
 <ul>
@@ -59,7 +61,11 @@ BLOG：<a href="http://isadba.com">http://isadba.com</a>
 原文：<a href="http://isadba.com/?p=67">http://isadba.com/?p=67</a>
 
 </ul>
+<li>
+<a href="https://ieevee.com/tech/2017/08/15/lvs-persistence.html">https://ieevee.com/tech/2017/08/15/lvs-persistence.html</a>
+
 </ul>
+
 
 <h2 id="toc_1.1">LVS持久连接技术</h2>
 
@@ -87,6 +93,7 @@ udp的超时时间
 </ol>
 
 <h2 id="toc_1.2">如何查看这些值？</h2>
+
 <pre class="brush:bash">
 ipvsadm  # 可以查看连接空闲的超时时间(persistent 10)。
 
@@ -125,46 +132,112 @@ FIN_WAIT的值就是tcp tcpfin udp的超时时间，当NONE的值为0时，如�
 
 <ul>
 <li>
-persistence_timeout可以通过以下两种方法设置
-<pre>
-ipvsadm -A -t 192.168.20.154:80 -s rr -p 60
-</pre>
-
-</ul>
-<p>
-注意：上面命令中红色标记的80端口，表示同一客户端访问服务器的80端口，会被定义到同一个real server，如果把80端口改为0，那么同一客户端访问服务器的任何服务都会被转发到同一real server。
-</p>
-
-<p>
-修改keepalived配置文件，在虚拟服务器配置下面加入<code>persistence_timeout 60</code>
-</p>
-
-<ul>
-<li>
 tcp tcpfin udp的配置
 
-</ul>
-
+<ul>
+<li>
+命令行设置：
 <pre>
 ipvsadm –set tcp tcpfin udp
-
-# ipvsadm –set 120 50 50 //实例
+如：
+ipvsadm –set 120 50 50
 </pre>
 
-<p>
-建议：tcpfin的值最好小于persistence_timeout的值，这样比较方便计算。
-</p>
+<li>
+在keepalived.conf中配置：
+<pre>
+global_defs {
+  vrrp_version 3
+  vrrp_iptables KUBE-KEEPALIVED-VIP
+
+  lvs_timeouts tcp 7200 tcpfin 120 udp 300
+  lvs_sync_daemon &lt;INTERFACE&gt; &lt;VRRP_INSTANCE&gt;
+}
+
+注意一定要配置lvs_sync_daemon，否则lvs_timeouts不会真正下发给内核lvs。
+lvs_timeouts 后面的tcpfin udp两个实际可以不配置。
+</pre>
+
+</ul>
+</ul>
 
 <ul>
 <li>
-lvs持久性参考资料：
+persistence_timeout可以通过以下两种方法设置
+
+<ul>
+<li>
+ipvsadm命令参数： 
+<pre>
+ipvsadm -A -t 192.168.20.154:80 -s rr -p 60
+
+注意：上面命令:80端口，表示同一客户端访问服务器的80端口，会被定义到同一个real server，如果把80端口改为0，那么同一客户端访问服务器的任何服务都会被转发到同一real server。
+</pre>
+
+<ul>
+<li>
+在keepalived.conf中设置，在虚拟服务器配置下面加入<code>persistence_timeout 60</code>
 
 </ul>
+</ul>
+</ul>
+
+<h2 id="toc_1.5">lvs持久性用途</h2>
 
 <p>
 <a href="http://www.linuxvirtualserver.org/docs/persistence.html">http://www.linuxvirtualserver.org/docs/persistence.html</a>
 </p>
 
+<pre>
+有些Web服务可能用到HTTP Cookie，它是将数据存储在客户的浏览器来追踪和标识客户的机制。使用HTTP Cookie后，来同一客户的不同连接存在相关性，这些连接必须被发送到同一Web服务器。
+</pre>
+
+<pre>
+另有些Web服务可能使用安全的HTTPS协议，它是HTTP协议加SSL协议。当客户访问HTTPS服务（HTTPS的缺省端口为 443）时，会先建立一个SSL连接，来交换对称公钥加密的证书并协商一个SSL Key，来加密以后的会话。
+*在SSL Key的生命周期内，后续的所有HTTPS连接都使用这个SSL Key，所以同一客户的不同HTTPS连接也存在相关性。*
+</pre>
+
+<pre>
+在C/S架构中，Client和Server间的多个连接有时存在着关联性。
+比如FTP主动模式的20和21两个端口：21默认为监听端口、20则为数据传输端口。
+20端口的开启是建立在21端口进行了有效的用户确认和文件交互确认后才会开启的，是Server主动连接Client所告知的端口。
+但是在FTP的被动模式下，是Server主动将自己开放的随机数据端口告知Client，然后Client再去和Server的新端口建立新的TCP连接。
+假如`persistence_timeout`该选项注释掉，那么Client和Server间建立的新的TCP连接有可能被负载到另外一台RealServer上去，引起失败。
+</pre>
+
+<p>
+针对这些需要，IPVS调度器提供了持久服务的功能，它可以使得在设定的时间内，来自同一IP地址的不同连接会被发送到集群中同一个服务器结点，可以很好地解决客户连接的相关性问题。
+</p>
+
+<p>
+此选项对于连接关联性是一个很好的解决方案，但是会造成轻微的负载不均衡（官方原文：slight load imbalance）
+</p>
+
+<p>
+当某些网络设置了代理服务，LVS看到Client均为同一来源IP地址，从而造成所有流量均转至同一RealSever问题。
+</p>
+
+<h2 id="toc_1.6">应如何取值</h2>
+
+<p>
+那么应该如何配置persistence_timeout呢？你可能看过一些文章说这个超时时间最好配置成跟lvs_timeouts一致，当然这么配没什么问题，但其实二者没有必然的联系，lvs_timeouts想保护的是一个人(单一连接)，而persistence_timeout想保护的是一类人(源自统一client ip的连接)，根据实际情况将二者设置为不同值会更合理一些。
+</p>
+
+<p>
+处于负载均衡的考虑，不建议将persistence_timeout配置的太大，这样可能会导致长时间client总是被转发到同一个real server。
+</p>
+
+<p>
+而lvs_timeouts建议配置为 &gt;7200。为什么呢？TCP的保活定时器默认时间是2小时，当保活定时器超时时：
+</p>
+<ul>
+<li>
+如果client还正常跑着，TCP会发送探测报文，该报文刷新lvs ESTABLISHED表项，重置expire，TCP连接、lvs表项均继续存在
+
+<li>
+如果client已经挂了，此时TCP保活定时器超时，即使没有lvs的存在也会关闭TCP连接；将lvs_timeouts配置为稍大于7200的值，会给用户相同的体验，避免lvs表项太早老化引起用户不满。
+
+</ul>
 
 <h1 id="toc_2">lvs的持久连接</h1>
 
