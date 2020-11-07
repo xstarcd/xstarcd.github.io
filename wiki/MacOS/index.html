@@ -20,7 +20,8 @@
 <ul>
 <li><a href="#toc_0.1">软件包管理工具</a>
 <li><a href="#toc_0.2">macOS挂载NTFS只读问题解决</a>
-<li><a href="#toc_0.3">diskutil</a>
+<li><a href="#toc_0.3">用diskutil解决卸载windows后无法删除分区问题</a>
+<li><a href="#toc_0.4">macbook-windows触控板滚动方向设置</a>
 </ul>
 </ul>
 </div>
@@ -250,7 +251,7 @@ ln -s /Volumes ~/Desktop/Volumes
 
 </ul>
 
-<h2 id="toc_0.3">diskutil</h2>
+<h2 id="toc_0.3">用diskutil解决卸载windows后无法删除分区问题</h2>
 
 <ul>
 <li>
@@ -288,6 +289,55 @@ sudo diskutil eraseVolume JHFS+ deleteme /dev/disk0sX (deleteme是重置分区�
 MR分区合并掉后，再合并BOOTCAMP分区就可以了。
 
 </ol>
+ 
+
+<h2 id="toc_0.4">macbook-windows触控板滚动方向设置</h2>
+
+<ul>
+<li>
+确定设备HID信息：如：<code>VID_05AC&amp;PID_024C&amp;MI_01&amp;Col01\9&amp;13eeb370&amp;0&amp;0000</code>:
+
+<ul>
+<li>
+进入windows 10设置界面，鼠标和触摸板-&gt;其他鼠标选项-&gt;硬件中查找Apple的HID设备：
+
+<li>
+选择HID-complant mouse，并且位置是"在Apple Multi-Touch上"的设备；
+
+<li>
+进入属性窗口，在"详细信息"的信息栏中，可看到<code>已配置设备HID \VID+_....</code>的内容。
+
+</ul>
+<li>
+修改注册表项:可存为touchpad.reg后导入、也可用regedit修改：
+
+<ul>
+<li>
+FlipFlopWheel:垂直方向滚动方式
+
+<li>
+FlipFlopHScroll:水平方向滚动方式
+
+<li>
+0=滚轮模式，1=自然模式
+<pre class="brush:bash">
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\HID\VID_05AC&amp;PID_024C&amp;MI_01&amp;Col01\9&amp;13eeb370&amp;0&amp;0000\Device Parameters]
+"FlipFlopWheel"=dword:00000001
+"FlipFlopHScroll"=dword:00000001
+
+;"ForceAbsolute"=dword:00000000
+;"HScrollPageOverride"=dword:00000000
+;"HScrollUsageOverride"=dword:00000000
+;"HScrollHighResolutionDisable"=dword:00000000
+;"VScrollPageOverride"=dword:00000000
+;"VScrollUsageOverride"=dword:00000000
+;"VScrollHighResolutionDisable"=dword:00000000
+</pre>
+
+</ul>
+</ul>
 
 </div>
 <div id="footer">
