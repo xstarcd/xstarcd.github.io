@@ -54,6 +54,21 @@ Guide to Deploying Diffie-Hellman for TLS: <a href="https://weakdh.org/sysadmin.
 <li>
 <a href="ssl_process.html">SSL/TLS 握手过程详解</a>:<a href="https://www.cnblogs.com/thammer/p/7083660.html">https://www.cnblogs.com/thammer/p/7083660.html</a>
 
+<li>
+私钥与证书不匹配:
+<pre>
+nginx: [emerg] SSL_CTX_use_PrivateKey_file("/usr/local/nginx/ssl/ssl.key") failed
+(SSL: error:0B080074:x509 certificate routines:X509_check_private_key:key values mismatch)
+
+如果您指定的私钥与您尝试使用的证书中的公钥不匹配，则会出现此错误。
+请检查您使用的私钥是否与证书中的公钥匹配，这可以通过比较以下命令的输出来完成，两个命令的输出应该是相同的： 
+openssl x509 -noout -modulus -in ssl.crt | openssl md5
+(stdin)= 8216eeaa8e1a346dd1f5dfecaadfec1d
+
+openssl rsa -noout -modulus -in ssl.key | openssl md5
+(stdin)= 8216eeaa8e1a346dd1f5dfecaadfec1d
+</pre>
+
 </ul>
 
 </div>
