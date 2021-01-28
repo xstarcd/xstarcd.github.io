@@ -22,25 +22,28 @@
 <li><a href="#toc_1.1">sed 简明教程</a>
 <ul>
 <li><a href="#toc_1.1.1">用s命令替换</a>
-<li><a href="#toc_1.1.2">多个匹配</a>
-<li><a href="#toc_1.1.3">圆括号匹配</a>
-<li><a href="#toc_1.1.4">sed的命令</a>
+<li><a href="#toc_1.1.2">多个匹配指令</a>
+</ul>
+<li><a href="#toc_1.2">多个字符串匹配</a>
 <ul>
-<li><a href="#toc_1.1.4.1">N命令</a>
-<li><a href="#toc_1.1.4.2">a命令和i命令</a>
-<li><a href="#toc_1.1.4.3">c命令</a>
-<li><a href="#toc_1.1.4.4">d命令</a>
-<li><a href="#toc_1.1.4.5">p命令</a>
-</ul>
-<li><a href="#toc_1.1.5">几个知识点</a>
+<li><a href="#toc_1.2.1">圆括号匹配</a>
+<li><a href="#toc_1.2.2">sed的命令</a>
 <ul>
-<li><a href="#toc_1.1.5.1">Pattern Space</a>
-<li><a href="#toc_1.1.5.2">Address</a>
-<li><a href="#toc_1.1.5.3">命令打包</a>
-<li><a href="#toc_1.1.5.4">Hold Space</a>
+<li><a href="#toc_1.2.2.1">N命令</a>
+<li><a href="#toc_1.2.2.2">a命令和i命令</a>
+<li><a href="#toc_1.2.2.3">c命令</a>
+<li><a href="#toc_1.2.2.4">d命令</a>
+<li><a href="#toc_1.2.2.5">p命令</a>
+</ul>
+<li><a href="#toc_1.2.3">几个知识点</a>
+<ul>
+<li><a href="#toc_1.2.3.1">Pattern Space</a>
+<li><a href="#toc_1.2.3.2">Address</a>
+<li><a href="#toc_1.2.3.3">命令打包</a>
+<li><a href="#toc_1.2.3.4">Hold Space</a>
 </ul>
 </ul>
-<li><a href="#toc_1.2">添加BOM头</a>
+<li><a href="#toc_1.3">添加BOM头</a>
 </ul>
 </ul>
 </div>
@@ -258,7 +261,7 @@ This is my fiSh, my fiSh'S name iS george
 This is my goat, my goat'S name iS adam
 </pre>
 
-<h3 id="toc_1.1.2">多个匹配</h3>
+<h3 id="toc_1.1.2">多个匹配指令</h3>
 
 <p>
 如果我们需要一次替换多个模式，可参看下面的示例：
@@ -293,7 +296,22 @@ This is [my] fish, [my] fish's name is george
 This is [my] goat, [my] goat's name is adam
 </pre>
 
-<h3 id="toc_1.1.3">圆括号匹配</h3>
+<h2 id="toc_1.2">多个字符串匹配</h2>
+
+<p>
+匹配abc或def，在后面增加字符串：
+</p>
+<pre class="brush:bash">
+echo -e 'abc\ndef\n123\na'|sed 's/\(abc\|def\)/\1 TEST/g'
+</pre>
+<pre>
+abc TEST
+def TEST
+123
+a
+</pre>
+
+<h3 id="toc_1.2.1">圆括号匹配</h3>
 
 <p>
 圆括号括起来的正则表达式所匹配的字符串会可以当成变量来使用，sed中使用的是\1,\2…
@@ -319,13 +337,13 @@ goat:adam
 然后：\1就是cat，\2就是betty
 </pre>
 
-<h3 id="toc_1.1.4">sed的命令</h3>
+<h3 id="toc_1.2.2">sed的命令</h3>
 
 <p>
 让我们回到最一开始的例子pets.txt，让我们来看几个命令：
 </p>
 
-<h4 id="toc_1.1.4.1">N命令</h4>
+<h4 id="toc_1.2.2.1">N命令</h4>
 
 <p>
 先来看N命令 —— 把下一行的内容纳入当成缓冲区做匹配。
@@ -367,7 +385,7 @@ This is my fish,  my fish's name is george
 This is my goat,  my goat's name is adam
 </pre>
 
-<h4 id="toc_1.1.4.2">a命令和i命令</h4>
+<h4 id="toc_1.2.2.2">a命令和i命令</h4>
 
 <p>
 a命令就是append， i命令就是insert，它们是用来添加行的。如：
@@ -420,7 +438,7 @@ This is my goat, my goat's name is adam
 ----
 </pre>
 
-<h4 id="toc_1.1.4.3">c命令</h4>
+<h4 id="toc_1.2.2.3">c命令</h4>
 
 <p>
 c 命令是替换匹配行
@@ -439,7 +457,7 @@ This is my monkey, my monkey's name is wukong
 This is my goat, my goat's name is adam
 </pre>
 
-<h4 id="toc_1.1.4.4">d命令</h4>
+<h4 id="toc_1.2.2.4">d命令</h4>
 
 <p>
 删除匹配行
@@ -459,7 +477,7 @@ $ sed '2,$d' my.txt
 This is my cat, my cat's name is betty
 </pre>
 
-<h4 id="toc_1.1.4.5">p命令</h4>
+<h4 id="toc_1.2.2.5">p命令</h4>
 
 <p>
 打印命令
@@ -495,13 +513,13 @@ This is my dog, my dog's name is frank
 This is my fish, my fish's name is george
 </pre>
 
-<h3 id="toc_1.1.5">几个知识点</h3>
+<h3 id="toc_1.2.3">几个知识点</h3>
 
 <p>
 好了，下面我们要介绍四个sed的基本知识点：
 </p>
 
-<h4 id="toc_1.1.5.1">Pattern Space</h4>
+<h4 id="toc_1.2.3.1">Pattern Space</h4>
 
 <p>
 第零个是关于-n参数的，大家也许没看懂，没关系，我们来看一下sed处理文本的伪代码，并了解一下Pattern Space的概念：
@@ -522,7 +540,7 @@ foreach line in file {
 }
 </pre>
 
-<h4 id="toc_1.1.5.2">Address</h4>
+<h4 id="toc_1.2.3.2">Address</h4>
 
 <p>
 第一个是关于address，几乎上述所有的命令都是这样的（注：其中的!表示匹配成功后是否执行命令）
@@ -568,7 +586,7 @@ This is my goat
   my goat's name is adam
 </pre>
 
-<h4 id="toc_1.1.5.3">命令打包</h4>
+<h4 id="toc_1.2.3.3">命令打包</h4>
 
 <p>
 第二个是cmd可以是多个，它们可以用分号分开，可以用大括号括起来作为嵌套命令。下面是几个例子：
@@ -611,7 +629,7 @@ my fish's name is george
 my goat's name is adam
 </pre>
 
-<h4 id="toc_1.1.5.4">Hold Space</h4>
+<h4 id="toc_1.2.3.4">Hold Space</h4>
 
 <p>
 第三个我们再来看一下 Hold Space
@@ -700,7 +718,7 @@ $!d —— 除了最后一行不执行d命令，其它行都执行d命令，删�
 （转载本站文章请注明作者和出处 <a href="http://coolshell.cn/">酷壳 – CoolShell.cn</a>，请勿用于任何商业用途）
 </p>
 
-<h2 id="toc_1.2">添加BOM头</h2>
+<h2 id="toc_1.3">添加BOM头</h2>
 
 <pre class="brush:bash">
 # UTF-8 ║ EF BB BF 
