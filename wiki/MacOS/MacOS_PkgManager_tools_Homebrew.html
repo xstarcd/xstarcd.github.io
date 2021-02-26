@@ -15,9 +15,35 @@
 <div id="cse"></div>
 <div id="main">
 
-<p>
-%toc MacOS软件包管理工具-HomeBrew
-</p>
+<h1>MacOS软件包管理工具-HomeBrew</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">优点和缺陷</a>
+<li><a href="#toc_0.2">Install Homebrew</a>
+<li><a href="#toc_0.3">安装中问题解决</a>
+<ul>
+<li><a href="#toc_0.3.1">Connection refused错误</a>
+<li><a href="#toc_0.3.2">安装过程下载失败</a>
+</ul>
+<li><a href="#toc_0.4">Homebrew使用</a>
+<li><a href="#toc_0.5">定制自己的软件包</a>
+<li><a href="#toc_0.6">GitHub API rate limit</a>
+<li><a href="#toc_0.7">brew tap</a>
+<li><a href="#toc_0.8">安装openvpn-connect</a>
+<li><a href="#toc_0.9">update Homebrew 太慢，更换Homebrew的更新源</a>
+<ul>
+<li><a href="#toc_0.9.1">更新源的选择</a>
+<li><a href="#toc_0.9.2">诊断和重置</a>
+<li><a href="#toc_0.9.3">换回官方源</a>
+</ul>
+<li><a href="#toc_0.10">brew update 卡死解决方案</a>
+<ul>
+<li><a href="#toc_0.10.1">问题场景</a>
+<li><a href="#toc_0.10.2">原因分析</a>
+</ul>
+</ul>
+</ul>
+</div>
 
 <p>
 虽然 Mac OS X 自带了不少 Unix 下的开源软件，比如 vim, ruby, python, perl 等等，也自带了许多常用的库，包括 iconv, zlib 等等，但我们仍然有时会需要自己动手安装一些这样的软件或者库，要自动化这样的安装，现有最常见的选择是 MacPorts、Fink、HomeBrew。
@@ -32,7 +58,7 @@
 </p>
 
 
-<div id="优点和缺陷"><h2 id="优点和缺陷">优点和缺陷</h2></div>
+<h2 id="toc_0.1">优点和缺陷</h2>
 
 <ul>
 <li>
@@ -90,7 +116,7 @@ Homebrew
 推荐程度：Homebrew &gt; MacPorts &gt; pkgsrc &gt; gentoo-prefix，Rudix 可以作为备胎，Fink 目前来看挺鸡肋。
 </p>
 
-<div id="Install Homebrew"><h2 id="Install Homebrew">Install Homebrew</h2></div>
+<h2 id="toc_0.2">Install Homebrew</h2>
 
 <ul>
 <li>
@@ -98,14 +124,14 @@ Homebrew
 
 <ul>
 <li>
-<a href="http:&#47;&#47;brew.sh&#47;">http://brew.sh/</a>
+<a href="http://brew.sh/">http://brew.sh/</a>
 
 <li>
-<a href="http:&#47;&#47;brew.sh&#47;index_zh-cn.html">http://brew.sh/index_zh-cn.html</a>
+<a href="http://brew.sh/index_zh-cn.html">http://brew.sh/index_zh-cn.html</a>
 
 </ul>
 <li>
-文档：<a href="https:&#47;&#47;github.com&#47;Homebrew&#47;homebrew&#47;tree&#47;master&#47;share&#47;doc&#47;homebrew#readme">https://github.com/Homebrew/homebrew/tree/master/share/doc/homebrew#readme</a>
+文档：<a href="https://github.com/Homebrew/homebrew/tree/master/share/doc/homebrew#readme">https://github.com/Homebrew/homebrew/tree/master/share/doc/homebrew#readme</a>
 
 <li>
 首先确保你的系统满足如下要求：
@@ -270,25 +296,25 @@ git pull origin master
 这样安装会在 /usr/local 下创建 Library 这个目录，然后在 /usr/local/bin 中加入 brew 这个 ruby 脚本。
 </p>
 
-<div id="安装中问题解决"><h2 id="安装中问题解决">安装中问题解决</h2></div>
+<h2 id="toc_0.3">安装中问题解决</h2>
 
-<div id="安装中问题解决-Connection refused错误"><h3 id="Connection refused错误">Connection refused错误</h3></div>
+<h3 id="toc_0.3.1">Connection refused错误</h3>
 
 <pre>
 curl: (7) Failed to connect to raw.githubusercontent.com port 443: Connection refused
 </pre>
 <p>
-打开网站<a href="https:&#47;&#47;www.ipaddress.com&#47;">https://www.ipaddress.com/</a>
+打开网站<a href="https://www.ipaddress.com/">https://www.ipaddress.com/</a>
 </p>
 
 <p>
 查询一下 raw.githubusercontent.com对应的IP 地址，添加到/etc/hosts中后再试就可以了。
 </p>
 
-<div id="安装中问题解决-安装过程下载失败"><h3 id="安装过程下载失败">安装过程下载失败</h3></div>
+<h3 id="toc_0.3.2">安装过程下载失败</h3>
 
 <p>
-安装过程说明：<a href="https:&#47;&#47;www.jianshu.com&#47;p&#47;3f521887543b">https://www.jianshu.com/p/3f521887543b</a>
+安装过程说明：<a href="https://www.jianshu.com/p/3f521887543b">https://www.jianshu.com/p/3f521887543b</a>
 </p>
 
 <pre>
@@ -316,7 +342,7 @@ http方式需要增大缓存:<code>git config --global http.postBuffer 524288000
 </ul>
 </ul>
 
-<div id="Homebrew使用"><h2 id="Homebrew使用">Homebrew使用</h2></div>
+<h2 id="toc_0.4">Homebrew使用</h2>
 
 <p>
 Homebrew的可执行命令是brew，命令参数说明如下。
@@ -374,7 +400,7 @@ brew upgrade      # 更新过时的软件包（全部）
 brew upgrade wget # 更新过时的软件包（指定）
 </pre>
 
-<div id="定制自己的软件包"><h2 id="定制自己的软件包">定制自己的软件包</h2></div>
+<h2 id="toc_0.5">定制自己的软件包</h2>
 
 <p>
 如果自己需要的软件包并不能在Homebrew中找到，怎么办呢，毕竟Homebrew是一个新生项目，不可能满足所有人的需求。当然，我们可以自行编译安装，但手工安装的软件包游离于Homebrew之外，管理起来不是很方便。
@@ -386,7 +412,7 @@ brew upgrade wget # 更新过时的软件包（指定）
 
 <ol>
 <li>
-首先找到待安装软件的源码下载地址:<a href="http:&#47;&#47;foo.com&#47;bar-1.0.tgz">http://foo.com/bar-1.0.tgz</a>
+首先找到待安装软件的源码下载地址:<a href="http://foo.com/bar-1.0.tgz">http://foo.com/bar-1.0.tgz</a>
 
 <li>
 建立自己的formula: <code>brew create http://foo.com/bar-1.0.tgz</code>
@@ -407,7 +433,7 @@ Homebrew自动建立的formula已经包含了基本的configure和make install�
 </p>
 
 
-<div id="GitHub API rate limit"><h2 id="GitHub API rate limit">GitHub API rate limit</h2></div>
+<h2 id="toc_0.6">GitHub API rate limit</h2>
 
 <pre>
 Error: GitHub API rate limit exceeded for 220.166.254.65. (But here's the good news: Authenticated requests get a higher rate limit. Check out the documentation for more details.)
@@ -421,7 +447,7 @@ and then set it as HOMEBREW_GITHUB_API_TOKEN.
 注册、登录github.com
 
 <li>
-访问 <a href="https:&#47;&#47;github.com&#47;settings&#47;tokens">https://github.com/settings/tokens</a> 
+访问 <a href="https://github.com/settings/tokens">https://github.com/settings/tokens</a> 
 
 <ul>
 <li>
@@ -450,7 +476,7 @@ fi
 
 </ul>
 
-<div id="brew tap"><h2 id="brew tap">brew tap</h2></div>
+<h2 id="toc_0.7">brew tap</h2>
 
 <p>
 brew 有个默认的仓库，brew tap 你可以看成是第三方的仓库。
@@ -458,7 +484,7 @@ brew 有个默认的仓库，brew tap 你可以看成是第三方的仓库。
 
 <ul>
 <li>
-Interesting Taps &amp; Branches: <a href="https:&#47;&#47;github.com&#47;Homebrew&#47;homebrew&#47;blob&#47;master&#47;share&#47;doc&#47;homebrew&#47;Interesting-Taps-%26-Branches.md">https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Interesting-Taps-%26-Branches.md</a>
+Interesting Taps &amp; Branches: <a href="https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Interesting-Taps-%26-Branches.md">https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Interesting-Taps-%26-Branches.md</a>
 
 </ul>
 
@@ -472,7 +498,7 @@ brew info homebrew/dupes/rsync
 brew install homebrew/dupes/rsync
 </pre>
 
-<div id="安装openvpn-connect"><h2 id="安装openvpn-connect">安装openvpn-connect</h2></div>
+<h2 id="toc_0.8">安装openvpn-connect</h2>
 
 <pre>
 brew search openvpn-connect
@@ -512,6 +538,185 @@ https://tunnelblick.org/downloads.html
 Tunnelblick_3.7.7_build_5150.dmg
 
 brew cask install tunnelblick
+</pre>
+
+</ul>
+
+
+<h2 id="toc_0.9">update Homebrew 太慢，更换Homebrew的更新源</h2>
+
+<ul>
+<li>
+原文：<a href="https://www.jianshu.com/p/b26c7bc14440">https://www.jianshu.com/p/b26c7bc14440</a>
+
+<li>
+Edviin_2de8
+
+<li>
+2019.03.01 11:13:54
+
+</ul>
+
+<h3 id="toc_0.9.1">更新源的选择</h3>
+
+<p>
+默认官方的更新源都是存放在GitHub上的，这也是中国大陆用户访问缓慢的原因，一般来说我们会更倾向选择国内提供的更新源，在此推荐中国科大以及清华大学提供的更新源。
+替换更新源
+</p>
+
+<pre class="brush:bash">
+# 替换brew.git:
+$ cd "$(brew --repo)"
+# 中国科大:
+$ git remote set-url origin https://mirrors.ustc.edu.cn/brew.git
+# 清华大学:
+$ git remote set-url origin https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/brew.git
+
+# 替换homebrew-core.git:
+$ cd "$(brew --repo)/Library/Taps/homebrew/homebrew-core"
+# 中国科大:
+$ git remote set-url origin https://mirrors.ustc.edu.cn/homebrew-core.git
+# 清华大学:
+$ git remote set-url origin https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/homebrew-core.git
+
+# 替换homebrew-bottles:
+# 中国科大:
+$ echo 'export HOMEBREW_BOTTLE_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles' &gt;&gt; ~/.bash_profile
+$ source ~/.bash_profile
+# 清华大学:
+$ echo 'export HOMEBREW_BOTTLE_DOMAIN=https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles' &gt;&gt; ~/.bash_profile
+$ source ~/.bash_profile
+
+# 应用生效:
+$ brew update
+</pre>
+
+<h3 id="toc_0.9.2">诊断和重置</h3>
+
+<p>
+如果你之前折腾过不少导致你的Homebrew有点问题，那么可以尝试使用如下方案：
+</p>
+
+<pre class="brush:bash">
+# 诊断Homebrew的问题:
+$ brew doctor
+
+# 重置brew.git设置:
+$ cd "$(brew --repo)"
+$ git fetch
+$ git reset --hard origin/master
+
+# homebrew-core.git同理:
+$ cd "$(brew --repo)/Library/Taps/homebrew/homebrew-core"
+$ git fetch
+$ git reset --hard origin/master
+
+# 应用生效:
+$ brew update  
+</pre>
+
+<h3 id="toc_0.9.3">换回官方源</h3>
+
+<p>
+重置更新源 某些时候也有换回官方源的需求
+</p>
+
+<pre class="brush:bash">
+# 重置brew.git:
+$ cd "$(brew --repo)"
+$ git remote set-url origin https://github.com/Homebrew/brew.git
+
+# 重置homebrew-core.git:
+$ cd "$(brew --repo)/Library/Taps/homebrew/homebrew-core"
+$ git remote set-url origin https://github.com/Homebrew/homebrew-core.git
+</pre>
+
+<ul>
+<li>
+后记
+
+</ul>
+
+<p>
+完成更新源的更换后，我们可以使用<code>brew upgrade</code>将现有的软件进行更新至最新版本，这样便能很直接的看出速度上的变化了。
+</p>
+
+<p>
+最后不要忘记<code>brew cleanup</code>将旧有的软件安装包进行清理
+</p>
+
+<h2 id="toc_0.10">brew update 卡死解决方案</h2>
+
+<p>
+macOS 平台 Homebrew 更新 brew update 卡死,完美解决:<a href="https://www.cnblogs.com/tp0829/p/Homebrew.html">https://www.cnblogs.com/tp0829/p/Homebrew.html</a>
+</p>
+
+<h3 id="toc_0.10.1">问题场景</h3>
+
+<ul>
+<li>
+ 场景1.使用brew install [软件包]安装其他软件包,卡在Updating Homebrew...
+
+<li>
+ 场景2.输入brew update更新brew,半天没反应.
+
+</ul>
+
+<h3 id="toc_0.10.2">原因分析</h3>
+
+<pre>
+对于场景1我们可以选择Control-C直接终止当前前台update进程,然后brew就会接着执行install了.
+但这样并不能"治本",其实造成上述两种情况的主要原因是资源访问太慢.
+我们知道默认官方更新源在github.com上,因为一些原因,国内访问不太顺畅.
+解决方案是我们可以选择国内镜像更新源.
+国内镜像更新源推荐中国科大开源软件镜像站或清华大学开源软件镜像站.
+某些同学可能要有疑问了,"我已经按照网上其他教程替换更新源了呀?怎么还不行?"
+这里回答是,"可能你并没有更换彻底".
+	输入brew update -verbose我们可以看到brew update工作的具体步骤.
+$ brew update -verbose
+Checking if we need to fetch /usr/local/Homebrew...
+Checking if we need to fetch /usr/local/Homebrew/Library/Taps/homebrew/homebrew-cask...
+Fetching /usr/local/Homebrew...
+Checking if we need to fetch /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core...
+Fetching /usr/local/Homebrew/Library/Taps/homebrew/homebrew-cask...
+Checking if we need to fetch /usr/local/Homebrew/Library/Taps/homebrew/homebrew-services...
+Fetching /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core...
+Already up-to-date.
+</pre>
+
+<p>
+我们可以看到它一共检查了Homebrew,homebrew-cask,homebrew-core,homebrew-services这几个文件.
+</p>
+
+<p>
+而网上大部分教程替换更新源时往往只替换了Homebrew和homebrew-core这两个的源.
+</p>
+
+<p>
+出问题,可能就出在homebrew-cask这个文件上,而我之前运行brew update -verbose显示卡死也的确是卡在这个地方.
+</p>
+
+<p>
+所以知道了原因,我们只要把homebrew-cask这个文件的更新源也替换一下即可.
+</p>
+
+<p>
+具体操作见中国科大镜像源:homebrew-cask.<a href="http://mirrors.ustc.edu.cn/help/homebrew-cask.git.html">http://mirrors.ustc.edu.cn/help/homebrew-cask.git.html</a>
+</p>
+
+<ul>
+<li>
+Homebrew cask 软件仓库，提供 macOS 应用和大型二进制文件
+<pre>
+替换为 USTC 镜像：
+
+cd "$(brew --repo)"/Library/Taps/homebrew/homebrew-cask
+git remote set-url origin https://mirrors.ustc.edu.cn/homebrew-cask.git
+
+重置为官方地址：
+
+cd "$(brew --repo)"/Library/Taps/homebrew/homebrew-cask
+git remote set-url origin https://github.com/Homebrew/homebrew-cask
 </pre>
 
 </ul>

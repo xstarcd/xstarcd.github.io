@@ -19,6 +19,7 @@
 <div class="toc">
 <ul>
 <li><a href="#toc_0.1">htop：一款比top强悍好用的进程管理监控工具</a>
+<li><a href="#toc_0.2">htop输出到文件</a>
 </ul>
 </ul>
 </div>
@@ -100,6 +101,16 @@ make install
 </pre>
 
 </ul>
+
+
+<h2 id="toc_0.2">htop输出到文件</h2>
+
+<pre>
+echo q | htop | aha --black --line-fix &gt; htop.html
+
+echo q | htop -C | aha --line-fix | html2text -width 999 | grep -vE "F1Help|xml version=" &gt; file.txt
+
+</pre>
 
 </div>
 <div id="footer">
