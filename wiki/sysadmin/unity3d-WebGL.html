@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Unity3D-WebGL站点配置学习</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Unity3D-WebGL站点配置学习</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">参考资料</a>
+<li><a href="#toc_0.2">可能的问题</a>
+<li><a href="#toc_0.3">另建的Nginx站点配置</a>
+</ul>
+</ul>
+</div>
+
+<p>
+朋友的游戏转换WebGL方式，浏览器中下载加载项很慢，帮助分析时，顺便了解一下WebGL站点的设置。
+</p>
+
+<h2 id="toc_0.1">参考资料</h2>
+
+<ul>
+<li>
+unity3d官方文档：
+
+<ul>
+<li>
+WebGL: Server configuration code samples: <a href="https://docs.unity3d.com/2020.1/Documentation/Manual/webgl-server-configuration-code-samples.html">https://docs.unity3d.com/2020.1/Documentation/Manual/webgl-server-configuration-code-samples.html</a> 
+
+</ul>
+<li>
+unity官方文档：
+
+<ul>
+<li>
+WebGL：压缩构建和服务器配置: <a href="https://docs.unity.cn/cn/2020.3/Manual/webgl-deploying.html">https://docs.unity.cn/cn/2020.3/Manual/webgl-deploying.html</a>
+
+<li>
+Unity 用户手册 2020.3 (LTS): <a href="https://docs.unity.cn/cn/2020.3/Manual/UnityManual.html">https://docs.unity.cn/cn/2020.3/Manual/UnityManual.html</a> 
+
+</ul>
+<li>
+Untiy部署至WebGL平台之nginx服务部署: <a href="https://blog.csdn.net/qq_42672770/article/details/108471489">https://blog.csdn.net/qq_42672770/article/details/108471489</a>
+
+<li>
+unity WebGL nginx部署: <a href="https://blog.csdn.net/A498930275/article/details/122049930">https://blog.csdn.net/A498930275/article/details/122049930</a> 
+
+</ul>
+
+
+<h2 id="toc_0.2">可能的问题</h2>
+
+<ul>
+<li>
+FireBug中，看到很多请求阻塞时间长达1-2分钟。
+
+<ul>
+<li>
+在游戏load过程中，会有大约60个XHR(XML)请求同时发起，有的几十几百KB、有的几MB，这些请求会排队，共用6个TCP连接，所以会宜塞比较久。
+
+<li>
+关于阻塞状态：<a href="https://firefox-source-docs.mozilla.org/devtools-user/network_monitor/request_details/#network-monitor-request-details-timings-tab">https://firefox-source-docs.mozilla.org/devtools-user/network_monitor/request_details/#network-monitor-request-details-timings-tab</a>
+
+</ul>
+<li>
+Web请求404问题：应该是index.html里引用的版本号与Build目录中的版本不一致引起，已解决。
+
+<li>
+Apache httpd的error_log中日志很少，不便于查看问题，临时用于调整，将logLevel改为了debug，后续正式生产时，注意调成warn。
+
+<li>
+游戏加载时间过程过长，应该主要是在WebGL加载后，游戏内部逻辑处理上，需从三个地方进一步分析：
+
+<ul>
+<li>
+1.WebGL的build参数配置核实，参考：<a href="https://docs.unity.cn/cn/2020.3/Manual/webgl-deploying.html">https://docs.unity.cn/cn/2020.3/Manual/webgl-deploying.html</a>
+
+<li>
+2.WebSever里，按照WebGL官方的说法，是在"&lt;Application Folder&gt;/Build/.htaccess"加对应的mod_mime配置，当前服务器上配在httpd.conf里的，是否有问题（看说明，如果build里的设置、和webSever里面的设置不匹配，好像会造成webGL解压失败？）。参考：<a href="https://docs.unity.cn/cn/2020.3/Manual/webgl-server-configuration-code-samples.html">https://docs.unity.cn/cn/2020.3/Manual/webgl-server-configuration-code-samples.html</a>
+
+<li>
+3.游戏加载过程，main loop做了哪些事，为什么高频循环了4分钟？
+<pre>
+从控制台日志上看:
+
+16:50:00.471 UnloadTime: 3.000000 ms  --这时应该已经完成WebGL的初始化了；
+...
+16:50:03.786 Input Manager initialize...   --输入管理员初始化？
+16:50:03.970 我是测试日志3333333   --打了点日志
+16:50:03.970 我是测试打印333333
+16:50:04.098 -----Game Start!-----    --游戏开始了？
+16:50:04.118 AsyncOperationHandle  1111
+...
+16:50:05.546 WebGL warning: clientWaitSync: ClientWaitSync must return TIMEOUT_EXPIRED until control has returned to the user agent's main loop. (only warns once)  --进了一个main loop？
+16:50:06.526 我是测试日志3333333 --开始大量刷屏日志
+16:50:06.603 我是测试打印333333
+...
+16:50:10.663 66666666666666666666666666666
+...
+16:54:02.778 创建请求:http://114.117.161.228:8090/WebGL/assets-hotresources-vfx-vfxprefabs_assets_all_ee7763ffc8cc6df9be54af3918cdbbf3.bundle  --期间偶尔发请求取东西?
+...
+
+16:54:05.139 warning: 6 FS.syncfs operations in flight at once, probably just doing extra work --日志停在这里了，用了约4分钟，游戏进入了公告界面
+</pre>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.3">另建的Nginx站点配置</h2>
+
+<p>
+Apache的配置很多年没用过了，不熟悉，所以另配了一个Nginx站点。
+</p>
+
+<ul>
+<li>
+Nginx.conf配置中，增加了一些选项，暂时没有分析是否有影响、或者有效
+<pre class="brush:bash">
+    keepalive_timeout 65;
+    sendfile on;
+    #tcp_nopush on;
+    tcp_nodelay on;
+    server_tokens off;
+
+    # 2022-05-24 set to on for test
+    # gzip off;
+    gzip on;
+    gzip_min_length 1k;
+    gzip_proxied any;
+    gzip_buffers 4 32k;
+    gzip_types text/plain text/css text/xml application/xml application/atom+xml application/json;
+    #gzip_types text/plain text/css text/xml;
+    gzip_disable "MSIE [1-6]\.";
+</pre>
+
+<li>
+WebGL.conf
+<pre class="brush:bash">
+#WebGL Site
+server {
+
+    listen 8091;
+    #access_log off;
+    access_log /var/log/nginx/webgl.access.log main;
+    error_log /var/log/nginx/webgl.error.log warn;
+
+    location / {
+	root   /var/www/html;
+	index  index.html index.htm;
+    }
+
+    # On-disk Brotli-precompressed data files should be served with compression enabled:
+    location ~ .+\.(data|symbols\.json)\.br$ {
+        # Because this file is already pre-compressed on disk, disable the on-demand compression on it.
+        # Otherwise nginx would attempt double compression.
+        gzip off;
+        add_header Content-Encoding br;
+        default_type application/octet-stream;
+    }
+
+    # On-disk Brotli-precompressed JavaScript code files:
+    location ~ .+\.js\.br$ {
+        gzip off; # Do not attempt dynamic gzip compression on an already compressed file
+        add_header Content-Encoding br;
+        default_type application/javascript;
+    }
+
+    # On-disk Brotli-precompressed WebAssembly files:
+    location ~ .+\.wasm\.br$ {
+        gzip off; # Do not attempt dynamic gzip compression on an already compressed file
+        add_header Content-Encoding br;
+        # Enable streaming WebAssembly compilation by specifying the correct MIME type for
+        # Wasm files.
+        default_type application/wasm;
+    }
+
+    # On-disk gzip-precompressed data files should be served with compression enabled:
+    location ~ .+\.(data|symbols\.json)\.gz$ {
+        gzip off; # Do not attempt dynamic gzip compression on an already compressed file
+        add_header Content-Encoding gzip;
+        default_type application/octet-stream;
+    }
+
+    # On-disk gzip-precompressed JavaScript code files:
+    location ~ .+\.js\.gz$ {
+        gzip off; # Do not attempt dynamic gzip compression on an already compressed file
+        add_header Content-Encoding gzip;
+        default_type application/javascript;
+    }
+
+    # On-disk gzip-precompressed WebAssembly files:
+    location ~ .+\.wasm\.gz$ {
+        gzip off; # Do not attempt dynamic gzip compression on an already compressed file
+        add_header Content-Encoding gzip;
+        # Enable streaming WebAssembly compilation by specifying the correct MIME type for
+        # Wasm files.
+        default_type application/wasm;
+    }
+} #site end
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
