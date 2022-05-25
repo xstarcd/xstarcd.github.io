@@ -140,8 +140,7 @@ Nginx.conf配置中，增加了一些选项，暂时没有分析是否有影响�
     gzip_min_length 1k;
     gzip_proxied any;
     gzip_buffers 4 32k;
-    gzip_types text/plain text/css text/xml application/xml application/atom+xml application/json;
-    #gzip_types text/plain text/css text/xml;
+    gzip_types text/plain text/css text/xml application/xml application/atom+xml application/json application/octet-stream;
     gzip_disable "MSIE [1-6]\.";
 </pre>
 
