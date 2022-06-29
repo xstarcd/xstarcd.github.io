@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>tmux</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>tmux</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">安装</a>
+<li><a href="#toc_0.2">基础功能</a>
+<li><a href="#toc_0.3">窗口与窗格</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+版权声明：本文为CSDN博主「Naisu Xu」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+
+<li>
+原文链接：<a href="https://blog.csdn.net/Naisu_kun/article/details/119567566">https://blog.csdn.net/Naisu_kun/article/details/119567566</a>
+
+</ul>
+ 
+ 
+<p>
+tmux基础功能和screen差不多，但是目前来说tmux总体上比screen更加好用些。
+</p>
+
+<h2 id="toc_0.1">安装</h2>
+
+<p>
+在Debian和Ubuntu等系统中可以使用下面命令安装tmux：
+</p>
+<pre>
+sudo apt install tmux
+</pre>
+
+<h2 id="toc_0.2">基础功能</h2>
+
+<ul>
+<li>
+创建新会话
+<pre>
+tmux 创建新会话并进入；
+tmux new -s name 创建一个名为name的会话并进入；（推荐做法）
+tmux创建的会话会在底部依次显示会话名、窗口名、主机名、时间等信息；
+</pre>
+
+</ul>
+
+<ul>
+<li>
+退出会话
+
+</ul>
+<p>
+在tmux创建的会话中依次按下键盘 ctrl + b d 退出当前会话；
+</p>
+
+<ul>
+<li>
+列出已创建的会话
+
+</ul>
+
+<p>
+使用 <code>tmux ls</code> 可以列出已创建的会话，会话名称、会话含有的窗口数、创建时间；
+</p>
+
+<p>
+如果已经在tmux创建的会话中的话也可以依次按下键盘 <code>ctrl + b s</code> 进行查看，这个功能比较厉害，还可以预览各个会话的内容，并选择切换；
+</p>
+
+<ul>
+<li>
+重新进入会话
+
+</ul>
+
+<p>
+<code>tmux a -t name</code> 使用会话名称重新进入已存在的会话；
+</p>
+
+<p>
+如果已经在tmux创建的会话中的话也可以使用 <code>tmux switch -t name</code> 切换会话（没有 ctrl + b s 来的好用）；
+</p>
+
+<ul>
+<li>
+关闭会话
+
+</ul>
+<p>
+<code>tmux kill-session -t name</code> 使用会话名称关闭已有会话；
+</p>
+
+<p>
+如果已经在tmux创建的会话中的并且只有一个窗口和窗格的情况下可以按下键盘 ctrl + d 关闭当前会话；
+</p>
+
+<ul>
+<li>
+重命名会话
+<pre>
+tmux rename-session -t old-name new-name
+</pre>
+
+</ul>
+
+<ul>
+<li>
+滚动历史内容
+
+</ul>
+
+<p>
+要注意的是在tmux创建的会话中无法通过滚轮上下来查看历史信息，需要依次按下键盘上 <code>ctrl + b PgUp</code> ，接着就可以使用 <code>PgUp PgDn ↑ ↓</code> 来查看历史信息了，按下 <code>q</code> 退出。
+</p>
+
+<p>
+到目前位置tmux和前面的screen其实还是没有太大差别的，主要是快捷键、选项以及小部分操作上有些不同，真正区别大的是tmux的每个会话中还有窗口和窗格的概念。
+</p>
+
+<h2 id="toc_0.3">窗口与窗格</h2>
+
+<p>
+一个tmux的会话中可以有多个窗口(window)，每个窗口又可以分割成多个窗格(pane)。对窗口和窗格相关操作都是在会话中进行的。
+</p>
+
+<p>
+如果把前面的会话看做是一个excel文件的话，那窗口就像是其中的一张张sheet。
+</p>
+
+<ul>
+<li>
+新建窗口
+
+<ul>
+<li>
+在会话中依次按下键盘 <code>ctrl + b c</code> 创建新窗口；
+
+<li>
+多个窗口下底部带*标记的为当前活动窗口；
+
+<li>
+<code>ctrl + b %</code> 将当前窗口垂直分割；
+
+<li>
+<code>ctrl + b "</code> 将当前窗口水平分割；
+
+</ul>
+<li>
+切换窗口
+
+<ul>
+<li>
+<code>ctrl + b w</code> 列出所有窗口，可以预览并选择切换；
+
+<li>
+<code>ctrl + b 0</code> 切换到0号窗口，依此类推；
+
+<li>
+<code>ctrl + b p</code> 上一个窗口；
+
+<li>
+<code>ctrl + b n</code> 下一个窗口；
+
+<li>
+窗格：<code>ctrl + b ↑ 、ctrl + b ↓ 、ctrl + b ← 、ctrl + b →</code>
+
+</ul>
+<li>
+关闭窗口
+
+<ul>
+<li>
+<code>ctrl + b &amp;</code> 关闭当前窗口，会提示，按下y并回车确定；
+
+<li>
+<code>ctrl + b x</code> 关闭当前窗口，会提示，按下y并回车确定；
+
+<li>
+当前窗口只有一个窗格的情况下可以按下键盘 <code>ctrl + d</code> 关闭当前窗口；
+
+<li>
+也可以按下键盘 <code>ctrl + d</code> 关闭当前窗口，不会提示；
+
+</ul>
+<li>
+调整窗格
+
+<ul>
+<li>
+<code>ctrl + b space</code> 依次切换窗格布局；
+
+<li>
+<code>ctrl + b {</code> 当前窗格与上一个窗格交换位置；
+
+<li>
+<code>ctrl + b }</code> 当前窗格与下一个窗格交换位置；
+
+</ul>
+<li>
+缩放窗格
+
+<ul>
+<li>
+<code>ctrl + b z</code> 当前窗格全屏显示，再使用一次会变回原来大小；
+
+</ul>
+<li>
+拆分窗格
+
+<ul>
+<li>
+<code>ctrl + b !</code> 将当前窗格拆分为一个独立窗口；
+
+</ul>
+</ul>
+
+
+<p>
+更多介绍
+tmux内容挺多的，更多内容可以参考 man tmux 或是下面链接：
+<a href="https://github.com/tmux/tmux">https://github.com/tmux/tmux</a>
+</p>
+
+<p>
+tmux可以创建很多的会话、窗口、窗格，如果用的多的话在系统重启或崩溃的情况下一个个恢复就比较纠结了。针对这个情况甚至出了附加的工具来管理这些内容，参考如下：
+<a href="https://tmuxp.git-pull.com/">https://tmuxp.git-pull.com/</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

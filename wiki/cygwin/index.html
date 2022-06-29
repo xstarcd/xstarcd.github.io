@@ -42,6 +42,7 @@
 <li><a href="#toc_1.4">中文乱码设置</a>
 <li><a href="#toc_1.5">技巧收集</a>
 <li><a href="#toc_1.6">SSH Agent on Cygwin</a>
+<li><a href="#toc_1.7">conEmu</a>
 </ul>
 </ul>
 </div>
@@ -73,6 +74,7 @@ Update: 2013-01-04
 </ul>
 
 <h3 id="toc_1.1.1">安装apt-cyg</h3>
+
 <ul>
 <li>
 修改x86/x86_64源、xz压缩包支持、sha512sum的apt-cyg:<a href="../files/shell/apt-cyg">apt-cyg</a>
@@ -731,10 +733,48 @@ eval `keychain --eval --agents ssh id_dsa`
 </ul>
 </ul>
 
+<h2 id="toc_1.7">conEmu</h2>
+
+<ul>
+<li>
+<a href="https://conemu.github.io/">https://conemu.github.io/</a>
+
+<li>
+Cygwin系列（十）：折腾终端1:<a href="https://zhuanlan.zhihu.com/p/99963508">https://zhuanlan.zhihu.com/p/99963508</a>
+
+<li>
+在 Windows Terminal 中使用 Cygwin 命令行或 Git Bash:<a href="https://leo3418.github.io/zh/2020/05/24/cygwin-git-bash-in-wt.html">https://leo3418.github.io/zh/2020/05/24/cygwin-git-bash-in-wt.html</a>
+
+</ul>
+
+<p>
+ConEmu是一款优秀的开源终端，项目地址<a href="https://conemu.github.io">https://conemu.github.io</a>
+</p>
+
+<p>
+它是混合型的，首要支持Windows Console功能，可看作是conhost的增强版本，同时也部分地支持pty，具备ANSI转义序列直接解析能力，总体上是conhost+Mintty的全能选手。
+</p>
+
+<p>
+主要功能特性包括：
+</p>
+<pre>
+多标签页、多标签页、多标签页，重要事情说3遍，并且支持多种布局方式；
+不同标签页独立配置Task，也就是运行不同的命令行程序，特别是shell，Task支持名字分组和分配快捷键；
+界面现代化，有标签页、快捷菜单、控制台区、状态栏、滚动条；
+支持连接到多种类型命令行程序环境，Cygwin、msys、WSL都不在话下；
+图形化配置方式，每一部分都支持个性化配置，所有配置项保存到文件ConEmu.xml；
+支持集成到其他程序界面中，比如文件管理器Explorer；
+支持字符加粗、斜体、下划线、闪烁、前后景色等风格；
+全面支持Unicode，支持ANSI X3.64标准和xterm256色；
+附带字符界面的文本管理器Far Manager及其插件；
+能运行在Windows 2000及以上版本的Windows系统，开箱即用。
+</pre>
+
 </div>
 <div id="footer">
 <p>
-&copy; 2012 - 2015 XStar
+&copy; 2012 - 2021 XStar
 &nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
 &nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
 &nbsp;|&nbsp;<a href="../index.html">首页</a>
