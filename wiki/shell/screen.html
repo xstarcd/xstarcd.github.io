@@ -16,6 +16,15 @@
 <div id="main">
 
 <h1>screen</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">常用配置</a>
+<li><a href="#toc_0.2">常用操作</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">常用配置</h2>
 
 <ul>
 <li>
@@ -49,6 +58,8 @@ vbell off
 
 </ul>
 
+<h2 id="toc_0.2">常用操作</h2>
+
 <ul>
 <li>
 新开标签页运行命令
@@ -64,10 +75,28 @@ screen -S TEST -t top -x -X screen top
 
 </ul>
 
+<ul>
+<li>
+常用热键
+<pre>
+# 热键前缀：ctrl + A
+c 新建窗口
+p 切换到上一窗口
+n 切换到下一窗口
+ESC 滚动翻看屏幕历史
+d 将会话放到后台，可用screen ls命令查看
+screen ls 查看会话列表
+screen -R &lt;会话名称&gt; 进入现有会话
+? 查看热键帮助信息
+A 修改窗口title
+</pre>
+
+</ul>
+
 </div>
 <div id="footer">
 <p>
-&copy; 2012 - 2015 XStar
+&copy; 2012 - 2021 XStar
 &nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
 &nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
 &nbsp;|&nbsp;<a href="../index.html">首页</a>

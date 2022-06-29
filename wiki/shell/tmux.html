@@ -18,9 +18,12 @@
 <h1>tmux</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">安装</a>
-<li><a href="#toc_0.2">基础功能</a>
-<li><a href="#toc_0.3">窗口与窗格</a>
+<li><a href="#toc_0.1">常用配置项</a>
+<li><a href="#toc_0.2">常用热键</a>
+<li><a href="#toc_0.3">安装</a>
+<li><a href="#toc_0.4">基础功能</a>
+<li><a href="#toc_0.5">窗口与窗格</a>
+<li><a href="#toc_0.6">别人的tmux.conf</a>
 </ul>
 </ul>
 </div>
@@ -34,21 +37,218 @@
 
 </ul>
  
- 
 <p>
 tmux基础功能和screen差不多，但是目前来说tmux总体上比screen更加好用些。
 </p>
 
-<h2 id="toc_0.1">安装</h2>
+<p>
+根据tmux的定义，在开启了tmux服务器后，会首先创建一个会话，而这个会话则会首先创建一个窗口，其中仅包含一个面板；也就是说，这里看到的所谓终端控制台应该称作tmux的一个面板， 虽然其使用方法与终端控制台完全相同。
+</p>
 
 <p>
-在Debian和Ubuntu等系统中可以使用下面命令安装tmux：
+tmux使用C/S模型构建，主要包括以下单元模块：
 </p>
-<pre>
-sudo apt install tmux
+<ul>
+<li>
+server服务器。输入tmux命令时就开启了一个服务器。
+
+<li>
+session会话。一个服务器可以包含多个会话。
+
+<li>
+window窗口。一个会话可以包含多个窗口。
+
+<li>
+pane面板。一个窗口可以包含多个面板。
+
+</ul>
+
+<p>
+一个session可以被多个client接入，显示和操作在client中同步显示。
+</p>
+
+<h2 id="toc_0.1">常用配置项</h2>
+
+<ul>
+<li>
+tmux的配置文件: <code>~/.tmux.conf</code>
+
+<ul>
+<li>
+配置完以后，重启tmux起效
+
+<li>
+或者先按C+b，然后输入<code>:</code>，进入命令行模式， 在命令行模式下输入：
+
+<ul>
+<li>
+<code>source-file ~/.tmux.conf</code>
+
+</ul>
+<li>
+重新运行tmux配置没有生效，可能是你进入了之前已有的后台会话。
+
+</ul>
+</ul>
+
+<ul>
+<li>
+~/.tmux.conf
+<pre class="brush:bash">
+# ~/.tmux.conf
+
+# prefix key (Ctrl+a)
+set -g prefix ^a     #set -g prefix C-a
+unbind ^b            #unbind C-b
+bind a send-prefix   # prefix key (Ctrl+a)
+
+# split window
+unbind '"'
+unbind %
+bind - splitw -v # vertical split (prefix -)
+bind | splitw -h # horizontal split (prefix |)
+
+# select pane
+bind k selectp -U # above (prefix k) bind-key k select-pane -U
+bind j selectp -D # below (prefix j)
+bind h selectp -L # left (prefix h)
+bind l selectp -R # right (prefix l)
+
+# copy mode
+# enter copy mode (prefix Escape)
+bind Escape copy-mode
+# paste buffer (prefix Ctrl+p)
+bind ^p pasteb
+#bind-key -T copy-mode C-Space send-keys -X begin-selection
+
+# reload config (prefix r)
+bind r source ~/.tmux.conf \; display "Configuration reloaded!"
+
+#-- statusbar --#
+set -g status-interval 1
+set -g status-keys vi
+
+setw -g mode-keys vi
+setw -g automatic-rename off
+
+#set-option -g status-style bg=cyan
+
+# statusbar
+#set-window-option -g window-status-current-style fg=colour166,bg=#c0c0c0
+set-window-option -g window-status-current-style fg=colour166,bg=colour222
+
 </pre>
 
-<h2 id="toc_0.2">基础功能</h2>
+</ul>
+
+<ul>
+<li>
+状态栏（Status bar）和个性化设置:<a href="https://tao-of-tmux.readthedocs.io/zh_CN/latest/manuscript/09-status-bar.html">https://tao-of-tmux.readthedocs.io/zh_CN/latest/manuscript/09-status-bar.html</a>
+
+</ul>
+
+<h2 id="toc_0.2">常用热键</h2>
+
+<p>
+tmux的任何指令，都包含一个前缀，也就是说，你按了前缀(一组按键， 默认是Ctrl+b)以后，系统才知道你接下来的指令是发送给tmux的。
+</p>
+
+<ul>
+<li>
+命令行参数
+<pre class="brush:bash">
+tmux new -s session
+tmux new -s session -d #在后台建立会话
+tmux ls #列出会话
+tmux a -t session #返回某个会话
+
+# 列出所有快捷键，及其对应的 Tmux 命令
+tmux list-keys
+
+# 列出所有 Tmux 命令及其参数
+tmux list-commands
+
+# 列出当前所有 Tmux 会话的信息
+tmux info
+
+# 重新加载当前的 Tmux 配置
+tmux source-file ~/.tmux.conf
+
+# 显示当前设置（需要先运行一个tmux实例）
+tmux show-options -g | grep status
+</pre>
+
+</ul>
+
+
+<pre class="brush:bash">
+C-b ?   #显示快捷键帮助
+
+# 新建与退出
+C-b c   #创建新窗口
+C-b x   #关闭面板
+C-b &amp;   #关闭窗口
+
+# 会话
+C-b d   #退出并保存当前tumx会话(tmux仍在后台运行)。通过tmux ls查看会话、tmux attach/tmux a返回会话
+C-b s   #以菜单的方式查看并选择会话
+C-b w   #以菜单方式显示及选择窗口
+C-b :new-session #新建一个会话
+
+# 窗口
+C-b C-o #调换窗口位置，类似与vim里的C-w
+C-b 0~9 #选择0~9号窗口
+C-b n   #选择下一个窗口
+C-b p   #选择前一个窗口
+C-b l   #切换到最后使用的窗口
+C-b ;   #切换到最后一个使用的面板
+C-b ,   #命令窗口Title
+
+# 窗格
+C-b "   #横向分隔窗口"
+C-b %   #纵向分隔窗口
+C-b q   #显示分隔窗口的编号
+C-b o   #跳到下一个分隔窗口
+C-b 上下键   #上一个及下一个分隔窗口
+C-b C-方向键 #调整分隔窗口大小
+C-b 空格键   #采用下一个内置布局
+C-b !   #把当前窗口变为新窗口
+# 其他
+C-b t   #显示时钟
+</pre>
+
+<ul>
+<li>
+copy-mode复制模式
+<pre>
+1.C-b C-[  #前缀 [ 进入复制模式
+2.上下键滚动屏幕
+3.按 space 开始复制，移动光标选择复制区域
+4.按 Enter 复制并退出copy-mode。
+5 按 前缀 ] 粘贴
+ 
+# 配置了vi快捷键模式时，可以像操作vi一样来滚动屏幕、按q键退出复制模式
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">安装</h2>
+
+<pre class="brush:bash">
+# centos
+yum install tmux
+
+# debian/ubuntu
+sudo apt-get install tmux
+
+# cygwin
+apt-cyg install tmux
+
+# MacOS
+brew install tmux
+</pre>
+
+<h2 id="toc_0.4">基础功能</h2>
 
 <ul>
 <li>
@@ -134,7 +334,7 @@ tmux rename-session -t old-name new-name
 到目前位置tmux和前面的screen其实还是没有太大差别的，主要是快捷键、选项以及小部分操作上有些不同，真正区别大的是tmux的每个会话中还有窗口和窗格的概念。
 </p>
 
-<h2 id="toc_0.3">窗口与窗格</h2>
+<h2 id="toc_0.5">窗口与窗格</h2>
 
 <p>
 一个tmux的会话中可以有多个窗口(window)，每个窗口又可以分割成多个窗格(pane)。对窗口和窗格相关操作都是在会话中进行的。
@@ -240,8 +440,203 @@ tmux内容挺多的，更多内容可以参考 man tmux 或是下面链接：
 
 <p>
 tmux可以创建很多的会话、窗口、窗格，如果用的多的话在系统重启或崩溃的情况下一个个恢复就比较纠结了。针对这个情况甚至出了附加的工具来管理这些内容，参考如下：
+</p>
+
+<p>
 <a href="https://tmuxp.git-pull.com/">https://tmuxp.git-pull.com/</a>
 </p>
+
+<h2 id="toc_0.6">别人的tmux.conf</h2>
+
+<pre class="brush:bash">
+#
+# author   : Xu Xiaodong &lt;xxdlhy@gmail.com&gt;
+# modified : 2012 Jul 22
+
+#-- base settings --#
+set -g default-terminal "screen-256color"
+set -g display-time 3000
+set -g escape-time 0
+set -g history-limit 65535
+set -g base-index 1
+set -g pane-base-index 1
+
+#-- bindkeys --#
+# prefix key (Ctrl+a)
+set -g prefix ^a
+unbind ^b
+bind a send-prefix
+
+# split window
+unbind '"'
+# vertical split (prefix -)
+bind - splitw -v
+unbind %
+bind | splitw -h # horizontal split (prefix |)
+
+# select pane
+bind k selectp -U # above (prefix k)
+bind j selectp -D # below (prefix j)
+bind h selectp -L # left (prefix h)
+bind l selectp -R # right (prefix l)
+
+# resize pane
+bind -r ^k resizep -U 10 # upward (prefix Ctrl+k)
+bind -r ^j resizep -D 10 # downward (prefix Ctrl+j)
+bind -r ^h resizep -L 10 # to the left (prefix Ctrl+h)
+bind -r ^l resizep -R 10 # to the right (prefix Ctrl+l)
+
+# swap pane
+# swap with the previous pane (prefix Ctrl+u)
+bind ^u swapp -U
+# swap with the next pane (prefix Ctrl+d)
+bind ^d swapp -D
+
+# misc
+# select the last pane (prefix e)
+bind e lastp
+# select the last window (prefix Ctrl+e)
+bind ^e last
+# kill pane (prefix q)
+bind q killp
+# kill window (prefix Ctrl+q)
+bind ^q killw
+
+# copy mode
+# enter copy mode (prefix Escape)
+bind Escape copy-mode
+# paste buffer (prefix Ctrl+p)
+bind ^p pasteb
+# select (v)
+bind -t vi-copy v begin-selection
+# copy (y)
+bind -t vi-copy y copy-selection
+
+# zoom pane &lt;-&gt; window
+#http://tmux.svn.sourceforge.net/viewvc/tmux/trunk/examples/tmux-zoom.sh
+bind ^z run "tmux-zoom"
+
+# app
+# htop (prefix !)
+bind ! splitw htop
+# man (prefix m)
+bind m command-prompt "splitw 'exec man %%'"
+# perl func (prefix @)
+bind @ command-prompt "splitw 'exec perldoc -t -f %%'"
+# perl var (prefix *)
+bind * command-prompt "splitw 'exec perldoc -t -v %%'"
+# perl doc (prefix %)
+bind % command-prompt "splitw 'exec perldoc -t %%'"
+# ruby doc (prefix /)
+bind / command-prompt "splitw 'exec ri %%'"
+
+# reload config (prefix r)
+bind r source ~/.tmux.conf \; display "Configuration reloaded!"
+
+#-- statusbar --#
+set -g status-utf8 on
+set -g status-interval 1
+set -g status-keys vi
+
+setw -g mode-keys vi
+setw -g automatic-rename off
+
+#-- colorscheme --#
+#https://github.com/daethorian/conf-tmux/blob/master/colors/zenburn.conf
+
+# modes
+setw -g clock-mode-colour colour223
+setw -g mode-attr bold
+setw -g mode-fg colour223
+setw -g mode-bg colour235
+
+# panes
+set -g pane-border-bg colour234
+set -g pane-border-fg colour234
+set -g pane-active-border-bg colour232
+set -g pane-active-border-fg colour232
+
+# statusbar
+set -g status-justify centre
+set -g status-bg colour235
+set -g status-fg colour248
+set -g status-attr dim
+#[default]» #[fg=colour187]#S #[default]• #[fg=colour187]w#I.p#P#[default]"
+set -g status-left "
+set -g status-left-attr bright
+set -g status-left-length 20
+#[fg=colour174]#(/home/xiaodong/bin/uptime) #[default]• #[fg=colour174]#(cut -d ' ' -f 1-3 /proc/loadavg)"
+set -g status-right "
+set -g status-right-attr bright
+set -g status-right-length 80
+
+setw -g window-status-current-fg colour223
+setw -g window-status-current-bg colour237
+setw -g window-status-current-attr bold
+setw -g window-status-current-format "#I:#W#F"
+
+#setw -g window-status-alert-attr bold
+#setw -g window-status-alert-fg colour255
+#setw -g window-status-alert-bg colour160
+
+# messages
+set -g message-attr bold
+set -g message-fg colour223
+set -g message-bg colour235
+
+set -g visual-activity on
+</pre>
+
+<ul>
+<li>
+快速启动tmux
+
+</ul>
+
+<p>
+如果觉得每次都要打开tmux，然后在打开几个窗口和面板很麻烦，那么下面这个脚本你一定会 喜欢。参考这里：
+<a href="https://github.com/xuxiaodong/tmuxen/blob/master/tmuxen">https://github.com/xuxiaodong/tmuxen/blob/master/tmuxen</a>
+</p>
+
+<p>
+脚本化tmux:<a href="https://linuxtoy.org/archives/scripting-tmux.html">https://linuxtoy.org/archives/scripting-tmux.html</a>
+</p>
+
+<pre class="brush:bash">
+#!/bin/sh
+#
+# name     : tmuxen， tmux environment made easy
+# author   : Xu Xiaodong xxdlhy@gmail.com
+# license  : GPL
+# created  : 2012 Jul 01
+# modified : 2012 Jul 02
+#
+
+cmd=$(which tmux) # tmux path
+session=codefun   # session name
+
+if [ -z $cmd ]; then
+  echo "You need to install tmux."
+  exit 1
+fi
+
+$cmd has -t $session
+
+if [ $? != 0 ]; then
+  $cmd new -d -n vim -s $session "vim"
+  $cmd splitw -v -p 20 -t $session "pry"
+  $cmd neww -n mutt -t $session "mutt"
+  $cmd neww -n irssi -t $session "irssi"
+  $cmd neww -n cmus -t $session "cmus"
+  $cmd neww -n zsh -t $session "zsh"
+  $cmd splitw -h -p 50 -t $session "zsh"
+  $cmd selectw -t $session:5
+fi
+
+$cmd att -t $session
+
+exit 0
+</pre>
 
 </div>
 <div id="footer">
