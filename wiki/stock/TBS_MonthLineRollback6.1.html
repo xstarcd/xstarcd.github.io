@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>陶博士月线反转6.0(2022-07-01)</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>陶博士月线反转6.0(2022-07-01)</h1>
+
+<p>
+扩展数据管理器中的数据3的参数必须是50，这是月线反转6.X版本要引用的数据。
+</p>
+
+<p>
+月线反转6.1版本的技术指标（必须是主图叠加）的源代码是(是用来在日K线的主图上显示黄色笑脸的月线反转图标)：
+</p>
+
+<pre>
+MA10:MA(CLOSE,10);
+MA20:MA(CLOSE,20);
+MA50:MA(CLOSE,50);
+MA120:MA(CLOSE,120);
+MA200:MA(CLOSE,200);
+MA250:MA(CLOSE,250);
+
+Z:=EXTDATA_USER(3,0);{50天的}
+RPS50:=Z/10;
+FYX11:=IF(RPS50&lt;=87,0,1);{RPS50大于87}
+
+RPS5090:=IF(RPS50&gt;=90,1,0);{RPS50大于90}
+FYX120:=COUNT(RPS5090,60);
+FYX121:=HHV(C,5)&gt;=HHV(C,80) OR HHV(H,5)&gt;=HHV(H,80);{创80日最高收盘价,或者创80日最高价}
+FYX12:=FYX120&gt;12 AND FYX121;{60天内RPS50大于90的天数多于12天，且创80日新高}
+FYX13:=FYX120&gt;18 AND FYX121 AND RPS50&gt;=90;{60天内RPS50大于90的天数多于18天，且创80日新高，且当天RPS50大于90。在后面被FYX62、FYX72引用}
+
+FYX1:=FYX11 OR FYX12;
+
+FYX21:=LLV(L,50)&gt;LLV(L,250) AND RPS50&gt;=90;{50日内最低价大于250日内最低价,且RPS50大于90}
+FYX22:=LLV(L,50)&gt;LLV(L,200);{50日内最低价大于200日内最低价}
+FYX23:=LLV(L,30)&gt;LLV(L,200) AND HHV(H,5)&gt;=HHV(H,200);{30日内最低价大于200日内最低价，且创200日新高}
+FYX24:=LLV(L,30)&gt;LLV(L,120) AND FYX12;{30日内最低价大于120日内最低价，且60天内RPS50大于90的天数多于12天}
+FYX25:=LLV(L,20)&gt;LLV(L,50);{20日内最低价大于50日内最低价}
+
+FYX2:=(FYX21 OR FYX22 OR FYX23 OR FYX24) AND FYX25;{结构紧凑的重要条件}
+
+NH80:=IF(H&lt;HHV(H,80),0,1);
+FYX31:=COUNT(NH80,10);{10天内曾创80日新高}
+FYX32:=(C&gt;=HHV(C,50) OR H&gt;=HHV(H,50)) AND RPS50&gt;=90;{当天创50日最高收盘价或50日最高价,且RPS50大于90}
+FYX3:=FYX31 OR FYX32;
+
+FYX4:=C&gt;MA(C,20) AND C&gt;MA(C,200) AND MA(C,120)/MA(C,200)&gt;0.85;{当天收盘价必须站上20天线和200天线}
+
+NN200:=IF(C&gt;MA(C,200),1,0);{当天收盘价大于200天线}
+AA200:=COUNT(NN200,45);
+FYX51:=AA200&gt;2 AND AA200&lt;45;{45天内，收盘价站上200天线的天数大于2，小于45}
+LNN200:=IF(L&lt;MA(C,200),1,0);
+LAA200:=COUNT(LNN200,45);
+FYX52:=LAA200&gt;0 AND AA200&gt;2;{45天内，至少有一天的最低价低于200天线;且至少站上200天线3天以上}
+FYX5:=FYX51 OR FYX52;
+
+FYX61:=HHV(H,30)/LLV(L,150)&lt;1.55;{30天内最高价与150日内最低价之比小于1.55}
+FYX62:=HHV(H,30)/LLV(L,150)&lt;1.75 AND FYX13;{30天内最高价与150日内最低价之比小于1.75，且满足FYX13}
+
+FYX6:=FYX61 OR FYX62;
+
+FYX71:=HHV(H,5)/HHV(H,120)&gt;0.85;{5天内最高价距离120日内的最高价不到15%}
+FYX72:=HHV(H,5)/HHV(H,120)&gt;0.8 AND FYX13;{5天内最高价距离120日内的最高价不到20%，且满足FYX13}
+FYX73:=C/HHV(H,10)&gt;0.9;{当天收盘价距离10日内的最高价不到10%}
+
+FYX7:=(FYX71 OR FYX72) AND FYX73;
+
+YXFZ:=FYX1 AND FYX2 AND FYX3 AND FYX4 AND FYX5 AND FYX6 AND FYX7; 
+DRAWICON(BARSSINCEN(YXFZ,15)=0,LOW,34);{月线反转信号画图标34:黄色笑脸}
+</pre>
+
+<p>
+然后月线反转6.1版本的条件选股公式的源代码是（是用来选择指定日期的月线反转股票的选股公式）：
+</p>
+
+<pre>
+Z:=EXTDATA_USER(3,0);{50天的}
+RPS50:=Z/10;
+FYX11:=IF(RPS50&lt;=87,0,1);{RPS50大于87}
+RPS5090:=IF(RPS50&gt;=90,1,0);{RPS50大于90}
+
+FYX120:=COUNT(RPS5090,60);
+FYX121:=HHV(C,5)&gt;=HHV(C,80) OR HHV(H,5)&gt;=HHV(H,80);{创80日最高收盘价,或者创80日最高价}
+FYX12:=FYX120&gt;12 AND FYX121;{60天内RPS50大于90的天数多于12天，且创80日新高}
+FYX13:=FYX120&gt;18 AND FYX121 AND RPS50&gt;=90;{60天内RPS50大于90的天数多于18天，且创80日新高，且当天RPS50大于90。在后面被FYX62、FYX72引用}
+
+FYX1:=FYX11 OR FYX12;
+
+FYX21:=LLV(L,50)&gt;LLV(L,250) AND RPS50&gt;=90;{50日内最低价大于250日内最低价,且RPS50大于90}
+FYX22:=LLV(L,50)&gt;LLV(L,200);{50日内最低价大于200日内最低价}
+FYX23:=LLV(L,30)&gt;LLV(L,200) AND HHV(H,5)&gt;=HHV(H,200);{30日内最低价大于200日内最低价，且创200日新高}
+FYX24:=LLV(L,30)&gt;LLV(L,120) AND FYX12;{30日内最低价大于120日内最低价，且60天内RPS50大于90的天数多于12天}
+FYX25:=LLV(L,20)&gt;LLV(L,50);{20日内最低价大于50日内最低价}
+
+FYX2:=(FYX21 OR FYX22 OR FYX23 OR FYX24) AND FYX25;{结构紧凑的重要条件}
+
+NH80:=IF(H&lt;HHV(H,80),0,1);
+FYX31:=COUNT(NH80,10);{10天内曾创80日新高}
+FYX32:=(C&gt;=HHV(C,50) OR H&gt;=HHV(H,50)) AND RPS50&gt;=90;{当天创50日最高收盘价或50日最高价,且RPS50大于90}
+FYX3:=FYX31 OR FYX32;
+
+FYX4:=C&gt;MA(C,20) AND C&gt;MA(C,200) AND MA(C,120)/MA(C,200)&gt;0.85;{当天收盘价必须站上20天线和200天线}
+
+NN200:=IF(C&gt;MA(C,200),1,0);{当天收盘价大于200天线}
+AA200:=COUNT(NN200,45);
+FYX51:=AA200&gt;2 AND AA200&lt;45;{45天内，收盘价站上200天线的天数大于2，小于45}
+LNN200:=IF(L&lt;MA(C,200),1,0);
+LAA200:=COUNT(LNN200,45);
+FYX52:=LAA200&gt;0 AND AA200&gt;2;{45天内，至少有一天的最低价低于200天线;且至少站上200天线3天以上}
+
+FYX5:=FYX51 OR FYX52;
+
+FYX61:=HHV(H,30)/LLV(L,150)&lt;1.55;{30天内最高价与150日内最低价之比小于1.55}
+FYX62:=HHV(H,30)/LLV(L,150)&lt;1.75 AND FYX13;{30天内最高价与150日内最低价之比小于1.75，且满足FYX13}
+
+FYX6:=FYX61 OR FYX62;
+
+FYX71:=HHV(H,5)/HHV(H,120)&gt;0.85;{5天内最高价距离120日内的最高价不到15%}
+FYX72:=HHV(H,5)/HHV(H,120)&gt;0.8 AND FYX13;{5天内最高价距离120日内的最高价不到20%，且满足FYX13}
+FYX73:=C/HHV(H,10)&gt;0.9;{当天收盘价距离10日内的最高价不到10%}
+
+FYX7:=(FYX71 OR FYX72) AND FYX73;
+
+YXFZ:=FYX1 AND FYX2 AND FYX3 AND FYX4 AND FYX5 AND FYX6 AND FYX7; 
+BARSSINCEN(YXFZ,15)=0;
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

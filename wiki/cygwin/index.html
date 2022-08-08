@@ -29,7 +29,7 @@
 <ul>
 <li><a href="#toc_1.2.1">Cygwin终端</a>
 <li><a href="#toc_1.2.2">bashrc</a>
-<li><a href="#toc_1.2.3">screen设置</a>
+<li><a href="#toc_1.2.3">screen/tmux设置</a>
 <li><a href="#toc_1.2.4">~/.vimrc</a>
 <li><a href="#toc_1.2.5">~/.ssh/config</a>
 </ul>
@@ -125,7 +125,7 @@ cygwin 2.0.0中改用sha512sum替代md5校验，执行报<code>cygwin64 MD5 sum 
 <h3 id="toc_1.1.2">安装常用工具</h3>
 <pre class="brush: bash">
 # apt-cyg install man cygwin-doc
-apt-cyg install vim screen wget subversion openssh pwgen gzip bzip2 curl rsync bash-completion \
+apt-cyg install vim screen tmux wget subversion openssh pwgen gzip bzip3 curl rsync bash-completion \
  lftp nc tree p7zip connect-proxy util-linux bind-utils inetutils
 </pre>
 
@@ -240,7 +240,8 @@ PS1="[\w]$"
 
 </ul>
 
-<h3 id="toc_1.2.3">screen设置</h3>
+<h3 id="toc_1.2.3">screen/tmux设置</h3>
+
 <pre class="brush: bash">
 #
 # ~/.screenrc
@@ -267,6 +268,55 @@ bind w windowlist -b
 vbell off
 
 </pre>
+
+<ul>
+<li>
+~/.tmux.conf
+<pre class="brush:bash">
+# ~/.tmux.conf
+
+# prefix key (Ctrl+a)
+set -g prefix ^a     #set -g prefix C-a
+unbind ^b            #unbind C-b
+bind a send-prefix   # prefix key (Ctrl+a)
+
+# split window
+unbind '"'
+unbind %
+bind - splitw -v # vertical split (prefix -)
+bind | splitw -h # horizontal split (prefix |)
+
+# select pane
+bind k selectp -U # above (prefix k) bind-key k select-pane -U
+bind j selectp -D # below (prefix j)
+bind h selectp -L # left (prefix h)
+bind l selectp -R # right (prefix l)
+
+# copy mode
+# enter copy mode (prefix Escape)
+bind Escape copy-mode
+# paste buffer (prefix Ctrl+p)
+bind ^p pasteb
+#bind-key -T copy-mode C-Space send-keys -X begin-selection
+
+# reload config (prefix r)
+bind r source ~/.tmux.conf \; display "Configuration reloaded!"
+
+#-- statusbar --#
+set -g status-interval 1
+set -g status-keys vi
+
+setw -g mode-keys vi
+setw -g automatic-rename off
+
+#set-option -g status-style bg=cyan
+
+# statusbar
+#set-window-option -g window-status-current-style fg=colour166,bg=#c0c0c0
+set-window-option -g window-status-current-style fg=colour166,bg=colour222
+</pre>
+
+</ul>
 
 <h3 id="toc_1.2.4">~/.vimrc</h3>
 
