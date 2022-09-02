@@ -18,15 +18,16 @@
 <h1>监控系统</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">Collectd</a>
-<li><a href="#toc_0.2">Zenoss</a>
-<li><a href="#toc_0.3">Open-falcon</a>
-<li><a href="#toc_0.4">Cacti</a>
-<li><a href="#toc_0.5">Nagios</a>
-<li><a href="#toc_0.6">Ganglia</a>
-<li><a href="#toc_0.7">zabbix</a>
-<li><a href="#toc_0.8">WhatsUp</a>
-<li><a href="#toc_0.9">centreon</a>
+<li><a href="#toc_0.1">2022</a>
+<li><a href="#toc_0.2">Collectd</a>
+<li><a href="#toc_0.3">Zenoss</a>
+<li><a href="#toc_0.4">Open-falcon</a>
+<li><a href="#toc_0.5">Cacti</a>
+<li><a href="#toc_0.6">Nagios</a>
+<li><a href="#toc_0.7">Ganglia</a>
+<li><a href="#toc_0.8">zabbix</a>
+<li><a href="#toc_0.9">WhatsUp</a>
+<li><a href="#toc_0.10">centreon</a>
 </ul>
 </ul>
 </div>
@@ -60,7 +61,46 @@ RRDTOOL 1.2.x 的差异: <a href="http://bbs.chinaunix.net/forum.php?mod=viewthr
 
 </ul>
 
-<h2 id="toc_0.1">Collectd</h2>
+<h2 id="toc_0.1">2022</h2>
+
+<ul>
+<li>
+Zabbix
+
+<li>
+Prometheus
+
+<li>
+Grafana
+
+<li>
+TICK
+
+<ul>
+<li>
+Telegraf+influxDB:
+
+<ul>
+<li>
+go开发的监控工具，可以用来收集和报告指标，通过输出、转换、输出插件等将数据从目标采集并发送给其他的数据存储、服务或者消息队列
+
+<li>
+go开发的时序数据库，为带有时间戳的数据编写
+
+</ul>
+<li>
+chronograf:开源可视化引擎
+
+<li>
+grafana:可视化工具，比较流行的时序数据可视化工具
+
+<li>
+Kapacitor:数据引擎，可以处理来自influxdb的流数据，并且可以监控和报警
+
+</ul>
+</ul>
+
+<h2 id="toc_0.2">Collectd</h2>
 
 <p>
 Collectd 和Munin以及Cacti一样是注重图形式的系统指标显示方式。与众不同的是，它是专门为性能和可移植性而设计的。这意味着它适用于那些粗糙的、低端的 和嵌入式的系统。高性能低资源占有率的设计使得Collectd可以在不干扰你的服务进程的条件下，每10秒钟收集一次数据，提供高清晰的结果。你可以用 C、Perl或是Java给它写扩展程序。
@@ -72,7 +112,7 @@ Collectd 和Munin以及Cacti一样是注重图形式的系统指标显示方式�
 
 </ul>
 
-<h2 id="toc_0.2">Zenoss</h2>
+<h2 id="toc_0.3">Zenoss</h2>
 
 <p>
 Zenoss Core是Zenoss的开源版本，其商用版本为ZenossEnterprise。作为企业级智能监控软件，Zenoss Core允许IT管理员依靠单一的WEB控制台来监控网络架构的状态和健康度。Zenoss Core的强大能力来自于深入的列表与配置管理数据库，以发现和管理公司IT环境的各类资产。Zenoss同时提供与CMDB关联的事件和错误管理系统， 以协助提高各类事件和提醒的管理效率。
@@ -124,7 +164,7 @@ Zenoss比较出色的地方在于它的Dashboard，可以配置很多portlet
 
 </ul>
 
-<h2 id="toc_0.3">Open-falcon</h2>
+<h2 id="toc_0.4">Open-falcon</h2>
 
 <p>
 Open-falcon是小米运维团队从互联网公司的需求出发，根据多年的运维经验，结合SRE、SA、DEVS的使用经验和反馈，开发的一套面向互联网的企业级开源监控产品。
@@ -136,7 +176,7 @@ Open-falcon是小米运维团队从互联网公司的需求出发，根据多年
 
 </ul>
 
-<h2 id="toc_0.4">Cacti</h2>
+<h2 id="toc_0.5">Cacti</h2>
 
 <p>
 <img src="http://www.cacti.net/images/cacti.png" alt="Cacti" />
@@ -147,7 +187,7 @@ Open-falcon是小米运维团队从互联网公司的需求出发，根据多年
 
 </ul>
 
-<h2 id="toc_0.5">Nagios</h2>
+<h2 id="toc_0.6">Nagios</h2>
 
 <p>
 <img src="http://assets.nagios.com/images/header/Nagios.png" alt="Nagios" />
@@ -351,7 +391,7 @@ OMD，全称Open Monitoring Distribution，是一个围绕Nagios core构建的�
 </ul>
 </ul>
 
-<h2 id="toc_0.6">Ganglia</h2>
+<h2 id="toc_0.7">Ganglia</h2>
 
 <ul>
 <li>
@@ -371,7 +411,7 @@ ganglia快速开始向导（翻译自官方wiki）: <a href="http://cryinstall.c
 
 </ul>
 
-<h2 id="toc_0.7">zabbix</h2>
+<h2 id="toc_0.8">zabbix</h2>
 
 <ul>
 <li>
@@ -411,9 +451,9 @@ zabbix监控tcp连接数: <a href="http://www.cenhq.com/2015/09/06/zabbix-monito
 </ul>
 </ul>
 
-<h2 id="toc_0.8">WhatsUp</h2>
+<h2 id="toc_0.9">WhatsUp</h2>
 
-<h2 id="toc_0.9">centreon</h2>
+<h2 id="toc_0.10">centreon</h2>
 
 <p>
 centreon是开源的IT监控软件，由法国人于2003年开发，最初名为Oreon，并于2005年正式更名为centreon。
@@ -454,7 +494,7 @@ host监控可以全部采用nrpe方式，不必象nagios+cacti生成流量图必
 </div>
 <div id="footer">
 <p>
-&copy; 2012 - 2015 XStar
+&copy; 2012 - 2021 XStar
 &nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
 &nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
 &nbsp;|&nbsp;<a href="../index.html">首页</a>
