@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>CentOS7使用</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>CentOS7使用</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">基本环境</a>
+<li><a href="#toc_0.2">SELINUX/iptables</a>
+<li><a href="#toc_0.3">systemctl</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">基本环境</h2>
+
+<p>
+下载CentOS-7-x86_64-Minimal-2009.iso最小化安装，缺少常用命令ifconfig、netstat，vi无代码高亮，使用yum安装：
+</p>
+
+<pre class="brush:bash">
+yum install net-tools 
+yum install vim-minimal vim-common vim-enhanced vim-filesystem
+</pre>
+
+<h2 id="toc_0.2">SELINUX/iptables</h2>
+
+<p>
+CentOS默认启用了SELINUX:
+</p>
+<ul>
+<li>
+CentOS7中iptables、firewalld：<a href="https://blog.csdn.net/weixin_30878501/article/details/98232144">https://blog.csdn.net/weixin_30878501/article/details/98232144</a>
+
+</ul>
+
+<pre class="brush:bash">
+sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+setenforce 0
+systemctl stop firewalld  &amp;&amp; systemctl disable firewalld
+</pre>
+
+<ul>
+<li>
+sestatus
+<pre>
+SELinux status:                 enabled
+SELinuxfs mount:                /sys/fs/selinux
+SELinux root directory:         /etc/selinux
+Loaded policy name:             targeted
+Current mode:                   enforcing
+Mode from config file:          enforcing
+Policy MLS status:              enabled
+Policy deny_unknown status:     allowed
+Max kernel policy version:      31
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">systemctl</h2>
+
+<pre class="brush:bash">
+# 配置服务
+
+# https://www.freedesktop.org/software/systemd/man/systemd.exec.html
+# [Unit]部分主要是对服务的说明，包括Description（描述服务）、After(描述服务启动顺序)
+# [Service]服务启动、重启、停止命令配置，全部要使用绝对路径：
+#   Type:forking,simple
+#   PIDFile:PID文件
+#   ExecStart:启动命令，ExecStop:停止命令，ExecReload:重启命令
+#   PrivateTmp=True:给服务分配独立临时空间
+#   StandardOutput:
+#       null:关闭程序业务日志输出
+#       StandardInput=null
+#       StandardOutput=journal
+#       StandardError=inherit
+# Manual page systemd.exec
+# 如果您的发行版较新systemd（systemd版本236或更高），则可以将StandardOutput或的值设置StandardError为file:YOUR_ABSPATH_FILENAME。
+# 输出到file:/append:是相对较新的功能，因此不适用于较旧的发行版，如centos-7（或之前的任何centos）。
+# [Install]描述服务安装相关设置
+
+# /lib/systemd/system/prometheus.service
+# /etc/systemd/system/multi-user.target.wants/prometheus.service
+[Unit]
+Description=Prometheus
+Documentation=https://prometheus.io/
+After=network.target
+
+[Service]
+Type=simple
+User=prometheus
+ExecStart=/data/prometheus/bin/prometheus --config.file=/data/prometheus/conf/prometheus.yml --storage.tsdb.path=/data/prometheus/data --storage.tsdb.retention=90d --log.level=debug --log.format=logfmt
+#--web.external-url=http://prom.k8stech.net
+Restart=on-failure
+StandardOutput=/var/log/prometheus.log
+
+[Install]
+WantedBy=multi-user.target
+
+systemctl enable prometheus.service
+systemctl start prometheus.service
+systemctl log prometheus.service
+systemctl daemon-reload 
+systemctl show prometheus.service
+</pre>
+
+<ul>
+<li>
+systemctl日志查看
+<pre>
+# 显示所有的systemctl的日志，这里的日志是多个服务混合的
+journalctl -f
+journalctl -u prometheus.service
+</pre>
+
+</ul>
+
+<ul>
+<li>
+openresty
+
+<ul>
+<li>
+<a href="https://openresty.org/cn/installation.html">https://openresty.org/cn/installation.html</a>
+
+<li>
+<a href="https://github.com/openresty/opm">https://github.com/openresty/opm</a>
+<pre class="brush:bash">
+wget https://openresty.org/package/centos/openresty.repo
+sudo mv openresty.repo /etc/yum.repos.d/
+
+# update the yum index:
+sudo yum check-update
+
+yum install openresty openresty-opm
+
+opm search mysql
+
+openresty/lua-resty-mysql                         Lua MySQL client driver for ngx_lua based on the cosocket API
+openresty/lua-resty-websocket                     Lua WebSocket implementation for the ngx_lua module
+openresty/lua-resty-redis                         Lua redis client driver for the ngx_lua based on the cosocket API
+openresty/lua-resty-upload                        Streaming reader and parser for HTTP file uploading based on ngx_lua cosocket
+openresty/lua-resty-dns                           Lua DNS resolver for the ngx_lua based on the cosocket API
+openresty/lua-resty-memcached                     Lua memcached client driver for the ngx_lua based on the cosocket API
+</pre>
+
+</ul>
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Prometheus</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Prometheus</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Prometheus+Grafana安装及配置</a>
+</ul>
+</ul>
+</div>
+ 
+<ul>
+<li>
+Prometheus
+
+<ul>
+<li>
+<a href="https://www.prometheus.wang/">https://www.prometheus.wang/</a>
+
+<li>
+<a href="https://www.k8stech.net">https://www.k8stech.net</a>
+
+</ul>
+<li>
+SRE运维体系:<a href="https://zhuanlan.zhihu.com/p/303003637">https://zhuanlan.zhihu.com/p/303003637</a>
+
+</ul>
+ 
+<ul>
+<li>
+基础:快速掌握部分
+
+<ul>
+<li>
+Prometheus基础的综述
+
+<li>
+Prometheus的数据模型、时间序列模型、PrmQL。
+
+<li>
+自定义监控告警规则及AlertManager
+
+<li>
+常用的Exporter的使用场景以及使用方法，Java/Golang实现自定义
+
+</ul>
+<li>
+高级用法
+
+<ul>
+<li>
+"You can't fix what you can't see"。可视化监控Grafana
+
+<li>
+Prometheus自动的发现那些需要监控的资源和服务(云平台、容量化)
+
+<li>
+Prometheus高可用、扩展能力
+
+<li>
+通过Prometheus构建容器云监控系统，应用程序的弹性伸缩。
+
+</ul>
+</ul>
+
+<ul>
+<li>
+prometheus.yml
+<pre class="brush:bash">
+# my global config
+global:
+  scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=&lt;job_name&gt;` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ["localhost:9090"]
+</pre>
+
+</ul>
+
+<ul>
+<li>
+prometheus配置详解:<a href="https://www.jianshu.com/p/efa8b46f46c6">https://www.jianshu.com/p/efa8b46f46c6</a>
+<pre class="brush:bash">
+# 此片段指定的是prometheus的全局配置， 比如采集间隔，抓取超时时间等.
+global:
+  # 抓取间隔
+  [ scrape_interval: &lt;duration&gt; | default = 1m ]
+
+  # 抓取超时时间
+  [ scrape_timeout: &lt;duration&gt; | default = 10s ]
+
+  # 评估规则间隔
+  [ evaluation_interval: &lt;duration&gt; | default = 1m ]
+
+  # 外部一些标签设置
+  external_labels:
+    [ &lt;labelname&gt;: &lt;labelvalue&gt; ... ]
+
+  # File to which PromQL queries are logged.
+  # Reloading the configuration will reopen the file.
+  [ query_log_file: &lt;string&gt; ]
+
+# 此片段指定报警规则文件， prometheus根据这些规则信息，会推送报警信息到alertmanager中。
+rule_files:
+  [ - &lt;filepath_glob&gt; ... ]
+
+# 此片段指定抓取配置，prometheus的数据采集通过此片段配置。
+scrape_configs:
+  [ - &lt;scrape_config&gt; ... ]
+
+# 此片段指定报警配置， 这里主要是指定prometheus将报警规则推送到指定的alertmanager实例地址。
+alerting:
+  alert_relabel_configs:
+    [ - &lt;relabel_config&gt; ... ]
+  alertmanagers:
+    [ - &lt;alertmanager_config&gt; ... ]
+
+# 指定后端的存储的写入api地址。
+remote_write:
+  [ - &lt;remote_write&gt; ... ]
+
+# 指定后端的存储的读取api地址。
+remote_read:
+  [ - &lt;remote_read&gt; ... ]
+</pre>
+
+</ul>
+
+<h2 id="toc_0.1">Prometheus+Grafana安装及配置</h2>
+
+<ul>
+<li>
+Prometheus安装及配置: <a href="https://www.k8stech.net/post/prometheus-monitor-2/">https://www.k8stech.net/post/prometheus-monitor-2/</a>
+
+</ul>
+
+<p>
+讲解如何安装配置使用Grafana图形展示，并接入Email、Dingtalk、Wechat警报，Prometheus已经完美的支持Email、Slack、Dingtalk、Wechat警报。
+</p>
+
+<ul>
+<li>
+系统/软件版本
+<pre>
+System：Ubuntu 18.04
+Prometheus 2.13.0
+Node_Exporter 1.18.0
+Alaermanager 1.18.0
+Dingtalk-webhook 0.3.0
+Grafana 6.4.0
+</pre>
+
+</ul>
+
+<ul>
+<li>
+二进制安装
+<pre class="brush:bash">
+PROM_PATH='/data/prometheus'
+mkdir -p ${PROM_PATH}
+mkdir -p ${PROM_PATH}/{data,conf,logs,bin}
+useradd prometheus
+cd /usr/local/src
+wget https://github.com/prometheus/prometheus/releases/download/v2.13.0/prometheus-2.13.0.linux-amd64.tar.gz
+tar -xvf prometheus-2.13.0.linux-amd64.tar.gz
+cd prometheus-2.13.0.linux-amd64/
+cp prometheus promtool ${PROM_PATH}/bin/
+cp prometheus.yml ${PROM_PATH}/config/
+chown -R prometheus.prometheus /data/prometheus
+# Setting Variables
+cat &gt;&gt; /etc/profile &lt;&lt;EOF
+PATH=/data/prometheus/bin:$PATH:$HOME/bin
+EOF
+</pre>
+
+</ul>
+
+<ul>
+<li>
+创建Systemd Prometheus服务
+<pre class="brush:bash">
+cat &gt;&gt;/etc/systemd/system/prometheus.service &lt;&lt;EOF
+[Unit]
+Description=Prometheus
+Documentation=https://prometheus.io/
+After=network.target
+
+[Service]
+Type=simple
+User=prometheus
+ExecStart=/data/prometheus/bin/prometheus --config.file=/data/prometheus/conf/prometheus.yml --storage.tsdb.path=/data/prometheus/data --web.external-url=http://prom.k8stech.net --storage.tsdb.retention=90d
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl enable prometheus.service
+systemctl start prometheus.service
+systemctl status prometheus.service
+
+netstat -antup|grep 9090
+</pre>
+
+</ul>
+
+<ul>
+<li>
+Prometheus配置文件
+<pre class="brush:bash">
+# Alertmanager Rule 目录 与 文件
+CONF_PATH='/data/prometheus/conf'
+# 目录必须提前创建，否则Prometheus服务会无法启动
+mkdir -p ${CONF_PATH}/rule/{op,ssl,prod}
+mkdir -p ${CONF_PATH}/prod/domain_config
+
+# prometheus conf file
+cat &gt; /data/prometheus/conf/prometheus.yml &lt;&lt; EOF
+# https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+# 全局配置
+global:
+  scrape_interval:     30s # 每15秒抓取一次数据，默认值为1分钟
+  scrape_timeout: 30s
+  evaluation_interval: 60s # 每15分钟检测一次可用性，默认值为1分钟
+  #scrape_timeout: 60s # 全局设置超时时间，这个注掉了。
+
+# Alertmanager配置，需要在targets添加ip和端口，也可以使用主机名和域名
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['127.0.0.1:9093']
+    
+# 根据全局文件 'evaluation_interval' 的时间，根据 rule 文件进行检查，可配置多个。
+rule_files:
+  - "/data/prometheus/conf/rule/prod/*.yml"
+  - "/data/prometheus/conf/rule/op/*.yml"
+  - "/data/prometheus/conf/rule/ssl/*.yml"
+  # - "second_rules.yml"
+# 抓取配置配置
+scrape_configs:
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]  # Look for a HTTP 200 response.
+    scrape_interval: 30s
+    file_sd_configs:
+      - files:
+        - /data/prometheus/conf/prod/domain_config/*.yml
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 127.0.0.1:9115  # The blackbox exporter's real hostname:port.
+  - job_name: 'prom'
+    #honor_labels: true
+    scrape_interval: 10s
+    static_configs:
+    - targets: ['172.26.42.229:9100']
+      labels:
+         op_region: 'cn-north-1'
+         app:   'Prometheus'
+         env:  'Server'
+EOF
+</pre>
+
+</ul>
+
+<ul>
+<li>
+Nginx配置Basic_Auth访问
+<pre class="brush:bash">
+# 安装 Apache工具包
+apt install apache2-utils
+htpasswd -bc /etc/nginx/.prom_htpasswd admin admin
+# nginx conf
+cat &gt; /etc/nginx/conf.d/prom.conf &lt;&lt;EOF
+server {
+    listen       80;
+    server_name  prom.k8stech.net;
+        auth_basic "Please input password";
+        auth_basic_user_file /etc/nginx/.prom_htpasswd;
+    location / {
+            try_files $uri @prom;
+    }
+    location @prom {
+            internal;
+            proxy_pass http://localhost:9090;
+    }
+}
+EOF
+</pre>
+
+</ul>
+
+<ul>
+<li>
+使用浏览器访问: <a href="http://prom.k8stech.net">http://prom.k8stech.net</a>
+
+<ul>
+<li>
+user:admin
+
+<li>
+pass:admin
+
+</ul>
+</ul>
+
+<ul>
+<li>
+二进制安装Node_exporter
+<pre class="brush:bash">
+# prom server 安装
+NODE_PATH='/data/prometheus/node_exporter/'
+cd /usr/local/src/
+mkdir -p ${NODE_PATH}
+wget https://github.com/prometheus/node_exporter/releases/download/v0.18.0/node_exporter-0.18.0.linux-amd64.tar.gz &amp;&amp; tar xvf node_exporter-0.18.0.linux-amd64.tar.gz
+cp node_exporter-0.18.0.linux-amd64/node_exporter ${NODE_PATH}
+chown -R prometheus.prometheus ${NODE_PATH}
+
+# node节点安装
+NODE_PATH='/data/prometheus/node_exporter/'
+useradd prometheus &amp;&amp; mkdir -p ${NODE_PATH}
+cd /usr/local/src/
+wget https://github.com/prometheus/node_exporter/releases/download/v0.18.0/node_exporter-0.18.0.linux-amd64.tar.gz &amp;&amp; tar xvf node_exporter-0.18.0.linux-amd64.tar.gz
+cp node_exporter-0.18.0.linux-amd64/node_exporter ${NODE_PATH}
+chown -R prometheus.prometheus ${NODE_PATH}
+</pre>
+
+</ul>
+
+<ul>
+<li>
+创建Systemd Node_exporter服务
+<pre class="brush:bash">
+# 创建配置文件 Centos7 路径是/usr/lib/systemd/
+cat &gt; /lib/systemd/system/node_exporter.service &lt;&lt;EOF
+[Unit]
+Description=node_exporter
+Documentation=https://prometheus.io/
+After=network.target
+ 
+[Service]
+Type=simple
+User=prometheus
+ExecStart=/data/prometheus/node_exporter/node_exporter
+Restart=on-failure
+ 
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 开机启动并运行服务
+systemctl enable node_exporter.service
+systemctl start node_exporter.service
+systemctl status node_exporter.service
+
+# 查看端口是否正常
+netstat -anplt|grep 9100
+tcp        0      0 172.26.42.229:58364     172.26.42.229:9100      ESTABLISHED 32220/prometheus
+tcp6       0      0 :::9100                 :::*                    LISTEN      972/node_exporter
+tcp6       0      0 172.26.42.229:9100      172.26.42.229:58364     ESTABLISHED 972/node_exporter
+</pre>
+
+</ul>
+
+<p>
+Node Metrics查看 访问9100端口即可。
+</p>
+
+
+
+<ul>
+<li>
+blackbox_exporter的使用:<a href="https://www.jianshu.com/p/4425cb6a48df">https://www.jianshu.com/p/4425cb6a48df</a>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

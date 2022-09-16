@@ -119,6 +119,7 @@ $(document).ready(function() {
         var loadpath='https://cdn.bootcss.com/SyntaxHighlighter/3.0.83/';
     }else{
         //var loadpath='http://alexgorbatchev.com/pub/sh/current/';
+        //https://www.bootcdn.cn/SyntaxHighlighter/
         var loadpath='https://cdn.bootcss.com/SyntaxHighlighter/3.0.83/';
     }
     function path() {
