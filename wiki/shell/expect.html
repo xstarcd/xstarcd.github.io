@@ -90,6 +90,7 @@ send "ispass\r"
 # 发送内容给用户
 send_user "$argv0 [lrange $argv 0 2]\n"
 send_user "It's OK\r"
+
 # 执行完成后保持交互状态，控制权交给控制台(手工操作)。否则会完成后会退出。
 interact
 </pre>
