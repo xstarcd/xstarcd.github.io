@@ -69,6 +69,36 @@ Windows下 NFS 客户端的安装及设置: <a href="http://codingstandards.itey
 <li>
 <a href="Win7Srv_optimize.html">Win7 服务优化方案</a>
 
+<li>
+开启rdp服务
+<pre class="brush:bash">
+#打开3389:
+reg add 'HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server' /v fDenyTSConnections /t REG_DWORD /d 00000000 /f
+
+#关闭3389:
+reg add 'HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server' /v fDenyTSConnections /t REG_DWORD /d 00000001 /f
+
+#修改3389端口:
+reg add 'HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' /v PortNumber /t REG_DWORD /d 13900 /f
+netsh firewall add portpening protocol=TCP port=13900 name="DeskpookRDP" profile=ALL
+
+# 增加到rdp组
+set RDPObj = GetObject("winmgmts:{impersonationLevel=impersonate}!Win32_TSPermissionsSetting.TerminalName='Console'")RDPobj.AddAccount "Domain\User", X
+# 用wmic工具
+C:\WINDOWS\system32\wbem&gt;wmic
+wmic:root\cli&gt;
+wmic:root\cli&gt; PATH WIN32_TSPermissionsSetting.TerminalName="RDP-TCP" call AddAccount "Domain\User", 2
+
+Execute (\\&lt;ComputerName&gt;\\root\vimv2: WIN32_TSPermissionsSetting.TerminalName="RDP-TCP")-&gt;AddAccount() (Y/N/?)
+
+Method Execution Successful.
+Out Parameters:
+instance of _PARAMETERS
+{
+RetureValue=0;
+};
+</pre>
+
 </ul>
 
 <h2 id="toc_0.2">Office</h2>
@@ -182,7 +212,7 @@ Secure Socket Tunneling Protocol Service
 </div>
 <div id="footer">
 <p>
-&copy; 2012 - 2015 XStar
+&copy; 2012 - 2021 XStar
 &nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
 &nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
 &nbsp;|&nbsp;<a href="../index.html">首页</a>
