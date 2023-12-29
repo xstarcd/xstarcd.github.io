@@ -17,11 +17,58 @@
 
 <h1>docker</h1>
 
+<p>
+Docker 并非是一个通用的容器工具，它依赖于已存在并运行的 Linux 内核环境。
+</p>
+
+<p>
+Docker 实质上是在已经运行的 Linux 下制造了一个隔离的文件环境，因此它执行的效率几乎等同于所部署的 Linux 主机。
+</p>
+
+<p>
+因此，Docker 必须部署在 Linux 内核的系统上。如果其他系统想部署 Docker 就必须安装一个虚拟 Linux 环境。
+</p>
+
+<ul>
+<li>
+Docker教程：<a href="https://www.runoob.com/docker/docker-tutorial.html">https://www.runoob.com/docker/docker-tutorial.html</a>
+
+<li>
+<a href="https://docs.docker.com/">https://docs.docker.com/</a>
+
+<li>
+Docker 官网：<a href="https://www.docker.com">https://www.docker.com</a>
+
+<li>
+Github Docker 源码：<a href="https://github.com/docker/docker-ce">https://github.com/docker/docker-ce</a>
+
+<li>
+k8s:
+
 <ul>
 <li>
 Docker Swarm: <a href="https://www.runoob.com/docker/docker-swarm.html">https://www.runoob.com/docker/docker-swarm.html</a>
 
+<li>
+轻量高可用的 K8s 集群搭建方案：MicroK8s:<a href="https://zhuanlan.zhihu.com/p/573994066">https://zhuanlan.zhihu.com/p/573994066</a>
+
+<li>
+MicroK8s 是 CNCF 认证的 Kubernetes 发行版，由 Ubuntu 背后的商业公司 Canonical 开发和维护。它和完整版的 Kubernetes 一样支持高可用特性（HA），支持快速组建 K8s 集群。
+
 </ul>
+</ul>
+
+
+<pre>
+docker swarm init --advertise-addr 192.168.99.102
+Swarm initialized: current node (upadiyggp079ws9zz8ytfsulv) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-3gbbvlpm7qjy4y2qjcvs4ccd95mzj5cn1kizfmu0k69m2hhjlp-1r941tv44otxzwy6jd5abl15s 192.168.99.102:2377
+
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+</pre>
 
 </div>
 <div id="footer">

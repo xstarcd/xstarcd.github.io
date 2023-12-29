@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="styles/style.css" />
+    <title>Ubuntu 22.04 Jammy</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Ubuntu 22.04 Jammy</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">设置IP地址</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">设置IP地址</h2>
+
+<p>
+在 Ubuntu 服务器 22.04 中，网络由 netplan 程序控制，因此我们将使用 netplan 在 Ubuntu 服务器上配置静态 IP 地址。
+</p>
+
+<ul>
+<li>
+netplan配置说明：man netplan
+
+</ul>
+
+<ul>
+<li>
+/etc/netplan/00-installer-config.yaml
+<pre class="brush:bash">
+# This is the network config written by 'subiquity'
+network:
+  ethernets:
+    enp0s3:
+      dhcp4: true
+  version: 2
+</pre>
+<pre class="brush:bash">
+# This is the network config written by 'subiquity'
+network:
+  ethernets:
+    enp0s3:
+      dhcp4: false
+      addresses: [192.168.31.50/24]
+      routes:
+        - to: default
+          via: 192.168.31.1
+          metric: 100
+          on-link: true
+      nameservers:
+        addresses: [127.0.0.53]
+  version: 2
+</pre>
+<pre class="brush:bash">
+# 应用新配置
+sudo netplan apply
+sudo netplan --debug apply
+
+# 查看IP地址、路由配置
+ip addr 
+ip route 
+
+# 获取自己的公网IP地址
+echo $(wget -qO - https://api.ipify.org)
+echo $(curl -s https://api.ipify.org)
+
+# 查看当前DNS设置
+resolvectl status
+
+# 临时配置IP地址
+ip addr add 10.0.2.15/24 dev enp0s3
+ip route add default via 10.0.2.1
+ip link set eno3 up
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="scripts/vimwiki.js"></script>
+</body>
+</html>
+
