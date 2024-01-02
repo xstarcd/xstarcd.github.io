@@ -16,12 +16,21 @@
 <div id="main">
 
 <h1>nginx_proxy_cache</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">配置范例</a>
+<li><a href="#toc_0.2">header引起不缓存</a>
+</ul>
+</ul>
+</div>
 
 <ul>
 <li>
 <a href="https://blog.csdn.net/dengjiexian123/article/details/53386586">https://blog.csdn.net/dengjiexian123/article/details/53386586</a>
 
 </ul>
+
+<h2 id="toc_0.1">配置范例</h2>
 
 <pre class="brush:bash">
 http {
@@ -34,6 +43,10 @@ http {
 # 当配置好之后，重启nginx，如果不报错，则配置的proxy_cache会生效
 # 查看proxy_cache_path目录，会发现生成了proxy_cache文件夹。
 proxy_cache_path /var/cache/openresty/proxy_cache levels=1:2 keys_zone=nginx_cache:256m inactive=1d max_size=10g;
+
+...
+#proxy_buffering    off; # user proxy_cache mast make proxy_buffering on.
+...
 
 server {
 ...
@@ -77,10 +90,43 @@ server {
 } # end http
 </pre>
 
+
+<h2 id="toc_0.2">header引起不缓存</h2>
+
+
+<p>
+默认情况下，nginx是否缓存是由nginx缓存服务器与源服务器共同决定的, 缓存服务器需要严格遵守源服务器响应的header来决定是否缓存以及缓存的时常。
+</p>
+
+<p>
+header主要有如下：
+</p>
+
+<pre>
+Cache-control：no-cache、no-store
+
+如果出现这两值，nginx缓存服务器是绝对不会缓存的
+
+Expires：1980-01-01
+
+如果出现日期比当前时间早，也不会缓存。
+</pre>
+
+
+<ul>
+<li>
+nginx代理直接加上如下一句：
+
+</ul>
+
+<pre>
+proxy_ignore_headers X-Accel-Expires Expires Cache-Control Set-Cookie;
+</pre>
+
 </div>
 <div id="footer">
 <p>
-&copy; 2012 - 2015 XStar
+&copy; 2012 - 2021 XStar
 &nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
 &nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
 &nbsp;|&nbsp;<a href="../index.html">首页</a>

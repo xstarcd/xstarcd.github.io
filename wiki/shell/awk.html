@@ -819,10 +819,38 @@ cat file1.json file2.json | awk -f JSON.awk
 
 </ul>
 
+
+<ul>
+<li>
+其他处理JSON方式
+
+</ul>
+
+<pre class="brush:bash">
+# jq:
+curl -s 'https://api.github.com/users/lambda' | jq -r '.name'
+
+# Python 2:
+export PYTHONIOENCODING=utf8
+curl -s 'https://api.github.com/users/lambda' | \
+    python -c "import sys, json; print json.load(sys.stdin)['name']"
+
+# Python 3:
+
+curl -s 'https://api.github.com/users/lambda' | \
+    python3 -c "import sys, json; print(json.load(sys.stdin)['name'])"
+
+# jsawk
+curl -s 'https://api.github.com/users/lambda' | jsawk -a 'return this.name'
+
+# grep
+grep -Po '"text":.*?[^\\]",' tweets.json
+</pre>
+
 </div>
 <div id="footer">
 <p>
-&copy; 2012 - 2015 XStar
+&copy; 2012 - 2021 XStar
 &nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
 &nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
 &nbsp;|&nbsp;<a href="../index.html">首页</a>

@@ -42,7 +42,8 @@
 <li><a href="#toc_1.4">中文乱码设置</a>
 <li><a href="#toc_1.5">技巧收集</a>
 <li><a href="#toc_1.6">SSH Agent on Cygwin</a>
-<li><a href="#toc_1.7">conEmu</a>
+<li><a href="#toc_1.7">Windows Terminal</a>
+<li><a href="#toc_1.8">conEmu</a>
 </ul>
 </ul>
 </div>
@@ -777,7 +778,61 @@ eval `keychain --eval --agents ssh id_dsa`
 </ul>
 </ul>
 
-<h2 id="toc_1.7">conEmu</h2>
+<h2 id="toc_1.7">Windows Terminal</h2>
+
+<ul>
+<li>
+在 Windows Terminal 中使用 Cygwin 命令行或 Git Bash:<a href="https://leo3418.github.io/zh/2020/05/24/cygwin-git-bash-in-wt.html">https://leo3418.github.io/zh/2020/05/24/cygwin-git-bash-in-wt.html</a>
+
+<li>
+安装Windows Terminal:在Microsoft Store搜索“Terminal”安装（不要安装Preview版本）。
+
+<li>
+Windows 终端提示与技巧: <a href="https://learn.microsoft.com/zh-cn/windows/terminal/tips-and-tricks">https://learn.microsoft.com/zh-cn/windows/terminal/tips-and-tricks</a>
+
+<li>
+Windows Terminal配置文件说明：<a href="https://learn.microsoft.com/zh-cn/windows/terminal/customize-settings/startup#default-terminal-application">https://learn.microsoft.com/zh-cn/windows/terminal/customize-settings/startup#default-terminal-application</a>
+
+<li>
+在Windows Terminal中设置Cygwin：
+
+<ul>
+<li>
+设置-&gt;添加新配置文件：
+
+<ul>
+<li>
+命令行：<code>C:\cygwin64\bin\bash.exe -i -l</code>
+
+<li>
+bash在登录状态才会加载profile、bashrc，需要使用<code>-i -l</code>参数，启动命令行：
+
+</ul>
+<li>
+删除crtl+v、ctrl+c热键设置：设置-&gt;操作中删除(终端中需要使用这两个组合键)。
+
+<li>
+开启鼠标右键菜单(不开启右键直接为粘贴)
+
+<ul>
+<li>
+按住Shift键单击下拉菜单中的设置，会用编辑器打开settings.json文件，在profiles-&gt;deflaults中添加<code>"experimental.rightClickContextMenu": true</code>：
+<pre class=brush:bash>
+...
+    "profiles": 
+    {
+        "defaults": {
+			"experimental.rightClickContextMenu": true,
+	},
+...
+    - 按住 Alt 并单击下拉菜单中的“设置”按钮，查看默认设置
+</pre>
+
+</ul>
+</ul>
+</ul>
+
+<h2 id="toc_1.8">conEmu</h2>
 
 <ul>
 <li>
@@ -786,17 +841,6 @@ eval `keychain --eval --agents ssh id_dsa`
 <li>
 Cygwin系列（十）：折腾终端1:<a href="https://zhuanlan.zhihu.com/p/99963508">https://zhuanlan.zhihu.com/p/99963508</a>
 
-<li>
-在 Windows Terminal 中使用 Cygwin 命令行或 Git Bash:<a href="https://leo3418.github.io/zh/2020/05/24/cygwin-git-bash-in-wt.html">https://leo3418.github.io/zh/2020/05/24/cygwin-git-bash-in-wt.html</a>
-
-<ul>
-<li>
-bash在登录状态才会加载profile、bashrc，需要使用<code>-i -l</code>参数，启动命令行：
-
-<li>
-<code>C:\cygwin64\bin\bash.exe -i -l</code>
-
-</ul>
 </ul>
 
 <p>
