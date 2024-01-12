@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>K3S Study</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>K3S Study</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">快速简便安装(单节点模式)</a>
+<li><a href="#toc_0.2">k3s命令参数</a>
+<ul>
+<li><a href="#toc_0.2.1">k3s server</a>
+<li><a href="#toc_0.2.2">k3s agent</a>
+<li><a href="#toc_0.2.3">kubectl</a>
+<li><a href="#toc_0.2.4">crictl</a>
+<li><a href="#toc_0.2.5">ctr</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+K3S文档: 
+
+<ul>
+<li>
+<a href="https://docs.k3s.io/zh/">https://docs.k3s.io/zh/</a>
+
+<li>
+<a href="https://docs.rancher.cn/docs/k3s/quick-start/_index">https://docs.rancher.cn/docs/k3s/quick-start/_index</a>
+
+<li>
+<a href="https://docs.rancher.cn/">https://docs.rancher.cn/</a>
+
+<li>
+Rancher(全栈式的Kubernetes 容器管理平台): <a href="https://ranchermanager.docs.rancher.com/zh/">https://ranchermanager.docs.rancher.com/zh/</a>
+
+</ul>
+<li>
+etcd官方中文文档：<a href="https://doczhcn.gitbook.io/etcd/index">https://doczhcn.gitbook.io/etcd/index</a>
+
+<li>
+Distribution Registry: <a href="https://distribution.github.io/distribution/">https://distribution.github.io/distribution/</a>
+
+</ul>
+
+<h2 id="toc_0.1">快速简便安装(单节点模式)</h2>
+
+<ul>
+<li>
+安装Server
+
+</ul>
+
+<pre class="brush:bash">
+sudo curl -sfL https://rancher-mirror.rancher.cn/k3s/k3s-install.sh | INSTALL_K3S_MIRROR=cn sh -
+</pre>
+
+<pre>
+[INFO]  Finding release for channel stable
+[INFO]  Using v1.28.4+k3s2 as release
+[INFO]  Downloading hash rancher-mirror.rancher.cn/k3s/v1.28.4-k3s2/sha256sum-amd64.txt
+[INFO]  Downloading binary rancher-mirror.rancher.cn/k3s/v1.28.4-k3s2/k3s
+[INFO]  Verifying binary download
+[INFO]  Installing k3s to /usr/local/bin/k3s
+[INFO]  Skipping installation of SELinux RPM
+[INFO]  Creating /usr/local/bin/kubectl symlink to k3s
+[INFO]  Creating /usr/local/bin/crictl symlink to k3s
+[INFO]  Creating /usr/local/bin/ctr symlink to k3s
+[INFO]  Creating killall script /usr/local/bin/k3s-killall.sh
+[INFO]  Creating uninstall script /usr/local/bin/k3s-uninstall.sh
+[INFO]  env: Creating environment file /etc/systemd/system/k3s.service.env
+[INFO]  systemd: Creating service file /etc/systemd/system/k3s.service
+sh: 1014: restorecon: not found
+sh: 1015: restorecon: not found
+[INFO]  systemd: Enabling k3s unit
+Created symlink /etc/systemd/system/multi-user.target.wants/k3s.service → /etc/systemd/system/k3s.service.
+[INFO]  systemd: Starting k3s
+</pre>
+
+
+<pre>
+systemctl status k3s.service
+● k3s.service - Lightweight Kubernetes
+     Loaded: loaded (/etc/systemd/system/k3s.service; enabled; vendor preset: enabled)
+     Active: active (running) since Wed 2024-01-03 01:17:22 UTC; 17min ago
+       Docs: https://k3s.io
+    Process: 1792 ExecStartPre=/bin/sh -xc ! /usr/bin/systemctl is-enabled --quiet nm-cloud-setup.service (code=exited, status=0/SUCCESS)
+    Process: 1794 ExecStartPre=/sbin/modprobe br_netfilter (code=exited, status=0/SUCCESS)
+    Process: 1795" "" "" "" "" "" "" ""&gt;
+             ├─2277 /var/lib/rancher/k3s/data/786a7010d40ec795903b5283ea90e511368db829fd9b72d6a0d3540238d04a20/bin/containerd-shim-runc-v2 -namespace k8s.io -id d627572c3f4648d4f383031251145dcdaa6e11a9dc27cb00263d3e77abe122bc -a ExecStartPre=/sbin/modprobe overlay (code=exited, status=0/SUCCESS)
+   Main PID: 1796 (k3s-server)
+      Tasks: 89
+     Memory: 1.4G
+        CPU: 1min 56.097s
+     CGroup: /system.slice/k3s.service
+             ├─1796 "/usr/local/bin/k3s server"
+             ├─1819 "containerd " "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "ddress /run/k3s/containerd/containerd.sock
+             ├─2318 /var/lib/rancher/k3s/data/786a7010d40ec795903b5283ea90e511368db829fd9b72d6a0d3540238d04a20/bin/containerd-shim-runc-v2 -namespace k8s.io -id 41548e0854afe2f4d68c46d1d0604ed7b4d2eb115eb81b0f2f15742bf582fd88 -address /run/k3s/containerd/containerd.sock
+             ├─2338 /var/lib/rancher/k3s/data/786a7010d40ec795903b5283ea90e511368db829fd9b72d6a0d3540238d04a20/bin/containerd-shim-runc-v2 -namespace k8s.io -id 1dae483fd4455b6660b94f31137fb70ec69574770fcb46200dd1a442196df382 -address /run/k3s/containerd/containerd.sock
+             ├─3440 /var/lib/rancher/k3s/data/786a7010d40ec795903b5283ea90e511368db829fd9b72d6a0d3540238d04a20/bin/containerd-shim-runc-v2 -namespace k8s.io -id 6232b515e3c88bb8716739a5efd2986d82bbf7bb91adc57facde43aa11fc895c -address /run/k3s/containerd/containerd.sock
+             └─3503 /var/lib/rancher/k3s/data/786a7010d40ec795903b5283ea90e511368db829fd9b72d6a0d3540238d04a20/bin/containerd-shim-runc-v2 -namespace k8s.io -id e7d03f5951a3914fd12bdb73263c7ac3c76991a3c93c3d6fbf29eb9ba46e5897 -address /run/k3s/containerd/containerd.sock
+
+Jan 03 01:33:29 usrv51 k3s[1796]: I0103 01:33:29.846295    1796 node_controller.go:502] Successfully initialized node usrv52 with cloud provider
+Jan 03 01:33:29 usrv51 k3s[1796]: I0103 01:33:29.846479    1796 event.go:307] "Event occurred" object="usrv52" fieldPath="" kind="Node" apiVersion="v1" type="Normal" reason="Synced" message="Node synced successfully"
+Jan 03 01:33:29 usrv51 k3s[1796]: I0103 01:33:29.938646    1796 topologycache.go:237] "Can't get CPU or zone information for node" node="usrv52"
+Jan 03 01:33:29 usrv51 k3s[1796]: I0103 01:33:29.956239    1796 event.go:307] "Event occurred" object="kube-system/svclb-traefik-b271c2ea" fieldPath="" kind="DaemonSet" apiVersion="apps/v1" type="Normal" reason="SuccessfulCreate" message="Created pod: svclb-traefik-b271c2ea-bwt4&gt;
+Jan 03 01:33:30 usrv51 k3s[1796]: I0103 01:33:30.876821    1796 kube.go:510] Creating the node lease for IPv4. This is the n.Spec.PodCIDRs: [10.42.1.0/24]
+Jan 03 01:33:30 usrv51 k3s[1796]: I0103 01:33:30.876849    1796 subnet.go:159] Batch elem [0] is { lease.Event{Type:0, Lease:lease.Lease{EnableIPv4:true, EnableIPv6:false, Subnet:ip.IP4Net{IP:0xa2a0100, PrefixLen:0x18}, IPv6Subnet:ip.IP6Net{IP:(*ip.IP6)(nil), PrefixLen:0x0}, Att&gt;
+Jan 03 01:33:32 usrv51 k3s[1796]: I0103 01:33:32.036259    1796 node_lifecycle_controller.go:877] "Missing timestamp for Node. Assuming now as a timestamp" node="usrv52"
+Jan 03 01:33:32 usrv51 k3s[1796]: I0103 01:33:32.037170    1796 event.go:307] "Event occurred" object="usrv52" fieldPath="" kind="Node" apiVersion="v1" type="Normal" reason="RegisteredNode" message="Node usrv52 event: Registered Node usrv52 in Controller"
+Jan 03 01:33:45 usrv51 k3s[1796]: I0103 01:33:45.916221    1796 event.go:307] "Event occurred" object="kube-system/traefik" fieldPath="" kind="Service" apiVersion="v1" type="Normal" reason="UpdatedLoadBalancer" message="Updated LoadBalancer with new IPs: [192.168.31.51] -&gt; [192.&gt;
+Jan 03 01:34:20 usrv51 k3s[1796]: I0103 01:34:20.294351    1796 handler.go:232] Adding GroupVersion metrics.k8s.io v1beta1 to ResourceManager
+
+netstat -lntup
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 127.0.0.1:10010         0.0.0.0:*               LISTEN      1819/containerd
+tcp        0      0 127.0.0.1:6444          0.0.0.0:*               LISTEN      1796/k3s server
+tcp        0      0 127.0.0.1:10248         0.0.0.0:*               LISTEN      1796/k3s server
+tcp        0      0 127.0.0.1:10249         0.0.0.0:*               LISTEN      1796/k3s server
+tcp        0      0 127.0.0.1:10258         0.0.0.0:*               LISTEN      1796/k3s server
+tcp        0      0 127.0.0.1:10259         0.0.0.0:*               LISTEN      1796/k3s server
+tcp        0      0 127.0.0.1:10256         0.0.0.0:*               LISTEN      1796/k3s server
+tcp        0      0 127.0.0.1:10257         0.0.0.0:*               LISTEN      1796/k3s server
+tcp6       0      0 :::6443                 :::*                    LISTEN      1796/k3s server
+tcp6       0      0 :::10250                :::*                    LISTEN      1796/k3s server
+</pre>
+
+<ul>
+<li>
+查看server token和IP地址
+<pre class="brush:bash">
+cat /var/lib/rancher/k3s/server/node-token
+
+K1052cc2c265e7a2817c8d4e85c7118f64210142003339617d88638691650680d29::server:7e0b6f93698424a0d4846ca7534cbb83
+
+ifconfig|grep -A 1 enp
+
+enp0s3: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
+        inet 192.168.31.51  netmask 255.255.255.0  broadcast 192.168.31.255
+</pre>
+
+</ul>
+
+<ul>
+<li>
+安装Agent
+
+</ul>
+
+<pre class="brush:bash">
+sudo curl -sfL https://rancher-mirror.rancher.cn/k3s/k3s-install.sh \
+| INSTALL_K3S_MIRROR=cn \
+K3S_URL=https://192.168.31.51:6443 \
+K3S_TOKEN="K1052cc2c265e7a2817c8d4e85c7118f64210142003339617d88638691650680d29::server:7e0b6f93698424a0d4846ca7534cbb83" \
+sh -
+</pre>
+
+<pre>
+[INFO]  Finding release for channel stable
+[INFO]  Using v1.28.4+k3s2 as release
+[INFO]  Downloading hash rancher-mirror.rancher.cn/k3s/v1.28.4-k3s2/sha256sum-amd64.txt
+[INFO]  Skipping binary downloaded, installed k3s matches hash
+[INFO]  Skipping installation of SELinux RPM
+[INFO]  Skipping /usr/local/bin/kubectl symlink to k3s, already exists
+[INFO]  Skipping /usr/local/bin/crictl symlink to k3s, already exists
+[INFO]  Skipping /usr/local/bin/ctr symlink to k3s, already exists
+[INFO]  Creating killall script /usr/local/bin/k3s-killall.sh
+[INFO]  Creating uninstall script /usr/local/bin/k3s-agent-uninstall.sh
+[INFO]  env: Creating environment file /etc/systemd/system/k3s-agent.service.env
+[INFO]  systemd: Creating service file /etc/systemd/system/k3s-agent.service
+sh: 1014: restorecon: not found
+sh: 1015: restorecon: not found
+[INFO]  systemd: Enabling k3s-agent unit
+Created symlink /etc/systemd/system/multi-user.target.wants/k3s-agent.service → /etc/systemd/system/k3s-agent.service.
+[INFO]  systemd: Starting k3s-agent
+
+systemctl status k3s-agent
+● k3s-agent.service - Lightweight Kubernetes
+     Loaded: loaded (/etc/systemd/system/k3s-agent.service; enabled; vendor preset: enabled)
+     Active: active (running) since Wed 2024-01-03 01:33:29 UTC; 17min ago
+       Docs: https://k3s.io
+   Main PID: 1496 (k3s-agent)
+      Tasks: 36
+     Memory: 101.1M
+        CPU: 26.611s
+     CGroup: /system.slice/k3s-agent.service
+             ├─1496 "/usr/local/bin/k3s agent"
+             ├─1516 "containerd " "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "&gt;
+             └─1891 /var/lib/rancher/k3s/data/786a7010d40ec795903b5283ea90e511368db829fd9b72d6a0d3540238d04a20/bin/containerd-shim-runc-v2 -namespace k8s.io -id &gt;
+
+Jan 03 01:33:30 usrv52 k3s[1496]: I0103 01:33:30.846429    1496 vxlan.go:141] VXLAN config: VNI=1 Port=0 GBP=false Learning=false DirectRouting=false
+Jan 03 01:33:30 usrv52 k3s[1496]: I0103 01:33:30.873658    1496 kube.go:510] Creating the node lease for IPv4. This is the n.Spec.PodCIDRs: [10.42.1.0/24]
+Jan 03 01:33:30 usrv52 k3s[1496]: time="2024-01-03T01:33:30Z" level=info msg="Wrote flannel subnet file to /run/flannel/subnet.env"
+Jan 03 01:33:30 usrv52 k3s[1496]: time="2024-01-03T01:33:30Z" level=info msg="Running flannel backend."
+Jan 03 01:33:30 usrv52 k3s[1496]: I0103 01:33:30.882067    1496 vxlan_network.go:65] watching for new subnet leases
+Jan 03 01:33:30 usrv52 k3s[1496]: I0103 01:33:30.882160    1496 subnet.go:159] Batch elem [0] is { lease.Event{Type:0, Lease:lease.Lease{EnableIPv4:true, EnableI&gt;
+Jan 03 01:33:30 usrv52 k3s[1496]: I0103 01:33:30.882359    1496 iptables.go:290] generated 3 rules
+Jan 03 01:33:30 usrv52 k3s[1496]: I0103 01:33:30.883124    1496 iptables.go:290] generated 7 rules
+Jan 03 01:33:30 usrv52 k3s[1496]: I0103 01:33:30.894542    1496 iptables.go:283] bootstrap done
+Jan 03 01:33:30 usrv52 k3s[1496]: I0103 01:33:30.906109    1496 iptables.go:283] bootstrap done
+
+netstat -lntup
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 127.0.0.1:10010         0.0.0.0:*               LISTEN      1516/containerd
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      717/sshd: /usr/sbin
+tcp        0      0 127.0.0.1:6444          0.0.0.0:*               LISTEN      1496/k3s agent
+tcp        0      0 127.0.0.53:53           0.0.0.0:*               LISTEN      648/systemd-resolve
+tcp        0      0 127.0.0.1:10256         0.0.0.0:*               LISTEN      1496/k3s agent
+tcp        0      0 127.0.0.1:10249         0.0.0.0:*               LISTEN      1496/k3s agent
+tcp        0      0 127.0.0.1:10248         0.0.0.0:*               LISTEN      1496/k3s agent
+tcp6       0      0 :::10250                :::*                    LISTEN      1496/k3s agent
+tcp6       0      0 :::22                   :::*                    LISTEN      717/sshd: /usr/sbin
+udp        0      0 127.0.0.53:53           0.0.0.0:*                           648/systemd-resolve
+udp        0      0 0.0.0.0:8472            0.0.0.0:*                           -
+</pre>
+
+<ul>
+<li>
+查看k3s server状态
+<pre class="brush:bash">
+# kubectl get nodes
+
+NAME     STATUS   ROLES                  AGE   VERSION
+usrv52   Ready    &lt;none&gt;                 14m   v1.28.4+k3s2
+usrv51   Ready    control-plane,master   30m   v1.28.4+k3s2
+
+# export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+# kubectl get pods --all-namespaces
+# kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get pods --all-namespaces
+
+NAMESPACE     NAME                                      READY   STATUS      RESTARTS   AGE
+kube-system   coredns-6799fbcd5-z5w4q                   1/1     Running     0          131m
+kube-system   local-path-provisioner-84db5d44d9-986j8   1/1     Running     0          131m
+kube-system   metrics-server-67c658944b-7fcpd           1/1     Running     0          131m
+kube-system   helm-install-traefik-crd-7t7cv            0/1     Completed   0          131m
+kube-system   helm-install-traefik-srlss                0/1     Completed   1          131m
+kube-system   svclb-traefik-b271c2ea-kfshj              2/2     Running     0          131m
+kube-system   traefik-f4564c4f4-gh6fk                   1/1     Running     0          131m
+kube-system   svclb-traefik-b271c2ea-bwt44              2/2     Running     0          116m
+
+# kubectl cluster-info
+
+Kubernetes control plane is running at https://127.0.0.1:6443
+CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+Metrics-server is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/https:metrics-server:https/proxy
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">k3s命令参数</h2>
+
+<pre class="brush:bash">
+k3s
+NAME:
+   k3s - Kubernetes, but small and simple
+
+USAGE:
+   k3s [global options] command [command options] [arguments...]
+
+VERSION:
+   v1.28.4+k3s2 (6ba6c1b6)
+
+COMMANDS:
+   server           Run management server # 配置、启动k3s server
+   agent            Run node agent        # 配置、启动k3s agent
+   kubectl          Run kubectl
+   # Container Runtime Interface (CRI)
+   # CRI兼容的容器运行时命令行接口，可用于检查和调试 Kubernetes 节点上的容器运行时和应用程序。
+   crictl           Run crictl
+   ctr              Run ctr # containerd CLI
+   check-config     Run config check
+   token            Manage bootstrap tokens
+   etcd-snapshot
+   secrets-encrypt  Control secrets encryption and keys rotation
+   certificate      Manage K3s certificates
+   completion       Install shell completion script
+   help, h          Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --debug                     (logging) Turn on debug logs [$K3S_DEBUG]
+   --data-dir value, -d value  (data) Folder to hold state (default: /var/lib/rancher/k3s or ${HOME}/.rancher/k3s if not root)
+   --help, -h                  show help
+   --version, -v               print the version
+</pre>
+
+<h3 id="toc_0.2.1">k3s server</h3>
+
+<ul>
+<li>
+<a href="k3s_server_help.html">k3s_server_help</a>
+
+</ul>
+
+<h3 id="toc_0.2.2">k3s agent</h3>
+
+<ul>
+<li>
+<a href="k3s_agent_help.html">k3s_agent_help</a>
+
+</ul>
+
+<h3 id="toc_0.2.3">kubectl</h3>
+
+<ul>
+<li>
+<a href="https://kubernetes.io/docs/reference/kubectl/">https://kubernetes.io/docs/reference/kubectl/</a>
+
+<li>
+<a href="https://kubernetes.io/zh-cn/docs/reference/kubectl/">https://kubernetes.io/zh-cn/docs/reference/kubectl/</a>
+
+</ul>
+
+<pre class="brush:bash">
+kubectl --help
+kubectl controls the Kubernetes cluster manager.
+
+ Find more information at: https://kubernetes.io/docs/reference/kubectl/
+
+Basic Commands (Beginner):
+  create          Create a resource from a file or from stdin
+  expose          Take a replication controller, service, deployment or pod and expose it as a new Kubernetes service
+  run             Run a particular image on the cluster
+  set             Set specific features on objects
+
+Basic Commands (Intermediate):
+  explain         Get documentation for a resource
+  get             Display one or many resources
+  edit            Edit a resource on the server
+  delete          Delete resources by file names, stdin, resources and names, or by resources and label selector
+
+Deploy Commands:
+  rollout         Manage the rollout of a resource
+  scale           Set a new size for a deployment, replica set, or replication controller
+  autoscale       Auto-scale a deployment, replica set, stateful set, or replication controller
+
+Cluster Management Commands:
+  certificate     Modify certificate resources
+  cluster-info    Display cluster information
+  top             Display resource (CPU/memory) usage
+  cordon          Mark node as unschedulable
+  uncordon        Mark node as schedulable
+  drain           Drain node in preparation for maintenance
+  taint           Update the taints on one or more nodes
+
+Troubleshooting and Debugging Commands:
+  describe        Show details of a specific resource or group of resources
+ source
+  annotate        Update the annotations on a resource
+  completion      Output shell completion code for the specified shell (bash, zsh, fish, or powershell)
+
+Other Commands:
+  api-resources   Print the supported API resources on the server
+  api-versions    Print the supported API versions on the server, in logs            Print the logs for a container in a pod
+  attach          Attach to a running container
+  exec            Execute a command in a container
+  port-forward    Forward one or more local ports to a pod
+  proxy           Run a proxy to the Kubernetes API server
+  cp              Copy files and directories to and from containers
+  auth            Inspect authorization
+  debug           Create debugging sessions for troubleshooting workloads and nodes
+  events          List events
+
+Advanced Commands:
+  diff            Diff the live version against a would-be applied version
+  apply           Apply a configuration to a resource by file name or stdin
+  patch           Update fields of a resource
+  replace         Replace a resource by file name or stdin
+  wait            Experimental: Wait for a specific condition on one or many resources
+  kustomize       Build a kustomization target from a directory or URL
+
+Settings Commands:
+  label           Update the labels on a re the form of "group/version"
+  config          Modify kubeconfig files
+  plugin          Provides utilities for interacting with plugins
+  version         Print the client and server version information
+
+Usage:
+  kubectl [flags] [options]
+
+Use "kubectl &lt;command&gt; --help" for more information about a given command.
+Use "kubectl options" for a list of global command-line options (applies to all commands).
+</pre>
+
+<ul>
+<li>
+Kubectl 常用命令大全: <a href="https://www.jianshu.com/p/07455dbfd6bb">https://www.jianshu.com/p/07455dbfd6bb</a>
+
+</ul>
+
+<pre class="brush:bash">
+kubectl cluster-info
+kubectl ComponentStatus # 集群检验信息，已在v1.19后废弃,更换为：
+kubectl get --raw='/readyz?verbose'
+kubectl get --raw='/livez?verbose'
+kubectl api-resources  # 列出所有资源类型
+
+# 查看服务
+kubectl get svc|services
+kubectl get svc|services -A
+
+kubectl get namespace
+kubectl get pods -A
+kubectl get pods -n kube-system
+kubectl get pods -A --field-selector=spec.nodeName=usrv52
+
+kubectl describe node # 查看pod在节点上的资源分配情况(request,limits)
+kubectl top node [nodename] # 查看节点/pod资源使用情况
+kubectl top pod             # 查看节点/pod资源使用情况
+
+# 进入命令空间下的容器
+kubectl exec -it -n defaults websrv /bin/sh
+# 拷贝文件
+kubectl cp -n defaults websrv:/var/www/index.html ~/
+kubectl cp ~/index.html -n defaults websrv:/var/www/
+</pre>
+
+<h3 id="toc_0.2.4">crictl</h3>
+
+<h3 id="toc_0.2.5">ctr</h3>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

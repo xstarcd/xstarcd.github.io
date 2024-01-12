@@ -18,12 +18,40 @@
 <h1>Ubuntu 22.04 Jammy</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">设置IP地址</a>
+<li><a href="#toc_0.1">systemd</a>
+<li><a href="#toc_0.2">设置IP地址</a>
+<li><a href="#toc_0.3">hostname</a>
+<li><a href="#toc_0.4">timezone</a>
 </ul>
 </ul>
 </div>
 
-<h2 id="toc_0.1">设置IP地址</h2>
+<ul>
+<li>
+祁祁不正经:《一篇搞懂》系列
+
+<ul>
+<li>
+《一篇搞懂》系列之三systemd: <a href="https://zhuanlan.zhihu.com/p/643259265">https://zhuanlan.zhihu.com/p/643259265</a>
+
+<li>
+《一篇搞懂》系列之一iptables: <a href="https://zhuanlan.zhihu.com/p/618848653">https://zhuanlan.zhihu.com/p/618848653</a>
+
+<li>
+《一篇搞懂》系列之二IPVS: <a href="https://zhuanlan.zhihu.com/p/627514565">https://zhuanlan.zhihu.com/p/627514565</a>
+
+<li>
+威力巨大的系统调用——ptrace: <a href="https://zhuanlan.zhihu.com/p/653385264">https://zhuanlan.zhihu.com/p/653385264</a>
+
+</ul>
+<li>
+Systemd 指令  —— 阮一峰:<a href="https://www.cnblogs.com/zwcry/p/9602756.html">https://www.cnblogs.com/zwcry/p/9602756.html</a>
+
+</ul>
+
+<h2 id="toc_0.1"><a href="systemd.html">systemd</a></h2>
+
+<h2 id="toc_0.2">设置IP地址</h2>
 
 <p>
 在 Ubuntu 服务器 22.04 中，网络由 netplan 程序控制，因此我们将使用 netplan 在 Ubuntu 服务器上配置静态 IP 地址。
@@ -64,7 +92,8 @@ network:
 </pre>
 <pre class="brush:bash">
 # 应用新配置
-sudo netplan apply
+sudo netplan try   # Try to apply a new netplan config to running system, with automatic rollback
+sudo netplan apply # Apply current netplan config to running system
 sudo netplan --debug apply
 
 # 查看IP地址、路由配置
@@ -85,6 +114,59 @@ ip link set eno3 up
 </pre>
 
 </ul>
+
+<h2 id="toc_0.3">hostname</h2>
+
+<p>
+在 Ubuntu 中，你可以使用hostnamectl命令编辑系统主机名以及相关设置。
+</p>
+
+<p>
+修改后，应修改/etc/hosts中127.0.0.1的主机名映射。
+</p>
+
+<pre class="brush:bash">
+hostnamectl status          # 查看hostname所有状态信息
+hostnamectl hostname        # 显示主机名
+hostnamectl hostname usrv51 # 设置主机名
+hostnamectl -h
+
+hostnamectl [OPTIONS...] COMMAND ...
+
+Query or change system hostname.
+
+Commands:
+  status                 Show current hostname settings
+  hostname [NAME]        Get/set system hostname
+  icon-name [NAME]       Get/set icon name for host
+  chassis [NAME]         Get/set chassis type for host
+  deployment [NAME]      Get/set deployment environment for host
+  location [NAME]        Get/set location for host
+
+Options:
+  -h --help              Show this help
+     --version           Show package version
+     --no-ask-password   Do not prompt for password
+  -H --host=[USER@]HOST  Operate on remote host
+  -M --machine=CONTAINER Operate on local container
+     --transient         Only set transient hostname # 由 kernel 维护的动态主机名。 在运行过程中，DHCP 或者 mDNS 服务器可以改变 transient 主机名。默认情况下，它和 static 主机名一模一样。
+     --static            Only set static hostname # 传统主机名。/etc/hostname
+     --pretty            Only set pretty hostname # 一个自由形态的 UTF8 主机名，/etc/machine-info
+     --json=pretty|short|off
+                         Generate JSON output
+
+See the hostnamectl(1) man page for details.
+
+</pre>
+
+<h2 id="toc_0.4">timezone</h2>
+
+<pre class="brush:bash">
+timedatectl -h             # 查看命令help
+timedatectl status         # 查看时间及时区
+timedatectl list-timezones # 列出可用时区
+sudo timedatectl set-timezone Asia/Shanghai # 设置时区为中国时区
+</pre>
 
 </div>
 <div id="footer">

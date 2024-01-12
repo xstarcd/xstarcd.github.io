@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>docker-swarm</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>docker-swarm</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">docker swarm架构了解</a>
+<li><a href="#toc_0.2">docker-swarm主机计划</a>
+<li><a href="#toc_0.3">安装docker</a>
+<li><a href="#toc_0.4">安装docker-swarm</a>
+<ul>
+<li><a href="#toc_0.4.1">manager节点初始化swarm</a>
+<li><a href="#toc_0.4.2">将node添加到swarm集群</a>
+</ul>
+<li><a href="#toc_0.5">在swarm中部署服务</a>
+<ul>
+<li><a href="#toc_0.5.1">service create</a>
+<li><a href="#toc_0.5.2">service scale</a>
+<li><a href="#toc_0.5.3">service rm</a>
+<li><a href="#toc_0.5.4">service update</a>
+</ul>
+<li><a href="#toc_0.6">swarm-manager高可用</a>
+<li><a href="#toc_0.7">swarm节点维护状态DRAIN</a>
+<li><a href="#toc_0.8">发布服务端口</a>
+<ul>
+<li><a href="#toc_0.8.1">swarm路由网格</a>
+<li><a href="#toc_0.8.2">示例redis</a>
+<li><a href="#toc_0.8.3">示例nginx</a>
+<li><a href="#toc_0.8.4">修改发布端口</a>
+<li><a href="#toc_0.8.5">指定TCP/UDP协议</a>
+<li><a href="#toc_0.8.6">host模式</a>
+<li><a href="#toc_0.8.7">外部负载均衡</a>
+<li><a href="#toc_0.8.8">自定义网络</a>
+<li><a href="#toc_0.8.9">dnsrr模式</a>
+</ul>
+<li><a href="#toc_0.9">compose方式</a>
+<ul>
+<li><a href="#toc_0.9.1">docker compose</a>
+<li><a href="#toc_0.9.2">docker stack</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+Docker 国内镜像:<a href="https://zhuanlan.zhihu.com/p/347643668">https://zhuanlan.zhihu.com/p/347643668</a>
+
+<li>
+Docker Swarm: 
+
+<ul>
+<li>
+Docker Swarm: <a href="https://www.runoob.com/docker/docker-swarm.html">https://www.runoob.com/docker/docker-swarm.html</a>
+
+<li>
+docker-swarm 教程：部署篇:<a href="https://zhuanlan.zhihu.com/p/646422781">https://zhuanlan.zhihu.com/p/646422781</a>
+
+<li>
+生产环境使用swarm注意事项:<a href="https://zhuanlan.zhihu.com/p/26794966">https://zhuanlan.zhihu.com/p/26794966</a>
+
+<li>
+『高级篇』docker之DockerSwarm的了解、部署（27/28）:
+
+<ul>
+<li>
+<a href="https://zhuanlan.zhihu.com/p/56485769">https://zhuanlan.zhihu.com/p/56485769</a>
+
+<li>
+<a href="https://zhuanlan.zhihu.com/p/56672372">https://zhuanlan.zhihu.com/p/56672372</a>
+
+</ul>
+<li>
+Docker Swarm 入门一篇文章就够了:<a href="https://www.jianshu.com/p/9eb9995884a5">https://www.jianshu.com/p/9eb9995884a5</a>
+
+</ul>
+<li>
+部署 docker 官方 registry 私有镜像仓库和镜像加速仓库: <a href="https://www.ioiox.com/archives/127.html">https://www.ioiox.com/archives/127.html</a>
+
+</ul>
+
+<h2 id="toc_0.1">docker swarm架构了解</h2>
+
+<ul>
+<li>
+Scheduler:
+
+<ul>
+<li>
+用户在创建服务的时候，选择最优的节点，选择最优节点的管理分为2个阶段:过滤和策略(Fiter、Strategy)
+
+<li>
+Fiter找出满足条件的节点，Constraints约束、Affinity亲和性、Dependency依赖、health健康、Ports端口过滤器。
+
+<li>
+Strategy选择出最优的节点，Binpack资源聚集策略、Spread资源均匀策略、Randdom随机策略。
+
+</ul>
+<li>
+Discovery:信息维护，比如Label Health。
+
+<li>
+Cluster:包含了Swarm每个节点的信息，调用容器的api、完成容器启动。
+
+</ul>
+
+<p>
+<img src=../img/docker/swarm-architecture.png alt="swarm architecture" width=800px>
+</p>
+
+
+<ul>
+<li>
+Swarm集群创建过程：
+
+<ul>
+<li>
+manager节点：通过init过程安装管理服务，并生成join-token、manager节点IP:Port信息。
+
+<li>
+node节点：安装docker服务，通过join过程加入集群。
+
+<li>
+docker client连接方式：
+
+<ul>
+<li>
+登录manager节点执行docker。
+
+<li>
+远程调用manager API。
+
+</ul>
+</ul>
+</ul>
+
+<p>
+<img src=../img/docker/swarm-init.png alt="swarm集群创建" width=800px>
+</p>
+
+<ul>
+<li>
+Ingress
+
+</ul>
+
+<p>
+建立外部8080到容器内部80的端口映射，访问任一Node节点的8080端口，再由VIP LB(虚拟IP的负载均衡)自动路由到Nginx的容器中处理。
+</p>
+
+<p>
+可以再通过External LB对8080端口进行外部负载均衡(如：LVS、API Gateway、Haproxy)。
+</p>
+
+<p>
+<img src=../img/docker/swarm-Ingress.png alt="swarm ingress" width=800px>
+</p>
+
+<ul>
+<li>
+Ingress+Link
+
+</ul>
+
+<p>
+基于容器内部网络互通和容器DNS，将tomcat服解析到对应的内部VIP进行负载均衡访问。link方式只在swarm内部可访问。
+</p>
+
+<p>
+<img src=../img/docker/swarm-Ingress-link.png alt="swarm ingress + link" width=800px>
+</p>
+
+<ul>
+<li>
+自定义网络
+
+</ul>
+
+<p>
+连接到同一网络的容器，都可以通过容器名互通，然后通过VIP LB方式进行负载均衡，不需要开启端口publish（仅限内部容器之间通信）。
+</p>
+
+<pre>
+#创建自定义网络
+docker network create --driver=overlay --attachable mynet
+#创建服务
+docker service create -p 80:80 --network=mynet --name nginx nginx
+</pre>
+
+<p>
+<img src=../img/docker/swarm-network.png alt="swarm network" width=800px>
+</p>
+
+<h2 id="toc_0.2">docker-swarm主机计划</h2>
+
+<table>
+<tr>
+<th>
+hostname
+</th>
+<th>
+IP
+</th>
+<th>
+comments
+</th>
+</tr>
+<tr>
+<td>
+swarm-manager
+</td>
+<td>
+192.168.31.40
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+swarm-node1
+</td>
+<td>
+192.168.31.41
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+swarm-node2
+</td>
+<td>
+192.168.31.42
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+</table>
+
+
+<h2 id="toc_0.3">安装docker</h2>
+
+<p>
+安装swarm之前，先在manager、node节点完成docker环境安装，见： <a href="Docker.html">Docker常用操作</a>
+</p>
+<ul>
+<li>
+IP地址、时区、hostname待基础设置。
+
+<li>
+安装docker。
+
+</ul>
+
+<h2 id="toc_0.4">安装docker-swarm</h2>
+
+<p>
+Docker Swarm 是 Docker 的集群管理工具。它将 Docker 主机池转变为单个虚拟 Docker 主机。 Docker Swarm 提供了标准的 Docker API，所有任何已经与 Docker 守护程序通信的工具都可以使用 Swarm 轻松地扩展到多个主机。
+</p>
+
+<p>
+swarm 集群由管理节点（manager）和工作节点（work node）构成。
+</p>
+<ul>
+<li>
+swarm mananger：负责整个集群的管理工作包括集群配置、服务管理等所有跟集群有关的工作。
+
+<li>
+work node：available node，主要负责运行相应的服务来执行任务（task）。
+
+</ul>
+
+<h3 id="toc_0.4.1">manager节点初始化swarm</h3>
+
+<p>
+在manager节点上执行docker swarm init命令进行初始化。
+</p>
+
+<pre class="brush:bash">
+# 初始化管理节点，记录输出的join --token信息，后面node节点用于加入集群
+sudo docker swarm init --advertise-addr 192.168.31.40
+</pre>
+<pre>
+Swarm initialized: current node (tonr5adn7buqjfqdx1kasmywy) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-0e77njbcxdi6r69gg4dsmp5su9okcqxia47gzogwcpfwkqexaa-20lhbjve4ajqz4472a3dmsjv4 192.168.31.40:2377
+
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+</pre>
+
+<pre class="brush:bash">
+# 查询join token信息：worker、manager节点
+docker swarm join-token worker
+docker swarm join-token manager
+
+docker info    # 查看集群当前状态，可以看到Node Address、Manager Addreses信息
+docker node ls # 查看节点状态
+</pre>
+
+<pre>
+docker node ls
+
+# 在把node添加到集群后，才会看到后面两个节点。
+# MANAGER STATUS列标识为leader的是管理节点，node1和node2此列为空是worker节点。
+
+ID                            HOSTNAME        STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+tonr5adn7buqjfqdx1kasmywy *   swarm-manager   Ready     Active         Leader           24.0.7
+w4kwyvrmrazlto391br2q6iee     swarm-node1     Ready     Active                          24.0.7
+2wwwkgepq5nz46tgiksbngwzo     swarm-node2     Ready     Active                          24.0.7
+</pre>
+
+<h3 id="toc_0.4.2">将node添加到swarm集群</h3>
+
+<p>
+在node节点执行docker swarm join-token命令加入集群(管理集群init完成时输出的参数)。
+</p>
+
+<p>
+如果忘记了命令参数，则可以在 manager 节点执行<code>docker swarm join-token worker</code>查看。
+</p>
+
+<pre class="brush:bash">
+sudo docker swarm join --token SWMTKN-1-0e77njbcxdi6r69gg4dsmp5su9okcqxia47gzogwcpfwkqexaa-20lhbjve4ajqz4472a3dmsjv4 192.168.31.40:2377
+</pre>
+
+<pre>
+This node joined a swarm as a worker.
+</pre>
+
+<p>
+添加后，在manager节点上运行<code>docker node ls</code>，就可以看到三个节点了。
+</p>
+
+<h2 id="toc_0.5">在swarm中部署服务</h2>
+
+<h3 id="toc_0.5.1">service create</h3>
+
+<p>
+服务管理、部署需要在manager上发起。
+</p>
+
+<p>
+用docker service create命令创建服务。
+</p>
+
+<pre class="brush:bash">
+sudo docker service create --replicas 1 --name helloworld alpine ping docker.com
+
+# --name: 服务名称helloworld
+# --replicas: 运行实例1个
+# 参数alpine ping docker.com，将服务定义为执行命令ping docker.com的Alpine Linux容器。
+</pre>
+
+<pre>
+renuslhb2y8i0c16tr03kqn1p
+overall progress: 1 out of 1 tasks
+1/1: running   [==================================================&gt;]
+verify: Service converged
+</pre>
+
+<p>
+查看服务：
+</p>
+<pre class="brush:bash">
+# 查看服务列表
+docker service ls
+
+ID             NAME         MODE         REPLICAS   IMAGE           PORTS
+renuslhb2y8i   helloworld   replicated   1/1        alpine:latest
+
+# 查看服务所在NODE
+docker service ps helloworld
+ID             NAME           IMAGE           NODE            DESIRED STATE   CURRENT STATE           ERROR     PORTS
+j2cerfrndt10   helloworld.1   alpine:latest   swarm-manager   Running         Running 7 minutes ago
+
+# 查看服务的详细信息
+docker service inspect --pretty renuslhb2y8i
+docker service inspect --pretty helloworld # 易于阅读格式输出
+docker service inspect helloworld          # Json格式输出
+
+ID:             renuslhb2y8i0c16tr03kqn1p
+Name:           helloworld
+Service Mode:   Replicated
+ Replicas:      1
+Placement:
+UpdateConfig:
+ Parallelism:   1
+ On failure:    pause
+ Monitoring Period: 5s
+ Max failure ratio: 0
+ Update order:      stop-first
+RollbackConfig:
+ Parallelism:   1
+ On failure:    pause
+ Monitoring Period: 5s
+ Max failure ratio: 0
+ Rollback order:    stop-first
+ContainerSpec:
+ Image:         alpine:latest@sha256:51b67269f354137895d43f3b3d810bfacd3945438e94dc5ac55fdac340352f48
+ Args:          ping docker.com
+ Init:          false
+Resources:
+Endpoint Mode:  vip
+</pre>
+
+<ul>
+<li>
+docker容器操作
+<pre class="brush:bash">
+# 在对应NODE节点，用docker ps查看服务信息
+docker ps
+CONTAINER ID   IMAGE           COMMAND             CREATED         STATUS         PORTS     NAMES
+356dc496222f   alpine:latest   "ping docker.com"   8 minutes ago   Up 8 minutes             helloworld.1.j2cerfrndt104opoip82ml7ww
+# 进入容器、查看状态、查看日志
+docker exec -it 356dc496222f /bin/sh
+docker attach 356dc496222f
+docker stats 356dc496222f
+docker logs 356dc496222f
+docker logs --since="2024-01-11" --tail=10 helloworld.1.j2cerfrndt104opoip82ml7ww
+</pre>
+
+</ul>
+
+<h3 id="toc_0.5.2">service scale</h3>
+
+<pre class="brush:bash">
+docker service scale helloworld=2
+</pre>
+
+<pre>
+helloworld scaled to 2
+overall progress: 2 out of 2 tasks
+1/2: running   [==================================================&gt;]
+2/2: running   [==================================================&gt;]
+verify: Service converged
+
+docker service ls
+ID             NAME         MODE         REPLICAS   IMAGE           PORTS
+renuslhb2y8i   helloworld   replicated   2/2        alpine:latest
+
+docker service ps helloworld
+ID             NAME           IMAGE           NODE            DESIRED STATE   CURRENT STATE                ERROR     PORTS
+j2cerfrndt10   helloworld.1   alpine:latest   swarm-manager   Running         Running 25 minutes ago
+yzkwbznot2ld   helloworld.2   alpine:latest   swarm-node1     Running         Running about a minute ago
+</pre>
+
+<h3 id="toc_0.5.3">service rm</h3>
+
+<pre class="brush:bash">
+docker service rm helloworld
+</pre>
+
+<h3 id="toc_0.5.4">service update</h3>
+
+<ul>
+<li>
+部署redis服务
+<pre class="brush:bash">
+docker service create --replicas 3 --name myredis --update-delay 10s redis:6.0-alpine
+
+# --replicas 3，部署服务的数量
+# --update-delay 10s，以10秒的更新延迟配置swarm，时间格式支持h、m、s，如：5m10s表示5分钟10秒
+# --update-parllelism，更新时并行数量，默认一次只更新1个
+# --name myredis，服务名称myredis
+# redis:6.0-alpine，指定redis images版本
+</pre>
+
+</ul>
+
+<pre>
+overall progress: 3 out of 3 tasks
+1/3: running   [==================================================&gt;]
+2/3: running   [==================================================&gt;]
+3/3: running   [==================================================&gt;]
+verify: Service converged
+
+docker service ls
+ID             NAME      MODE         REPLICAS   IMAGE              PORTS
+rvch2nxjqygi   myredis   replicated   3/3        redis:6.0-alpine
+
+docker service ps myredis
+ID             NAME        IMAGE              NODE            DESIRED STATE   CURRENT STATE           ERROR     PORTS
+geok9gvw9rnf   myredis.1   redis:6.0-alpine   swarm-node1     Running         Running 2 minutes ago
+iy7aly9fwsko   myredis.2   redis:6.0-alpine   swarm-node2     Running         Running 2 minutes ago
+wwqtmfnq51gm   myredis.3   redis:6.0-alpine   swarm-manager   Running         Running 2 minutes ago
+
+docker service inspect --pretty myredis
+
+ID:             rvch2nxjqygim9ecpvtwotdzs
+Name:           myredis
+Service Mode:   Replicated
+ Replicas:      3
+Placement:
+UpdateConfig:
+ Parallelism:   1
+ Delay:         10s
+ On failure:    pause
+ Monitoring Period: 5s
+ Max failure ratio: 0
+ Update order:      stop-first
+RollbackConfig:
+ Parallelism:   1
+ On failure:    pause
+ Monitoring Period: 5s
+ Max failure ratio: 0
+ Rollback order:    stop-first
+ContainerSpec:
+ Image:         redis:6.0-alpine@sha256:3f62df0d21946090646f7eba8d8762139444f69e3cec5e345188ad2ecb62827f
+ Init:          false
+Resources:
+Endpoint Mode:  vip
+</pre>
+
+<ul>
+<li>
+滚动更新redis版本
+
+</ul>
+
+<pre class="brush:bash">
+docker service update --image redis:6.0.20-alpine myredis
+</pre>
+
+<pre>
+myredis
+overall progress: 3 out of 3 tasks
+1/3: running   [==================================================&gt;]
+2/3: running   [==================================================&gt;]
+3/3: running   [==================================================&gt;]
+verify: Service converged
+
+更新调度过程：
+1.停止第一个任务。
+2.为停止的任务安排更新。
+3.启动更新任务的容器。
+4.根据更新任务返回状态：
+	a.任务返回RUNNING，等待指定的延迟期，然后开始下一个任务。
+	b.任务返回FAILED，暂停更新。
+
+docker service ls
+ID             NAME      MODE         REPLICAS   IMAGE                 PORTS
+rvch2nxjqygi   myredis   replicated   3/3        redis:6.0.20-alpine
+
+docker service ps myredis
+ID             NAME            IMAGE                 NODE            DESIRED STATE   CURRENT STATE            ERROR     PORTS
+p8ar47czvamy   myredis.1       redis:6.0.20-alpine   swarm-node1     Running         Running 2 minutes ago
+geok9gvw9rnf    \_ myredis.1   redis:6.0-alpine      swarm-node1     Shutdown        Shutdown 2 minutes ago
+0cpobbgygqio   myredis.2       redis:6.0.20-alpine   swarm-node2     Running         Running 2 minutes ago
+iy7aly9fwsko    \_ myredis.2   redis:6.0-alpine      swarm-node2     Shutdown        Shutdown 2 minutes ago
+md0byaxu9pic   myredis.3       redis:6.0.20-alpine   swarm-manager   Running         Running 2 minutes ago
+wwqtmfnq51gm    \_ myredis.3   redis:6.0-alpine      swarm-manager   Shutdown        Shutdown 2 minutes ago
+</pre>
+
+<h2 id="toc_0.6">swarm-manager高可用</h2>
+
+<p>
+将swarm-node1、node2升有为manager，Manager status变成了Reachable。
+当leader故障时，通过选取可以产生一个新的leader。
+</p>
+
+<pre>
+docker node promote NODE [NODE...]
+docker node update --role manager swarm-node2
+Promote one or more nodes to manager in the swarm
+
+docker node demote NODE [NODE...]
+docker node update --role workerr swarm-node2
+Demote one or more nodes from manager in the swarm
+</pre>
+
+<pre class="brush:bash">
+docker node promote swarm-node1 swarm-node2 # 升级
+docker node demote swarm-node1              # 降级  
+</pre>
+<pre>
+docker node ls
+ID                            HOSTNAME        STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+tonr5adn7buqjfqdx1kasmywy *   swarm-manager   Ready     Active         Leader           24.0.7
+w4kwyvrmrazlto391br2q6iee     swarm-node1     Ready     Active         Reachable        24.0.7
+2wwwkgepq5nz46tgiksbngwzo     swarm-node2     Ready     Active         Reachable        24.0.7
+</pre>
+
+<h2 id="toc_0.7">swarm节点维护状态DRAIN</h2>
+
+<p>
+维护节点时，需要将节点可用性设置为<code>DRAIN</code>状态，Master会阻止此类节点接收新任务、停止节点上的任务，在具有<code>ACTIVE</code>状态的节点启动任务。
+</p>
+
+<ul>
+<li>
+查看node和service现状
+<pre>
+docker node ls
+ID                            HOSTNAME        STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+tonr5adn7buqjfqdx1kasmywy *   swarm-manager   Ready     Active         Leader           24.0.7
+w4kwyvrmrazlto391br2q6iee     swarm-node1     Ready     Active                          24.0.7
+2wwwkgepq5nz46tgiksbngwzo     swarm-node2     Ready     Active                          24.0.7
+
+docker service ps myredis
+ID             NAME            IMAGE                 NODE            DESIRED STATE   CURRENT STATE             ERROR     PORTS
+p8ar47czvamy   myredis.1       redis:6.0.20-alpine   swarm-node1     Running         Running 38 minutes ago
+geok9gvw9rnf    \_ myredis.1   redis:6.0-alpine      swarm-node1     Shutdown        Shutdown 38 minutes ago
+0cpobbgygqio   myredis.2       redis:6.0.20-alpine   swarm-node2     Running         Running 39 minutes ago
+iy7aly9fwsko    \_ myredis.2   redis:6.0-alpine      swarm-node2     Shutdown        Shutdown 39 minutes ago
+md0byaxu9pic   myredis.3       redis:6.0.20-alpine   swarm-manager   Running         Running 38 minutes ago
+wwqtmfnq51gm    \_ myredis.3   redis:6.0-alpine      swarm-manager   Shutdown        Shutdown 38 minutes ago
+</pre>
+
+<li>
+将node2可用性设置为drain，再次查看状态
+<pre class="brush:bash">
+docker node update --availability drain swarm-node2
+docker node ls
+docker service ps myredis
+</pre>
+<pre>
+ID                            HOSTNAME        STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+tonr5adn7buqjfqdx1kasmywy *   swarm-manager   Ready     Active         Leader           24.0.7
+w4kwyvrmrazlto391br2q6iee     swarm-node1     Ready     Active                          24.0.7
+2wwwkgepq5nz46tgiksbngwzo     swarm-node2     Ready     Drain                           24.0.7
+
+ID             NAME            IMAGE                 NODE            DESIRED STATE   CURRENT STATE             ERROR     PORTS
+p8ar47czvamy   myredis.1       redis:6.0.20-alpine   swarm-node1     Running         Running 42 minutes ago
+geok9gvw9rnf    \_ myredis.1   redis:6.0-alpine      swarm-node1     Shutdown        Shutdown 42 minutes ago
+1d7kebxldb29   myredis.2       redis:6.0.20-alpine   swarm-manager   Running         Running 46 seconds ago
+0cpobbgygqio    \_ myredis.2   redis:6.0.20-alpine   swarm-node2     Shutdown        Shutdown 46 seconds ago
+iy7aly9fwsko    \_ myredis.2   redis:6.0-alpine      swarm-node2     Shutdown        Shutdown 42 minutes ago
+md0byaxu9pic   myredis.3       redis:6.0.20-alpine   swarm-manager   Running         Running 42 minutes ago
+wwqtmfnq51gm    \_ myredis.3   redis:6.0-alpine      swarm-manager   Shutdown        Shutdown 42 minutes ago
+</pre>
+
+<li>
+启动节点可用性
+<pre class="brush:bash">
+docker node update --availability active swarm-node2
+</pre>
+
+</ul>
+
+<h2 id="toc_0.8">发布服务端口</h2>
+
+<h3 id="toc_0.8.1">swarm路由网格</h3>
+
+<p>
+Docker Engine集群模式可以轻松发布服务端口，以使其可用于集群之外的资源。
+</p>
+
+<p>
+所有节点都参与入口路由网格。路由网格使群中的每个节点能够接受群中运行的任何服务在已发布端口上的连接，即使节点上没有运行的任务。
+</p>
+
+<p>
+路由网格将所有传入的请求路由到可用节点上的已发布端口到活动容器。
+</p>
+
+<p>
+要在集群中使用网格，在启用群模式之前，我们需要在群节点之间打开以下端口：
+</p>
+<pre>
+Port 7946 TCP/UDP for container network discovery.容器网络自动发现
+Port 4789 UDP (configurable) for the container ingress network.容器ingress网络
+</pre>
+<p>
+在swarm中建立网络时，应特别小心。
+</p>
+
+<p>
+我们还必须在集群的节点和任何需要访问端口的外部资源（如外部负载平衡器）之间打开已发布的端口。
+</p>
+
+<h3 id="toc_0.8.2">示例redis</h3>
+
+<pre class="brush:bash">
+docker service create \
+--replicas 3 \
+--name myredis \
+--publish published=63790,target=6379 \
+--update-delay 5s \
+redis:6.0.20-alpine
+
+# --publish published=63790,target=6379
+# published=63790，&lt;PUBLISHED-PORT&gt;，swarm绑定的外部服务端口，如果不指定，则每个任务都会绑定个随机的高编号端口
+# target=6379，&lt;CONTAINER-PORT&gt;容器内的服务侦听端口
+</pre>
+
+<pre>
+image redis:6.0.20-alpine could not be accessed on a registry to record its digest. 
+Each node will access redis:6.0.20-alpine independently,
+possibly leading to different nodes running different versions of the image.
+创建service时未指定registry地址（这样主节点也可以创建成功，这因为主节点本地存在该镜像），
+但是会导致子节点获取的镜像时也使用本地缓存，也就有可能导致使用的镜像不一致，或者获取不到image。
+指定registry地址可避免该问题。
+
+qf0dl5oyujzgqexk8j673slgr
+overall progress: 3 out of 3 tasks
+1/3: running   [==================================================&gt;]
+2/3: running   [==================================================&gt;]
+3/3: running   [==================================================&gt;]
+verify: Service converged
+
+# service ls中可以看到PORTS信息:*:63790-&gt;6379/tcp:
+docker service ls
+ID             NAME      MODE         REPLICAS   IMAGE                 PORTS
+qf0dl5oyujzg   myredis   replicated   3/3        redis:6.0.20-alpine   *:63790-&gt;6379/tcp
+
+# 节点netstat中也可以看到63790端口绑定到了dockerd服务上：
+netstat -lntup|grep -E 'PID|6379'
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp6       0      0 :::63790                :::*                    LISTEN      746/dockerd
+
+# telnet任一节点上的对应端口，可正常连接、交互：
+telnet 192.168.31.42 63790
+Trying 192.168.31.42...
+Connected to 192.168.31.42.
+Escape character is '^]'.
+GET /
+$-1
+quit
++OK
+Connection closed by foreign host.
+</pre>
+
+<h3 id="toc_0.8.3">示例nginx</h3>
+
+<p>
+将nginx容器中的端口80发布到群中任何节点的端口8080。当访问任何节点的8080端口时，docker会将请求路由到活动的容器。
+</p>
+<pre class="brush:bash">
+docker service create \
+  --name mynginx \
+  --publish published=8080,target=80 \
+  --replicas 2 \
+  nginx
+</pre>
+<p>
+部署后，我们用 <a href="http://192.168.31.42:8080/">http://192.168.31.42:8080/</a> 可以访问到nginx服务。
+</p>
+
+<h3 id="toc_0.8.4">修改发布端口</h3>
+
+<p>
+同样对于已经部署的 service，我们也可以重新给他发布端口。
+</p>
+
+<p>
+您可以使用docker service inspect来查看服务的已发布端口。
+</p>
+
+<pre class="brush:bash">
+# update发部端口设置：
+docker service update \
+  --publish-add published=&lt;PUBLISHED-PORT&gt;,target=&lt;CONTAINER-PORT&gt; \
+  &lt;SERVICE&gt;
+
+# 查看已发布的端口信息：
+docker service inspect --format="{{json .Endpoint.Spec.Ports}}" mynginx
+
+[{"Protocol":"tcp","TargetPort":80,"PublishedPort":8080}]
+</pre>
+
+<h3 id="toc_0.8.5">指定TCP/UDP协议</h3>
+
+<p>
+发布端口时不指定协议，默认为TCP端口。
+</p>
+
+<pre class="brush:bash">
+# 未指定，默认为TCP，长语法、短语法示例
+docker service create --name dns-cache --publish published=53,target=53 dns-cache
+docker service create --name dns-cache -p 53:53 dns-cache
+
+# 指定TCP和UDP
+docker service create --name dns-cache \
+  --publish published=53,target=53 \
+  --publish published=53,target=53,protocol=udp \
+  dns-cache
+
+docker service create --name dns-cache \
+  -p 53:53 \
+  -p 53:53/udp \
+  dns-cache
+</pre>
+
+<h3 id="toc_0.8.6">host模式</h3>
+
+<p>
+省略mode参数、或mode=ingress都会使用路由网格。
+</p>
+
+<p>
+<strong>如果我们希望访问给定节点上的绑定端口时，总是访问该节点上运行的服务实例，则需要使用长--publish方式，设置mode=host模式来绕过路由。</strong>
+</p>
+
+<p>
+这种情况下需要注意：
+</p>
+
+<ul>
+<li>
+如果访问未运行服务任务的节点，有可能无法连接，或者访问到了一个完全不同的服务。
+
+<li>
+如果希望在每个节点上运行多个服务任务（如：当您有5个节点但运行10个副本时），则无法指定静态目标端口。要么允许Docker分配一个随机的高编号端口（通过关闭published端口），要么通过使用全局服务而不是复制服务，或使用放置约束，确保服务仅在给定节点上运行。
+
+</ul>
+
+<pre class="brush:bash">
+docker service create --name dns-cache \
+  --publish published=53,target=53,protocol=udp,mode=host \
+  --mode global \
+  dns-cache
+</pre>
+
+<h3 id="toc_0.8.7">外部负载均衡</h3>
+
+<p>
+可以为集群服务配置外部负载平衡器，要么与路由网格结合使用，要么根本不使用路由网格。
+</p>
+
+<p>
+配置外部负载均衡器将请求路由到集群服务。例如，可以配置HAProxy来均衡对发布到端口8080的nginx服务的请求。
+</p>
+
+<p>
+<img src=../img/docker/swarm-haproxy.png width=800px alt="带有外部负载均衡器图像的入口">
+</p>
+
+<ul>
+<li>
+/etc/haproxy/haproxy.cfg
+<pre class="brush:bash">
+global
+        log /dev/log    local0
+        log /dev/log    local1 notice
+...snip...
+
+# Configure HAProxy to listen on port 80
+frontend http_front
+   bind *:80
+   stats uri /haproxy?stats
+   default_backend http_back
+
+# Configure HAProxy to route requests to swarm nodes on port 8080
+backend http_back
+   balance roundrobin
+   server master 172.16.95.137:8080 check
+   server node2 172.16.95.138:8080 check
+   server node3 172.16.95.139:8080 check
+</pre>
+
+</ul>
+
+<h3 id="toc_0.8.8">自定义网络</h3>
+
+<p>
+默认的网络Ingress中，容器之间、同一服务的不同实例之间网络无法互通?
+</p>
+
+<p>
+自定义的overlay网络中，swarm为每个service都创建一个dnsadress，网络可以互通。
+</p>
+
+<p>
+docker网络--多机通信--4--ingress笔记:<a href="https://blog.csdn.net/weixin_43501172/article/details/123819075">https://blog.csdn.net/weixin_43501172/article/details/123819075</a>
+</p>
+
+<pre class="brush:bash">
+# 创建网络
+docker network create -d overlay mytest-overlay
+docker network ls
+
+# 创建指定网络的service
+docker service create --network mytest-overlay --name testnginx -p 8081:80 nginx
+docker service create --network mytest-overlay --name testalpine alpine ping www.baidu.com
+# 创建默认网络的service
+docker service create --name testalpine2 alpine ping www.baidu.com
+</pre>
+
+<pre>
+docker network ls
+NETWORK ID     NAME              DRIVER    SCOPE
+5e24d2f32213   bridge            bridge    local
+c7c7164df6a6   docker_gwbridge   bridge    local
+edc2b127d60d   host              host      local
+0xmdmgmcwdr4   ingress           overlay   swarm #默认的网络
+u1txwklso3lu   mytest-overlay    overlay   swarm #新建的网络
+cc14e216cbdb   none              null      local
+
+docker service ls
+ID             NAME          MODE         REPLICAS   IMAGE                 PORTS
+a8fcefi6ybi5   mynginx       replicated   2/2        nginx:latest          *:8080-&gt;80/tcp
+qf0dl5oyujzg   myredis       replicated   3/3        redis:6.0.20-alpine   *:63790-&gt;6379/tcp
+
+lzal5dqms1xh   testalpine2   replicated   1/1        alpine:latest
+
+wdanrvsl9y9b   testalpine    replicated   1/1        alpine:latest
+qtdlb7658k2d   testnginx     replicated   1/1        nginx:latest          *:8081-&gt;80/tcp
+
+docker service ps testalpine testalpine2
+ID             NAME            IMAGE           NODE            DESIRED STATE   CURRENT STATE            ERROR     PORTS
+j5iruwdqn6s1   testalpine2.1   alpine:latest   swarm-node1     Running         Running 2 minutes ago
+qgv09gh8cvy5   testalpine.1    alpine:latest   swarm-manager   Running         Running 23 minutes ago
+
+# 查看网络接入信息
+docker network inspect mytest-overlay
+</pre>
+
+<ul>
+<li>
+访问mynginx、testnginx，都可以正常访问：
+
+<ul>
+<li>
+<a href="http://192.168.31.41:8080/">http://192.168.31.41:8080/</a>
+
+<li>
+<a href="http://192.168.31.41:8081/">http://192.168.31.41:8081/</a>
+
+</ul>
+</ul>
+
+<p>
+查看testalpine、testalpine2服务所在节点，在对应节点上进入容器主机：
+</p>
+
+<ul>
+<li>
+testalpine:连接自建网络的主机可以通过名称互通，其它无法互通
+<pre class="brush:bash">
+docker ps
+#CONTAINER ID   IMAGE                 COMMAND                  CREATED         STATUS         PORTS      NAMES
+#9f7476dd9cc2   alpine:latest         "ping www.baidu.com"     4 minutes ago   Up 4 minutes              testalpine.1.qgv09gh8cvy5gingedo84wybl
+
+docker exec -it 9f7476dd9cc2 sh
+
+# ping testnginx，网络可达
+/ # ping testnginx
+PING testnginx (10.0.1.2): 56 data bytes
+64 bytes from 10.0.1.2: seq=0 ttl=64 time=0.107 ms
+64 bytes from 10.0.1.2: seq=1 ttl=64 time=0.216 ms
+
+# ping mynginx，无法解析名称(不在同一个网络中)
+/ # ping mynginx
+ping: bad address 'mynginx'
+</pre>
+
+</ul>
+
+<ul>
+<li>
+testalpine2:只能ping通自己的网关IP
+<pre class="brush:bash">
+docker exec -it c35b34ada16d sh
+
+/ # ping testnginx
+ping: bad address 'testnginx'
+/ # ping mynginx
+ping: bad address 'mynginx'
+/ # ping 10.0.0.8
+PING 10.0.0.8 (10.0.0.8): 56 data bytes
+^C
+--- 10.0.0.8 ping statistics ---
+13 packets transmitted, 0 packets received, 100% packet loss
+
+/ # ping 172.17.0.1
+PING 172.17.0.1 (172.17.0.1): 56 data bytes
+64 bytes from 172.17.0.1: seq=0 ttl=64 time=0.066 ms
+^C
+--- 172.17.0.1 ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.066/0.138/0.211 ms
+/ # ping 172.17.0.2
+PING 172.17.0.2 (172.17.0.2): 56 data bytes
+64 bytes from 172.17.0.2: seq=0 ttl=64 time=0.055 ms
+</pre>
+
+</ul>
+
+<ul>
+<li>
+将testalpine2扩展为2个实例
+<pre>
+docker service scale testalpine2=2
+
+docker service ps testalpine2
+ID             NAME            IMAGE           NODE          DESIRED STATE   CURRENT STATE                ERROR     PORTS
+j5iruwdqn6s1   testalpine2.1   alpine:latest   swarm-node1   Running         Running 15 minutes ago
+rnvfmjqbkqiw   testalpine2.2   alpine:latest   swarm-node2   Running         Running about a minute ago
+
+docker ps
+CONTAINER ID   IMAGE                 COMMAND                  CREATED          STATUS          PORTS      NAMES
+9d2c30514500   alpine:latest         "ping www.baidu.com"     3 minutes ago    Up 3 minutes               testalpine2.2.rnvfmjqbkqiwks81lp4d7a5qb
+
+docker exec -it 9d2c30514500 sh
+ifconfig查看网络，发现ip地址也是172.17.0.2，与另一实例IP相同。
+</pre>
+
+</ul>
+
+<ul>
+<li>
+将testalpine2加入mytest-overlay，再测试网络可达。
+<pre>
+docker service update --network-add mytest-overlay testalpine2
+
+update时容器重新启动，增加为双网口，IP地址重新分配。
+docker service ps testalpine2
+ID             NAME                IMAGE           NODE          DESIRED STATE   CURRENT STATE            ERROR     PORTS
+wge1eqirgw9e   testalpine2.1       alpine:latest   swarm-node1   Running         Running 4 minutes ago
+j5iruwdqn6s1    \_ testalpine2.1   alpine:latest   swarm-node1   Shutdown        Shutdown 4 minutes ago
+xvfe5o1mbsmx   testalpine2.2       alpine:latest   swarm-node2   Running         Running 3 minutes ago
+rnvfmjqbkqiw    \_ testalpine2.2   alpine:latest   swarm-node2   Shutdown        Shutdown 3 minutes ago
+
+docker exec -it 50578cc4c63c sh
+/ # ping testalpine
+PING testalpine (10.0.1.5): 56 data bytes
+64 bytes from 10.0.1.5: seq=0 ttl=64 time=0.174 ms
+^C
+
+/ # ping testalpine2
+PING testalpine2 (10.0.1.8): 56 data bytes
+64 bytes from 10.0.1.8: seq=0 ttl=64 time=0.202 ms
+^C
+
+/ # ping testnginx
+PING testnginx (10.0.1.2): 56 data bytes
+64 bytes from 10.0.1.2: seq=1 ttl=64 time=0.218 ms
+^C
+
+/ # ifconfig
+eth0      Link encap:Ethernet  HWaddr 02:42:0A:00:01:09
+          inet addr:10.0.1.9  Bcast:10.0.1.255  Mask:255.255.255.0
+          UP BROADCAST RUNNING MULTICAST  MTU:1450  Metric:1
+          RX packets:9 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:9 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:658 (658.0 B)  TX bytes:658 (658.0 B)
+
+eth1      Link encap:Ethernet  HWaddr 02:42:AC:12:00:05
+          inet addr:172.18.0.5  Bcast:172.18.255.255  Mask:255.255.0.0
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:178 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:167 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:16672 (16.2 KiB)  TX bytes:15806 (15.4 KiB)
+
+lo        Link encap:Local Loopback
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          UP LOOPBACK RUNNING  MTU:65536  Metric:1
+          RX packets:16 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:16 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000
+          RX bytes:1128 (1.1 KiB)  TX bytes:1128 (1.1 KiB)
+</pre>
+
+</ul>
+
+<h3 id="toc_0.8.9">dnsrr模式</h3>
+
+<p>
+endpoint-mode有两种模式：VIP、dnsrr。
+</p>
+
+<p>
+默认为VIP模式，通过端口映射方式被外部访问。
+</p>
+
+<p>
+dnsrr方式与端口发布冲突，不能发布端口、服务无法直接通过端口被外部访问，只能通过名称访问。如果不加入overlay网络它就是独立的。
+</p>
+
+<p>
+若需要被访问，可以对这个service增加overlay网络。
+</p>
+
+<pre>
+docker service create --name nginx-b --endpoint-mode dnsrr -p  8090:80 nginx
+
+docker service updata --network-add mytest-overlay nginx-b
+</pre>
+
+<h2 id="toc_0.9">compose方式</h2>
+
+<h3 id="toc_0.9.1">docker compose</h3>
+
+<ul>
+<li>
+docker-compose安装Nginx: <a href="https://zhuanlan.zhihu.com/p/628118485">https://zhuanlan.zhihu.com/p/628118485</a>
+
+<li>
+安装docker-compose:<code>apt install docker-compose</code>
+
+<li>
+在主机上创建nginx_compose、logs、html目录
+<pre class="brush:bash">
+mkdir -p nginx_compose/logs nginx_compose/html
+
+nginx_compose/
+├── docker-compose.yml
+├── html
+│  └── index.html
+├── logs
+│  ├── access.log
+│  └── error.log
+└── nginx.conf
+</pre>
+
+<li>
+docker-compose.yml
+<pre class="brush:bash">
+version: '3'
+services:
+  mynginx: # 定义一个名为mynginx的服务
+    image: nginx # 使用官方latest版本镜像
+    ports:
+      - "8080:80" # 将容器80端口映射到主机8080端口
+    volumes: # 挂载配置文件、日志目录和html目录
+      - "./nginx.conf:/etc/nginx/nginx.conf"
+      - "./logs:/var/log/nginx"
+      - "./html:/usr/share/nginx/html"
+    restart: always # 重启策略
+volumes:
+  data:
+</pre>
+
+<li>
+nginx.conf
+<pre class="brush:bash">
+worker_processes  1;
+events {
+    worker_connections  1024;
+}
+http {
+    include       /etc/nginx/mime.types;
+    server {
+      listen       80;
+      server_name  localhost;
+      location / {
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+      }
+    }
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+}
+</pre>
+
+<li>
+进入nginx_compose目录，创建并启动容器、查看状态、删除服务
+<pre class="brush:bash">
+# 创建并启动容器
+docker-compose up -d
+# 修改配置文件后，重启容器
+docker-compose up -d --force-recreate
+
+# 检查容器状态
+docker-compose ps
+
+         Name                        Command               State                  Ports
+-------------------------------------------------------------------------------------------------------
+nginx_compose_mynginx_1   /docker-entrypoint.sh ngin ...   Up      0.0.0.0:8080-&gt;80/tcp,:::8080-&gt;80/tcp
+
+# nginx reload
+docker exec &lt;容器id&gt; nginx -s reload
+docker exec &lt;容器id&gt; service nginx reload
+
+# 停止、启动容器
+docker-compose stop|start
+
+# 删除服务
+docker-compose rm
+</pre>
+
+</ul>
+
+<h3 id="toc_0.9.2">docker stack</h3>
+
+<p>
+单机模式下，我们可以使用 Docker Compose 来编排多个服务。
+</p>
+
+<p>
+Docker Swarm 通过 Docker Stack，只需对已有的 docker-compose.yml 配置文件稍加改造就可以完成 Docker 集群环境下的多服务编排。
+</p>
+
+<ul>
+<li>
+myservice-compose.yml
+<pre class="brush:bash">
+version: "3.4"
+services:
+  alpine:
+    image: alpine # 镜像名称
+    command: # 命令
+      - "ping"
+      - "www.baidu.com"
+    networks:
+      - "my-overlay" # 指定网络
+    deploy:
+      replicas: 1 # 负载/实例数量
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+    #depends_on: # 会阻塞nginx服务启动？
+    #  - nginx
+  nginx:
+    image: nginx
+    networks:
+      - "my-overlay"
+    ports:
+      - "8081:80" # 端口映射
+    deploy:
+      replicas: 1 # 负载/实例数量
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+networks:
+  my-overlay: # 网络需先创建好
+    external: true 
+</pre>
+
+</ul>
+
+<pre>
+docker stack deploy [OPTIONS] STACK
+
+Deploy a new stack or update an existing stack
+
+  -c, --compose-file 指定compose文件路径，"-"从stdin读取
+      --prune 修剪不再被引用的服务
+      --resolve-image string 查询resistry服务解析image，always|changed|never(default "always")
+      --with-registry-auth 登录registry参数
+</pre>
+
+<pre class="brush:bash">
+docker network create -d overlay my-overlay
+
+docker stack deploy -c myservice-compose.yml myservice
+</pre>
+
+<pre>
+docker stack deploy -c myservice-compose.yml myservice
+Creating service myservice_nginx
+Creating service myservice_alpine
+
+docker stack ls
+NAME        SERVICES
+myservice   2
+
+docker stack ps myservice
+ID             NAME                 IMAGE           NODE            DESIRED STATE   CURRENT STATE                ERROR     PORTS
+qig31fucyoj4   myservice_alpine.1   alpine:latest   swarm-manager   Running         Running about a minute ago
+pwj4wikgw70i   myservice_nginx.1    nginx:latest    swarm-node2     Running         Running 59 seconds ago
+
+docker stack services myservice
+ID             NAME               MODE         REPLICAS   IMAGE           PORTS
+w55p2eetzq7d   myservice_alpine   replicated   1/1        alpine:latest
+k7g89zs8k68a   myservice_nginx    replicated   1/1        nginx:latest    *:8081-&gt;80/tcp
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
