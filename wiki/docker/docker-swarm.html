@@ -47,11 +47,7 @@
 <li><a href="#toc_0.8.8">自定义网络</a>
 <li><a href="#toc_0.8.9">dnsrr模式</a>
 </ul>
-<li><a href="#toc_0.9">compose方式</a>
-<ul>
-<li><a href="#toc_0.9.1">docker compose</a>
-<li><a href="#toc_0.9.2">docker stack</a>
-</ul>
+<li><a href="#toc_0.9">docker stack</a>
 </ul>
 </ul>
 </div>
@@ -1098,101 +1094,7 @@ docker service create --name nginx-b --endpoint-mode dnsrr -p  8090:80 nginx
 docker service updata --network-add mytest-overlay nginx-b
 </pre>
 
-<h2 id="toc_0.9">compose方式</h2>
-
-<h3 id="toc_0.9.1">docker compose</h3>
-
-<ul>
-<li>
-docker-compose安装Nginx: <a href="https://zhuanlan.zhihu.com/p/628118485">https://zhuanlan.zhihu.com/p/628118485</a>
-
-<li>
-安装docker-compose:<code>apt install docker-compose</code>
-
-<li>
-在主机上创建nginx_compose、logs、html目录
-<pre class="brush:bash">
-mkdir -p nginx_compose/logs nginx_compose/html
-
-nginx_compose/
-├── docker-compose.yml
-├── html
-│  └── index.html
-├── logs
-│  ├── access.log
-│  └── error.log
-└── nginx.conf
-</pre>
-
-<li>
-docker-compose.yml
-<pre class="brush:bash">
-version: '3'
-services:
-  mynginx: # 定义一个名为mynginx的服务
-    image: nginx # 使用官方latest版本镜像
-    ports:
-      - "8080:80" # 将容器80端口映射到主机8080端口
-    volumes: # 挂载配置文件、日志目录和html目录
-      - "./nginx.conf:/etc/nginx/nginx.conf"
-      - "./logs:/var/log/nginx"
-      - "./html:/usr/share/nginx/html"
-    restart: always # 重启策略
-volumes:
-  data:
-</pre>
-
-<li>
-nginx.conf
-<pre class="brush:bash">
-worker_processes  1;
-events {
-    worker_connections  1024;
-}
-http {
-    include       /etc/nginx/mime.types;
-    server {
-      listen       80;
-      server_name  localhost;
-      location / {
-        root   /usr/share/nginx/html;
-        index  index.html index.htm;
-      }
-    }
-    access_log /var/log/nginx/access.log;
-    error_log /var/log/nginx/error.log;
-}
-</pre>
-
-<li>
-进入nginx_compose目录，创建并启动容器、查看状态、删除服务
-<pre class="brush:bash">
-# 创建并启动容器
-docker-compose up -d
-# 修改配置文件后，重启容器
-docker-compose up -d --force-recreate
-
-# 检查容器状态
-docker-compose ps
-
-         Name                        Command               State                  Ports
--------------------------------------------------------------------------------------------------------
-nginx_compose_mynginx_1   /docker-entrypoint.sh ngin ...   Up      0.0.0.0:8080-&gt;80/tcp,:::8080-&gt;80/tcp
-
-# nginx reload
-docker exec &lt;容器id&gt; nginx -s reload
-docker exec &lt;容器id&gt; service nginx reload
-
-# 停止、启动容器
-docker-compose stop|start
-
-# 删除服务
-docker-compose rm
-</pre>
-
-</ul>
-
-<h3 id="toc_0.9.2">docker stack</h3>
+<h2 id="toc_0.9">docker stack</h2>
 
 <p>
 单机模式下，我们可以使用 Docker Compose 来编排多个服务。
@@ -1202,9 +1104,13 @@ docker-compose rm
 Docker Swarm 通过 Docker Stack，只需对已有的 docker-compose.yml 配置文件稍加改造就可以完成 Docker 集群环境下的多服务编排。
 </p>
 
+<p>
+Docker compose示例见： <a href="Docker.html">Docker常用操作</a>
+</p>
+
 <ul>
 <li>
-myservice-compose.yml
+myservice-stack.yml
 <pre class="brush:bash">
 version: "3.4"
 services:
@@ -1260,11 +1166,11 @@ Deploy a new stack or update an existing stack
 <pre class="brush:bash">
 docker network create -d overlay my-overlay
 
-docker stack deploy -c myservice-compose.yml myservice
+docker stack deploy -c myservice-stack.yml myservice
 </pre>
 
 <pre>
-docker stack deploy -c myservice-compose.yml myservice
+docker stack deploy -c myservice-stack.yml myservice
 Creating service myservice_nginx
 Creating service myservice_alpine
 
