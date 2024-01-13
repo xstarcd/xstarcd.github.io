@@ -33,21 +33,24 @@
 <li><a href="#toc_0.5.3">service rm</a>
 <li><a href="#toc_0.5.4">service update</a>
 </ul>
-<li><a href="#toc_0.6">swarm-manager高可用</a>
-<li><a href="#toc_0.7">swarm节点维护状态DRAIN</a>
-<li><a href="#toc_0.8">发布服务端口</a>
+<li><a href="#toc_0.6">swarm集群维护</a>
 <ul>
-<li><a href="#toc_0.8.1">swarm路由网格</a>
-<li><a href="#toc_0.8.2">示例redis</a>
-<li><a href="#toc_0.8.3">示例nginx</a>
-<li><a href="#toc_0.8.4">修改发布端口</a>
-<li><a href="#toc_0.8.5">指定TCP/UDP协议</a>
-<li><a href="#toc_0.8.6">host模式</a>
-<li><a href="#toc_0.8.7">外部负载均衡</a>
-<li><a href="#toc_0.8.8">自定义网络</a>
-<li><a href="#toc_0.8.9">dnsrr模式</a>
+<li><a href="#toc_0.6.1">manager高可用</a>
+<li><a href="#toc_0.6.2">节点维护DRAIN</a>
 </ul>
-<li><a href="#toc_0.9">docker stack</a>
+<li><a href="#toc_0.7">swarm路由网格</a>
+<ul>
+<li><a href="#toc_0.7.1">网络结构</a>
+<li><a href="#toc_0.7.2">示例redis</a>
+<li><a href="#toc_0.7.3">示例nginx</a>
+<li><a href="#toc_0.7.4">修改发布端口</a>
+<li><a href="#toc_0.7.5">指定TCP/UDP协议</a>
+<li><a href="#toc_0.7.6">host模式</a>
+<li><a href="#toc_0.7.7">外部负载均衡</a>
+<li><a href="#toc_0.7.8">自定义网络</a>
+<li><a href="#toc_0.7.9">dnsrr模式</a>
+</ul>
+<li><a href="#toc_0.8">docker stack</a>
 </ul>
 </ul>
 </div>
@@ -146,59 +149,6 @@ docker client连接方式：
 
 <p>
 <img src=../img/docker/swarm-init.png alt="swarm集群创建" width=800px>
-</p>
-
-<ul>
-<li>
-Ingress
-
-</ul>
-
-<p>
-建立外部8080到容器内部80的端口映射，访问任一Node节点的8080端口，再由VIP LB(虚拟IP的负载均衡)自动路由到Nginx的容器中处理。
-</p>
-
-<p>
-可以再通过External LB对8080端口进行外部负载均衡(如：LVS、API Gateway、Haproxy)。
-</p>
-
-<p>
-<img src=../img/docker/swarm-Ingress.png alt="swarm ingress" width=800px>
-</p>
-
-<ul>
-<li>
-Ingress+Link
-
-</ul>
-
-<p>
-基于容器内部网络互通和容器DNS，将tomcat服解析到对应的内部VIP进行负载均衡访问。link方式只在swarm内部可访问。
-</p>
-
-<p>
-<img src=../img/docker/swarm-Ingress-link.png alt="swarm ingress + link" width=800px>
-</p>
-
-<ul>
-<li>
-自定义网络
-
-</ul>
-
-<p>
-连接到同一网络的容器，都可以通过容器名互通，然后通过VIP LB方式进行负载均衡，不需要开启端口publish（仅限内部容器之间通信）。
-</p>
-
-<pre>
-#创建自定义网络
-docker network create --driver=overlay --attachable mynet
-#创建服务
-docker service create -p 80:80 --network=mynet --name nginx nginx
-</pre>
-
-<p>
-<img src=../img/docker/swarm-network.png alt="swarm network" width=800px>
 </p>
 
 <h2 id="toc_0.2">docker-swarm主机计划</h2>
@@ -566,7 +516,9 @@ md0byaxu9pic   myredis.3       redis:6.0.20-alpine   swarm-manager   Running    
 wwqtmfnq51gm    \_ myredis.3   redis:6.0-alpine      swarm-manager   Shutdown        Shutdown 2 minutes ago
 </pre>
 
-<h2 id="toc_0.6">swarm-manager高可用</h2>
+<h2 id="toc_0.6">swarm集群维护</h2>
+
+<h3 id="toc_0.6.1">manager高可用</h3>
 
 <p>
 将swarm-node1、node2升有为manager，Manager status变成了Reachable。
@@ -595,7 +547,7 @@ w4kwyvrmrazlto391br2q6iee     swarm-node1     Ready     Active         Reachable
 2wwwkgepq5nz46tgiksbngwzo     swarm-node2     Ready     Active         Reachable        24.0.7
 </pre>
 
-<h2 id="toc_0.7">swarm节点维护状态DRAIN</h2>
+<h3 id="toc_0.6.2">节点维护DRAIN</h3>
 
 <p>
 维护节点时，需要将节点可用性设置为<code>DRAIN</code>状态，Master会阻止此类节点接收新任务、停止节点上的任务，在具有<code>ACTIVE</code>状态的节点启动任务。
@@ -652,9 +604,7 @@ docker node update --availability active swarm-node2
 
 </ul>
 
-<h2 id="toc_0.8">发布服务端口</h2>
-
-<h3 id="toc_0.8.1">swarm路由网格</h3>
+<h2 id="toc_0.7">swarm路由网格</h2>
 
 <p>
 Docker Engine集群模式可以轻松发布服务端口，以使其可用于集群之外的资源。
@@ -683,7 +633,63 @@ Port 4789 UDP (configurable) for the container ingress network.容器ingress网�
 我们还必须在集群的节点和任何需要访问端口的外部资源（如外部负载平衡器）之间打开已发布的端口。
 </p>
 
-<h3 id="toc_0.8.2">示例redis</h3>
+<h3 id="toc_0.7.1">网络结构</h3>
+
+<ul>
+<li>
+Ingress
+
+</ul>
+
+<p>
+建立外部8080到容器内部80的端口映射，访问任一Node节点的8080端口，再由VIP LB(虚拟IP的负载均衡)自动路由到Nginx的容器中处理。
+</p>
+
+<p>
+可以再通过External LB对8080端口进行外部负载均衡(如：LVS、API Gateway、Haproxy)。
+</p>
+
+<p>
+<img src=../img/docker/swarm-Ingress.png alt="swarm ingress" width=800px>
+</p>
+
+<ul>
+<li>
+Ingress+Link
+
+</ul>
+
+<p>
+基于容器内部网络互通和容器DNS，将tomcat服解析到对应的内部VIP进行负载均衡访问。link方式只在swarm内部可访问。
+</p>
+
+<p>
+<img src=../img/docker/swarm-Ingress-link.png alt="swarm ingress + link" width=800px>
+</p>
+
+<ul>
+<li>
+自定义网络
+
+</ul>
+
+<p>
+连接到同一网络的容器，都可以通过容器名互通，然后通过VIP LB方式进行负载均衡，不需要开启端口publish（仅限内部容器之间通信）。
+</p>
+
+<pre>
+#创建自定义网络
+docker network create --driver=overlay --attachable mynet
+#创建服务
+docker service create -p 80:80 --network=mynet --name nginx nginx
+</pre>
+
+<p>
+<img src=../img/docker/swarm-network.png alt="swarm network" width=800px>
+</p>
+
+
+<h3 id="toc_0.7.2">示例redis</h3>
 
 <pre class="brush:bash">
 docker service create \
@@ -735,7 +741,7 @@ quit
 Connection closed by foreign host.
 </pre>
 
-<h3 id="toc_0.8.3">示例nginx</h3>
+<h3 id="toc_0.7.3">示例nginx</h3>
 
 <p>
 将nginx容器中的端口80发布到群中任何节点的端口8080。当访问任何节点的8080端口时，docker会将请求路由到活动的容器。
@@ -751,7 +757,7 @@ docker service create \
 部署后，我们用 <a href="http://192.168.31.42:8080/">http://192.168.31.42:8080/</a> 可以访问到nginx服务。
 </p>
 
-<h3 id="toc_0.8.4">修改发布端口</h3>
+<h3 id="toc_0.7.4">修改发布端口</h3>
 
 <p>
 同样对于已经部署的 service，我们也可以重新给他发布端口。
@@ -773,7 +779,7 @@ docker service inspect --format="{{json .Endpoint.Spec.Ports}}" mynginx
 [{"Protocol":"tcp","TargetPort":80,"PublishedPort":8080}]
 </pre>
 
-<h3 id="toc_0.8.5">指定TCP/UDP协议</h3>
+<h3 id="toc_0.7.5">指定TCP/UDP协议</h3>
 
 <p>
 发布端口时不指定协议，默认为TCP端口。
@@ -796,7 +802,7 @@ docker service create --name dns-cache \
   dns-cache
 </pre>
 
-<h3 id="toc_0.8.6">host模式</h3>
+<h3 id="toc_0.7.6">host模式</h3>
 
 <p>
 省略mode参数、或mode=ingress都会使用路由网格。
@@ -826,7 +832,7 @@ docker service create --name dns-cache \
   dns-cache
 </pre>
 
-<h3 id="toc_0.8.7">外部负载均衡</h3>
+<h3 id="toc_0.7.7">外部负载均衡</h3>
 
 <p>
 可以为集群服务配置外部负载平衡器，要么与路由网格结合使用，要么根本不使用路由网格。
@@ -865,7 +871,7 @@ backend http_back
 
 </ul>
 
-<h3 id="toc_0.8.8">自定义网络</h3>
+<h3 id="toc_0.7.8">自定义网络</h3>
 
 <p>
 默认的网络Ingress中，容器之间、同一服务的不同实例之间网络无法互通?
@@ -1070,7 +1076,7 @@ lo        Link encap:Local Loopback
 
 </ul>
 
-<h3 id="toc_0.8.9">dnsrr模式</h3>
+<h3 id="toc_0.7.9">dnsrr模式</h3>
 
 <p>
 endpoint-mode有两种模式：VIP、dnsrr。
@@ -1094,7 +1100,7 @@ docker service create --name nginx-b --endpoint-mode dnsrr -p  8090:80 nginx
 docker service updata --network-add mytest-overlay nginx-b
 </pre>
 
-<h2 id="toc_0.9">docker stack</h2>
+<h2 id="toc_0.8">docker stack</h2>
 
 <p>
 单机模式下，我们可以使用 Docker Compose 来编排多个服务。
