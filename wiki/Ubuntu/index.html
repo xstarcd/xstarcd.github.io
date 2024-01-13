@@ -22,6 +22,7 @@
 <li><a href="#toc_0.2">设置IP地址</a>
 <li><a href="#toc_0.3">hostname</a>
 <li><a href="#toc_0.4">timezone</a>
+<li><a href="#toc_0.5">apt-get,apt,snap</a>
 </ul>
 </ul>
 </div>
@@ -167,6 +168,319 @@ timedatectl status         # 查看时间及时区
 timedatectl list-timezones # 列出可用时区
 sudo timedatectl set-timezone Asia/Shanghai # 设置时区为中国时区
 </pre>
+
+<h2 id="toc_0.5">apt-get,apt,snap</h2>
+
+<p>
+Debian 使用一套名为 Advanced Packaging Tool（APT）的工具来管理这种包系统。
+</p>
+
+<ul>
+<li>
+apt-get(apt-get,apt-cache,apt-config)、Aptitude是对应的CLI、GUI工具。
+
+<li>
+apt可以看作 apt-get 和 apt-cache 命令的子集, 可以为包管理提供必要的命令选项(不是全部，有些功能仍然需要使用apt-get)。
+
+</ul>
+
+<table>
+<tr>
+<th>
+apt
+</th>
+<th>
+apt-get
+</th>
+<th>
+功能
+</th>
+</tr>
+<tr>
+<td>
+apt install
+</td>
+<td>
+apt-get install
+</td>
+<td>
+安装软件包，apt有安装进度条
+</td>
+</tr>
+<tr>
+<td>
+apt remove
+</td>
+<td>
+apt-get remove
+</td>
+<td>
+移除软件包
+</td>
+</tr>
+<tr>
+<td>
+apt purge
+</td>
+<td>
+apt-get purge
+</td>
+<td>
+移除软件包及配置文件
+</td>
+</tr>
+<tr>
+<td>
+apt update
+</td>
+<td>
+apt-get update
+</td>
+<td>
+刷新存储库索引，apt会提示可升级的软件包数量
+</td>
+</tr>
+<tr>
+<td>
+apt upgrade
+</td>
+<td>
+apt-get upgrade
+</td>
+<td>
+升级所有可升级的软件包
+</td>
+</tr>
+<tr>
+<td>
+apt autoremove
+</td>
+<td>
+apt-get autoremove
+</td>
+<td>
+自动删除不需要的包
+</td>
+</tr>
+<tr>
+<td>
+apt full-upgrade
+</td>
+<td>
+apt-get dist-upgrade
+</td>
+<td>
+在升级软件包时自动处理依赖关系
+</td>
+</tr>
+<tr>
+<td>
+apt search
+</td>
+<td>
+apt-cache search
+</td>
+<td>
+搜索应用程序
+</td>
+</tr>
+<tr>
+<td>
+apt show
+</td>
+<td>
+apt-cache show
+</td>
+<td>
+显示装细节
+</td>
+</tr>
+<tr>
+<td>
+apt list
+</td>
+<td>
+dpkg -l
+</td>
+<td>
+列出包含条件的包(已安装、可升级等)
+</td>
+</tr>
+<tr>
+<td>
+apt list upgradeable
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+列出可升级软件包
+</td>
+</tr>
+<tr>
+<td>
+apt edit-sources
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+编辑源列表/etc/apt/sources.list
+</td>
+</tr>
+</table>
+
+
+<ul>
+<li>
+snap:使用容器来管理软件
+
+</ul>
+
+<p>
+是Canonical公司发布的全新的软件包管理方式，它类似一个容器拥有一个应用程序所有的文件和库，各个应用程序之间完全独立。
+</p>
+
+<p>
+Snap的一个重要的特点是应用程序中包含了所有的依赖库和资源，以确保应用能够正常运行，而不受系统的影响。使用Snap软件包安装的应用程序不仅具有独立性和可移植性，同时还可以使用最新的软件版本，无需等待官方软件包库更新。
+</p>
+
+<p>
+如果你更注重系统稳定性，使用apt可能更合适，因为它提供了经过测试和适应特定Ubuntu版本的软件包。
+</p>
+
+<p>
+如果你更喜欢使用最新版本的软件或需要更大的独立性和隔离性，可以考虑使用snap。
+</p>
+
+<table>
+<tr>
+<th>
+特征
+</th>
+<th>
+apt
+</th>
+<th>
+snap
+</th>
+<th>
+备注
+</th>
+</tr>
+<tr>
+<td>
+包的来源
+</td>
+<td>
+Ubuntu软件仓库
+</td>
+<td>
+Snap Store（独立仓库）
+</td>
+<td>
+Snap主要包含高级、独立和最新版本的软件。apt更多软件包的稳定版本
+</td>
+</tr>
+<tr>
+<td>
+版本更新
+</td>
+<td>
+通常稍滞后
+</td>
+<td>
+通常提供最新版本
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+系统资源
+</td>
+<td>
+共享系统库和依赖项
+</td>
+<td>
+独立于系统，自包含依赖项
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+独立性
+</td>
+<td>
+依赖系统库
+</td>
+<td>
+自包含，不依赖系统库
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+隔离性
+</td>
+<td>
+无隔离
+</td>
+<td>
+应用隔离，避免库冲突
+</td>
+<td>
+Snap的软件包是在沙箱中运行，不会影响整个系统
+</td>
+</tr>
+<tr>
+<td>
+安装命令
+</td>
+<td>
+sudo apt install
+</td>
+<td>
+sudo snap install
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+卸载命令
+</td>
+<td>
+sudo apt remove
+</td>
+<td>
+sudo snap remove
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+更新命令
+</td>
+<td>
+sudo apt update
+</td>
+<td>
+sudo snap refresh
+</td>
+<td>
+Snap提供了自动更新机制
+</td>
+</tr>
+</table>
 
 </div>
 <div id="footer">
