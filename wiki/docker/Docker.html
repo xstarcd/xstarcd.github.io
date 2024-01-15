@@ -25,6 +25,11 @@
 <li><a href="#toc_0.1.3">设置Docker Hub镜像代理</a>
 </ul>
 <li><a href="#toc_0.2">Docker常用命令</a>
+<ul>
+<li><a href="#toc_0.2.1">基本命令</a>
+<li><a href="#toc_0.2.2">docker images</a>
+<li><a href="#toc_0.2.3">docker help</a>
+</ul>
 <li><a href="#toc_0.3">Docker容器网络</a>
 <ul>
 <li><a href="#toc_0.3.1">Docker网络发布</a>
@@ -32,6 +37,16 @@
 <li><a href="#toc_0.3.3">配置容器DNS</a>
 </ul>
 <li><a href="#toc_0.4">docker compose</a>
+<ul>
+<li><a href="#toc_0.4.1">compose常用命令</a>
+<li><a href="#toc_0.4.2">示例:compose部署Nginx</a>
+<ul>
+<li><a href="#toc_0.4.2.1">创建nginx工作目录</a>
+<li><a href="#toc_0.4.2.2">生成nginx配置文件</a>
+<li><a href="#toc_0.4.2.3">docker-compose.yml</a>
+<li><a href="#toc_0.4.2.4">部署nignx</a>
+</ul>
+</ul>
 <li><a href="#toc_0.5">Dockerfile</a>
 </ul>
 </ul>
@@ -207,9 +222,152 @@ docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/xxx
 
 <h2 id="toc_0.2">Docker常用命令</h2>
 
+<h3 id="toc_0.2.1">基本命令</h3>
+
+<pre class="brush:bash">
+# 以 ubuntu 22.04 镜像创建一个新容器，然后在容器里执行 bin/echo "Hello world"，--rm 运行后自动删除
+docker run --rm ubuntu:22.04 /bin/echo "Hello world";cat /proc/version
+
+# 交互运行容器，-i:允许标准stdin交互，-t: tty终端
+docker run --rm -it ubuntu:22.04 /bin/bash
+
+# 后台运行容器
+docker run --rm -d --name testubuntu ubuntu:22.04 /bin/sh -c "while true; do echo hello world; sleep 1; done"
+docker logs testubuntu # 查看容顺的标准输出stdout
+
+docker ps -a # 查看运行的容器，-a：查看所有(默认只显示运行中的容器)
+# 输出：
+# CONTAINER ID: 容器 ID。
+# IMAGE: 使用的镜像。
+# COMMAND: 启动容器时运行的命令
+# CREATED: 容器的创建时间
+# STATUS: 容器状态有7种：created（已创建） restarting:重启中,running 或 Up:运行中,removing:迁移中,paused:暂停,exited:停止,dead:死亡
+# PORTS: 容器的端口信息和使用的连接类型（tcp\udp）。
+# NAMES: 容器名称，自动分配或指定
+
+docker exec -it testubuntu /bin/bash # 进入容器shell环境
+docker attach testubuntu  # 附着到容器标准stdin/stdout控制台，若中止控制台在运行的命令，容器会关闭
+
+docker stop testubuntu # 停止容器
+</pre>
+
+<h3 id="toc_0.2.2">docker images</h3>
+
+<pre class="brush:bash">
+# 查找镜像，Docker Hub: https://hub.docker.com/
+docker search ubuntu
+# NAME: 镜像仓库源的名称
+# DESCRIPTION: 镜像的描述
+# OFFICIAL: 是否 docker 官方发布
+# STARS: 类似 Github 里面的 star，表示点赞、喜欢的意思。
+# AUTOMATED: 自动构建。
+
+docker pull ubuntu:22.04 # 下载镜像
+docker images # 查看本地已有的镜像
+docker rm ununtu:22.04 # 删除本地已有的镜像
+
+# 更新镜像
+</pre>
+
+
+<h3 id="toc_0.2.3">docker help</h3>
+
 <p>
-Todo.
+应习惯用<code>docker --help</code>、<code>docker ps --help</code>方式查看各级功能的帮助信息。
 </p>
+
+<pre class="brush:bash">
+docker --help
+
+Usage:  docker [OPTIONS] COMMAND
+
+A self-sufficient runtime for containers
+
+Common Commands:
+  run         Create and run a new container from an image
+  exec        Execute a command in a running container
+  ps          List containers
+  build       Build an image from a Dockerfile
+  pull        Download an image from a registry
+  push        Upload an image to a registry
+  images      List images
+  login       Log in to a registry
+  logout      Log out from a registry
+  search      Search Docker Hub for images
+  version     Show the Docker version information
+  info        Display system-wide information
+
+Management Commands:
+  builder     Manage builds
+  buildx*     Docker Buildx (Docker Inc., v0.11.2)
+  compose*    Docker Compose (Docker Inc., v2.21.0)
+  container   Manage containers
+  context     Manage contexts
+  image       Manage images
+  manifest    Manage Docker image manifests and manifest lists
+  network     Manage networks
+  plugin      Manage plugins
+  system      Manage Docker
+  trust       Manage trust on Docker images
+  volume      Manage volumes
+
+Swarm Commands:
+  config      Manage Swarm configs
+  node        Manage Swarm nodes
+  secret      Manage Swarm secrets
+  service     Manage Swarm services
+  stack       Manage Swarm stacks
+  swarm       Manage Swarm
+
+Commands:
+  attach      Attach local standard input, output, and error streams to a running container
+  commit      Create a new image from a container's changes
+  cp          Copy files/folders between a container and the local filesystem
+  create      Create a new container
+  diff        Inspect changes to files or directories on a container's filesystem
+  events      Get real time events from the server
+  export      Export a container's filesystem as a tar archive
+  history     Show the history of an image
+  import      Import the contents from a tarball to create a filesystem image
+  inspect     Return low-level information on Docker objects
+  kill        Kill one or more running containers
+  load        Load an image from a tar archive or STDIN
+  logs        Fetch the logs of a container
+  pause       Pause all processes within one or more containers
+  port        List port mappings or a specific mapping for the container
+  rename      Rename a container
+  restart     Restart one or more containers
+  rm          Remove one or more containers
+  rmi         Remove one or more images
+  save        Save one or more images to a tar archive (streamed to STDOUT by default)
+  start       Start one or more stopped containers
+  stats       Display a live stream of container(s) resource usage statistics
+  stop        Stop one or more running containers
+  tag         Create a tag TARGET_IMAGE that refers to SOURCE_IMAGE
+  top         Display the running processes of a container
+  unpause     Unpause all processes within one or more containers
+  update      Update configuration of one or more containers
+  wait        Block until one or more containers stop, then print their exit codes
+
+Global Options:
+      --config string      Location of client config files (default "/root/.docker")
+  -c, --context string     Name of the context to use to connect to the daemon (overrides DOCKER_HOST env var and default context set with "docker
+                           context use")
+  -D, --debug              Enable debug mode
+  -H, --host list          Daemon socket to connect to
+  -l, --log-level string   Set the logging level ("debug", "info", "warn", "error", "fatal") (default "info")
+      --tls                Use TLS; implied by --tlsverify
+      --tlscacert string   Trust certs signed only by this CA (default "/root/.docker/ca.pem")
+      --tlscert string     Path to TLS certificate file (default "/root/.docker/cert.pem")
+      --tlskey string      Path to TLS key file (default "/root/.docker/key.pem")
+      --tlsverify          Use TLS and verify the remote
+  -v, --version            Print version information and quit
+
+Run 'docker COMMAND --help' for more information on a command.
+
+For more help on how to use Docker, head to https://docs.docker.com/go/guides/
+</pre>
+
 
 <h2 id="toc_0.3">Docker容器网络</h2>
 
@@ -310,6 +468,25 @@ ping test2
 如果在容器启动时没有指定 --dns 和 --dns-search，Docker 会默认用宿主主机上的 /etc/resolv.conf 来配置容器的 DNS。
 </p>
 
+<ul>
+<li>
+endpoint_mode: vip 
+
+<ul>
+<li>
+Docker 集群服务一个对外的虚拟 ip。所有的请求都会通过这个虚拟 ip 到达集群服务内部的机器。
+
+</ul>
+<li>
+endpoint_mode: dnsrr
+
+<ul>
+<li>
+DNS 轮询（DNSRR）。所有的请求会自动轮询获取到集群 ip 列表中的一个 ip 地址。
+
+</ul>
+</ul>
+
 <p>
 我们可以在宿主机的 /etc/docker/daemon.json 文件中增加以下内容来设置全部容器的 DNS。
 </p>
@@ -355,80 +532,179 @@ docker run -it --rm ubuntu cat etc/resolv.conf
 
 <ul>
 <li>
-docker-compose安装Nginx: <a href="https://zhuanlan.zhihu.com/p/628118485">https://zhuanlan.zhihu.com/p/628118485</a>
+docker-compose安装Nginx: 
+
+<ul>
+<li>
+<a href="https://zhuanlan.zhihu.com/p/628118485">https://zhuanlan.zhihu.com/p/628118485</a>
 
 <li>
-安装docker-compose:<code>apt install docker-compose</code>
+<a href="https://cloud.tencent.com/developer/article/2219498">https://cloud.tencent.com/developer/article/2219498</a>
 
+</ul>
 <li>
-在主机上创建nginx_compose、logs、html目录
+安装docker-compose:
+<pre>
+apt install docker-compose
+</pre>
+
+</ul>
+
+<h3 id="toc_0.4.1">compose常用命令</h3>
+
 <pre class="brush:bash">
-mkdir -p nginx_compose/logs nginx_compose/html
+docker-compose pull # 拉取工程中所有服务依赖的镜像
+docker-compose pull nginx # 拉取工程中 nginx 服务依赖的镜像
 
-nginx_compose/
+# 创建、启动、服务状态
+docker-compose up -d # 启动服务，-d:后台，缺省读取当前路径的docker-compose.yml文件，可用-f指定、也可多次-f指定多个yml文件
+docker-compose up -d --force-recreate # 修改配置文件后，重启容器
+docker-compose images [service] # 查看服务容器所对应的镜像
+docker-compose port [service] 80 # 打印指定服务容器的某个端口所映射的宿主机端口
+docker-compose ps [service]  # 列出工程中所有、指定服务的容器
+docker-compose top [service] # 显示工程中所有、指定服务的容器正在运行的进程
+docker-compose scale web=2 worker=3 # 服务扩展
+
+# 容器操作
+docker-compose logs -f --no-color # 跟踪日志输出，不用颜色区分
+
+docker-compose start|restart|stop [service]   # 启动|停止|重启工程中所有、指定服务或网络
+docker-compose pause|unpause [service]   # 暂停|恢复服务...
+docker-compose down --rmi all # 停止并删除工程中所有服务的容器、网络、镜像
+
+docker-compose run nginx echo "helloworld" # 在工程中指定服务的容器上执行 echo "helloworld"
+docker-compose exec --index=1 nginx bash # 进入工程中指定服务的容器，index容器序号，默认index=1
+docker-compose kill nginx # 通过发送 SIGKILL 信号停止工程中指定服务的容器
+
+# 删除
+docker-compose rm # 删除所有（停止状态）服务的容器
+docker-compose rm -s [service] # 停止、并删除所有或指定服务
+# -s, --stop:如果需要，先停止服务
+# -f, --force:强制删除，不询问
+# -v，删除附加到容器的任何匿名卷
+# -v:删除工程中指定服务的容器
+</pre>
+
+<h3 id="toc_0.4.2">示例:compose部署Nginx</h3>
+
+<h4 id="toc_0.4.2.1">创建nginx工作目录</h4>
+
+<pre class="brush:bash">
+mkdir -p /data/nginx \
+&amp;&amp; cd /data/nginx \
+&amp;&amp; mkdir -p conf.d etc html logs www
+</pre>
+
+<p>
+目录结构：
+</p>
+
+<pre class="brush:bash">
+/data/nginx/
+├── conf.d
+│   └── default.conf
 ├── docker-compose.yml
+├── etc
 ├── html
-│  └── index.html
+│   ├── 50x.html
+│   └── index.html
 ├── logs
-│  ├── access.log
-│  └── error.log
-└── nginx.conf
+├── nginx.conf
+└── www
 </pre>
 
-<li>
-docker-compose.yml
+
+<h4 id="toc_0.4.2.2">生成nginx配置文件</h4>
+
 <pre class="brush:bash">
-version: '3'
+# 拉取image
+docker pull nginx
+docker images
+
+# 启动一个容器
+docker run -d --name mynginx nginx
+docker ps
+
+# 查看nginx配置文件
+docker exec -it mynginx ls -la /etc/nginx /usr/share/nginx/html
+# drwxr-xr-x 1 root root 4096 Jan 12 00:21 .
+# drwxr-xr-x 1 root root 4096 Jan 13 02:48 ..
+# drwxr-xr-x 1 root root 4096 Jan 13 02:48 conf.d
+# -rw-r--r-- 1 root root 1007 Oct 24 13:46 fastcgi_params
+# -rw-r--r-- 1 root root 5349 Oct 24 13:46 mime.types
+# lrwxrwxrwx 1 root root   22 Oct 24 16:10 modules -&gt; /usr/lib/nginx/modules
+# -rw-r--r-- 1 root root  648 Oct 24 16:10 nginx.conf
+# -rw-r--r-- 1 root root  636 Oct 24 13:46 scgi_params
+# -rw-r--r-- 1 root root  664 Oct 24 13:46 uwsgi_params
+ 
+# -rw-r--r-- 1 root root  497 Oct 24 13:46 50x.html
+# -rw-r--r-- 1 root root  615 Oct 24 13:46 index.html
+
+# 从容器复制配置文件
+docker cp mynginx:/etc/nginx/nginx.conf /data/nginx/
+docker cp mynginx:/etc/nginx/conf.d/ /data/nginx/
+docker cp mynginx:/usr/share/nginx/html /data/nginx/
+hostname &gt;&gt; /data/nginx/html/index.html # 添加个标记方便识别
+
+# 停止并删除容器
+docker stop mynginx
+docker rm mynginx
+</pre>
+
+<h4 id="toc_0.4.2.3">docker-compose.yml</h4>
+
+<pre class="brush:bash">
+# docker-compose.yml
+version: '3' # 依丛的compose版本
 services:
-  mynginx: # 定义一个名为mynginx的服务
-    image: nginx # 使用官方latest版本镜像
-    ports:
-      - "8080:80" # 将容器80端口映射到主机8080端口
-    volumes: # 挂载配置文件、日志目录和html目录
-      - "./nginx.conf:/etc/nginx/nginx.conf"
-      - "./logs:/var/log/nginx"
-      - "./html:/usr/share/nginx/html"
-    restart: always # 重启策略
-volumes:
-  data:
+  mynginx: # 服务名
+    restart: always
+    container_name: mynginx # 指定自定义容器名称，而不是生成的默认名称
+    image: nginx # 使用官方的latest版本镜像
+    ports:  # 端口映射
+      - 8080:80 
+      #- 8443:443
+    volumes: # 挂载主机的数据卷或文件到容器，用来存储持久化的数据
+      - /data/nginx/html:/usr/share/nginx/html
+      - /data/nginx/www:/var/www
+      - /data/nginx/logs:/var/log/nginx
+      - /data/nginx/nginx.conf/:/etc/nginx/nginx.conf
+      - /data/nginx/conf.d:/etc/nginx/conf.d
+      #- /data/nginx/etc/cert:/etc/nginx/cert
+    environment: # 设置容器中的环境变量
+      - NGINX_PORT=80
+      - TZ=Asia/Shanghai
+    #network_mode: overlay # 设置容器网络模式：host,bridge,overlay,macvlan
+    restart: always # 容器重启策略，默认no:不重启、always:总是启动、on-failure:非正常退出时才重启、unless-stopped:容器退出时重启
+
+    # docker容器默认是以非特权用户身份运行，无法访问主机的设备文件、修改内核参数等，可减少潜在安全风险。
+    # privileged:true将容器设置为特权模式(不安全)，容器拥有与主机相同的权限，仅必要时才打开。
+    # privileged: true
+#volumes: # 在/var/lib/docker/volumes/目录下创建卷，可用docker volume ls查看
+#  data:
 </pre>
 
-<li>
-nginx.conf
-<pre class="brush:bash">
-worker_processes  1;
-events {
-    worker_connections  1024;
-}
-http {
-    include       /etc/nginx/mime.types;
-    server {
-      listen       80;
-      server_name  localhost;
-      location / {
-        root   /usr/share/nginx/html;
-        index  index.html index.htm;
-      }
-    }
-    access_log /var/log/nginx/access.log;
-    error_log /var/log/nginx/error.log;
-}
-</pre>
+<h4 id="toc_0.4.2.4">部署nignx</h4>
 
-<li>
-进入nginx_compose目录，创建并启动容器、查看状态、删除服务
 <pre class="brush:bash">
+# 进入docker-compose.yml所在目录
+cd /data/nginx
+
 # 创建并启动容器
 docker-compose up -d
 # 修改配置文件后，重启容器
 docker-compose up -d --force-recreate
 
-# 检查容器状态
-docker-compose ps
+# compose会单独创建一个网络
+# Creating network "nginx_default" with the default driver
+# Creating mynginx ... done
 
-         Name                        Command               State                  Ports
--------------------------------------------------------------------------------------------------------
-nginx_compose_mynginx_1   /docker-entrypoint.sh ngin ...   Up      0.0.0.0:8080-&gt;80/tcp,:::8080-&gt;80/tcp
+# 检查容器状态
+docker ps
+docker-compose ps
+# Name                Command               State                  Ports
+# ---------------------------------------------------------------------------------------
+# mynginx   /docker-entrypoint.sh ngin ...   Up      0.0.0.0:8080-&gt;80/tcp,:::8080-&gt;80/tcp
 
 # nginx reload
 docker exec &lt;容器id&gt; nginx -s reload
@@ -441,7 +717,6 @@ docker-compose stop|start
 docker-compose rm
 </pre>
 
-</ul>
 
 <h2 id="toc_0.5">Dockerfile</h2>
 
