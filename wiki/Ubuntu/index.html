@@ -328,8 +328,40 @@ apt edit-sources
 编辑源列表/etc/apt/sources.list
 </td>
 </tr>
+<tr>
+<td>
+apt autoremove
+</td>
+<td>
+apt-get autoremove
+</td>
+<td>
+删除未使用的依赖项
+</td>
+</tr>
+<tr>
+<td>
+apt clean
+</td>
+<td>
+apt-get clean
+</td>
+<td>
+清除遗留在 /var/cache 中的已取回的包文件的本地仓库
+</td>
+</tr>
+<tr>
+<td>
+apt autoclean
+</td>
+<td>
+apt-get autoclean
+</td>
+<td>
+类似于 apt-get clean，只清除不再下载的无用文件
+</td>
+</tr>
 </table>
-
 
 <ul>
 <li>

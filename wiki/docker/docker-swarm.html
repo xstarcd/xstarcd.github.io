@@ -51,6 +51,7 @@
 <li><a href="#toc_0.7.9">dnsrr模式</a>
 </ul>
 <li><a href="#toc_0.8">docker stack</a>
+<li><a href="#toc_0.9">Volume数据挂载持久化</a>
 </ul>
 </ul>
 </div>
@@ -688,7 +689,6 @@ docker service create -p 80:80 --network=mynet --name nginx nginx
 <img src=../img/docker/swarm-network.png alt="swarm network" width=800px>
 </p>
 
-
 <h3 id="toc_0.7.2">示例redis</h3>
 
 <pre class="brush:bash">
@@ -1194,6 +1194,49 @@ ID             NAME               MODE         REPLICAS   IMAGE           PORTS
 w55p2eetzq7d   myservice_alpine   replicated   1/1        alpine:latest
 k7g89zs8k68a   myservice_nginx    replicated   1/1        nginx:latest    *:8081-&gt;80/tcp
 </pre>
+
+
+<h2 id="toc_0.9">Volume数据挂载持久化</h2>
+
+<ul>
+<li>
+<a href="https://www.cnblogs.com/caoweixiong/p/12381838.html">https://www.cnblogs.com/caoweixiong/p/12381838.html</a>
+
+</ul>
+
+<p>
+为了获得最佳的性能和可移植性，应该避免将重要数据直接写入容器的可写层，而应使用数据卷或绑定挂载。
+</p>
+
+<p>
+可以为集群中的服务创建两种类型的挂载，数据卷挂载（volume mounts，默认）或绑定挂载（bind mounts）。
+</p>
+
+<p>
+无论使用哪种类型的挂载，在创建服务时使用 --mount 标志进行配置，或者在更新服务时使用 --mount-add 或 --mount-rm 标志。
+</p>
+
+<p>
+tmpfs mount 仅可用于独立容器，不能在 Docker Swarm Service 中使用。
+</p>
+
+<p>
+<img src=../img/docker/swarm-mount.png width=600px>
+</p>
+
+<ul>
+<li>
+volume数据卷挂载：即使容器删除，也不影响数据卷。
+<pre class="brush:bash">
+docker volume create --name cwxvolume
+
+docker service create --name masl \
+-e TZ="Asia/Shanghai" --network mrp_net \
+--mount type=volume,src=cwxvolume,dst=/home/mppay/logs/masl \
+--replicas 2 -p 8081:8080 172.16.99.2:40305/masl:dev-yc-34
+</pre>
+
+</ul>
 
 </div>
 <div id="footer">

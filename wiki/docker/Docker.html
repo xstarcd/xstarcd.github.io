@@ -27,27 +27,46 @@
 <li><a href="#toc_0.2">Docker常用命令</a>
 <ul>
 <li><a href="#toc_0.2.1">基本命令</a>
-<li><a href="#toc_0.2.2">docker images</a>
-<li><a href="#toc_0.2.3">docker help</a>
+<li><a href="#toc_0.2.2">docker help</a>
 </ul>
-<li><a href="#toc_0.3">Docker容器网络</a>
+<li><a href="#toc_0.3">容器连接</a>
 <ul>
-<li><a href="#toc_0.3.1">Docker网络发布</a>
-<li><a href="#toc_0.3.2">Docker容器网络互通</a>
+<li><a href="#toc_0.3.1">网络端口映射</a>
+<li><a href="#toc_0.3.2">容器互联</a>
 <li><a href="#toc_0.3.3">配置容器DNS</a>
 </ul>
-<li><a href="#toc_0.4">docker compose</a>
+<li><a href="#toc_0.4">Dockerfile</a>
 <ul>
-<li><a href="#toc_0.4.1">compose常用命令</a>
-<li><a href="#toc_0.4.2">示例:compose部署Nginx</a>
+<li><a href="#toc_0.4.1">docker images</a>
+<li><a href="#toc_0.4.2">docker commit</a>
+<li><a href="#toc_0.4.3">docker build</a>
+</ul>
+<li><a href="#toc_0.5">镜像仓库</a>
 <ul>
-<li><a href="#toc_0.4.2.1">创建nginx工作目录</a>
-<li><a href="#toc_0.4.2.2">生成nginx配置文件</a>
-<li><a href="#toc_0.4.2.3">docker-compose.yml</a>
-<li><a href="#toc_0.4.2.4">部署nignx</a>
+<li><a href="#toc_0.5.1">搭建私有镜像</a>
+<li><a href="#toc_0.5.2">配置仓库HTTPS证书</a>
+<li><a href="#toc_0.5.3">client设置</a>
+<li><a href="#toc_0.5.4">docker login</a>
+<li><a href="#toc_0.5.5">查询私有仓库镜像</a>
+<li><a href="#toc_0.5.6">管理私有仓库镜像</a>
+</ul>
+<li><a href="#toc_0.6">用swarm运行Registry服务</a>
+<ul>
+<li><a href="#toc_0.6.1">swarm命令方式</a>
+<li><a href="#toc_0.6.2">compose方式:不支持external secret</a>
+<li><a href="#toc_0.6.3">stack方式</a>
+</ul>
+<li><a href="#toc_0.7">docker compose</a>
+<ul>
+<li><a href="#toc_0.7.1">compose常用命令</a>
+<li><a href="#toc_0.7.2">示例:compose部署Nginx</a>
+<ul>
+<li><a href="#toc_0.7.2.1">创建nginx工作目录</a>
+<li><a href="#toc_0.7.2.2">生成nginx配置文件</a>
+<li><a href="#toc_0.7.2.3">docker-compose.yml</a>
+<li><a href="#toc_0.7.2.4">部署nignx</a>
 </ul>
 </ul>
-<li><a href="#toc_0.5">Dockerfile</a>
 </ul>
 </ul>
 </div>
@@ -247,30 +266,12 @@ docker ps -a # 查看运行的容器，-a：查看所有(默认只显示运行�
 
 docker exec -it testubuntu /bin/bash # 进入容器shell环境
 docker attach testubuntu  # 附着到容器标准stdin/stdout控制台，若中止控制台在运行的命令，容器会关闭
+docker cp mynginx:/etc/nginx/nginx.conf /data/nginx/ # 从容器复制配置文件到本地
 
 docker stop testubuntu # 停止容器
 </pre>
 
-<h3 id="toc_0.2.2">docker images</h3>
-
-<pre class="brush:bash">
-# 查找镜像，Docker Hub: https://hub.docker.com/
-docker search ubuntu
-# NAME: 镜像仓库源的名称
-# DESCRIPTION: 镜像的描述
-# OFFICIAL: 是否 docker 官方发布
-# STARS: 类似 Github 里面的 star，表示点赞、喜欢的意思。
-# AUTOMATED: 自动构建。
-
-docker pull ubuntu:22.04 # 下载镜像
-docker images # 查看本地已有的镜像
-docker rm ununtu:22.04 # 删除本地已有的镜像
-
-# 更新镜像
-</pre>
-
-
-<h3 id="toc_0.2.3">docker help</h3>
+<h3 id="toc_0.2.2">docker help</h3>
 
 <p>
 应习惯用<code>docker --help</code>、<code>docker ps --help</code>方式查看各级功能的帮助信息。
@@ -369,9 +370,9 @@ For more help on how to use Docker, head to https://docs.docker.com/go/guides/
 </pre>
 
 
-<h2 id="toc_0.3">Docker容器网络</h2>
+<h2 id="toc_0.3">容器连接</h2>
 
-<h3 id="toc_0.3.1">Docker网络发布</h3>
+<h3 id="toc_0.3.1">网络端口映射</h3>
 
 <pre class="brush:bash">
 docker run -d -P training/webapp python app.py
@@ -385,7 +386,7 @@ docker run -d -p 127.0.0.1:5001:5000 training/webapp python app.py
 # docker port &lt;容器名|容器ID&gt; # 快速查看绑定端口情况
 </pre>
 
-<h3 id="toc_0.3.2">Docker容器网络互通</h3>
+<h3 id="toc_0.3.2">容器互联</h3>
 
 <p>
 端口映射并不是唯一把 docker 连接到另一个容器的方法。
@@ -401,16 +402,24 @@ docker 连接会创建一个父子关系，其中父容器可以看到子容器�
 
 <ul>
 <li>
-bridge是docker默认的网络类型，连接在相同bridge上的容器及宿主机网络互通，不同bridge之间相互隔离。
+网络类型：
+
+<ul>
+<li>
+bridge，连接在相同bridge上的容器及宿主机网络互通，不同bridge之间相互隔离。
 
 <li>
-Host网络类型中，容器共享宿主机的网络及接口，这意味着容器的网络配置和宿主机是一样的。
+Host，容器共享宿主机的网络及接口，这意味着容器的网络配置和宿主机是一样的。
 
 <li>
-None网络类型中，容器中仅有loopback接口，无法与外界进行通信。
+None，容器中仅有loopback接口，无法与外界进行通信。
 
+</ul>
+</ul>
+
+<ul>
 <li>
-命令<code>docker network create</code>创建指定类型的网络：
+创建自定义网络：<code>docker network create</code>：
 
 <ul>
 <li>
@@ -425,13 +434,14 @@ None网络类型中，容器中仅有loopback接口，无法与外界进行通�
 <pre class="brush:bash">
 # 创建新的docker网络：bridge网桥，名称：test-net
 # -d：参数指定 Docker 网络DRIVE类型，有 bridge、overlay(overlay网络类型用于Swarm mode)。
-docker network create -d bridge test-net
+docker network create -d bridge mybridge
+docker network inspect mybridge           # 查看网络的连接
 
 # 连接容器
 # 运行一个容器并连接到新建的 test-net 网络:
-docker run -itd --name test1 --network test-net ubuntu /bin/bash
+docker run -itd --name test1 --network mybridge ubuntu /bin/bash
 # 再运行一个容器并加入到 test-net 网络:
-docker run -itd --name test2 --network test-net ubuntu /bin/bash
+docker run -itd --name test2 --network mybridge ubuntu /bin/bash
 </pre>
 
 <p>
@@ -455,11 +465,7 @@ ping test2
 </pre>
 
 <p>
-这样，test1 容器和 test2 容器建立了互联关系。
-</p>
-
-<p>
-如果你有多个容器之间需要互相连接，推荐使用 Docker Compose，后面会介绍。
+如果你有多个容器之间需要互相连接，推荐使用 Docker Compose。
 </p>
 
 <h3 id="toc_0.3.3">配置容器DNS</h3>
@@ -468,44 +474,26 @@ ping test2
 如果在容器启动时没有指定 --dns 和 --dns-search，Docker 会默认用宿主主机上的 /etc/resolv.conf 来配置容器的 DNS。
 </p>
 
-<ul>
-<li>
-endpoint_mode: vip 
-
-<ul>
-<li>
-Docker 集群服务一个对外的虚拟 ip。所有的请求都会通过这个虚拟 ip 到达集群服务内部的机器。
-
-</ul>
-<li>
-endpoint_mode: dnsrr
-
-<ul>
-<li>
-DNS 轮询（DNSRR）。所有的请求会自动轮询获取到集群 ip 列表中的一个 ip 地址。
-
-</ul>
-</ul>
-
 <p>
-我们可以在宿主机的 /etc/docker/daemon.json 文件中增加以下内容来设置全部容器的 DNS。
+在宿主机的 /etc/docker/daemon.json 文件中增加以下内容来设置全部容器的 DNS，或者在/etc/default/docker中用<code>DOCKER_OPTS="--dns 8.8.8.8 --dns 8.8.4.4"</code>来设置。
 </p>
 
 <p>
-配置完，需要重启 docker 才能生效:<code>systemctl restart docker</code>。
-</p>
-
-<p>
-设置后，启动容器的 DNS 会自动配置为 114.114.114.114 和 8.8.8.8。
+daemon.json配置优先(测试中，发现DOCKER-OPTS中参加没有生效)。
 </p>
 
 <pre>
 {
-  "dns" : [
-    "114.114.114.114",
-    "8.8.8.8"
-  ]
+  "dns" : [ "114.114.114.114","61.139.2.69" ]
 }
+</pre>
+
+<p>
+配置完，需要重启 docker 才能生效:
+</p>
+<pre>
+sudo systemctl daemon-reload
+systemctl restart docker
 </pre>
 
 <p>
@@ -528,7 +516,857 @@ docker run -it --rm -h host_ubuntu  --dns=114.114.114.114 --dns-search=test.com 
 docker run -it --rm ubuntu cat etc/resolv.conf
 </pre>
 
-<h2 id="toc_0.4">docker compose</h2>
+<h2 id="toc_0.4">Dockerfile</h2>
+
+<h3 id="toc_0.4.1">docker images</h3>
+
+<pre class="brush:bash">
+# 查找镜像，Docker Hub: https://hub.docker.com/
+docker search ubuntu
+# NAME: 镜像仓库源的名称
+# DESCRIPTION: 镜像的描述
+# OFFICIAL: 是否 docker 官方发布
+# STARS: 类似 Github 里面的 star，表示点赞、喜欢的意思。
+# AUTOMATED: 自动构建。
+
+docker images # 查看本地已有的镜像
+docker pull ubuntu:22.04 # 下载镜像
+docker rmi ununtu:22.04 # 删除本地已有的镜像
+</pre>
+
+<h3 id="toc_0.4.2">docker commit</h3>
+
+<ul>
+<li>
+更新镜像:从容器中更新镜像，并提交
+<pre class="brush:bash">
+# 运行一个ubuntu
+docker run -it --name myubuntu ubuntu:22.04 /bin/sh
+# 在容器中更新操作，并退出容器
+apt update
+apt upgtade
+apt install iputils-ping dnsutils
+apt autoremove
+apt clean
+exit
+# 此时myubuntu是我们更改过的容器，提交容器副本
+docker commit -m "has update" -a "xstar" myubuntu xstar/ubuntu:22.04-v2
+# -m: 提交描述
+# -a: 镜像作者
+# myubnutu: 容器ID/Name
+# xstar/ubuntu:22.04-v2: 目标镜像名
+
+# 查看提交的镜像
+docker images
+
+# REPOSITORY     TAG             IMAGE ID       CREATED         SIZE
+# xstar/ubuntu   22.04-v2        71750dd22bc2   6 seconds ago   185MB
+# ubuntu         22.04           174c8c134b2a   4 weeks ago     77.9MB
+ 
+docker run --rm -it --name myubuntu2 xstar/ubuntu:22.04-v2 /bin/sh
+</pre>
+
+</ul>
+
+<h3 id="toc_0.4.3">docker build</h3>
+
+<p>
+通过Dockerfile文件构建指令，用docker build创建一个新的镜像。
+</p>
+
+<p>
+Dockerfile每一个指令都会在镜像上创建一个新的层，要尽可能减少、合并指令（如：用&amp;&amp;连接多个操作）。
+</p>
+
+<p>
+<strong>build过程中，若出现apt update、install错误，但在容器中执行又是正常的，可能是两个原因：</strong>
+</p>
+<ol>
+<li>
+docker默认DNS为8.8.8.8,8.8.4.4，在国内访问这两个DNS不稳定，改成国内DNS。
+
+<li>
+访问国内源不稳定，改成国内镜像源(我改成mirrors.aliyun.com也不稳定，默认源、ustc的都成功build)。
+
+</ol>
+
+<ul>
+<li>
+Dockerfile
+<pre class="brush:bash">
+# Dockerfile to build unbutu Installed network tools
+# Set the base image to Ubuntu
+FROM ubuntu:22.04
+MAINTAINER XStar "xstar@qq.com"
+
+# Update &amp; Install tools
+RUN sed -i 's/http:\/\/archive.ubuntu.com/http:\/\/mirrors.ustc.edu.cn\/ubuntu/g' /etc/apt/sources.list \
+&amp;&amp; apt-get update &amp;&amp; apt-get -y upgrade \
+&amp;&amp; apt -y install iputils-ping net-tools bind9-dnsutils \
+&amp;&amp; rm -rf /var/lib/apt/lists/* &amp;&amp; apt-get autoremove &amp;&amp; apt-get clean
+
+# 容器启动命令
+CMD /bin/bash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+docker build构建
+<pre class="brush:bash">
+docker build -t xstar/ubuntu:22.04v1 ./
+# -t: 目标镜像名、TAG
+# ./: Dockerfile文件所在目录或绝对路径
+# --no-cache，不使用缓存，bulid需要重新下载所需文件
+# 多次build到同一个名称和TAG，之前的image的REPOSITORY，TAG会变成&lt;none&gt;，可以删除，或用docker tag设置TAG
+# docker tag 860c279d2fec xstar/ubuntu:v1.1
+
+docker images
+#REPOSITORY     TAG             IMAGE ID       CREATED         SIZE
+#xstar/ubuntu   22.04v1         4641f2e373d7   6 minutes ago   138MB  #安装了工具，变大了
+#ubuntu         22.04           174c8c134b2a   4 weeks ago     77.9MB
+</pre>
+
+</ul>
+
+<ul>
+<li>
+用新的镜像创建容器
+<pre class="brush:bash">
+docker run --rm --name myubuntu3 -t -i xstar/ubuntu:22.04v1
+</pre>
+
+</ul>
+
+<h2 id="toc_0.5">镜像仓库</h2>
+
+<p>
+仓库（Repository）是集中存放镜像的地方。
+</p>
+
+<ul>
+<li>
+Docker Hub: Docker官方维护的公共仓库，<a href="https://hub.docker.com/">https://hub.docker.com/</a> 
+
+</ul>
+
+<pre class="brush:bash">
+# 可以在https://hub.docker.com 免费注册一个Docker账号
+docker login
+
+docker search ubuntu
+docker pull ubuntu:22.04
+
+# 将自己镜像推送到docker hub
+docker push &lt;Local IMAGE ID&gt; xstar/ubuntu:2204v1
+</pre>
+
+<h3 id="toc_0.5.1">搭建私有镜像</h3>
+
+<ul>
+<li>
+Docker Registry: 
+
+<ul>
+<li>
+<a href="https://docs.docker.com/registry/">https://docs.docker.com/registry/</a>
+
+<li>
+<a href="https://distribution.github.io/distribution/">https://distribution.github.io/distribution/</a>
+
+<li>
+使用自签证书搭建Registry：<a href="https://distribution.github.io/distribution/about/insecure/">https://distribution.github.io/distribution/about/insecure/</a>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+搭建docker私有仓库: 
+
+<ul>
+<li>
+<a href="https://zhuanlan.zhihu.com/p/78543733">https://zhuanlan.zhihu.com/p/78543733</a>
+
+<li>
+<a href="https://blog.csdn.net/phoenix339/article/details/93979152">https://blog.csdn.net/phoenix339/article/details/93979152</a>
+
+</ul>
+</ul>
+
+<p>
+docker-registry是官方提供的工具，可以用于构建私有的镜像仓库。
+</p>
+
+<p>
+可以通过获取官方registry镜像来运行。默认情况下，仓库会被创建在容器的/var/lib/registry目录下。可以通过-v参数来将镜像文件存放在本地的指定路径。
+</p>
+
+<ul>
+<li>
+本地存储目录、配置文件
+<pre class="brush:bash">
+mkdir -p /data/registry
+</pre>
+<pre class="brush:bash">
+config.yml
+version: 0.1
+log:
+  fields:
+    service: registry
+storage:
+  delete:
+    enable: true
+  cache:
+    blobdescriptor: inmemory
+  filesystem:
+    rootdirectory: /var/lib/registry
+http:
+  addr: :5000
+  headers:
+    X-Content-Type-Options: [nosniff]
+health:
+  storagedriver:
+    enabled: true
+    interval: 10s
+    threshold: 3
+</pre>
+
+</ul>
+
+<ul>
+<li>
+运行registry
+<pre class="brush:bash">
+docker run -d \
+--restart=always \
+--name registry \
+-p 5000:5000 \
+-v /data/registry:/var/lib/registry \
+-v /data/registry/config.yml:/etc/docker/registry/config.yml \
+registry
+</pre>
+
+</ul>
+
+<ul>
+<li>
+本地仓库操作
+
+</ul>
+
+<pre class="brush:bash">
+# 镜像推送到私有仓库
+
+# 将镜像标记为私有仓库镜像
+# docker tag SOURCE_IMAGE[:TAG] TARGET_IMAGE[:TAG]
+# docker tag SOURCE_IMAGE[:TAG] [REGISTRY_HOST[:REGISTRY_PORT]/]TAGGET_IMAGE[:TAG]
+docker tag xstar/ubuntu:22.04v1 192.168.31.40:5000/xstar/ubuntu:22.04v1
+
+docker images
+#REPOSITORY                    TAG             IMAGE ID       CREATED        SIZE
+#127.0.0.1:5000/xstar/ubuntu   22.04v1         4641f2e373d7   2 hours ago    138MB
+#xstar/ubuntu                  22.04v1         4641f2e373d7   2 hours ago    138MB
+
+# 上传标记的镜像
+docker push 192.168.31.40:5000/xstar/ubuntu:22.04v1
+
+# 用curl查看仓库中的镜像
+curl -XGET http://192.168.31.40:5000/v2/_catalog
+# {"repositories":["xstar/ubuntu"]}
+
+# 删除本地镜像，测试从仓库下载
+docker image rm 192.168.31.40:5000/xstar/ubuntu:22.04v1
+docker pull 192.168.31.40:5000/xstar/ubuntu:22.04v1
+</pre>
+
+<ul>
+<li>
+在要访问这个Registry的所有主机上，将私有镜像配置到docker:/etc/docker/daemon.json。
+
+<ul>
+<li>
+修改后重启docker生效:<code>sudo systemctl restart docker</code>。
+
+<li>
+insecure-registries启动不安全的Registry后，Docker的处理步骤：
+
+<ul>
+<li>
+首先，尝试使用HTTPS。
+
+<ul>
+<li>
+如果HTTPS可用但证书无效，忽略证书验证。
+
+<li>
+如果HTTPS不可用，退回使用HTTP。
+
+</ul>
+</ul>
+</ul>
+</ul>
+
+<pre class="brush:bash">
+{
+  "registry-mirrors": [
+    "https://dockerproxy.com",
+    "https://hub-mirror.c.163.com",
+    "https://mirror.baidubce.com",
+    "https://ccr.ccs.tencentyun.com"
+  ],
+  "dns": [ "114.114.114.114","61.139.2.69" ],
+  "insecure-registries": [ "192.168.31.40:5000" ]
+}
+</pre>
+
+<ul>
+<li>
+在内网其他节点下载(先将私有镜像设置添加到各个节点的daemon.json中，并重启docker生效)
+<pre class="brush:bash">
+docker pull 192.168.31.40:5000/xstar/ubuntu:22.04v1
+</pre>
+
+</ul>
+
+<h3 id="toc_0.5.2">配置仓库HTTPS证书</h3>
+
+<ul>
+<li>
+目录及文件
+<pre>
+/data/registry/
+├── auth
+│   └── htpasswd
+├── certs
+│   ├── registry.crt
+│   └── registry.key
+├── config.yml
+└── docker
+    └── registry
+</pre>
+
+<li>
+生成证书，Common Name要输入我们registry的域名，生成的证书只对该域名有效。其他的可以任意填。
+<pre class="brush:bash">
+cd /data/registry
+mkdir -p certs
+
+#openssl req \
+#  -newkey rsa:4096 -nodes -sha256 -keyout certs/registry.key \
+#  -addext "subjectAltName = DNS:myregistry.domain.com" \
+#  -x509 -days 365 -out certs/registry.crt
+openssl req -newkey rsa:4096 -nodes -sha256 \
+-keyout certs/registry.key \
+-x509 -days 365 -out certs/registry.crt
+</pre>
+
+</ul>
+
+<pre>
+Country Name (2 letter code) [AU]:cn
+State or Province Name (full name) [Some-State]:sc
+Locality Name (eg, city) []:chengdu
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:home
+Organizational Unit Name (eg, section) []:home
+Common Name (e.g. server FQDN or YOUR name) []:192.168.31.40
+Email Address []:xstar@qq.com
+</pre>
+
+<ul>
+<li>
+生成http鉴权密码文件
+<pre class="brush:bash">
+# 安装htpasswd工具生成
+apt install apache2-utils
+cd /data/registry
+mkdir auth
+htpasswd -Bbn myuser mypassword &gt;&gt; auth/htpasswd
+# -n  Don't update file; display results on stdout.
+# -b  Use the password from the command line rather than prompting for it.
+# -B  Force bcrypt encryption of the password (very secure).
+# Registry基本身份验证仅支持 htpasswd 凭据 bcrypt 格式。
+
+# 用docker容器生成
+#mkdir -p auth
+#docker run --entrypoint htpasswd \
+#  httpd:2 -Bbn testuser testpassword &gt; auth/htpasswd
+</pre>
+
+</ul>
+
+<ul>
+<li>
+重新启动registory(需先将之前的容器删除)
+<pre class="brush:bash">
+docker run -d -p 5000:5000 --restart=always --name registry \
+-v /data/registry/auth:/auth \
+-e "REGISTRY_AUTH=htpasswd" \
+-e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
+-e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+-v /data/registry/certs:/certs \
+-e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/registry.crt \
+-e REGISTRY_HTTP_TLS_KEY=/certs/registry.key \
+-v /data/registry:/var/lib/registry \
+-v /data/registry/config.yml:/etc/docker/registry/config.yml \
+registry
+</pre>
+
+</ul>
+
+<h3 id="toc_0.5.3">client设置</h3>
+
+<ul>
+<li>
+修改所有client和server的/etc/hosts，将私有镜像仓库的ip-域名对应关系加进去。
+
+</ul>
+
+<p>
+docker client不安装证书的话，进行pull/push操作，会出现x509: certificate signed by unknown authority的报错。
+</p>
+
+<ul>
+<li>
+每个 Docker 守护程序设置信任该证书(无需重启 Docker)
+<pre class="brush:bash">
+# 将registry的证书文件复制到仓库对应目录
+mkdir -p /etc/docker/certs.d/192.168.31.40:5000
+cp /home/yuanxing/registry.crt /etc/docker/certs.d/192.168.31.40:5000
+systemctl restart docker
+</pre>
+
+</ul>
+
+<h3 id="toc_0.5.4">docker login</h3>
+
+<p>
+不登录直接push镜像的话会失败，提示no basic auth credentials的错误。
+</p>
+
+<pre class="brush:bash">
+docker login -u myuser -p mypassword 192.168.31.40:5000
+</pre>
+
+<pre>
+WARNING! Using --password via the CLI is insecure. Use --password-stdin.
+WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+</pre>
+
+<h3 id="toc_0.5.5">查询私有仓库镜像</h3>
+
+<p>
+目前无法用docker search/images/image ls对私有仓库镜像进行查询，可以通过curl调用API列出仓库内所有的镜像。
+</p>
+
+<ul>
+<li>
+curl查询
+<pre class="brush:bash">
+# -k, --insecure:自签证书需忽略证书校验
+# -u，登录用户、密码
+curl -k -u 'myuser:mypassword' -XGET https://192.168.31.40:5000/v2/_catalog
+curl -k -u 'myuser:mypassword' -XGET https://192.168.31.40:5000/v2/xstar/ubuntu/tags/list
+curl -s -k -u 'myuser:mypassword' -XGET https://192.168.31.40:5000/v2/_catalog | python3 -m json.tool
+</pre>
+<pre>
+curl -k -u 'myuser:mypassword' -XGET https://192.168.31.40:5000/v2/_catalog
+{"repositories":["xstar/ubuntu"]}
+
+curl -k -u 'myuser:mypassword' -XGET https://192.168.31.40:5000/v2/xstar/ubuntu/tags/list
+{"name":"xstar/ubuntu","tags":["22.04v1"]}
+</pre>
+
+</ul>
+
+<ul>
+<li>
+list_private_images.py
+<pre class="brush:python">
+#!/usr/bin/env python3
+#-*- coding:utf-8 -*-
+# list_private_images.py
+import requests
+from requests.auth import HTTPBasicAuth
+import json
+import traceback
+import sys
+import urllib3
+urllib3.disable_warnings()
+
+def getImagesNames(server,user,passwd):
+    docker_images = []
+    try:
+        url = server + "/v2/_catalog"
+        res =requests.get(url=url,verify=False,auth=HTTPBasicAuth(user,passwd)).content.strip()
+        res_dic = json.loads(res)
+        images_type = res_dic['repositories']
+        for i in images_type:
+            url2 = server + "/v2/" + str(i) + "/tags/list"
+            res2 =requests.get(url=url2,verify=False,auth=HTTPBasicAuth(user,passwd)).content.strip()
+            res_dic2 = json.loads(res2)
+            name = res_dic2['name']
+            tags = res_dic2['tags']
+            if tags != None:
+                for tag in tags:
+                    docker_name = server + "/" + name + ":" + tag
+                    docker_images.append(docker_name)
+                    print(docker_name)
+    except:
+        traceback.print_exc()
+    return docker_images
+
+if __name__ == "__main__":
+    port=8888
+    if len(sys.argv)&lt;4:
+        print("Usage: list_private_images.py &lt;server_url&gt; &lt;username&gt; &lt;password&gt;")
+        print("eg. list_private_images.py https://192.168.31.40:5000 myuser mypassword")
+        sys.exit()
+
+server = sys.argv[1]
+user = sys.argv[2]
+passwd = sys.argv[3]
+getImagesNames(server,user,passwd)
+</pre>
+
+</ul>
+
+<pre class="brush:bash">
+cp list_private_images.py /usr/local/bin
+chmod 755 /usr/local/bin/list_private_images.py
+
+list_private_images.py https://192.168.31.40:5000 myuser mypassword
+#https://192.168.31.40:5000/xstar/ubuntu:22.04v1
+</pre>
+
+<h3 id="toc_0.5.6">管理私有仓库镜像</h3>
+
+<ul>
+<li>
+确认是否开启删除功能
+
+</ul>
+
+<p>
+如果没有开启，执行删除镜像操作的时候，会返回如下两种错误：
+</p>
+
+<pre>
+{"errors":[{"code":"UNSUPPORTED","message":"The operation is unsupported."}]}
+</pre>
+<pre>
+HTTP/1.1 405 Method Not Allowed
+Content-Type: application/json; charset=utf-8
+Docker-Distribution-Api-Version: registry/2.0
+X-Content-Type-Options: nosniff
+Date: Fri, 18 Mar 2022 04:12:22 GMT
+Content-Length: 78
+</pre>
+
+<ul>
+<li>
+修改registry的config.yml文件，在storage中增加，修改重启容器：<code>docker restart registry</code>
+<pre>
+  delete:
+    enabled: true
+</pre>
+
+</ul>
+
+<ul>
+<li>
+查询镜像RepoDigests
+<pre class="brush:bash">
+docker image inspect -f '{{.RepoDigests}}' 192.168.31.40:5000/xstar/ubuntu:22.04v1
+# [192.168.31.40:5000/xstar/ubuntu@sha256:b840318b448f3105284eda4241967055e2cd463a3742d1a55fb917eca5e84319]
+
+
+# curl方式查看镜像RepoDigests
+#curl --header "Accept:application/vnd.docker.distribution.manifest.v2+json" -I \
+#-u &lt;仓库用户名&gt;:&lt;用户名密码&gt; http://&lt;仓库ip地址&gt;:&lt;仓库端口&gt;/v2/&lt;镜像名称&gt;/manifests/&lt;镜像 tag&gt;
+curl --header "Accept:application/vnd.docker.distribution.manifest.v2+json" -I \
+-k -u 'myuser:mypassword' \
+https://192.168.31.40:5000/v2/xstar/ubuntu/manifests/22.04v1
+
+# docker-content-digest: sha256:b840318b448f3105284eda4241967055e2cd463a3742d1a55fb917eca5e84319
+</pre>
+
+</ul>
+
+
+<ul>
+<li>
+删除私有库中镜像
+<pre class="brush:bash">
+# [[curl]] -I -XDELETE -u &lt;仓库用户名&gt;:&lt;用户名密码&gt; http://&lt;仓库ip地址&gt;:&lt;仓库端口&gt;/v2/&lt;镜像名称&gt;/manifests/&lt;获取的 hash 值&gt;
+# 查看registry日志
+# docker logs -f registry
+curl \
+-k -u 'myuser:mypassword' \
+-I -X DELETE \
+https://192.168.31.40:5000/v2/xstar/ubuntu/manifests/\
+sha256:b840318b448f3105284eda4241967055e2cd463a3742d1a55fb917eca5e84319
+
+</pre>
+<pre>
+HTTP/2 202
+docker-distribution-api-version: registry/2.0
+x-content-type-options: nosniff
+content-length: 0
+date: Mon, 15 Jan 2024 14:42:52 GMT
+
+# 删除后，curl仍能查询到镜像信息，但tags为null，下载也会失败
+curl -k -u 'myuser:mypassword' -XGET https://192.168.31.40:5000/v2/_catalog
+{"repositories":["xstar/ubuntu"]}
+
+curl -k -u 'myuser:mypassword' -XGET https://192.168.31.40:5000/v2/xstar/ubuntu/tags/list
+{"name":"xstar/ubuntu","tags":null}
+
+docker pull 192.168.31.40:5000/xstar/ubuntu:22.04v1
+Error response from daemon: manifest for 192.168.31.40:5000/xstar/ubuntu:22.04v1 not found: manifest unknown: manifest unknown
+</pre>
+
+</ul>
+
+<ul>
+<li>
+垃圾回收
+
+<ul>
+<li>
+镜像删除后，并不会释放空间，需要在registry上执行垃圾回收
+<pre>
+registry garbage-collect /etc/docker/registry/config.yml
+</pre>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.6">用swarm运行Registry服务</h2>
+
+<h3 id="toc_0.6.1">swarm命令方式</h3>
+
+<p>
+如果使用分布式存储（如：Amazon S3），则可使用完全扩展的多节点Registry服务。
+</p>
+
+<p>
+如果使用本地挂载的卷，只能使用单副本服务和Swarm节点约束，来确保只有一个工作节点副本写入。
+</p>
+
+<ul>
+<li>
+将TLS证书和密钥另存为docker secret:
+<pre class="brush:bash">
+# docker secret create [OPTIONS] SECRET [file|-]
+# Create a secret from a file or STDIN as content
+# Options:
+#  -d, --driver string            Secret driver
+#  -l, --label list               Secret labels
+#      --template-driver string   Template driver
+
+docker secret create docker_secret_registry.crt certs/registry.crt
+docker secret create docker_secret_registry.key certs/registry.key
+
+docker secret ls
+#ID                          NAME                         DRIVER    CREATED              UPDATED
+#vlpkfqo7aljlbhk437v6cpn1m   docker_secret_registry.crt             About a minute ago   About a minute ago
+#q5shlbwh86ygibx5092j4u70w   docker_secret_registry.key             About a minute ago   About a minute ago
+</pre>
+
+</ul>
+
+<ul>
+<li>
+为节点添加registry Lalel
+<pre class="brush:bash">
+#docker node update --label-add registry=true swarm-node1
+#docker node update --label-rm registry swarm-node1
+docker node update --label-add registry=true swarm-manager
+docker node inspect -f '{{.Spec.Labels}}' swarm-manager
+</pre>
+
+</ul>
+
+<ul>
+<li>
+创建Registry服务
+
+<ul>
+<li>
+授予两个secret的访问权限
+
+<li>
+仅在带有registry标签的node上运行
+
+<li>
+一次只能运行一个副本
+<pre class="brush:bash">
+docker service create \
+  --name registry \
+  --restart-condition="any" \
+  --secret docker_secret_registry.crt \
+  --secret docker_secret_registry.key \
+  --constraint 'node.labels.registry==true' \
+  --mount type=bind,src=/data/registry,dst=/var/lib/registry \
+  --mount type=bind,src=/data/registry/auth,dst=/auth \
+  --mount type=bind,src=/data/registry/config.yml,dst=/etc/docker/registry/config.yml \
+  -e "REGISTRY_AUTH=htpasswd" \
+  -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
+  -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+  -e REGISTRY_HTTP_ADDR=0.0.0.0:5000 \
+  -e REGISTRY_HTTP_TLS_CERTIFICATE=/run/secrets/docker_secret_registry.crt \
+  -e REGISTRY_HTTP_TLS_KEY=/run/secrets/docker_secret_registry.key \
+  --publish published=5000,target=5000 \
+  --replicas 1 \
+  registry:2
+</pre>
+
+</ul>
+</ul>
+
+<h3 id="toc_0.6.2">compose方式:不支持external secret</h3>
+
+<ul>
+<li>
+compose部署Registry
+<pre class="brush:bash">
+# Registry-docker-compose.yml
+version: '3'
+services:
+  registry:
+    restart: always
+    image: registry:2
+    ports:
+      - 5000:5000
+    environment:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+      REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+      REGISTRY_HTTP_TLS_CERTIFICATE: /run/secrets/docker_secret_registry.crt
+      REGISTRY_HTTP_TLS_KEY: /run/secrets/docker_secret_registry.key
+    volumes:
+      - /data/registry:/var/lib/registry 
+      - /data/registry/auth:/auth
+      - /data/registry/config.yml:/etc/docker/registry/config.yml
+    secrets:
+      - docker_secret_registry.crt
+      - docker_secret_registry.key
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - "node.labels.registry==true"
+secrets:
+  docker_secret_registry.crt:
+    file: /data/registry/certs/registry.crt
+    #external: true # compose下不支持external: true
+  docker_secret_registry.key:
+    file: /data/registry/certs/registry.key
+</pre>
+
+<li>
+compose启动Registry
+<pre class="brush:bash">
+docker-compose -f Registry-docker-compose.yml up -d
+</pre>
+
+</ul>
+
+<pre>
+WARNING: The Docker Engine you're using is running in swarm mode.
+
+Compose does not use swarm mode to deploy services to multiple nodes in a swarm. All containers will be scheduled on the current node.
+
+To deploy your application across the swarm, use `docker stack deploy`.
+
+Creating registry_registry_1 ... done
+</pre>
+
+<h3 id="toc_0.6.3">stack方式</h3>
+
+<ul>
+<li>
+stack部署Registry
+<pre class="brush:bash">
+# Registry-docker-stack.yml
+version: '3'
+services:
+  registry:
+    image: registry:2
+    ports:
+      - 5000:5000
+    environment:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+      REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+      REGISTRY_HTTP_TLS_CERTIFICATE: /run/secrets/docker_secret_registry.crt
+      REGISTRY_HTTP_TLS_KEY: /run/secrets/docker_secret_registry.key
+    volumes:
+      - /data/registry:/var/lib/registry 
+      - /data/registry/auth:/auth
+      - /data/registry/config.yml:/etc/docker/registry/config.yml
+    secrets:
+      - docker_secret_registry.crt
+      - docker_secret_registry.key
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - "node.labels.registry==true"
+secrets:
+  docker_secret_registry.crt:
+    external: true
+  docker_secret_registry.key:
+    external: true
+</pre>
+
+<li>
+docker stack启动Registry
+<pre class="brush:bash">
+docker stack deploy -c Registry-docker-stack.yml Registry
+</pre>
+
+</ul>
+
+<pre>
+docker stack deploy -c Registry-docker-stack.yml Registry
+Creating network Registry_default
+Creating service Registry_registry
+
+docker service ls
+ID             NAME                MODE         REPLICAS   IMAGE        PORTS
+inygepp4z78i   Registry_registry   replicated   1/1        registry:2   *:5000-&gt;5000/tcp
+
+docker service ps Registry_registry
+ID             NAME                  IMAGE        NODE            DESIRED STATE   CURRENT STATE                ERROR     PORTS
+qsiqlrrd0n9j   Registry_registry.1   registry:2   swarm-manager   Running         Running about a minute ago
+
+curl -k -u 'myuser:mypassword' -XGET https://192.168.31.40:5000/v2/xstar/ubuntu/tags/list
+{"name":"xstar/ubuntu","tags":["22.04v1"]}
+</pre>
+
+<ul>
+<li>
+使用NFS共享存储
+
+</ul>
+
+<p>
+todo.
+</p>
+
+
+<h2 id="toc_0.7">docker compose</h2>
 
 <ul>
 <li>
@@ -543,6 +1381,12 @@ docker-compose安装Nginx:
 
 </ul>
 <li>
+如何使用 Docker Compose Secrets 保护敏感数据:<a href="https://cn.linux-console.net/?p=7629">https://cn.linux-console.net/?p=7629</a>
+
+<li>
+docker compose 配置文件 .yml 全面指南:<a href="https://zhuanlan.zhihu.com/p/387840381">https://zhuanlan.zhihu.com/p/387840381</a>
+
+<li>
 安装docker-compose:
 <pre>
 apt install docker-compose
@@ -550,7 +1394,7 @@ apt install docker-compose
 
 </ul>
 
-<h3 id="toc_0.4.1">compose常用命令</h3>
+<h3 id="toc_0.7.1">compose常用命令</h3>
 
 <pre class="brush:bash">
 docker-compose pull # 拉取工程中所有服务依赖的镜像
@@ -585,9 +1429,9 @@ docker-compose rm -s [service] # 停止、并删除所有或指定服务
 # -v:删除工程中指定服务的容器
 </pre>
 
-<h3 id="toc_0.4.2">示例:compose部署Nginx</h3>
+<h3 id="toc_0.7.2">示例:compose部署Nginx</h3>
 
-<h4 id="toc_0.4.2.1">创建nginx工作目录</h4>
+<h4 id="toc_0.7.2.1">创建nginx工作目录</h4>
 
 <pre class="brush:bash">
 mkdir -p /data/nginx \
@@ -613,8 +1457,7 @@ mkdir -p /data/nginx \
 └── www
 </pre>
 
-
-<h4 id="toc_0.4.2.2">生成nginx配置文件</h4>
+<h4 id="toc_0.7.2.2">生成nginx配置文件</h4>
 
 <pre class="brush:bash">
 # 拉取image
@@ -651,7 +1494,7 @@ docker stop mynginx
 docker rm mynginx
 </pre>
 
-<h4 id="toc_0.4.2.3">docker-compose.yml</h4>
+<h4 id="toc_0.7.2.3">docker-compose.yml</h4>
 
 <pre class="brush:bash">
 # docker-compose.yml
@@ -684,7 +1527,7 @@ services:
 #  data:
 </pre>
 
-<h4 id="toc_0.4.2.4">部署nignx</h4>
+<h4 id="toc_0.7.2.4">部署nignx</h4>
 
 <pre class="brush:bash">
 # 进入docker-compose.yml所在目录
@@ -716,13 +1559,6 @@ docker-compose stop|start
 # 删除服务
 docker-compose rm
 </pre>
-
-
-<h2 id="toc_0.5">Dockerfile</h2>
-
-<p>
-Dockerfile 是一个用来构建镜像的文本文件，文本内容包含了一条条构建镜像所需的指令和说明。
-</p>
 
 </div>
 <div id="footer">

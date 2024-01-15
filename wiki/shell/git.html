@@ -19,6 +19,7 @@
 <div class="toc">
 <ul>
 <li><a href="#toc_0.1">Git Tips</a>
+<li><a href="#toc_0.2">git将同一项目推送到两个仓库</a>
 </ul>
 </ul>
 </div>
@@ -76,6 +77,35 @@ git-commit-id-plugin:
 <a href="https://blog.csdn.net/wangjunjun2008/article/details/10526151">https://blog.csdn.net/wangjunjun2008/article/details/10526151</a>
 
 </ul>
+</ul>
+
+<h2 id="toc_0.2">git将同一项目推送到两个仓库</h2>
+
+<ul>
+<li>
+添加多个仓库方式
+<pre class="brush:bash">
+# 添加仓库
+git remote add github https://github.com/demo.git
+# 推送到仓库，推送两次
+git push -u origin
+git push -u gitee
+</pre>
+
+</ul>
+
+<ul>
+<li>
+添加仓库并一次提交
+<pre class="brush:bash">
+# 添加仓库
+git remote set-url --add origin https://github.com/demo.git
+# 查看远程仓库配置，或直接查看.git/config中的配置
+git remote -v
+# 同步推送所有仓库
+git push -u origin master
+</pre>
+
 </ul>
 
 </div>

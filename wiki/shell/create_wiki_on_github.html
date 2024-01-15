@@ -37,6 +37,7 @@
 <li><a href="#toc_0.5.2">设置密码缓存</a>
 <li><a href="#toc_0.5.3">Jekyll</a>
 </ul>
+<li><a href="#toc_0.6">gitee</a>
 </ul>
 </ul>
 </div>
@@ -519,6 +520,61 @@ Liquid模板语言: <a href="https://github.com/shopify/liquid/wiki/liquid-for-d
 <a href="https://github.com/ZE3kr/ZE3kr.github.io">https://github.com/ZE3kr/ZE3kr.github.io</a>
 
 </ul>
+
+<h2 id="toc_0.6">gitee</h2>
+
+<p>
+简易的命令行入门教程:
+</p>
+<pre class="brush:bash">
+#Git 全局设置:
+git config --global user.name "XStarCD"
+git config --global user.email "13971779+xstarcd@user.noreply.gitee.com"
+
+#创建 git 仓库:
+mkdir xstar-wiki
+cd xstar-wiki
+git init 
+touch README.md
+git add README.md
+git commit -m "first commit"
+git remote add origin https://gitee.com/xstarcd/xstarcd.git
+git push -u origin "master"
+
+#已有仓库?
+cd existing_git_repo
+git remote add origin https://gitee.com/xstarcd/xstarcd.git
+git push -u origin "master"
+</pre>
+
+<ul>
+<li>
+Gitee Pages Action: 
+
+<ul>
+<li>
+服务帮助：<a href="https://help.gitee.com/services/gitee-pages/intro">https://help.gitee.com/services/gitee-pages/intro</a>
+
+<li>
+使用Gitee Pages发布网站: <a href="https://blog.csdn.net/weixin_44581586/article/details/129014882">https://blog.csdn.net/weixin_44581586/article/details/129014882</a>
+
+<li>
+自动发布：<a href="https://github.com/marketplace/actions/gitee-pages-action">https://github.com/marketplace/actions/gitee-pages-action</a>
+
+</ul>
+</ul>
+
+<p>
+Gitee Pages 是一个免费的静态网页托管服务，您可以使用 Gitee Pages 托管博客、项目官网等静态网页。用户可以通过默认提供的域名 gitee.io 来发布自己的站点。
+</p>
+
+<p>
+目前，Gitee Pages 已支持 Jekyll、Hugo、Hexo 等静态网站生成引擎，可以很方便的在线编译这几类静态站点项目。当然，原始的 HTML 也是支持的。
+</p>
+
+<p>
+Gitee Pages Pro 是支持自定义域名版本的 Gitee Pages。目前在 Gitee GVP、Gitee 推荐项目和 Gitee 付费企业版中可以免费使用。
+</p>
 
 </div>
 <div id="footer">
