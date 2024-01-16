@@ -29,7 +29,12 @@
 <li><a href="#toc_0.9">用swarm部署Registry</a>
 <li><a href="#toc_0.10">compose方式部署Registry</a>
 <li><a href="#toc_0.11">stack方式部署Registry</a>
-<li><a href="#toc_0.12">使用NFS支持多节点</a>
+<li><a href="#toc_0.12">可在多节点运行的registry</a>
+<ul>
+<li><a href="#toc_0.12.1">NFS Volume环境准备</a>
+<li><a href="#toc_0.12.2">registry stack配置</a>
+<li><a href="#toc_0.12.3">部署Registry</a>
+</ul>
 </ul>
 </ul>
 </div>
@@ -88,6 +93,9 @@ Docker Registry:
 <a href="https://blog.csdn.net/phoenix339/article/details/93979152">https://blog.csdn.net/phoenix339/article/details/93979152</a>
 
 </ul>
+<li>
+Docker Registry v2 配置文件详解: <a href="https://cloud.tencent.com/developer/article/1047253">https://cloud.tencent.com/developer/article/1047253</a>
+
 </ul>
 
 <p>
@@ -140,7 +148,7 @@ docker run -d \
 -p 5000:5000 \
 -v /data/registry:/var/lib/registry \
 -v /data/registry/config.yml:/etc/docker/registry/config.yml \
-registry
+registry:2.8.3
 </pre>
 
 </ul>
@@ -301,7 +309,7 @@ docker run -d -p 5000:5000 --restart=always --name registry \
 -e REGISTRY_HTTP_TLS_KEY=/certs/registry.key \
 -v /data/registry:/var/lib/registry \
 -v /data/registry/config.yml:/etc/docker/registry/config.yml \
-registry
+registry:2.8.3
 </pre>
 
 </ul>
@@ -613,7 +621,7 @@ docker service create \
   -e REGISTRY_HTTP_TLS_KEY=/run/secrets/docker_secret_registry.key \
   --publish published=5000,target=5000 \
   --replicas 1 \
-  registry:2
+  registry:2.8.3
 </pre>
 
 </ul>
@@ -634,7 +642,7 @@ version: '3'
 services:
   registry:
     restart: always
-    image: registry:2
+    image: registry:2.8.3
     ports:
       - 5000:5000
     environment:
@@ -692,7 +700,7 @@ stack部署Registry
 version: '3'
 services:
   registry:
-    image: registry:2
+    image: registry:2.8.3
     ports:
       - 5000:5000
     environment:
@@ -748,11 +756,142 @@ curl -k -u 'myuser:mypassword' -XGET https://192.168.31.40:5000/v2/xstar/ubuntu/
 {"name":"xstar/ubuntu","tags":["22.04v1"]}
 </pre>
 
-<h2 id="toc_0.12">使用NFS支持多节点</h2>
+<h2 id="toc_0.12">可在多节点运行的registry</h2>
+
+<h3 id="toc_0.12.1">NFS Volume环境准备</h3>
+
+<ol>
+<li>
+参考本文前面部份，完成/data/registry目录下的：config.yml、certs和auth文件的准备。
+<pre>
+/data/registry/
+├── auth
+│   └── htpasswd
+├── certs
+│   ├── registry.crt
+│   └── registry.key
+├── config.yml
+└── docker # registry自动创建的数据目录
+    └── registry
+</pre>
+
+<li>
+首先参看<a href="docker-swarm.html">docker-swarm</a>中的NFS Volume章节，并完成：
+
+<ol>
+<li>
+NFS Server部署、配置，设置NFS registry目录共享。
+
+<li>
+在所有node安装nfs-common，确认在NFS客户端可以正常mount和读写。
+
+</ol>
+</ol>
+
+<h3 id="toc_0.12.2">registry stack配置</h3>
+
+<ul>
+<li>
+stack部署Registry:NFS存储+configs+secrets
+<pre class="brush:bash">
+# Registry-docker-stack_v2.yml
+version: '3'
+services:
+  registry:
+    image: registry:2.8.3
+    ports:
+      - 5000:5000
+    environment:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+      REGISTRY_AUTH_HTPASSWD_PATH: /var/lib/registry/auth/htpasswd
+      REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+      REGISTRY_HTTP_TLS_CERTIFICATE: /run/secrets/docker_secret_registry.crt
+      REGISTRY_HTTP_TLS_KEY: /run/secrets/docker_secret_registry.key
+    volumes:
+      - type: volume
+        source: registry_storage
+        target: /var/lib/registry 
+    configs:
+      - source: registry_config_yml
+        target: /etc/docker/registry/config.yml
+    secrets:
+      - docker_secret_registry.crt
+      - docker_secret_registry.key
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - "node.labels.registry==true"
+secrets:
+  docker_secret_registry.crt:
+    external: true
+  docker_secret_registry.key:
+    external: true
+volumes:
+  registry_storage:
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.31.40,nolock,soft,rw"
+      device: ":/data/registry"
+configs:
+  registry_config_yml:
+    file: /data/registry/config.yml
+</pre>
+
+</ul>
+
+<ul>
+<li>
+为更多节点增加label
+<pre class="brush:bash">
+#docker node update --label-rm registry swarm-node1
+docker node update --label-add registry=true swarm-manager
+docker node update --label-add registry=true swarm-node1
+docker node update --label-add registry=true swarm-node2
+
+docker node inspect -f '{{.Spec.Labels}}' swarm-manager swarm-node1 swarm-node2
+#map[registry:true]
+#map[registry:true]
+#map[registry:true]
+</pre>
+
+</ul>
+
+<h3 id="toc_0.12.3">部署Registry</h3>
 
 <p>
-todo.
+docker stack启动Registry
 </p>
+<pre class="brush:bash">
+docker stack deploy -c Registry-docker-stack_v2.yml Registry
+</pre>
+
+<pre>
+service部署时，自动创建了network、config和volume。
+
+docker stack deploy -c Registry-docker-stack_v2.yml Registry
+Creating network Registry_default
+Creating config Registry_registry_config_yml
+Creating service Registry_registry
+
+docker stack ls
+NAME       SERVICES
+Registry   1
+
+docker stack ps Registry
+ID             NAME                  IMAGE            NODE            DESIRED STATE   CURRENT STATE           ERROR     PORTS
+swfcczvkl8zb   Registry_registry.1   registry:2.8.3   swarm-manager   Running         Running 3 minutes ago
+ozxm1c2gqifs   Registry_registry.2   registry:2.8.3   swarm-node2     Running         Running 3 minutes ago
+
+在运行的节点，用 docker volume ls和docker config ls可以查看到对应的卷和配置修改，用mount|grep regi可以看到对应NFS目录已挂载。
+
+测试访问registry正常：
+curl -k -u 'myuser:mypassword' -XGET https://192.168.31.42:5000/v2/xstar/ubuntu/tags/list
+{"name":"xstar/ubuntu","tags":["22.04v1"]}
+</pre>
 
 </div>
 <div id="footer">
