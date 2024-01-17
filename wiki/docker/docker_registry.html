@@ -399,38 +399,37 @@ import urllib3
 urllib3.disable_warnings()
 
 def getImagesNames(server,user,passwd):
-    docker_images = []
-    try:
-        url = server + "/v2/_catalog"
-        res =requests.get(url=url,verify=False,auth=HTTPBasicAuth(user,passwd)).content.strip()
-        res_dic = json.loads(res)
-        images_type = res_dic['repositories']
-        for i in images_type:
-            url2 = server + "/v2/" + str(i) + "/tags/list"
-            res2 =requests.get(url=url2,verify=False,auth=HTTPBasicAuth(user,passwd)).content.strip()
-            res_dic2 = json.loads(res2)
-            name = res_dic2['name']
-            tags = res_dic2['tags']
-            if tags != None:
-                for tag in tags:
-                    docker_name = server + "/" + name + ":" + tag
-                    docker_images.append(docker_name)
-                    print(docker_name)
-    except:
-        traceback.print_exc()
-    return docker_images
+  docker_images = []
+  try:
+    url = server + "/v2/_catalog"
+    res =requests.get(url=url,verify=False,auth=HTTPBasicAuth(user,passwd)).content.strip()
+    res_dic = json.loads(res)
+    images_type = res_dic['repositories']
+    for i in images_type:
+      url2 = server + "/v2/" + str(i) + "/tags/list"
+      res2 =requests.get(url=url2,verify=False,auth=HTTPBasicAuth(user,passwd)).content.strip()
+      res_dic2 = json.loads(res2)
+      name = res_dic2['name']
+      tags = res_dic2['tags']
+      if tags != None:
+        for tag in tags:
+          docker_name = server + "/" + name + ":" + tag
+          docker_images.append(docker_name)
+          print(docker_name)
+  except:
+    traceback.print_exc()
+  return docker_images
 
 if __name__ == "__main__":
-    port=8888
-    if len(sys.argv)&lt;4:
-        print("Usage: list_private_images.py &lt;server_url&gt; &lt;username&gt; &lt;password&gt;")
-        print("eg. list_private_images.py https://192.168.31.40:5000 myuser mypassword")
-        sys.exit()
+  if len(sys.argv)&lt;4:
+    print("Usage: list_private_images.py &lt;server_url&gt; &lt;username&gt; &lt;password&gt;")
+    print("eg. list_private_images.py https://192.168.31.40:5000 myuser mypassword")
+    sys.exit()
 
-server = sys.argv[1]
-user = sys.argv[2]
-passwd = sys.argv[3]
-getImagesNames(server,user,passwd)
+  server = sys.argv[1]
+  user = sys.argv[2]
+  passwd = sys.argv[3]
+  getImagesNames(server,user,passwd)
 </pre>
 
 </ul>
