@@ -18,25 +18,82 @@
 <h1>docker</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">Docker常用操作</a>
-<li><a href="#toc_0.2">docker-swarm</a>
-<li><a href="#toc_0.3">搭建Docker Registry私有仓库</a>
-<li><a href="#toc_0.4">k3s_study</a>
-<li><a href="#toc_0.5">Docker资料收集</a>
-<li><a href="#toc_0.6">其它</a>
+<li><a href="#toc_0.1">Docker基础</a>
+<ul>
+<li><a href="#toc_0.1.1">Docker常用操作</a>
+<li><a href="#toc_0.1.2">docker-swarm</a>
+<li><a href="#toc_0.1.3">搭建Docker Registry私有仓库</a>
+<li><a href="#toc_0.1.4">Dockerfile</a>
+<li><a href="#toc_0.1.5">可视化工具</a>
+</ul>
+<li><a href="#toc_0.2">k3s_study</a>
+<li><a href="#toc_0.3">Docker资料收集</a>
+<li><a href="#toc_0.4">其它</a>
 </ul>
 </ul>
 </div>
 
-<h2 id="toc_0.1"><a href="Docker.html">Docker常用操作</a></h2>
+<h2 id="toc_0.1">Docker基础</h2>
 
-<h2 id="toc_0.2"><a href="docker-swarm.html">docker-swarm</a></h2>
+<h3 id="toc_0.1.1"><a href="Docker.html">Docker常用操作</a></h3>
 
-<h2 id="toc_0.3"><a href="docker_registry.html">搭建Docker Registry私有仓库</a></h2>
+<h3 id="toc_0.1.2"><a href="docker-swarm.html">docker-swarm</a></h3>
 
-<h2 id="toc_0.4"><a href="k3s_study.html">k3s_study</a></h2>
+<h3 id="toc_0.1.3"><a href="docker_registry.html">搭建Docker Registry私有仓库</a></h3>
 
-<h2 id="toc_0.5">Docker资料收集</h2>
+<h3 id="toc_0.1.4"><a href="Dockerfile.html">Dockerfile</a></h3>
+
+<ul>
+<li>
+Todo:
+
+<ul>
+<li>
+docker stack部署Nginx、MySQL，体验感受网络、数据存储、配置、节点迁移的操作和管理。
+
+<li>
+可视化工具体验。
+
+<li>
+Dockerfile细化学的操作和实践，体会与应用的结合变化。
+
+<li>
+监控、日志管理等体验和配置。
+
+<li>
+CICD:git-flow-&gt;gitlab-runner
+
+<li>
+K3S学习?
+
+</ul>
+</ul>
+
+<h3 id="toc_0.1.5">可视化工具</h3>
+
+<ul>
+<li>
+Harbor: 由VMware公司开源的企业级的Docker Registry管理项目，它包括权限管理(RBAC)、LDAP、日志审核、管理界面、自我注册、镜像复制和中文支持等功能。
+
+<ul>
+<li>
+<a href="https://zhuanlan.zhihu.com/p/403285855">https://zhuanlan.zhihu.com/p/403285855</a>
+
+</ul>
+<li>
+portainer.io: Docker可视化工具:提供状态显示面板、应用模板快速部署、容器镜像网络数据卷的基本操作（包括上传下载镜像，创建容器等操作）、事件日志显示、容器控制台操作、Swarm集群和服务等集中管理和操作、登录用户管理和控制等功能。功能十分全面，基本能满足中小型单位对容器管理的全部需求。
+
+<ul>
+<li>
+<a href="https://zhuanlan.zhihu.com/p/403285855">https://zhuanlan.zhihu.com/p/403285855</a>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.2"><a href="k3s_study.html">k3s_study</a></h2>
+
+
+<h2 id="toc_0.3">Docker资料收集</h2>
 
 <p>
 Docker 并非是一个通用的容器工具，它依赖于已存在并运行的 Linux 内核环境。
@@ -217,7 +274,7 @@ Docker Swarm 是 Docker 的集群管理工具。它将 Docker 主机池转变为
 </ul>
 </ul>
 
-<h2 id="toc_0.6">其它</h2>
+<h2 id="toc_0.4">其它</h2>
 
 <ul>
 <li>

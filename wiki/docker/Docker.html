@@ -45,12 +45,7 @@
 <li><a href="#toc_0.4.2.3">docker-compose.yml</a>
 <li><a href="#toc_0.4.2.4">部署nignx</a>
 </ul>
-</ul>
-<li><a href="#toc_0.5">Dockerfile</a>
-<ul>
-<li><a href="#toc_0.5.1">docker images</a>
-<li><a href="#toc_0.5.2">docker commit</a>
-<li><a href="#toc_0.5.3">docker build</a>
+<li><a href="#toc_0.4.3">Dockerfile</a>
 </ul>
 </ul>
 </ul>
@@ -508,6 +503,9 @@ docker run -it --rm ubuntu cat etc/resolv.conf
 
 <ul>
 <li>
+Try Docker Compose: <a href="https://docs.docker.com/compose/gettingstarted/">https://docs.docker.com/compose/gettingstarted/</a>
+
+<li>
 docker-compose安装Nginx: 
 
 <ul>
@@ -525,6 +523,12 @@ docker-compose安装Nginx:
 docker compose 配置文件 .yml 全面指南:<a href="https://zhuanlan.zhihu.com/p/387840381">https://zhuanlan.zhihu.com/p/387840381</a>
 
 <li>
+Compose file version 3 reference: <a href="https://docs.docker.com/compose/compose-file/compose-file-v3/">https://docs.docker.com/compose/compose-file/compose-file-v3/</a>
+
+</ul>
+
+<ul>
+<li>
 安装docker-compose:
 <pre>
 apt install docker-compose
@@ -533,6 +537,7 @@ apt install docker-compose
 </ul>
 
 <h3 id="toc_0.4.1">compose常用命令</h3>
+
 
 <pre class="brush:bash">
 docker-compose pull # 拉取工程中所有服务依赖的镜像
@@ -568,6 +573,15 @@ docker-compose rm -s [service] # 停止、并删除所有或指定服务
 </pre>
 
 <h3 id="toc_0.4.2">示例:compose部署Nginx</h3>
+
+<ul>
+<li>
+Use secrets with a Nginx service: <a href="https://docs.docker.com/engine/swarm/secrets/#intermediate-example-use-secrets-with-a-nginx-service">https://docs.docker.com/engine/swarm/secrets/#intermediate-example-use-secrets-with-a-nginx-service</a>
+
+<li>
+Use secrets with a WordPress &amp; MySQL service: <a href="https://docs.docker.com/engine/swarm/secrets/#advanced-example-use-secrets-with-a-wordpress-service">https://docs.docker.com/engine/swarm/secrets/#advanced-example-use-secrets-with-a-wordpress-service</a>
+
+</ul>
 
 <h4 id="toc_0.4.2.1">创建nginx工作目录</h4>
 
@@ -667,6 +681,7 @@ services:
 
 <h4 id="toc_0.4.2.4">部署nignx</h4>
 
+
 <pre class="brush:bash">
 # 进入docker-compose.yml所在目录
 cd /data/nginx
@@ -698,128 +713,7 @@ docker-compose stop|start
 docker-compose rm
 </pre>
 
-<h2 id="toc_0.5">Dockerfile</h2>
-
-<h3 id="toc_0.5.1">docker images</h3>
-
-<pre class="brush:bash">
-# 查找镜像，Docker Hub: https://hub.docker.com/
-docker search ubuntu
-# NAME: 镜像仓库源的名称
-# DESCRIPTION: 镜像的描述
-# OFFICIAL: 是否 docker 官方发布
-# STARS: 类似 Github 里面的 star，表示点赞、喜欢的意思。
-# AUTOMATED: 自动构建。
-
-docker images # 查看本地已有的镜像
-docker pull ubuntu:22.04 # 下载镜像
-docker rmi ununtu:22.04 # 删除本地已有的镜像
-</pre>
-
-<h3 id="toc_0.5.2">docker commit</h3>
-
-<ul>
-<li>
-更新镜像:从容器中更新镜像，并提交
-<pre class="brush:bash">
-# 运行一个ubuntu
-docker run -it --name myubuntu ubuntu:22.04 /bin/sh
-# 在容器中更新操作，并退出容器
-apt update
-apt upgtade
-apt install iputils-ping dnsutils
-apt autoremove
-apt clean
-exit
-# 此时myubuntu是我们更改过的容器，提交容器副本
-docker commit -m "has update" -a "xstar" myubuntu xstar/ubuntu:22.04-v2
-# -m: 提交描述
-# -a: 镜像作者
-# myubnutu: 容器ID/Name
-# xstar/ubuntu:22.04-v2: 目标镜像名
-
-# 查看提交的镜像
-docker images
-
-# REPOSITORY     TAG             IMAGE ID       CREATED         SIZE
-# xstar/ubuntu   22.04-v2        71750dd22bc2   6 seconds ago   185MB
-# ubuntu         22.04           174c8c134b2a   4 weeks ago     77.9MB
- 
-docker run --rm -it --name myubuntu2 xstar/ubuntu:22.04-v2 /bin/sh
-</pre>
-
-</ul>
-
-<h3 id="toc_0.5.3">docker build</h3>
-
-<p>
-通过Dockerfile文件构建指令，用docker build创建一个新的镜像。
-</p>
-
-<p>
-Dockerfile每一个指令都会在镜像上创建一个新的层，要尽可能减少、合并指令（如：用&amp;&amp;连接多个操作）。
-</p>
-
-<p>
-<strong>build过程中，若出现apt update、install错误，但在容器中执行又是正常的，可能是两个原因：</strong>
-</p>
-<ol>
-<li>
-docker默认DNS为8.8.8.8,8.8.4.4，在国内访问这两个DNS不稳定，改成国内DNS。
-
-<li>
-访问国内源不稳定，改成国内镜像源(我改成mirrors.aliyun.com也不稳定，默认源、ustc的都成功build)。
-
-</ol>
-
-<ul>
-<li>
-Dockerfile
-<pre class="brush:bash">
-# Dockerfile to build unbutu Installed network tools
-# Set the base image to Ubuntu
-FROM ubuntu:22.04
-MAINTAINER XStar "xstar@qq.com"
-
-# Update &amp; Install tools
-RUN sed -i 's/http:\/\/archive.ubuntu.com/http:\/\/mirrors.ustc.edu.cn\/ubuntu/g' /etc/apt/sources.list \
-&amp;&amp; apt-get update &amp;&amp; apt-get -y upgrade \
-&amp;&amp; apt -y install iputils-ping net-tools bind9-dnsutils \
-&amp;&amp; rm -rf /var/lib/apt/lists/* &amp;&amp; apt-get autoremove &amp;&amp; apt-get clean
-
-# 容器启动命令
-CMD /bin/bash
-</pre>
-
-</ul>
-
-<ul>
-<li>
-docker build构建
-<pre class="brush:bash">
-docker build -t xstar/ubuntu:22.04v1 ./
-# -t: 目标镜像名、TAG
-# ./: Dockerfile文件所在目录或绝对路径
-# --no-cache，不使用缓存，bulid需要重新下载所需文件
-# 多次build到同一个名称和TAG，之前的image的REPOSITORY，TAG会变成&lt;none&gt;，可以删除，或用docker tag设置TAG
-# docker tag 860c279d2fec xstar/ubuntu:v1.1
-
-docker images
-#REPOSITORY     TAG             IMAGE ID       CREATED         SIZE
-#xstar/ubuntu   22.04v1         4641f2e373d7   6 minutes ago   138MB  #安装了工具，变大了
-#ubuntu         22.04           174c8c134b2a   4 weeks ago     77.9MB
-</pre>
-
-</ul>
-
-<ul>
-<li>
-用新的镜像创建容器
-<pre class="brush:bash">
-docker run --rm --name myubuntu3 -t -i xstar/ubuntu:22.04v1
-</pre>
-
-</ul>
+<h3 id="toc_0.4.3"><a href="Dockerfile.html">Dockerfile</a></h3>
 
 </div>
 <div id="footer">

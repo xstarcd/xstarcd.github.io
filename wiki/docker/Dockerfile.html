@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Dockerfile</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Dockerfile</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">docker images</a>
+<li><a href="#toc_0.2">docker commit</a>
+<li><a href="#toc_0.3">docker build</a>
+<li><a href="#toc_0.4">最小化镜像</a>
+<li><a href="#toc_0.5">Dockerfile</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">docker images</h2>
+
+<pre class="brush:bash">
+# 查找镜像，Docker Hub: https://hub.docker.com/
+docker search ubuntu
+# NAME: 镜像仓库源的名称
+# DESCRIPTION: 镜像的描述
+# OFFICIAL: 是否 docker 官方发布
+# STARS: 类似 Github 里面的 star，表示点赞、喜欢的意思。
+# AUTOMATED: 自动构建。
+
+docker images # 查看本地已有的镜像
+docker pull ubuntu:22.04 # 下载镜像
+docker rmi ununtu:22.04 # 删除本地已有的镜像
+
+</pre>
+
+<h2 id="toc_0.2">docker commit</h2>
+
+<ul>
+<li>
+更新镜像:从容器中更新镜像，并提交
+<pre class="brush:bash">
+# 运行一个ubuntu
+docker run -it --name myubuntu ubuntu:22.04 /bin/sh
+# 在容器中更新操作，并退出容器
+apt update
+apt upgtade
+apt install iputils-ping dnsutils
+apt autoremove
+apt clean
+exit
+# 此时myubuntu是我们更改过的容器，提交容器副本
+docker commit -m "has update" -a "xstar" myubuntu xstar/ubuntu:22.04-v2
+# -m: 提交描述
+# -a: 镜像作者
+# myubnutu: 容器ID/Name
+# xstar/ubuntu:22.04-v2: 目标镜像名
+
+# 查看提交的镜像
+docker images
+
+# REPOSITORY     TAG             IMAGE ID       CREATED         SIZE
+# xstar/ubuntu   22.04-v2        71750dd22bc2   6 seconds ago   185MB
+# ubuntu         22.04           174c8c134b2a   4 weeks ago     77.9MB
+ 
+docker run --rm -it --name myubuntu2 xstar/ubuntu:22.04-v2 /bin/sh
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">docker build</h2>
+
+<p>
+通过Dockerfile文件构建指令，用docker build创建一个新的镜像。
+</p>
+
+<p>
+Dockerfile每一个指令都会在镜像上创建一个新的层，要尽可能减少、合并指令（如：用&amp;&amp;连接多个操作）。
+</p>
+
+<p>
+<strong>build过程中，若出现apt update、install错误，但在容器中执行又是正常的，可能是两个原因：</strong>
+</p>
+<ol>
+<li>
+docker默认DNS为8.8.8.8,8.8.4.4，在国内访问这两个DNS不稳定，改成国内DNS。
+
+<li>
+访问国内源不稳定，改成国内镜像源(我改成mirrors.aliyun.com也不稳定，默认源、ustc的都成功build)。
+
+</ol>
+
+<ul>
+<li>
+Dockerfile
+<pre class="brush:bash">
+# Dockerfile to build unbutu Installed network tools
+# Set the base image to Ubuntu
+FROM ubuntu:22.04
+MAINTAINER XStar "xstar@qq.com"
+
+# Update &amp; Install tools
+RUN sed -i 's/http:\/\/archive.ubuntu.com/http:\/\/mirrors.ustc.edu.cn\/ubuntu/g' /etc/apt/sources.list \
+&amp;&amp; apt-get update &amp;&amp; apt-get -y upgrade \
+&amp;&amp; apt -y install iputils-ping net-tools bind9-dnsutils \
+&amp;&amp; rm -rf /var/lib/apt/lists/* &amp;&amp; apt-get autoremove &amp;&amp; apt-get clean
+
+# 容器启动命令
+CMD /bin/bash
+</pre>
+
+</ul>
+
+<ul>
+<li>
+docker build构建
+<pre class="brush:bash">
+docker build -t xstar/ubuntu:22.04v1 ./
+# -t: 目标镜像名、TAG
+# ./: Dockerfile文件所在目录或绝对路径
+# --no-cache，不使用缓存，bulid需要重新下载所需文件
+# 多次build到同一个名称和TAG，之前的image的REPOSITORY，TAG会变成&lt;none&gt;，可以删除，或用docker tag设置TAG
+# docker tag 860c279d2fec xstar/ubuntu:v1.1
+
+docker images
+#REPOSITORY     TAG             IMAGE ID       CREATED         SIZE
+#xstar/ubuntu   22.04v1         4641f2e373d7   6 minutes ago   138MB  #安装了工具，变大了
+#ubuntu         22.04           174c8c134b2a   4 weeks ago     77.9MB
+</pre>
+
+</ul>
+
+<ul>
+<li>
+用新的镜像创建容器
+<pre class="brush:bash">
+docker run --rm --name myubuntu3 -t -i xstar/ubuntu:22.04v1
+</pre>
+
+</ul>
+
+<ul>
+<li>
+查看镜象信息
+<pre class="brush:bash">
+# 查看image层：
+docker image inspect -f '{{.RepoTags}}{{"\n"}}{{.RootFS}}' ubuntu:22.04
+# [ubuntu:22.04]{layers [sha256:a1360aae5271bbbf575b4057cb4158dbdfbcae76698189b55fb1039bc0207400]}
+# 我用Dockerfile build后，增加了一层
+docker image inspect -f '{{.RepoTags}}{{"\n"}}{{.RootFS}}' xstar/ubuntu:22.04v1
+# [192.168.31.40:5000/xstar/ubuntu:22.04v1 xstar/ubuntu:22.04v1]{layers [sha256:a1360aae5271bbbf575b4057cb4158dbdfbcae76698189b55fb1039bc0207400 sha256:81b10e9d742553fdd166a84adae09ded6cde2673112f25316252f566ee839234]}
+docker image history ubuntu:22.04
+
+# 合并image层：DockerSquash 或 DockerSlim
+</pre>
+
+</ul>
+
+<h2 id="toc_0.4">最小化镜像</h2>
+
+<ul>
+<li>
+原文：
+
+<ul>
+<li>
+利用分层机制优化Docker Image:<a href="https://zhuanlan.zhihu.com/p/520315145">https://zhuanlan.zhihu.com/p/520315145</a>
+
+<li>
+Docker 进阶之镜像分层详解: <a href="https://developer.aliyun.com/article/981453">https://developer.aliyun.com/article/981453</a>
+
+<li>
+精简Docker镜像的五种通用方法:<a href="https://zhuanlan.zhihu.com/p/42815689">https://zhuanlan.zhihu.com/p/42815689</a>
+
+<li>
+Dockerfile最小化构建镜像：减少层数、清理无用数据、多段构建: <a href="https://blog.csdn.net/qq_39213171/article/details/107789804">https://blog.csdn.net/qq_39213171/article/details/107789804</a>
+
+</ul>
+</ul>
+
+<p>
+Docker 镜像由很多镜像层（Layers）组成（最多 127 层），镜像层依赖于一系列的底层技术，比如文件系统（filesystems）、写时复制（copy-on-write）、联合挂载（union mounts、AUFS、OverlayFS）等技术。
+</p>
+
+<p>
+精简 Docker 镜像尺寸的好处：
+</p>
+<ul>
+<li>
+减少构建时间
+
+<li>
+减少磁盘使用量
+
+<li>
+减少下载时间
+
+<li>
+因为包含文件少，攻击面减小，提高了安全性
+
+<li>
+提高部署速度
+
+</ul>
+
+<ul>
+<li>
+优化基础镜像
+
+</ul>
+
+<p>
+优化基础镜像的方法就是选用合适的更小的基础镜像，常用的 Linux 系统镜像一般有 Ubuntu、CentOs、Alpine，其中 Alpine 更推荐使用。
+</p>
+
+<ul>
+<li>
+串联 Dockerfile 指令，减少层数
+
+</ul>
+<p>
+docker的构建中，Dockerfile中一个RUN会在镜像上构建一层。
+</p>
+
+<p>
+在定义 Dockerfile 时，如果太多的使用 RUN 指令，经常会导致镜像有特别多的层，镜像很臃肿，而且甚至会碰到超出最大层数（127层）限制的问题。
+</p>
+
+<p>
+遵循 Dockerfile 最佳实践，我们应该把多个命令串联合并为一个 RUN（通过运算符&amp;&amp;来实现），每一个 RUN 要精心设计，确保安装构建最后进行清理，这样才可以降低镜像体积，以及最大化的利用构建缓存。
+</p>
+
+<pre>
+FROM centos
+RUN yum install -y vim &amp;&amp; \
+    yum install -y net-tools
+</pre>
+
+<ul>
+<li>
+清理无用数据
+
+</ul>
+<p>
+一次RUN形成新的一层，如果没有在同一层删除，无论文件是否最后删除，都会带到下一层，所以要在每一层清理对应的残留数据，减小镜像大小。
+</p>
+
+<pre>
+FROM centos
+RUN yum install epel-release -y &amp;&amp; \
+    yum install -y gcc gcc-c++ make gd-devel libxml2-devel \
+    libcurl-devel libjpeg-devel libpng-devel openssl-devel \
+    libmcrypt-devel libxslt-devel libtidy-devel autoconf \
+    iproute net-tools telnet wget curl \
+    &amp;&amp; yum clean all \
+    &amp;&amp; rm -rf /var/cache/yum/*
+</pre>
+
+<ul>
+<li>
+使用多阶段构建
+
+</ul>
+<p>
+多段构建多用于需要编译安装的软件，或者是一些需要解压缩的软件，比如下边，我们采用多段构建编译一个jdk的镜像：
+</p>
+
+<p>
+未采用多段构建的Dockerfile
+</p>
+<pre>
+FROM centos AS jdk
+COPY jdk-8u231-linux-x64.tar.gz /usr/local/src
+RUN cd /usr/local/src &amp;&amp; \
+    tar -xzvf jdk-8u231-linux-x64.tar.gz -C /usr/local
+</pre>
+
+<p>
+采用多段构建的Dockerfile:多段构建其实就是将从上一个构建好的镜像只取自己需要的数据，然后复制到第二个镜像，这样会大大减少镜像的大小。
+</p>
+<pre>
+FROM centos AS jdk
+COPY jdk-8u231-linux-x64.tar.gz /usr/local/src
+RUN cd /usr/local/src &amp;&amp; \
+    tar -xzvf jdk-8u231-linux-x64.tar.gz -C /usr/local
+
+FROM centos
+COPY --from=jdk /usr/local/jdk1.8.0_231 /usr/local
+</pre>
+
+<h2 id="toc_0.5">Dockerfile</h2>
+
+<p>
+Dockerfile reference: <a href="https://docs.docker.com/engine/reference/builder/">https://docs.docker.com/engine/reference/builder/</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

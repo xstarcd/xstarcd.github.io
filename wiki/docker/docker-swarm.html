@@ -51,7 +51,7 @@
 <li><a href="#toc_0.7.9">dnsrr模式</a>
 </ul>
 <li><a href="#toc_0.8">docker stack</a>
-<li><a href="#toc_0.9">数据挂载及持久化</a>
+<li><a href="#toc_0.9">持久化存储</a>
 <ul>
 <li><a href="#toc_0.9.1">mount参数</a>
 <li><a href="#toc_0.9.2">bind mount</a>
@@ -1114,6 +1114,12 @@ docker service updata --network-add mytest-overlay nginx-b
 
 <h2 id="toc_0.8">docker stack</h2>
 
+<ul>
+<li>
+<a href="https://docs.docker.com/engine/reference/commandline/stack_deploy/">https://docs.docker.com/engine/reference/commandline/stack_deploy/</a>
+
+</ul>
+
 <p>
 单机模式下，我们可以使用 Docker Compose 来编排多个服务。
 </p>
@@ -1212,9 +1218,12 @@ k7g89zs8k68a   myservice_nginx    replicated   1/1        nginx:latest    *:8081
 </pre>
 
 
-<h2 id="toc_0.9">数据挂载及持久化</h2>
+<h2 id="toc_0.9">持久化存储</h2>
 
 <ul>
+<li>
+<a href="https://docs.docker.com/storage/">https://docs.docker.com/storage/</a>
+
 <li>
 添加绑定挂载、卷或内存文件系统 （--mount）:<a href="https://docs.docker.com/engine/reference/commandline/service_create/#differences-between---mount-and---volume">https://docs.docker.com/engine/reference/commandline/service_create/#differences-between---mount-and---volume</a>
 
@@ -1267,10 +1276,15 @@ bind挂载是完全不可移植的(开发、生产环境可能存在差异）。
 </ul>
 
 <p>
-<img src=../img/docker/swarm-mount.png width=600px>
+<img src=../img/docker/types-of-mounts-volume.webp width=600px>
 </p>
 
+
 <h3 id="toc_0.9.1">mount参数</h3>
+
+<p>
+<a href="https://docs.docker.com/storage/volumes/">https://docs.docker.com/storage/volumes/</a>
+</p>
 
 <ul>
 <li>
@@ -1281,11 +1295,83 @@ bind挂载是完全不可移植的(开发、生产环境可能存在差异）。
 
 </ul>
 
+<p>
+docker run中使用mount
+</p>
+<pre>
+docker run -d \
+  --name devtest \
+  --mount source=myvol2,target=/app \
+  nginx:latest
+</pre>
+
+<p>
+docker service中使用mount
+</p>
+
 <pre>
 docker service create \
  --mount 'type=volume,src=&lt;VOLUME-NAME&gt;,dst=&lt;CONTAINER-PATH&gt;,volume-driver=&lt;DRIVER&gt;,readonly,volume-opt=&lt;KEY0&gt;=&lt;VALUE0&gt;,volume-opt="&lt;KEY1&gt;=&lt;VALUE1&gt;"'
  --name myservice \
  &lt;IMAGE&gt;
+</pre>
+
+<pre>
+ docker service create \
+ --mount 'type=volume,src=&lt;VOLUME-NAME&gt;,dst=&lt;CONTAINER-PATH&gt;,\
+volume-driver=local,\
+volume-opt=type=nfs,\
+volume-opt=device=&lt;nfs-server&gt;:&lt;nfs-path&gt;,\
+"volume-opt=o=addr=&lt;nfs-address&gt;,vers=4,soft,timeo=180,bg,tcp,rw"'
+ --name myservice \
+ IMAGE
+</pre>
+
+<p>
+docker compose中使用mount:
+</p>
+
+<p>
+第一次使用时会自动创建volume，后续会使用之前创建的卷。
+</p>
+
+<p>
+由compose、stack自动创建的卷，卷名会加上ProjectName前缀，并会加上com.docker.stack.namespace、com.docker.compose.project、com.docker.compose.volume的labels。
+</p>
+
+<p>
+service、stack删除时，不会删除创建的卷，卷需要使用docker image rm单独来删除。
+</p>
+
+<pre>
+services:
+  frontend:
+    image: node:lts
+    volumes:
+      - myapp:/home/node/app
+volumes:
+  myapp:
+    #可用name来指定自定义卷名，可用于引用有特殊字符的卷。这个名称按原样使用，不受stack name的作用域限制。
+    #name: "my-app-data"
+    #可以从ENV传处名称，如：在.env文件中定义：DATABASE_VOLUME=my_volume_001，在compose中引用
+    name: ${DATABASE_VOLUME}
+</pre>
+
+<p>
+也可以先在外部创建卷，然后在compose中引用它：
+</p>
+<pre>
+services:
+  frontend:
+    image: node:lts
+    volumes:
+      - myapp:/home/node/app
+volumes:
+  myapp:
+    # 表示卷已存在，且由外部管理，Compose不会再创建，如果不存在会返回错误。
+    external: true
+    # 也可用name指定名部的实际名称，而compose中使用myapp来引用。
+    name: actual-name-of-volume
 </pre>
 
 <h3 id="toc_0.9.2">bind mount</h3>
