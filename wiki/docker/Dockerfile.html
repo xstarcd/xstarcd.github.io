@@ -21,8 +21,7 @@
 <li><a href="#toc_0.1">docker images</a>
 <li><a href="#toc_0.2">docker commit</a>
 <li><a href="#toc_0.3">docker build</a>
-<li><a href="#toc_0.4">最小化镜像</a>
-<li><a href="#toc_0.5">Dockerfile</a>
+<li><a href="#toc_0.4">Dockerfile技巧</a>
 </ul>
 </ul>
 </div>
@@ -159,6 +158,8 @@ docker image inspect -f '{{.RepoTags}}{{"\n"}}{{.RootFS}}' ubuntu:22.04
 # 我用Dockerfile build后，增加了一层
 docker image inspect -f '{{.RepoTags}}{{"\n"}}{{.RootFS}}' xstar/ubuntu:22.04v1
 # [192.168.31.40:5000/xstar/ubuntu:22.04v1 xstar/ubuntu:22.04v1]{layers [sha256:a1360aae5271bbbf575b4057cb4158dbdfbcae76698189b55fb1039bc0207400 sha256:81b10e9d742553fdd166a84adae09ded6cde2673112f25316252f566ee839234]}
+
+#使用docker history可以看到镜像的构建历史，每一行列出了镜像包含的层。
 docker image history ubuntu:22.04
 
 # 合并image层：DockerSquash 或 DockerSlim
@@ -166,143 +167,74 @@ docker image history ubuntu:22.04
 
 </ul>
 
-<h2 id="toc_0.4">最小化镜像</h2>
+<h2 id="toc_0.4">Dockerfile技巧</h2>
+
+<p>
+Docker 镜像由很多镜像层（Layers）组成（最多 127 层），镜像层依赖于一系列的底层技术，比如文件系统（filesystems）、写时复制（copy-on-write）、联合挂载（union mounts、AUFS、OverlayFS）等技术。
+</p>
+
+<pre>
+- 减少构建时间：分层缓存，可大大提高复用率。
+- 更小的Docker镜像大小，更少的镜像层，充分利用镜像缓存。
+- 存储更少：因为共同的层只需存储一份即可！
+- 拉取更快：因为分层了，只需拉取本地不存在的层即可！
+- 运行时存储更少：容器运行时可以共享相同的层！
+- 提高安全性：因为包含文件少，攻击面减小
+</pre>
 
 <ul>
 <li>
-原文：
+docker build官方资料
+
+<ul>
+<li>
+<a href="https://docs.docker.com/develop/develop-images/guidelines/">https://docs.docker.com/develop/develop-images/guidelines/</a>
+
+<li>
+Dockerfile reference: <a href="https://docs.docker.com/engine/reference/builder/">https://docs.docker.com/engine/reference/builder/</a>
+
+<li>
+<a href="https://docs.docker.com/engine/reference/builder/">https://docs.docker.com/engine/reference/builder/</a>
+
+<li>
+<a href="https://github.com/docker-library/">https://github.com/docker-library/</a>
+
+<li>
+<a href="https://hub.docker.com/_/alpine/">https://hub.docker.com/_/alpine/</a>
+
+<ul>
+<li>
+<code>sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories</code> 
+
+</ul>
+</ul>
+</ul>
+
+<ul>
+<li>
+Dockerfile优化技巧
 
 <ul>
 <li>
 利用分层机制优化Docker Image:<a href="https://zhuanlan.zhihu.com/p/520315145">https://zhuanlan.zhihu.com/p/520315145</a>
 
 <li>
+Docker必知必会系列:附录2、Dockerfile 参考及最佳实践:<a href="https://www.lixl.cn/books/Docker/appendix2-dockerfile-best-practices/">https://www.lixl.cn/books/Docker/appendix2-dockerfile-best-practices/</a>
+
+<li>
 Docker 进阶之镜像分层详解: <a href="https://developer.aliyun.com/article/981453">https://developer.aliyun.com/article/981453</a>
+
+<li>
+不要轻易使用 Alpine 镜像来构建 Docker 镜像，有坑！:<a href="https://cloud.tencent.com/developer/article/1632733">https://cloud.tencent.com/developer/article/1632733</a>
+
+<li>
+两个奇技淫巧，将 Docker 镜像体积减小 99%: <a href="https://mp.weixin.qq.com/s?__biz=MzU1MzY4NzQ1OA==&amp;amp;mid=2247484864&amp;amp;idx=1&amp;amp;sn=1afdc9858ee3aaecc303a7e3e72492bc">https://mp.weixin.qq.com/s?__biz=MzU1MzY4NzQ1OA==&amp;amp;mid=2247484864&amp;amp;idx=1&amp;amp;sn=1afdc9858ee3aaecc303a7e3e72492bc</a>
 
 <li>
 精简Docker镜像的五种通用方法:<a href="https://zhuanlan.zhihu.com/p/42815689">https://zhuanlan.zhihu.com/p/42815689</a>
 
-<li>
-Dockerfile最小化构建镜像：减少层数、清理无用数据、多段构建: <a href="https://blog.csdn.net/qq_39213171/article/details/107789804">https://blog.csdn.net/qq_39213171/article/details/107789804</a>
-
 </ul>
 </ul>
-
-<p>
-Docker 镜像由很多镜像层（Layers）组成（最多 127 层），镜像层依赖于一系列的底层技术，比如文件系统（filesystems）、写时复制（copy-on-write）、联合挂载（union mounts、AUFS、OverlayFS）等技术。
-</p>
-
-<p>
-精简 Docker 镜像尺寸的好处：
-</p>
-<ul>
-<li>
-减少构建时间
-
-<li>
-减少磁盘使用量
-
-<li>
-减少下载时间
-
-<li>
-因为包含文件少，攻击面减小，提高了安全性
-
-<li>
-提高部署速度
-
-</ul>
-
-<ul>
-<li>
-优化基础镜像
-
-</ul>
-
-<p>
-优化基础镜像的方法就是选用合适的更小的基础镜像，常用的 Linux 系统镜像一般有 Ubuntu、CentOs、Alpine，其中 Alpine 更推荐使用。
-</p>
-
-<ul>
-<li>
-串联 Dockerfile 指令，减少层数
-
-</ul>
-<p>
-docker的构建中，Dockerfile中一个RUN会在镜像上构建一层。
-</p>
-
-<p>
-在定义 Dockerfile 时，如果太多的使用 RUN 指令，经常会导致镜像有特别多的层，镜像很臃肿，而且甚至会碰到超出最大层数（127层）限制的问题。
-</p>
-
-<p>
-遵循 Dockerfile 最佳实践，我们应该把多个命令串联合并为一个 RUN（通过运算符&amp;&amp;来实现），每一个 RUN 要精心设计，确保安装构建最后进行清理，这样才可以降低镜像体积，以及最大化的利用构建缓存。
-</p>
-
-<pre>
-FROM centos
-RUN yum install -y vim &amp;&amp; \
-    yum install -y net-tools
-</pre>
-
-<ul>
-<li>
-清理无用数据
-
-</ul>
-<p>
-一次RUN形成新的一层，如果没有在同一层删除，无论文件是否最后删除，都会带到下一层，所以要在每一层清理对应的残留数据，减小镜像大小。
-</p>
-
-<pre>
-FROM centos
-RUN yum install epel-release -y &amp;&amp; \
-    yum install -y gcc gcc-c++ make gd-devel libxml2-devel \
-    libcurl-devel libjpeg-devel libpng-devel openssl-devel \
-    libmcrypt-devel libxslt-devel libtidy-devel autoconf \
-    iproute net-tools telnet wget curl \
-    &amp;&amp; yum clean all \
-    &amp;&amp; rm -rf /var/cache/yum/*
-</pre>
-
-<ul>
-<li>
-使用多阶段构建
-
-</ul>
-<p>
-多段构建多用于需要编译安装的软件，或者是一些需要解压缩的软件，比如下边，我们采用多段构建编译一个jdk的镜像：
-</p>
-
-<p>
-未采用多段构建的Dockerfile
-</p>
-<pre>
-FROM centos AS jdk
-COPY jdk-8u231-linux-x64.tar.gz /usr/local/src
-RUN cd /usr/local/src &amp;&amp; \
-    tar -xzvf jdk-8u231-linux-x64.tar.gz -C /usr/local
-</pre>
-
-<p>
-采用多段构建的Dockerfile:多段构建其实就是将从上一个构建好的镜像只取自己需要的数据，然后复制到第二个镜像，这样会大大减少镜像的大小。
-</p>
-<pre>
-FROM centos AS jdk
-COPY jdk-8u231-linux-x64.tar.gz /usr/local/src
-RUN cd /usr/local/src &amp;&amp; \
-    tar -xzvf jdk-8u231-linux-x64.tar.gz -C /usr/local
-
-FROM centos
-COPY --from=jdk /usr/local/jdk1.8.0_231 /usr/local
-</pre>
-
-<h2 id="toc_0.5">Dockerfile</h2>
-
-<p>
-Dockerfile reference: <a href="https://docs.docker.com/engine/reference/builder/">https://docs.docker.com/engine/reference/builder/</a>
-</p>
 
 </div>
 <div id="footer">

@@ -18,22 +18,21 @@
 <h1>docker</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">Docker基础</a>
+<li><a href="#toc_0.1">Docker基础学习笔记</a>
 <ul>
 <li><a href="#toc_0.1.1">Docker常用操作</a>
 <li><a href="#toc_0.1.2">docker-swarm</a>
 <li><a href="#toc_0.1.3">搭建Docker Registry私有仓库</a>
 <li><a href="#toc_0.1.4">Dockerfile</a>
-<li><a href="#toc_0.1.5">可视化工具</a>
+<li><a href="#toc_0.1.5">k3s_study</a>
+<li><a href="#toc_0.1.6">学习计划</a>
 </ul>
-<li><a href="#toc_0.2">k3s_study</a>
-<li><a href="#toc_0.3">Docker资料收集</a>
-<li><a href="#toc_0.4">其它</a>
+<li><a href="#toc_0.2">Docker资料</a>
 </ul>
 </ul>
 </div>
 
-<h2 id="toc_0.1">Docker基础</h2>
+<h2 id="toc_0.1">Docker基础学习笔记</h2>
 
 <h3 id="toc_0.1.1"><a href="Docker.html">Docker常用操作</a></h3>
 
@@ -42,6 +41,10 @@
 <h3 id="toc_0.1.3"><a href="docker_registry.html">搭建Docker Registry私有仓库</a></h3>
 
 <h3 id="toc_0.1.4"><a href="Dockerfile.html">Dockerfile</a></h3>
+
+<h3 id="toc_0.1.5"><a href="k3s_study.html">k3s_study</a></h3>
+
+<h3 id="toc_0.1.6">学习计划</h3>
 
 <ul>
 <li>
@@ -153,7 +156,70 @@ K3S学习?
 </ul>
 </ul>
 
-<h3 id="toc_0.1.5">可视化工具</h3>
+<h2 id="toc_0.2">Docker资料</h2>
+
+<p>
+Docker 并非是一个通用的容器工具，它依赖于已存在并运行的 Linux 内核环境。
+</p>
+
+<p>
+Docker 实质上是在已经运行的 Linux 下制造了一个隔离的文件环境，因此它执行的效率几乎等同于所部署的 Linux 主机。
+</p>
+
+<p>
+因此，Docker 必须部署在 Linux 内核的系统上。如果其他系统想部署 Docker 就必须安装一个虚拟 Linux 环境。
+</p>
+
+<ul>
+<li>
+官网：
+
+<ul>
+<li>
+Docker 官网：<a href="https://www.docker.com">https://www.docker.com</a>
+
+<li>
+Docker Hub: <a href="https://hub.docker.com">https://hub.docker.com</a>
+
+<li>
+Docker文档：<a href="https://docs.docker.com/">https://docs.docker.com/</a>
+
+<li>
+Docker CLI: <a href="https://docs.docker.com/engine/reference/commandline/docker/">https://docs.docker.com/engine/reference/commandline/docker/</a>
+
+</ul>
+<li>
+Docker教程：
+
+<ul>
+<li>
+悟尘记电子书:Docker必知必会系列: <a href="https://www.lixl.cn/books/Docker/1-Overview/">https://www.lixl.cn/books/Docker/1-Overview/</a>
+
+<li>
+runoob docker基础教材:<a href="https://www.runoob.com/docker/docker-tutorial.html">https://www.runoob.com/docker/docker-tutorial.html</a>
+
+<li>
+Docker-从入门到实践：<a href="https://yeasy.gitbook.io/docker_practice/">https://yeasy.gitbook.io/docker_practice/</a>
+
+</ul>
+<li>
+实践：
+
+<ul>
+<li>
+纯洁的微笑: Docker Compose + Spring Boot + Nginx + Mysql 实践: 
+
+<ul>
+<li>
+<a href="http://www.ityouknow.com/springboot/2023/01/26/dockercompose-springboot-mysql-nginx.html">http://www.ityouknow.com/springboot/2023/01/26/dockercompose-springboot-mysql-nginx.html</a>
+
+<li>
+<a href="https://sbmqj.github.io//springboot/2018/03/28/dockercompose-springboot-mysql-nginx.html">https://sbmqj.github.io//springboot/2018/03/28/dockercompose-springboot-mysql-nginx.html</a>
+
+</ul>
+</ul>
+<li>
+可视化工具
 
 <ul>
 <li>
@@ -179,23 +245,8 @@ portainer.io: Docker可视化工具:提供状态显示面板、应用模板快�
 
 </ul>
 </ul>
-
-<h2 id="toc_0.2"><a href="k3s_study.html">k3s_study</a></h2>
-
-
-<h2 id="toc_0.3">Docker资料收集</h2>
-
-<p>
-Docker 并非是一个通用的容器工具，它依赖于已存在并运行的 Linux 内核环境。
-</p>
-
-<p>
-Docker 实质上是在已经运行的 Linux 下制造了一个隔离的文件环境，因此它执行的效率几乎等同于所部署的 Linux 主机。
-</p>
-
-<p>
-因此，Docker 必须部署在 Linux 内核的系统上。如果其他系统想部署 Docker 就必须安装一个虚拟 Linux 环境。
-</p>
+<li>
+比较：
 
 <ul>
 <li>
@@ -204,84 +255,9 @@ Kubernetes vs. Docker Swarm：完整的比较指南:<a href="https://cloud.tence
 <li>
 Docker Swarm与Kubernetes：如何选择一个容器编排工具:<a href="https://juejin.cn/post/7124172796485173285">https://juejin.cn/post/7124172796485173285</a>
 
-</ul>
-
-<ul>
-<li>
-Docker 官网：<a href="https://www.docker.com">https://www.docker.com</a>
-
-<li>
-Docker Hub: <a href="https://hub.docker.com">https://hub.docker.com</a>
-
-<li>
-Docker文档：<a href="https://docs.docker.com/">https://docs.docker.com/</a>
-
-<ul>
-<li>
-<a href="https://docs.docker.com/engine/reference/commandline/docker/">https://docs.docker.com/engine/reference/commandline/docker/</a>
-
-</ul>
-<li>
-Docker教程：<a href="https://www.runoob.com/docker/docker-tutorial.html">https://www.runoob.com/docker/docker-tutorial.html</a>
-
 <li>
 Docker和 Containerd 的区别: <a href="https://zhuanlan.zhihu.com/p/494054143">https://zhuanlan.zhihu.com/p/494054143</a>
 
-<li>
-Docker从入门到实践：<a href="https://yeasy.gitbook.io/docker_practice/">https://yeasy.gitbook.io/docker_practice/</a>
-
-<li>
-纯洁的微笑-Docker介绍：
-
-<ul>
-<li>
-<a href="https://www.cnblogs.com/ityouknow/category/1173004.html">https://www.cnblogs.com/ityouknow/category/1173004.html</a>
-
-<li>
-<a href="https://sbmqj.github.io/docker">https://sbmqj.github.io/docker</a>
-
-</ul>
-<li>
-Docker Machine添加现有主机:
-
-<ul>
-<li>
-<a href="https://blog.csdn.net/danpob13624/article/details/106778488">https://blog.csdn.net/danpob13624/article/details/106778488</a>
-
-<li>
-<a href="https://blog.csdn.net/lanwp5302/article/details/90287692">https://blog.csdn.net/lanwp5302/article/details/90287692</a>
-
-</ul>
-<li>
-Docker desktop: <a href="https://blog.csdn.net/qq_20466211/article/details/122587729">https://blog.csdn.net/qq_20466211/article/details/122587729</a>
-
-<li>
-Docker Swarm: 
-
-<ul>
-<li>
-Docker Swarm: <a href="https://www.runoob.com/docker/docker-swarm.html">https://www.runoob.com/docker/docker-swarm.html</a>
-
-<li>
-docker-swarm 教程：部署篇:<a href="https://zhuanlan.zhihu.com/p/646422781">https://zhuanlan.zhihu.com/p/646422781</a>
-
-<li>
-Docker Swarm 入门一篇文章就够了:<a href="https://www.jianshu.com/p/9eb9995884a5">https://www.jianshu.com/p/9eb9995884a5</a>
-
-<li>
-生产环境使用swarm注意事项:<a href="https://zhuanlan.zhihu.com/p/26794966">https://zhuanlan.zhihu.com/p/26794966</a>
-
-<li>
-『高级篇』docker之DockerSwarm的了解、部署（27/28）:
-
-<ul>
-<li>
-<a href="https://zhuanlan.zhihu.com/p/56485769">https://zhuanlan.zhihu.com/p/56485769</a>
-
-<li>
-<a href="https://zhuanlan.zhihu.com/p/56672372">https://zhuanlan.zhihu.com/p/56672372</a>
-
-</ul>
 </ul>
 <li>
 K8S,K3S:
@@ -301,12 +277,10 @@ K3S文档: <a href="https://docs.k3s.io/zh/">https://docs.k3s.io/zh/</a>
 
 <li>
 etcd官方中文文档：<a href="https://doczhcn.gitbook.io/etcd/index">https://doczhcn.gitbook.io/etcd/index</a>
-<pre>
-MicroK8s 是 CNCF 认证的 Kubernetes 发行版，由 Ubuntu 背后的商业公司 Canonical 开发和维护。它和完整版的 Kubernetes 一样支持高可用特性（HA），支持快速组建 K8s 集群。
-</pre>
 
 </ul>
-</ul>
+<li>
+YAML:
 
 <ul>
 <li>
@@ -315,61 +289,7 @@ YAML入门教程: <a href="https://www.runoob.com/w3cnote/yaml-intro.html">https
 <li>
 YAML在线格式化: <a href="https://verytoolz.com/yaml-formatter.html">https://verytoolz.com/yaml-formatter.html</a>
 
-<li>
-Docker Dockerfile
-
-<ul>
-<li>
-Dockerfile 是一个用来构建镜像的文本文件，文本内容包含了一条条构建镜像所需的指令和说明。
-
 </ul>
-<li>
-Docker Compose
-
-<ul>
-<li>
-是用于定义和运行多容器 Docker 应用程序的工具。
-
-<li>
-通过 Compose，您可以使用 YML 文件来配置应用程序需要的所有服务。然后，使用一个命令，就可以从 YML 文件配置中创建并启动所有服务。
-
-</ul>
-<li>
-Docker Machine
-
-<ul>
-<li>
-Docker Machine 是一种可以让您在虚拟主机上安装 Docker 的工具，并可以使用 docker-machine 命令来管理主机。
-
-<li>
-Docker Machine 也可以集中管理所有的 docker 主机，比如快速的给 100 台服务器安装上 docker。
-
-<li>
-Docker Machine 管理的虚拟主机可以是机上的，也可以是云供应商，如阿里云，腾讯云，AWS，或 DigitalOcean。
-
-<li>
-使用 docker-machine 命令，您可以启动，检查，停止和重新启动托管主机，也可以升级 Docker 客户端和守护程序，以及配置 Docker 客户端与您的主机进行通信。
-
-</ul>
-<li>
-Repository
-
-<li>
-Docker Swarm
-
-<ul>
-<li>
-Docker Swarm 是 Docker 的集群管理工具。它将 Docker 主机池转变为单个虚拟 Docker 主机。 Docker Swarm 提供了标准的 Docker API，所有任何已经与 Docker 守护程序通信的工具都可以使用 Swarm 轻松地扩展到多个主机。
-
-</ul>
-</ul>
-
-<h2 id="toc_0.4">其它</h2>
-
-<ul>
-<li>
-Ouyang学习记录: <a href="https://gitee.com/superoyy/conf-repo">https://gitee.com/superoyy/conf-repo</a>
-
 <li>
 VirtualBox:
 

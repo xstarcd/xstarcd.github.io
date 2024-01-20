@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Dockerfile技巧</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Dockerfile技巧</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">分层规划设计</a>
+<li><a href="#toc_0.2">编写.dockerignore文件</a>
+<li><a href="#toc_0.3">容器只运行单个应用</a>
+<li><a href="#toc_0.4">选择合适的基础镜像</a>
+<li><a href="#toc_0.5">基础镜像的标签不要用latest</a>
+<li><a href="#toc_0.6">用LABEL设置镜像元数据</a>
+<li><a href="#toc_0.7">将多个RUN指令合并为一个</a>
+<li><a href="#toc_0.8">每个RUN指令后删除多余文件</a>
+<li><a href="#toc_0.9">使用exec方式的ENTRYPOINT</a>
+<li><a href="#toc_0.10">ADD和COPY优先使用COPY</a>
+<li><a href="#toc_0.11">ENV（设置环境变量）</a>
+<li><a href="#toc_0.12">合理调整COPY与RUN的顺序</a>
+<li><a href="#toc_0.13">添加HEALTHCHECK</a>
+<li><a href="#toc_0.14">多阶段构建</a>
+</ul>
+</ul>
+</div>
+
+<p>
+Docker 镜像由很多镜像层（Layers）组成（最多 127 层），镜像层依赖于一系列的底层技术，比如文件系统（filesystems）、写时复制（copy-on-write）、联合挂载（union mounts、AUFS、OverlayFS）等技术。
+</p>
+
+<ul>
+<li>
+减少构建时间：分层缓存，可大大提高复用率。
+
+<li>
+更小的Docker镜像大小，更少的镜像层，充分利用镜像缓存。
+
+<li>
+存储更少：因为共同的层只需存储一份即可！
+
+<li>
+拉取更快：因为分层了，只需拉取本地不存在的层即可！
+
+<li>
+运行时存储更少：容器运行时可以共享相同的层！
+
+<li>
+提高安全性：因为包含文件少，攻击面减小
+
+</ul>
+
+<ul>
+<li>
+原文：
+
+<ul>
+<li>
+优化技巧：
+
+<ul>
+<li>
+利用分层机制优化Docker Image:<a href="https://zhuanlan.zhihu.com/p/520315145">https://zhuanlan.zhihu.com/p/520315145</a>
+
+<li>
+Docker必知必会系列:附录2、Dockerfile 参考及最佳实践:<a href="https://www.lixl.cn/books/Docker/appendix2-dockerfile-best-practices/">https://www.lixl.cn/books/Docker/appendix2-dockerfile-best-practices/</a>
+
+<li>
+Docker 进阶之镜像分层详解: <a href="https://developer.aliyun.com/article/981453">https://developer.aliyun.com/article/981453</a>
+
+<li>
+关于Dockerfile的最佳实践技巧: <a href="https://www.devopstory.cn/archives/%e6%9d%82%e8%b0%88/%e5%85%b3%e4%ba%8edockerfile%e7%9a%84%e6%9c%80%e4%bd%b3%e5%ae%9e%e8%b7%b5%e6%8a%80%e5%b7%a7/">https://www.devopstory.cn/archives/%e6%9d%82%e8%b0%88/%e5%85%b3%e4%ba%8edockerfile%e7%9a%84%e6%9c%80%e4%bd%b3%e5%ae%9e%e8%b7%b5%e6%8a%80%e5%b7%a7/</a>
+
+<li>
+Dockerfile 参考及最佳实践: <a href="https://zhuanlan.zhihu.com/p/139264973">https://zhuanlan.zhihu.com/p/139264973</a>
+
+<li>
+不要轻易使用 Alpine 镜像来构建 Docker 镜像，有坑！:<a href="https://cloud.tencent.com/developer/article/1632733">https://cloud.tencent.com/developer/article/1632733</a>
+
+<li>
+两个奇技淫巧，将 Docker 镜像体积减小 99%: <a href="https://mp.weixin.qq.com/s?__biz=MzU1MzY4NzQ1OA==&amp;amp;mid=2247484864&amp;amp;idx=1&amp;amp;sn=1afdc9858ee3aaecc303a7e3e72492bc">https://mp.weixin.qq.com/s?__biz=MzU1MzY4NzQ1OA==&amp;amp;mid=2247484864&amp;amp;idx=1&amp;amp;sn=1afdc9858ee3aaecc303a7e3e72492bc</a>
+
+<li>
+精简Docker镜像的五种通用方法:<a href="https://zhuanlan.zhihu.com/p/42815689">https://zhuanlan.zhihu.com/p/42815689</a>
+
+<li>
+Dockerfile最小化构建镜像：减少层数、清理无用数据、多段构建: <a href="https://blog.csdn.net/qq_39213171/article/details/107789804">https://blog.csdn.net/qq_39213171/article/details/107789804</a>
+
+</ul>
+<li>
+docker官方参考：
+
+<ul>
+<li>
+<a href="https://docs.docker.com/develop/develop-images/guidelines/">https://docs.docker.com/develop/develop-images/guidelines/</a>
+
+<li>
+<a href="https://docs.docker.com/develop/develop-images/guidelines/">https://docs.docker.com/develop/develop-images/guidelines/</a>
+
+<li>
+<a href="https://docs.docker.com/engine/reference/builder/">https://docs.docker.com/engine/reference/builder/</a>
+
+<li>
+<a href="https://github.com/docker-library/">https://github.com/docker-library/</a>
+
+<li>
+<a href="https://hub.docker.com/_/alpine/">https://hub.docker.com/_/alpine/</a>
+
+<ul>
+<li>
+<code>sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories</code> 
+
+</ul>
+</ul>
+</ul>
+</ul>
+
+<p>
+一个不好的Node.js应用Dockerfile示例
+</p>
+<pre>
+FROM ubuntu
+ADD . /app
+RUN apt-get update
+RUN apt-get upgrade -y
+RUN apt-get install -y nodejs ssh mysql
+RUN cd /app &amp;&amp; npm install
+# this should start three processes, mysql and ssh
+# in the background and node app in foreground
+# isn't it beautifully terrible? &lt;3
+CMD mysql &amp; sshd &amp; npm start
+</pre>
+
+
+<h2 id="toc_0.1">分层规划设计</h2>
+
+<p>
+将不会经常变更化的命令或者同类型命令合并到同层，提高build、pull时的复用度:
+</p>
+
+<ul>
+<li>
+Base: OS: OS、Python...
+
+<ul>
+<li>
+Security tools | General tools: make/gcc/wget/tar...| Library: pip install...
+
+<ul>
+<li>
+Model
+
+<ul>
+<li>
+Code
+
+<li>
+Config
+
+</ul>
+</ul>
+</ul>
+</ul>
+
+<pre class="brush:bash">
+# f1: 运维安全团队增加优化基础安全组件
+FROM python3
+RUN apt install -y some-security-framework
+# push: abc.hub.com/libary/python3
+
+# f2: 架构师安装基础架构
+FROM abc.hub.com/libary/python3
+RUN wget -c anaconda12.sh &amp;&amp; ./anaconda12.sh &amp;&amp; rm -f anaconda12.sh
+# push: abc.hub.com/ai-tools/env-anaconda:12
+
+# f3: 制作模型镜像
+FROM abc.hub.com/ai-tools/env-anaconda:12
+RUN pip install -y some-dependences
+RUN wget -c s3.xx.com/some-path/dust.model -O /some/path
+# push: abc.hub.com/ai-tools/env-anaconda-dust:runtime
+
+# f4: 制作业务镜像
+FROM abc.hub.com/rk-ai-tools/env-anaconda-dust:runtime
+ADD code /workspace/code
+ENTRYPOINT [ "/bin/bash", "/entrypoint.sh" ]
+# push: abc.hub.com/rk-ai-pollution/srv-some-appname-amd64:1.0.0-1234567
+</pre>
+
+<h2 id="toc_0.2">编写.dockerignore文件</h2>
+
+<ul>
+<li>
+构建镜像时，Docker需要先准备context，将所有需要的文件收集到进程中。默认的context包含Dockerfile目录中的所有文件。
+
+<li>
+但是实际上，我们并不需要.git目录，node_modules目录等内容。
+
+<li>
+.dockerignore 的作用和语法类似于.gitignore，可以忽略一些不需要的文件，这样可以有效加快镜像构建时间，同时减少Docker镜像的大小。
+
+</ul>
+
+<pre>
+.git/node_modules/
+</pre>
+
+<h2 id="toc_0.3">容器只运行单个应用</h2>
+
+<p>
+从技术角度讲，你可以在Docker容器中运行多个进程。你可以将数据库，前端，后端，ssh，supervisor都运行在同一个Docker容器中。但是，这会让你非常痛苦:
+</p>
+<pre>
+非常长的构建时间(修改前端之后，整个后端也需要重新构建)
+非常大的镜像大小
+多个应用的日志难以处理(不能直接使用stdout，否则多个应用的日志会混合到一起)
+横向扩展时非常浪费资源(不同的应用需要运行的容器数并不相同)
+僵尸进程问题 - 你需要选择合适的init进程
+</pre>
+
+<p>
+因此，建议大家为每个应用构建单独的Docker镜像，然后使用 Docker Compose 运行多个Docker容器。
+</p>
+
+<p>
+从Dockerfile中删除一些不需要的安装包，另外，SSH可以用docker exec替代。
+</p>
+
+<h2 id="toc_0.4">选择合适的基础镜像</h2>
+
+<p>
+示例中，我们选择了ubuntu作为基础镜像。但是我们只需要运行node程序，有必要使用一个通用的基础镜像吗？node镜像应该是更好的选择。
+</p>
+
+<p>
+选用合适的更小的基础镜像，常用的 Linux 系统镜像一般有 Ubuntu、CentOs、Alpine。
+</p>
+
+<p>
+更好的选择是alpine版本的node镜像。alpine是一个极小化的Linux发行版，只有4MB，这让它非常适合作为基础镜像。
+</p>
+
+<pre>
+FROM node:7-alpine
+ADD . /app
+RUN cd /app &amp;&amp; npm install
+CMD npm start
+
+# we don't need to install node
+# anymore and use apt-get
+</pre>
+
+<p>
+apk是Alpine的包管理工具。它与apt-get有些不同，但是非常容易上手。另外，它还有一些非常有用的特性，比如no-cache和 --virtual选项，它们都可以帮助我们减少镜像的大小。
+</p>
+
+<h2 id="toc_0.5">基础镜像的标签不要用latest</h2>
+
+<p>
+当镜像没有指定标签时，将默认使用latest 标签。因此， FROM ubuntu 指令等同于FROM ubuntu:latest。
+</p>
+
+<p>
+当时，当镜像更新时，latest标签会指向不同的镜像，这时构建镜像有可能失败。
+</p>
+
+<p>
+如果你的确需要使用最新版的基础镜像，可以使用latest标签，否则的话，最好指定确定的镜像标签。
+</p>
+
+<h2 id="toc_0.6">用LABEL设置镜像元数据</h2>
+
+<p>
+使用LABEL指令，可以为镜像设置元数据，例如镜像创建者或者镜像说明。
+</p>
+
+<p>
+旧版的Dockerfile语法使用MAINTAINER指令指定镜像创建者，但是它已经被弃用了。
+</p>
+
+<p>
+有时，一些外部程序需要用到镜像的元数据，例如nvidia-docker需要用到com.nvidia.volumes.needed。
+</p>
+
+<pre>
+FROM node:7-alpine
+LABEL maintainer "jakub.skalecki@example.com"
+...
+</pre>
+
+<h2 id="toc_0.7">将多个RUN指令合并为一个</h2>
+
+<p>
+Docker镜像是分层的，下面这些知识点非常重要:
+</p>
+<pre>
+Dockerfile中的每个指令都会创建一个新的镜像层。
+镜像层将被缓存和复用
+当Dockerfile的指令修改了，复制的文件变化了，或者构建镜像时指定的变量不同了，对应的镜像层缓存就会失效
+某一层的镜像缓存失效之后，它之后的镜像层缓存都会失效
+镜像层是不可变的，如果我们再某一层中添加一个文件，然后在下一层中删除它，则镜像中依然会包含该文件(只是这个文件在Docker容器中不可见了)。
+</pre>
+
+<p>
+Docker镜像类似于洋葱。它们都有很多层。为了修改内层，则需要将外面的层都删掉。记住这一点的话，其他内容就很好理解了。
+</p>
+
+<p>
+现在，我们将所有的RUN指令合并为一个。同时把apt-get upgrade删除，因为它会使得镜像构建非常不确定(我们只需要依赖基础镜像的更新就好了)
+</p>
+
+<p>
+只将变化频率一样的指令合并在一起。将node.js安装与npm模块安装放在一起的话，则每次修改源代码，都需要重新安装node.js，这显然不合适。因此，正确的写法是这样的:
+</p>
+
+<pre>
+FROM ubuntu:22.04
+RUN apt-get update &amp;&amp; apt-get install -y nodejs
+ADD . /app
+RUN cd /app &amp;&amp; npm install
+CMD npm start
+</pre>
+
+<h2 id="toc_0.8">每个RUN指令后删除多余文件</h2>
+
+<p>
+假设我们更新了apt-get源，下载，解压并安装了一些软件包，它们都保存在/var/lib/apt/lists/目录中。
+</p>
+
+<p>
+但是，运行应用时Docker镜像中并不需要这些文件。我们最好将它们删除，因为它会使Docker镜像变大。
+</p>
+
+<p>
+示例Dockerfile中，我们可以删除/var/lib/apt/lists/目录中的文件(它们是由apt-get update生成的)。
+</p>
+
+<pre>
+FROM ubuntu:22.04
+RUN apt-get update &amp;&amp; apt-get install -y nodejs \
+  &amp;&amp; rm -rf /var/lib/apt/lists/* &amp;&amp; apt-get autoremove &amp;&amp; apt-get clean
+ADD . /app
+RUN cd /app &amp;&amp; npm install
+CMD npm start
+</pre>
+
+<pre>
+FROM centos
+RUN yum install epel-release -y &amp;&amp; \
+    yum install -y gcc gcc-c++ make gd-devel libxml2-devel \
+    libcurl-devel libjpeg-devel libpng-devel openssl-devel \
+    libmcrypt-devel libxslt-devel libtidy-devel autoconf \
+    iproute net-tools telnet wget curl \
+    &amp;&amp; yum clean all \
+    &amp;&amp; rm -rf /var/cache/yum/*
+</pre>
+
+<h2 id="toc_0.9">使用exec方式的ENTRYPOINT</h2>
+
+<p>
+ENTRYPOINT 的最佳用处是设置镜像的主命令，与 CMD 非常相似。当 CMD 和 ENTRYPOINT 都存在时，CMD 的指令变成了 ENTRYPOINT 指令的参数。并且此 CMD 提供的参数会被 docker run 后面的命令覆盖。
+</p>
+
+<p>
+如果你使用 CMD 命令且 CMD 是一个完整的可执行的命令，那么 CMD 指令和 ENTRYPOINT 会互相覆盖只有最后一个 CMD 或者 ENTRYPOINT 有效。
+</p>
+
+<pre>
+FROM node:7-alpine
+WORKDIR /app
+ADD . /app
+RUN npm install
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]
+#ENTRYPOINT exec ./entrypoint.sh
+CMD ["start"]
+</pre>
+
+<p>
+ENTRYPOINT 指令也可以结合一个辅助脚本使用，和前面命令行风格类似，即使启动工具需要不止一个步骤。
+</p>
+
+<p>
+例如，Postgres 官方镜像使用下面的脚本作为 ENTRYPOINT：
+</p>
+<pre>
+#!/bin/bash
+set -e
+if [ "$1" = 'postgres' ]; then
+    chown -R postgres "$PGDATA"
+    if [ -z "$(ls -A "$PGDATA")" ]; then
+        gosu postgres initdb
+    fi
+    exec gosu postgres "$@"
+fi
+exec "$@"
+</pre>
+
+<pre>
+注意：该脚本使用了 Bash 的内置命令 exec，所以最后运行的进程就是容器的 PID 为 1 的进程。这样，进程就可以接收到任何发送给容器的 Unix 信号了。
+
+docker stop 停止容器时，发送TERM信号发给送给容器PID=1的进程。
+如果ENTRYPOINT 指令使用的是 shell 模式，这样 Docker 就会把应用放到 shell 中运行，因此 shell 是 PID 1，sehll不会处理TERM信号。
+</pre>
+
+<p>
+该辅助脚本build中拷贝到容器，并在容器启动时通过 ENTRYPOINT 执行：
+</p>
+
+<pre>
+COPY ./docker-entrypoint.sh /
+ENTRYPOINT ["/docker-entrypoint.sh"]
+</pre>
+
+<p>
+该脚本可以让用户用几种不同的方式和 Postgres 交互：
+</p>
+<pre>
+# 很简单地启动 Postgres：
+docker run postgres
+
+# 执行 Postgres 并传递参数：
+docker run postgres postgres --help
+
+# 可以启动另外一个完全不同的工具，比如 Bash：
+docker run --rm -it postgres bash
+</pre>
+
+
+<h2 id="toc_0.10">ADD和COPY优先使用COPY</h2>
+
+<p>
+虽然 ADD 和 COPY 功能类似，但一般优先使用 COPY。因为它比 ADD 更透明。
+</p>
+
+<p>
+COPY 只支持简单将本地文件拷贝到容器中，而 ADD 有一些并不明显的功能（比如本地 tar 提取和远程 URL 支持）。因此，ADD 的最佳用例是将本地 tar 文件自动提取到镜像中，例如 ADD rootfs.tar.xz。
+</p>
+
+<p>
+对于不需要 ADD 的自动提取功能的文件或目录，你应该使用 COPY。
+</p>
+
+<p>
+如果你的 Dockerfile 有多个步骤需要使用上下文中不同的文件。单独 COPY 每个文件，而不是一次性的 COPY 所有文件，这将保证每个步骤的构建缓存只在特定的文件变化时失效。例如：
+</p>
+
+<pre>
+COPY requirements.txt /tmp/
+RUN pip install --requirement /tmp/requirements.txt
+COPY . /tmp/
+</pre>
+
+<p>
+如果将 COPY . /tmp/ 放置在 RUN 指令之前，只要 . 目录中任何一个文件变化，都会导致后续指令的缓存失效。
+</p>
+
+<p>
+为了让镜像尽量小，最好不要使用 ADD 指令从远程 URL 获取包，而是使用 curl 和 wget。这样你可以在文件提取完之后删掉不再需要的文件来避免在镜像中额外添加一层。比如尽量避免下面的用法：
+</p>
+
+<pre>
+避免这些用法：
+ADD http://example.com/big.tar.xz /usr/src/things/
+RUN tar -xJf /usr/src/things/big.tar.xz -C /usr/src/things
+RUN make -C /usr/src/things all
+
+而是应该使用下面这种方法：
+RUN mkdir -p /usr/src/things \
+    &amp;&amp; curl -SL http://example.com/big.tar.xz \
+    | tar -xJC /usr/src/things \
+    &amp;&amp; make -C /usr/src/things all
+
+上面使用的管道操作，所以没有中间文件需要删除。
+</pre>
+
+
+<h2 id="toc_0.11">ENV（设置环境变量）</h2>
+
+<p>
+为了方便新程序运行，你可以使用 ENV 来为容器中安装的程序更新 PATH 环境变量。
+</p>
+
+<p>
+例如使用 ENV PATH /usr/local/nginx/bin:$PATH 来确保 CMD ["nginx"] 能正确运行。
+</p>
+
+<p>
+ENV 指令也可用于为你想要容器化的服务提供必要的环境变量，比如 Postgres 需要的 PGDATA。
+</p>
+
+<p>
+最后，ENV 也能用于设置常见的版本号，比如下面的示例：
+</p>
+
+<pre>
+ENV PG_MAJOR 9.3
+ENV PG_VERSION 9.3.4
+RUN curl -SL http://example.com/postgres-$PG_VERSION.tar.xz | tar -xJC /usr/src/postgress &amp;&amp; …
+ENV PATH /usr/local/postgres-$PG_MAJOR/bin:$PATH
+</pre>
+
+<p>
+类似于程序中的常量，这种方法可以让你只需改变 ENV 指令来自动的改变容器中的软件版本。
+</p>
+
+<p>
+在使用 ENV 设置环境变量时，有几点需要注意：
+</p>
+
+<ol>
+<li>
+具有传递性，也就是当前镜像被用作其它镜像的基础镜像时，新镜像会拥有当前这个基础镜像所有的环境变量
+
+<li>
+ENV 定义的环境变量，可以在 dockerfile 被后面的所有指令（CMD 除外）中使用，但不能被 docker run 的命令参数引用
+
+</ol>
+
+
+<h2 id="toc_0.12">合理调整COPY与RUN的顺序</h2>
+
+<p>
+我们应该把变化最少的部分放在Dockerfile的前面，这样可以充分利用镜像缓存。
+</p>
+
+<p>
+在构建镜像的时候,docker 会按照dockerfile中的指令顺序来一次执行。每一个指令被执行的时候 docker 都会去缓存中检查是否有已经存在的镜像可以复用，而不是去创建一个新的镜像复制。
+如果不想使用构建缓存,可以使用docker build参数选项--no-cache=true来禁用构建缓存。在使用镜像缓存时,要弄清楚缓存合适生效,何时失效。构建缓存最基本规则如下:
+</p>
+
+<pre>
+如果引用的父镜像在构建缓存中,下一个命令将会和所有从该父进程派生的子镜像做比较,如果有子镜像使用相同的命令,那么缓存命中,否则缓存失效。
+在大部分情况下,通过比较Dockerfile中的指令和子镜像已经足够了。但是有些指令需要进一步的检查。
+对于ADD和COPY指令, 文件的内容会被检查,并且会计算每一个文件的校验码。但是文件最近一次的修改和访问时间不在校验码的考虑范围内。在构建过程中,docker 会比对已经存在的镜像,只要有文件内容和元数据发生变动，那么缓存就会失效。
+除了ADD和COPY指令,镜像缓存不会检查容器中文件来判断是否命中缓存。例如,在处理RUN apt-get -y update命令时,不会检查容器中的更新文件以确定是否命中缓存,这种情况下只会检查命令字符串是否相同。
+</pre>
+
+<p>
+示例中，源代码会经常变化，则每次构建镜像时都需要重新安装NPM模块，这显然不是我们希望看到的。因此我们可以先拷贝package.json，然后安装NPM模块，最后才拷贝其余的源代码。这样的话，即使源代码变化，也不需要重新安装NPM模块。
+</p>
+
+<pre>
+FROM node:7-alpine
+WORKDIR /app
+COPY package.json /app
+RUN npm install
+COPY . /app
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["start"]
+</pre>
+
+<p>
+同样举一反三，Python项目的时候，我们同样可以先拷贝requerements.txt,然后进行pip install requerements.txt，最后再进行COPY代码。
+</p>
+
+<pre>
+FROM python:3.6
+# 创建 app 目录
+WORKDIR /app
+# 安装 app 依赖
+COPY src/requirements.txt ./
+RUN pip install -r requirements.txt
+# 打包 app 源码
+COPY src /app
+EXPOSE 8080
+CMD [ "python", "server.py" ]
+</pre>
+
+<h2 id="toc_0.13">添加HEALTHCHECK</h2>
+
+<p>
+运行容器时，可以指定--restart always选项。这样的话，容器崩溃时，Docker守护进程(docker daemon)会重启容器。对于需要长时间运行的容器，这个选项非常有用。
+</p>
+
+<p>
+但是，如果容器的确在运行，但是不可用(陷入死循环，配置错误)怎么办？使用HEALTHCHECK指令可以让Docker周期性的检查容器的健康状况。我们只需要指定一个命令，如果一切正常的话返回0，否则返回1。
+</p>
+
+<pre>
+FROM node:7-alpine
+LABEL maintainer "jakub.skalecki@example.com"
+ENV PROJECT_DIR=/app
+WORKDIR $PROJECT_DIR
+COPY package.json $PROJECT_DIR
+RUN npm install
+COPY . $PROJECT_DIR
+ENV MEDIA_DIR=/media \
+NODE_ENV=production \
+APP_PORT=3000
+VOLUME $MEDIA_DIR
+EXPOSE $APP_PORT
+HEALTHCHECK CMD curl --fail http://localhost:$APP_PORT || exit 1
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["start"]
+</pre>
+
+<h2 id="toc_0.14">多阶段构建</h2>
+
+<p>
+参考文档: <a href="https://docs.docker.com/develop/develop-images/multistage-build/">https://docs.docker.com/develop/develop-images/multistage-build/</a>
+</p>
+
+<p>
+在docker不支持多阶段构建的年代，我们构建docker镜像时通常会采用如下两种方法：
+</p>
+
+<p>
+方法A.将所有的构建过程编写在同一个Dockerfile中，包括项目及其依赖库的编译、测试、打包等流程，可能会有如下问题：
+</p>
+
+<ul>
+<li>
+Dockerfile可能会特别臃肿
+
+<li>
+镜像层次特别深
+
+<li>
+存在源码泄露的风险
+
+</ul>
+
+<p>
+方法B.事先在外部将项目及其依赖库编译测试打包好后，再将其拷贝到构建目录中执行构建镜像。
+</p>
+
+<p>
+方法B较方法A略显优雅一些，而且可以很好地规避方法A存在的风险点，但仍需要我们编写两套或多套Dockerfile或者一些脚本才能将其两个阶段自动整合起来，例如有多个项目彼此关联和依赖，就需要我们维护多个Dockerfile，或者需要编写更复杂的脚本，导致后期维护成本很高。
+</p>
+
+
+<ul>
+<li>
+COPY --from阶段 
+
+</ul>
+
+<p>
+为解决以上问题，*<strong>Docker v17.05 开始支持多阶段构建 (multistage builds)</strong>*。使用多阶段构建我们就可以很容易解决前面提到的问题，并且只需要编写一个 Dockerfile。
+</p>
+
+<p>
+你可以在一个 Dockerfile 中使用多个 FROM 语句。每个 FROM 指令都可以使用不同的基础镜像，并表示开始一个新的构建阶段。你可以很方便的将一个阶段的文件复制到另外一个阶段，在最终的镜像中保留下你需要的内容即可。
+</p>
+
+<p>
+默认情况下，构建阶段是没有命名的，我们可以通过它们的索引来引用它们，第一个 FROM 指令从0开始，我们也可以用AS指令为构建阶段命名。
+</p>
+
+<p>
+多段构建多用于需要编译安装的软件，或者是一些需要解压缩的软件。
+</p>
+
+<p>
+Dockerfile 中第二个 FROM 指令以 alpine:latest 为基础镜像开始了一个新的构建阶段，并通过 COPY --from=0 仅将前一阶段的构建文件复制到此阶段。前一构建阶段中产生的 Go SDK 和任何中间层都会在此阶段中被舍弃，而不是保存在最终 Image 中。
+</p>
+
+<pre>
+FROM golang:1.7.3
+WORKDIR /go/src/github.com/alexellis/href-counter/
+RUN go get -d -v golang.org/x/net/html
+COPY app.go .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=0 /go/src/github.com/alexellis/href-counter/app .
+CMD ["./app"]
+</pre>
+
+<p>
+示例：多段构建编译一个jdk的镜像：
+</p>
+
+<p>
+未采用多段构建的Dockerfile
+</p>
+<pre>
+FROM centos AS jdk
+COPY jdk-8u231-linux-x64.tar.gz /usr/local/src
+RUN cd /usr/local/src &amp;&amp; \
+    tar -xzvf jdk-8u231-linux-x64.tar.gz -C /usr/local
+</pre>
+
+<p>
+采用多段构建的Dockerfile:多段构建其实就是将从上一个构建好的镜像只取自己需要的数据，然后复制到第二个镜像，这样会大大减少镜像的大小。
+</p>
+<pre>
+FROM centos AS jdk
+COPY jdk-8u231-linux-x64.tar.gz /usr/local/src
+RUN cd /usr/local/src &amp;&amp; \
+    tar -xzvf jdk-8u231-linux-x64.tar.gz -C /usr/local
+
+FROM centos
+COPY --from=jdk /usr/local/jdk1.8.0_231 /usr/local
+</pre>
+
+<ul>
+<li>
+用AS命名构建阶段
+
+</ul>
+
+<p>
+为了方便管理，您也可以通过向 FROM 指令添加 as NAME 来命名您的各个构建阶段。下面的示例就通过命名各个构建阶段并在 COPY 指令中使用名称来访问指定的构建阶段。
+</p>
+
+<p>
+这样做的好处就是即使稍后重新排序 Dockerfile 中的指令，COPY 指令一样能找到对应的构建阶段。
+</p>
+
+<pre>
+FROM golang:1.7.3 as builder
+WORKDIR /go/src/github.com/alexellis/href-counter/
+RUN go get -d -v golang.org/x/net/html
+COPY app.go .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=builder /go/src/github.com/alexellis/href-counter/app .
+CMD ["./app"]
+</pre>
+
+<ul>
+<li>
+停在特定的构建阶段
+
+</ul>
+
+<p>
+构建镜像时，不一定需要构建整个 Dockerfile 中每个阶段，也可以指定需要构建的阶段。比如：您只构建 Dockerfile 中名为 builder 的阶段
+</p>
+
+<p>
+此功能适合以下场景：
+</p>
+<ol>
+<li>
+调试特定的构建阶段。
+
+<li>
+在 Debug 阶段，启用所有程序调试模式或调试工具，而在生产阶段尽量精简。
+
+<li>
+在 Testing 阶段，您的应用程序使用测试数据，但在生产阶段则使用生产数据。
+
+</ol>
+
+<pre>
+docker build --target builder -t alexellis2/href-counter:latest .
+</pre>
+
+<ul>
+<li>
+使用外部镜像作为构建阶段
+
+</ul>
+
+<p>
+使用多阶段构建时，您不仅可以从 Dockerfile 中创建的镜像中进行复制。您还可以使用 COPY --from 指令从单独的 Image 中复制，支持使用本地 Image 名称、本地或 Docker 注册中心可用的标记或标记 ID。
+</p>
+
+<pre>
+COPY --from=nginx:latest /etc/nginx/nginx.conf /nginx.conf
+</pre>
+
+<ul>
+<li>
+把前一个阶段作为一个新的阶段
+
+</ul>
+
+<p>
+在使用 FROM 指令时，您可以通过引用前一阶段停止的地方来继续。同样，采用此方式也可以方便一个团队中的不同角色，如何使用类似流水线的方式，一级一级提供基础镜像，同样更方便快速的复用团队其他人的基础镜像。例如:
+</p>
+
+<pre>
+FROM alpine:latest as builder
+RUN apk --no-cache add build-base
+
+FROM builder as build1
+COPY source1.cpp source.cpp
+RUN g++ -o /binary source.cpp
+
+FROM builder as build2
+COPY source2.cpp source.cpp
+RUN g++ -o /binary source.cpp
+</pre>
+
+<pre class="brush:bash">
+# ---- 基础 python 镜像 ----
+FROM python:3.6 AS base
+# 创建 app 目录
+WORKDIR /app
+
+# ---- 依赖 ----
+FROM base AS dependencies
+COPY gunicorn_app/requirements.txt ./
+# 安装 app 依赖
+RUN pip install -r requirements.txt
+
+# ---- 复制文件并 build ----
+FROM dependencies AS build
+WORKDIR /app
+COPY . /app
+# 在需要时进行 Build 或 Compile
+
+# --- 使用 Alpine 发布 ----
+FROM python:3.6-alpine3.7 AS release
+# 创建 app 目录
+WORKDIR /app
+COPY --from=dependencies /app/requirements.txt ./
+COPY --from=dependencies /root/.cache /root/.cache
+# 安装 app 依赖
+RUN pip install -r requirements.txt
+COPY --from=build /app/ ./
+CMD ["gunicorn", "--config", "./gunicorn_app/conf/gunicorn_config.py", "gunicorn_app:app"]
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
