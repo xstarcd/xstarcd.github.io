@@ -19,21 +19,22 @@
 <div class="toc">
 <ul>
 <li><a href="#toc_0.1">公有镜像仓库</a>
-<li><a href="#toc_0.2">搭建私有镜像</a>
-<li><a href="#toc_0.3">私有仓库操作</a>
-<li><a href="#toc_0.4">HTTPS自签证书</a>
-<li><a href="#toc_0.5">client设置</a>
-<li><a href="#toc_0.6">docker login</a>
-<li><a href="#toc_0.7">查询私有仓库镜像</a>
-<li><a href="#toc_0.8">管理私有仓库镜像</a>
-<li><a href="#toc_0.9">用swarm部署Registry</a>
-<li><a href="#toc_0.10">compose方式部署Registry</a>
-<li><a href="#toc_0.11">stack方式部署Registry</a>
-<li><a href="#toc_0.12">可在多节点运行的registry</a>
+<li><a href="#toc_0.2">搭建Harbor</a>
+<li><a href="#toc_0.3">搭建Registry</a>
+<li><a href="#toc_0.4">私有仓库操作</a>
+<li><a href="#toc_0.5">HTTPS自签证书</a>
+<li><a href="#toc_0.6">client设置</a>
+<li><a href="#toc_0.7">docker login</a>
+<li><a href="#toc_0.8">查询私有仓库镜像</a>
+<li><a href="#toc_0.9">管理私有仓库镜像</a>
+<li><a href="#toc_0.10">用swarm部署Registry</a>
+<li><a href="#toc_0.11">compose方式部署Registry</a>
+<li><a href="#toc_0.12">stack方式部署Registry</a>
+<li><a href="#toc_0.13">可在多节点运行的registry</a>
 <ul>
-<li><a href="#toc_0.12.1">NFS Volume环境准备</a>
-<li><a href="#toc_0.12.2">registry stack配置</a>
-<li><a href="#toc_0.12.3">部署Registry</a>
+<li><a href="#toc_0.13.1">NFS Volume环境准备</a>
+<li><a href="#toc_0.13.2">registry stack配置</a>
+<li><a href="#toc_0.13.3">部署Registry</a>
 </ul>
 </ul>
 </ul>
@@ -96,7 +97,129 @@ docker pull ubuntu:22.04
 docker push &lt;Local IMAGE ID&gt; xstar/ubuntu:2204v1
 </pre>
 
-<h2 id="toc_0.2">搭建私有镜像</h2>
+<h2 id="toc_0.2">搭建Harbor</h2>
+
+<p>
+Harbor: 由VMware公司开源的企业级的Docker Registry管理项目，它包括权限管理(RBAC)、LDAP、日志审核、管理界面、自我注册、镜像复制和中文支持等功能。
+</p>
+
+<ul>
+<li>
+<a href="https://goharbor.io/docs/2.10.0/">https://goharbor.io/docs/2.10.0/</a>
+
+<li>
+<a href="https://github.com/goharbor/harbor/">https://github.com/goharbor/harbor/</a>
+
+<li>
+<a href="https://zhuanlan.zhihu.com/p/143779176">https://zhuanlan.zhihu.com/p/143779176</a>
+
+</ul>
+<li>
+trivyDB漏洞库:
+
+<ul>
+<li>
+<a href="https://github.com/aquasecurity/trivy-db">https://github.com/aquasecurity/trivy-db</a>
+
+<li>
+<a href="https://blog.csdn.net/weixin_47055136/article/details/132423901">https://blog.csdn.net/weixin_47055136/article/details/132423901</a>
+
+</ul>
+
+<p>
+由于ghcr.io/aquasecurity/trivy-db:2下载一直失败，最后用oras下载才成功下载。
+</p>
+
+<p>
+harbor-trivy镜像扫描工具安装部署(离线漏洞库):<a href="https://blog.csdn.net/weixin_47055136/article/details/132423901">https://blog.csdn.net/weixin_47055136/article/details/132423901</a>
+</p>
+
+<ul>
+<li>
+安装oras
+
+<ul>
+<li>
+下载地址:<a href="https://github.com/oras-project/oras/releases">https://github.com/oras-project/oras/releases</a>
+<pre>
+tar -zxf oras_1.0.1_linux_amd64.tar.gz
+mv oras /usr/local/bin/
+chown root. /usr/local/bin/oras
+
+oras version
+Version:        1.1.0
+Go version:     go1.21.0
+Git commit:     7079c468a06fb5815c99395eb4aaf46dd459d3fa
+Git tree state: clean
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+漏洞库下载
+
+<ul>
+<li>
+trivy v1版本和V2版本漏洞库下载地址不一样
+<pre>
+# trivy v2
+oras pull ghcr.io/aquasecurity/trivy-db:2
+oras pull ghcr.io/aquasecurity/trivy-java-db:1
+
+# trivy v1
+https://github.com/aquasecurity/trivy-db/releases
+oras pull ghcr.io/aquasecurity/trivy-java-db:1
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+trivy设置离线配置:harbor.yml
+<pre>
+trivy:
+  #跳过更新
+  skip_update: true
+  #离线扫描
+  offline_scan: true
+</pre>
+
+</ul>
+
+<ul>
+<li>
+设置后重新install harbor
+<pre>
+——————————
+# 停止harbor
+docker-compose down
+
+# 安装trivy 
+./install.sh  --with-trivy
+
+# 启动harbor服务
+docker-compose up -d
+</pre>
+
+</ul>
+
+<ul>
+<li>
+拷贝trivy-db到harbor-trivy数据目录:data_volume: /data/harbor/harborData
+<pre>
+tar -zxvf db.tar.gz -C /data/harbor/harborData/trivy-adapter/trivy/db
+chown 10000:10000 /data/harbor/harborData/trivy-adapter/trivy/db/*
+
+tar -zxvf javadb.tar.gz -C /data/harbor/harborData/trivy-adapter/trivy/java-db
+chown 10000:10000 /data/harbor/harborData/trivy-adapter/trivy/java-db/*
+</pre>
+
+</ul>
+
+<h2 id="toc_0.3">搭建Registry</h2>
 
 <p>
 docker-registry是官方提供的工具，可以用于构建私有的镜像仓库。
@@ -153,7 +276,7 @@ registry:2.8.3
 
 </ul>
 
-<h2 id="toc_0.3">私有仓库操作</h2>
+<h2 id="toc_0.4">私有仓库操作</h2>
 
 <pre class="brush:bash">
 # 镜像推送到私有仓库
@@ -229,7 +352,7 @@ docker pull 192.168.31.40:5000/xstar/ubuntu:22.04v1
 
 </ul>
 
-<h2 id="toc_0.4">HTTPS自签证书</h2>
+<h2 id="toc_0.5">HTTPS自签证书</h2>
 
 <ul>
 <li>
@@ -314,7 +437,7 @@ registry:2.8.3
 
 </ul>
 
-<h2 id="toc_0.5">client设置</h2>
+<h2 id="toc_0.6">client设置</h2>
 
 <ul>
 <li>
@@ -338,7 +461,7 @@ systemctl restart docker
 
 </ul>
 
-<h2 id="toc_0.6">docker login</h2>
+<h2 id="toc_0.7">docker login</h2>
 
 <p>
 不登录直接push镜像的话会失败，提示no basic auth credentials的错误。
@@ -357,7 +480,7 @@ https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 Login Succeeded
 </pre>
 
-<h2 id="toc_0.7">查询私有仓库镜像</h2>
+<h2 id="toc_0.8">查询私有仓库镜像</h2>
 
 <p>
 目前无法用docker search/images/image ls对私有仓库镜像进行查询，可以通过curl调用API列出仓库内所有的镜像。
@@ -442,7 +565,7 @@ list_private_images.py https://192.168.31.40:5000 myuser mypassword
 #https://192.168.31.40:5000/xstar/ubuntu:22.04v1
 </pre>
 
-<h2 id="toc_0.8">管理私有仓库镜像</h2>
+<h2 id="toc_0.9">管理私有仓库镜像</h2>
 
 <ul>
 <li>
@@ -545,7 +668,7 @@ registry garbage-collect /etc/docker/registry/config.yml
 </ul>
 </ul>
 
-<h2 id="toc_0.9">用swarm部署Registry</h2>
+<h2 id="toc_0.10">用swarm部署Registry</h2>
 
 <p>
 如果使用分布式存储（如：Amazon S3），则可使用完全扩展的多节点Registry服务。
@@ -626,7 +749,7 @@ docker service create \
 </ul>
 </ul>
 
-<h2 id="toc_0.10">compose方式部署Registry</h2>
+<h2 id="toc_0.11">compose方式部署Registry</h2>
 
 <p>
 <strong>Compose模式不支持external secret，且只能运行在当前节点，建议使用Stack模式。</strong>
@@ -689,7 +812,7 @@ To deploy your application across the swarm, use `docker stack deploy`.
 Creating registry_registry_1 ... done
 </pre>
 
-<h2 id="toc_0.11">stack方式部署Registry</h2>
+<h2 id="toc_0.12">stack方式部署Registry</h2>
 
 <ul>
 <li>
@@ -755,9 +878,9 @@ curl -k -u 'myuser:mypassword' -XGET https://192.168.31.40:5000/v2/xstar/ubuntu/
 {"name":"xstar/ubuntu","tags":["22.04v1"]}
 </pre>
 
-<h2 id="toc_0.12">可在多节点运行的registry</h2>
+<h2 id="toc_0.13">可在多节点运行的registry</h2>
 
-<h3 id="toc_0.12.1">NFS Volume环境准备</h3>
+<h3 id="toc_0.13.1">NFS Volume环境准备</h3>
 
 <ol>
 <li>
@@ -787,7 +910,7 @@ NFS Server部署、配置，设置NFS registry目录共享。
 </ol>
 </ol>
 
-<h3 id="toc_0.12.2">registry stack配置</h3>
+<h3 id="toc_0.13.2">registry stack配置</h3>
 
 <ul>
 <li>
@@ -859,7 +982,7 @@ docker node inspect -f '{{.Spec.Labels}}' swarm-manager swarm-node1 swarm-node2
 
 </ul>
 
-<h3 id="toc_0.12.3">部署Registry</h3>
+<h3 id="toc_0.13.3">部署Registry</h3>
 
 <p>
 docker stack启动Registry
