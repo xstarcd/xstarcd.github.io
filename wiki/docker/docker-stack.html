@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>docker stack</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>docker stack</h1>
+
+<ul>
+<li>
+<a href="https://docs.docker.com/engine/reference/commandline/stack_deploy/">https://docs.docker.com/engine/reference/commandline/stack_deploy/</a>
+
+</ul>
+
+<p>
+单机模式下，我们可以使用 Docker Compose 来编排多个服务。
+</p>
+
+<p>
+Docker Swarm 通过 Docker Stack，只需对已有的 docker-compose.yml 配置文件稍加改造就可以完成 Docker 集群环境下的多服务编排。
+</p>
+
+<p>
+stack-&gt;task-&gt;service
+</p>
+
+<p>
+Docker compose示例见： <a href="Docker.html">Docker常用操作</a>
+</p>
+
+<ul>
+<li>
+myservice-stack.yml
+<pre class="brush:bash">
+version: "3.4"
+services:
+  alpine:
+    image: alpine # 镜像名称
+    command: # 命令
+      - "ping"
+      - "www.baidu.com"
+    networks:
+      - "my-overlay" # 指定网络
+    deploy:
+      replicas: 1 # 负载/实例数量
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+    #depends_on: # 会阻塞nginx服务启动？
+    #  - nginx
+  nginx:
+    image: nginx
+    networks:
+      - "my-overlay"
+    ports:
+      - "8081:80" # 端口映射
+    deploy:
+      replicas: 1 # 负载/实例数量
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+networks:
+  my-overlay: # 网络需先创建好
+    external: true 
+</pre>
+
+</ul>
+
+<pre>
+docker stack deploy [OPTIONS] STACK
+
+Deploy a new stack or update an existing stack
+
+  -c, --compose-file 指定compose文件路径，"-"从stdin读取
+      --prune 修剪不再被引用的服务
+      --resolve-image string 查询resistry服务解析image，always|changed|never(default "always")
+      --with-registry-auth 登录registry参数
+</pre>
+
+<pre class="brush:bash">
+docker network create -d overlay my-overlay
+
+docker stack deploy -c myservice-stack.yml myservice
+</pre>
+
+<pre>
+docker stack deploy -c myservice-stack.yml myservice
+Creating service myservice_nginx
+Creating service myservice_alpine
+
+docker stack ls
+NAME        SERVICES
+myservice   2
+
+docker stack ps myservice
+ID             NAME                 IMAGE           NODE            DESIRED STATE   CURRENT STATE                ERROR     PORTS
+qig31fucyoj4   myservice_alpine.1   alpine:latest   swarm-manager   Running         Running about a minute ago
+pwj4wikgw70i   myservice_nginx.1    nginx:latest    swarm-node2     Running         Running 59 seconds ago
+
+docker stack services myservice
+ID             NAME               MODE         REPLICAS   IMAGE           PORTS
+w55p2eetzq7d   myservice_alpine   replicated   1/1        alpine:latest
+k7g89zs8k68a   myservice_nginx    replicated   1/1        nginx:latest    *:8081-&gt;80/tcp
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

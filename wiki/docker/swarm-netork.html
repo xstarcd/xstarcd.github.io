@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>docker swarm network</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>docker swarm network</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">网络结构</a>
+<li><a href="#toc_0.2">示例redis</a>
+<li><a href="#toc_0.3">示例nginx</a>
+<li><a href="#toc_0.4">修改发布端口</a>
+<li><a href="#toc_0.5">指定TCP/UDP协议</a>
+<li><a href="#toc_0.6">host模式</a>
+<li><a href="#toc_0.7">外部负载均衡</a>
+<li><a href="#toc_0.8">自定义网络</a>
+<li><a href="#toc_0.9">dnsrr模式</a>
+</ul>
+</ul>
+</div>
+
+<p>
+Docker Engine集群模式可以轻松发布服务端口，以使其可用于集群之外的资源。
+</p>
+
+<p>
+所有节点都参与入口路由网格。路由网格使群中的每个节点能够接受群中运行的任何服务在已发布端口上的连接，即使节点上没有运行的任务。
+</p>
+
+<p>
+路由网格将所有传入的请求路由到可用节点上的已发布端口到活动容器。
+</p>
+
+<p>
+要在集群中使用网格，在启用群模式之前，我们需要在群节点之间打开以下端口：
+</p>
+<pre>
+Port 7946 TCP/UDP for container network discovery.容器网络自动发现
+Port 4789 UDP (configurable) for the container ingress network.容器ingress网络
+</pre>
+<p>
+在swarm中建立网络时，应特别小心。
+</p>
+
+<p>
+我们还必须在集群的节点和任何需要访问端口的外部资源（如外部负载平衡器）之间打开已发布的端口。
+</p>
+
+<h2 id="toc_0.1">网络结构</h2>
+
+<ul>
+<li>
+Ingress
+
+</ul>
+
+<p>
+建立外部8080到容器内部80的端口映射，访问任一Node节点的8080端口，再由VIP LB(虚拟IP的负载均衡)自动路由到Nginx的容器中处理。
+</p>
+
+<p>
+可以再通过External LB对8080端口进行外部负载均衡(如：LVS、API Gateway、Haproxy)。
+</p>
+
+<p>
+<img src=../img/docker/swarm-Ingress.png alt="swarm ingress" width=800px>
+</p>
+
+<ul>
+<li>
+Ingress+Link
+
+</ul>
+
+<p>
+基于容器内部网络互通和容器DNS，将tomcat服解析到对应的内部VIP进行负载均衡访问。link方式只在swarm内部可访问。
+</p>
+
+<p>
+<img src=../img/docker/swarm-Ingress-link.png alt="swarm ingress + link" width=800px>
+</p>
+
+<ul>
+<li>
+自定义网络
+
+</ul>
+
+<p>
+连接到同一网络的容器，都可以通过容器名互通，然后通过VIP LB方式进行负载均衡，不需要开启端口publish（仅限内部容器之间通信）。
+</p>
+
+<pre>
+#创建自定义网络
+docker network create --driver=overlay --attachable mynet
+#创建服务
+docker service create -p 80:80 --network=mynet --name nginx nginx
+</pre>
+
+<p>
+<img src=../img/docker/swarm-network.png alt="swarm network" width=800px>
+</p>
+
+<h2 id="toc_0.2">示例redis</h2>
+
+<pre class="brush:bash">
+docker service create \
+--replicas 3 \
+--name myredis \
+--publish published=63790,target=6379 \
+--update-delay 5s \
+redis:6.0.20-alpine
+
+# --publish published=63790,target=6379
+# published=63790，&lt;PUBLISHED-PORT&gt;，swarm绑定的外部服务端口，如果不指定，则每个任务都会绑定个随机的高编号端口
+# target=6379，&lt;CONTAINER-PORT&gt;容器内的服务侦听端口
+</pre>
+
+<pre>
+image redis:6.0.20-alpine could not be accessed on a registry to record its digest. 
+Each node will access redis:6.0.20-alpine independently,
+possibly leading to different nodes running different versions of the image.
+创建service时未指定registry地址（这样主节点也可以创建成功，这因为主节点本地存在该镜像），
+但是会导致子节点获取的镜像时也使用本地缓存，也就有可能导致使用的镜像不一致，或者获取不到image。
+指定registry地址可避免该问题。
+
+qf0dl5oyujzgqexk8j673slgr
+overall progress: 3 out of 3 tasks
+1/3: running   [==================================================&gt;]
+2/3: running   [==================================================&gt;]
+3/3: running   [==================================================&gt;]
+verify: Service converged
+
+# service ls中可以看到PORTS信息:*:63790-&gt;6379/tcp:
+docker service ls
+ID             NAME      MODE         REPLICAS   IMAGE                 PORTS
+qf0dl5oyujzg   myredis   replicated   3/3        redis:6.0.20-alpine   *:63790-&gt;6379/tcp
+
+# 节点netstat中也可以看到63790端口绑定到了dockerd服务上：
+netstat -lntup|grep -E 'PID|6379'
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp6       0      0 :::63790                :::*                    LISTEN      746/dockerd
+
+# telnet任一节点上的对应端口，可正常连接、交互：
+telnet 192.168.31.42 63790
+Trying 192.168.31.42...
+Connected to 192.168.31.42.
+Escape character is '^]'.
+GET /
+$-1
+quit
++OK
+Connection closed by foreign host.
+</pre>
+
+<h2 id="toc_0.3">示例nginx</h2>
+
+<p>
+将nginx容器中的端口80发布到群中任何节点的端口8080。当访问任何节点的8080端口时，docker会将请求路由到活动的容器。
+</p>
+<pre class="brush:bash">
+docker service create \
+  --name mynginx \
+  --publish published=8080,target=80 \
+  --replicas 2 \
+  nginx
+</pre>
+<p>
+部署后，我们用 <a href="http://192.168.31.42:8080/">http://192.168.31.42:8080/</a> 可以访问到nginx服务。
+</p>
+
+<h2 id="toc_0.4">修改发布端口</h2>
+
+<p>
+同样对于已经部署的 service，我们也可以重新给他发布端口。
+</p>
+
+<p>
+您可以使用docker service inspect来查看服务的已发布端口。
+</p>
+
+<pre class="brush:bash">
+# update发部端口设置：
+docker service update \
+  --publish-add published=&lt;PUBLISHED-PORT&gt;,target=&lt;CONTAINER-PORT&gt; \
+  &lt;SERVICE&gt;
+
+# 查看已发布的端口信息：
+docker service inspect --format="{{json .Endpoint.Spec.Ports}}" mynginx
+
+[{"Protocol":"tcp","TargetPort":80,"PublishedPort":8080}]
+</pre>
+
+<h2 id="toc_0.5">指定TCP/UDP协议</h2>
+
+<p>
+发布端口时不指定协议，默认为TCP端口。
+</p>
+
+<pre class="brush:bash">
+# 未指定，默认为TCP，长语法、短语法示例
+docker service create --name dns-cache --publish published=53,target=53 dns-cache
+docker service create --name dns-cache -p 53:53 dns-cache
+
+# 指定TCP和UDP
+docker service create --name dns-cache \
+  --publish published=53,target=53 \
+  --publish published=53,target=53,protocol=udp \
+  dns-cache
+
+docker service create --name dns-cache \
+  -p 53:53 \
+  -p 53:53/udp \
+  dns-cache
+</pre>
+
+<h2 id="toc_0.6">host模式</h2>
+
+<p>
+省略mode参数、或mode=ingress都会使用路由网格。
+</p>
+
+<p>
+<strong>如果我们希望访问给定节点上的绑定端口时，总是访问该节点上运行的服务实例，则需要使用长--publish方式，设置mode=host模式来绕过路由。</strong>
+</p>
+
+<p>
+这种情况下需要注意：
+</p>
+
+<ul>
+<li>
+如果访问未运行服务任务的节点，有可能无法连接，或者访问到了一个完全不同的服务。
+
+<li>
+如果希望在每个节点上运行多个服务任务（如：当您有5个节点但运行10个副本时），则无法指定静态目标端口。要么允许Docker分配一个随机的高编号端口（通过关闭published端口），要么通过使用全局服务而不是复制服务，或使用放置约束，确保服务仅在给定节点上运行。
+
+</ul>
+
+<pre class="brush:bash">
+docker service create --name dns-cache \
+  --publish published=53,target=53,protocol=udp,mode=host \
+  --mode global \
+  dns-cache
+</pre>
+
+<h2 id="toc_0.7">外部负载均衡</h2>
+
+<p>
+可以为集群服务配置外部负载平衡器，要么与路由网格结合使用，要么根本不使用路由网格。
+</p>
+
+<p>
+配置外部负载均衡器将请求路由到集群服务。例如，可以配置HAProxy来均衡对发布到端口8080的nginx服务的请求。
+</p>
+
+<p>
+<img src=../img/docker/swarm-haproxy.png width=800px alt="带有外部负载均衡器图像的入口">
+</p>
+
+<ul>
+<li>
+/etc/haproxy/haproxy.cfg
+<pre class="brush:bash">
+global
+        log /dev/log    local0
+        log /dev/log    local1 notice
+...snip...
+
+# Configure HAProxy to listen on port 80
+frontend http_front
+   bind *:80
+   stats uri /haproxy?stats
+   default_backend http_back
+
+# Configure HAProxy to route requests to swarm nodes on port 8080
+backend http_back
+   balance roundrobin
+   server master 172.16.95.137:8080 check
+   server node2 172.16.95.138:8080 check
+   server node3 172.16.95.139:8080 check
+</pre>
+
+</ul>
+
+<h2 id="toc_0.8">自定义网络</h2>
+
+<p>
+默认的网络Ingress中，容器之间、同一服务的不同实例之间网络无法互通?
+</p>
+
+<p>
+自定义的overlay网络中，swarm为每个service都创建一个dnsadress，网络可以互通。
+</p>
+
+<p>
+docker网络--多机通信--4--ingress笔记:<a href="https://blog.csdn.net/weixin_43501172/article/details/123819075">https://blog.csdn.net/weixin_43501172/article/details/123819075</a>
+</p>
+
+<pre class="brush:bash">
+# 创建网络
+docker network create -d overlay mytest-overlay
+docker network ls
+
+# 创建指定网络的service
+docker service create --network mytest-overlay --name testnginx -p 8081:80 nginx
+docker service create --network mytest-overlay --name testalpine alpine ping www.baidu.com
+# 创建默认网络的service
+docker service create --name testalpine2 alpine ping www.baidu.com
+</pre>
+
+<pre>
+docker network ls
+NETWORK ID     NAME              DRIVER    SCOPE
+5e24d2f32213   bridge            bridge    local
+c7c7164df6a6   docker_gwbridge   bridge    local
+edc2b127d60d   host              host      local
+0xmdmgmcwdr4   ingress           overlay   swarm #默认的网络
+u1txwklso3lu   mytest-overlay    overlay   swarm #新建的网络
+cc14e216cbdb   none              null      local
+
+docker service ls
+ID             NAME          MODE         REPLICAS   IMAGE                 PORTS
+a8fcefi6ybi5   mynginx       replicated   2/2        nginx:latest          *:8080-&gt;80/tcp
+qf0dl5oyujzg   myredis       replicated   3/3        redis:6.0.20-alpine   *:63790-&gt;6379/tcp
+
+lzal5dqms1xh   testalpine2   replicated   1/1        alpine:latest
+
+wdanrvsl9y9b   testalpine    replicated   1/1        alpine:latest
+qtdlb7658k2d   testnginx     replicated   1/1        nginx:latest          *:8081-&gt;80/tcp
+
+docker service ps testalpine testalpine2
+ID             NAME            IMAGE           NODE            DESIRED STATE   CURRENT STATE            ERROR     PORTS
+j5iruwdqn6s1   testalpine2.1   alpine:latest   swarm-node1     Running         Running 2 minutes ago
+qgv09gh8cvy5   testalpine.1    alpine:latest   swarm-manager   Running         Running 23 minutes ago
+
+# 查看网络接入信息
+docker network inspect mytest-overlay
+</pre>
+
+<ul>
+<li>
+访问mynginx、testnginx，都可以正常访问：
+
+<ul>
+<li>
+<a href="http://192.168.31.41:8080/">http://192.168.31.41:8080/</a>
+
+<li>
+<a href="http://192.168.31.41:8081/">http://192.168.31.41:8081/</a>
+
+</ul>
+</ul>
+
+<p>
+查看testalpine、testalpine2服务所在节点，在对应节点上进入容器主机：
+</p>
+
+<ul>
+<li>
+testalpine:连接自建网络的主机可以通过名称互通，其它无法互通
+<pre class="brush:bash">
+docker ps
+#CONTAINER ID   IMAGE                 COMMAND                  CREATED         STATUS         PORTS      NAMES
+#9f7476dd9cc2   alpine:latest         "ping www.baidu.com"     4 minutes ago   Up 4 minutes              testalpine.1.qgv09gh8cvy5gingedo84wybl
+
+docker exec -it 9f7476dd9cc2 sh
+
+# ping testnginx，网络可达
+/ # ping testnginx
+PING testnginx (10.0.1.2): 56 data bytes
+64 bytes from 10.0.1.2: seq=0 ttl=64 time=0.107 ms
+64 bytes from 10.0.1.2: seq=1 ttl=64 time=0.216 ms
+
+# ping mynginx，无法解析名称(不在同一个网络中)
+/ # ping mynginx
+ping: bad address 'mynginx'
+</pre>
+
+</ul>
+
+<ul>
+<li>
+testalpine2:只能ping通自己的网关IP
+<pre class="brush:bash">
+docker exec -it c35b34ada16d sh
+
+/ # ping testnginx
+ping: bad address 'testnginx'
+/ # ping mynginx
+ping: bad address 'mynginx'
+/ # ping 10.0.0.8
+PING 10.0.0.8 (10.0.0.8): 56 data bytes
+^C
+--- 10.0.0.8 ping statistics ---
+13 packets transmitted, 0 packets received, 100% packet loss
+
+/ # ping 172.17.0.1
+PING 172.17.0.1 (172.17.0.1): 56 data bytes
+64 bytes from 172.17.0.1: seq=0 ttl=64 time=0.066 ms
+^C
+--- 172.17.0.1 ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.066/0.138/0.211 ms
+/ # ping 172.17.0.2
+PING 172.17.0.2 (172.17.0.2): 56 data bytes
+64 bytes from 172.17.0.2: seq=0 ttl=64 time=0.055 ms
+</pre>
+
+</ul>
+
+<ul>
+<li>
+将testalpine2扩展为2个实例
+<pre>
+docker service scale testalpine2=2
+
+docker service ps testalpine2
+ID             NAME            IMAGE           NODE          DESIRED STATE   CURRENT STATE                ERROR     PORTS
+j5iruwdqn6s1   testalpine2.1   alpine:latest   swarm-node1   Running         Running 15 minutes ago
+rnvfmjqbkqiw   testalpine2.2   alpine:latest   swarm-node2   Running         Running about a minute ago
+
+docker ps
+CONTAINER ID   IMAGE                 COMMAND                  CREATED          STATUS          PORTS      NAMES
+9d2c30514500   alpine:latest         "ping www.baidu.com"     3 minutes ago    Up 3 minutes               testalpine2.2.rnvfmjqbkqiwks81lp4d7a5qb
+
+docker exec -it 9d2c30514500 sh
+ifconfig查看网络，发现ip地址也是172.17.0.2，与另一实例IP相同。
+</pre>
+
+</ul>
+
+<ul>
+<li>
+将testalpine2加入mytest-overlay，再测试网络可达。
+<pre>
+docker service update --network-add mytest-overlay testalpine2
+
+update时容器重新启动，增加为双网口，IP地址重新分配。
+docker service ps testalpine2
+ID             NAME                IMAGE           NODE          DESIRED STATE   CURRENT STATE            ERROR     PORTS
+wge1eqirgw9e   testalpine2.1       alpine:latest   swarm-node1   Running         Running 4 minutes ago
+j5iruwdqn6s1    \_ testalpine2.1   alpine:latest   swarm-node1   Shutdown        Shutdown 4 minutes ago
+xvfe5o1mbsmx   testalpine2.2       alpine:latest   swarm-node2   Running         Running 3 minutes ago
+rnvfmjqbkqiw    \_ testalpine2.2   alpine:latest   swarm-node2   Shutdown        Shutdown 3 minutes ago
+
+docker exec -it 50578cc4c63c sh
+/ # ping testalpine
+PING testalpine (10.0.1.5): 56 data bytes
+64 bytes from 10.0.1.5: seq=0 ttl=64 time=0.174 ms
+^C
+
+/ # ping testalpine2
+PING testalpine2 (10.0.1.8): 56 data bytes
+64 bytes from 10.0.1.8: seq=0 ttl=64 time=0.202 ms
+^C
+
+/ # ping testnginx
+PING testnginx (10.0.1.2): 56 data bytes
+64 bytes from 10.0.1.2: seq=1 ttl=64 time=0.218 ms
+^C
+
+/ # ifconfig
+eth0      Link encap:Ethernet  HWaddr 02:42:0A:00:01:09
+          inet addr:10.0.1.9  Bcast:10.0.1.255  Mask:255.255.255.0
+          UP BROADCAST RUNNING MULTICAST  MTU:1450  Metric:1
+          RX packets:9 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:9 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:658 (658.0 B)  TX bytes:658 (658.0 B)
+
+eth1      Link encap:Ethernet  HWaddr 02:42:AC:12:00:05
+          inet addr:172.18.0.5  Bcast:172.18.255.255  Mask:255.255.0.0
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:178 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:167 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:16672 (16.2 KiB)  TX bytes:15806 (15.4 KiB)
+
+lo        Link encap:Local Loopback
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          UP LOOPBACK RUNNING  MTU:65536  Metric:1
+          RX packets:16 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:16 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000
+          RX bytes:1128 (1.1 KiB)  TX bytes:1128 (1.1 KiB)
+</pre>
+
+</ul>
+
+<h2 id="toc_0.9">dnsrr模式</h2>
+
+<p>
+endpoint-mode有两种模式：VIP、dnsrr。
+</p>
+
+<p>
+默认为VIP模式，通过端口映射方式被外部访问。
+</p>
+
+<p>
+dnsrr方式与端口发布冲突，不能发布端口、服务无法直接通过端口被外部访问，只能通过名称访问。如果不加入overlay网络它就是独立的。
+</p>
+
+<p>
+若需要被访问，可以对这个service增加overlay网络。
+</p>
+
+<pre>
+docker service create --name nginx-b --endpoint-mode dnsrr -p  8090:80 nginx
+
+docker service updata --network-add mytest-overlay nginx-b
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>create service|在swarm中部署服务</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>create service|在swarm中部署服务</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">service create</a>
+<ul>
+<li><a href="#toc_0.1.1">service scale</a>
+<li><a href="#toc_0.1.2">service rm</a>
+<li><a href="#toc_0.1.3">service update</a>
+</ul>
+<li><a href="#toc_0.2">swarm集群维护</a>
+<ul>
+<li><a href="#toc_0.2.1">manager高可用</a>
+<li><a href="#toc_0.2.2">节点维护DRAIN</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<p>
+在swarm部署、管理、扩展、更新和删除服务。
+</p>
+
+<h2 id="toc_0.1">service create</h2>
+
+<p>
+服务管理、部署需要在manager上发起。
+</p>
+
+<p>
+用docker service create命令创建服务。
+</p>
+
+<pre class="brush:bash">
+sudo docker service create --replicas 1 --name helloworld alpine ping docker.com
+
+# --name: 服务名称helloworld
+# --replicas: 运行实例1个
+# 参数alpine ping docker.com，将服务定义为执行命令ping docker.com的Alpine Linux容器。
+</pre>
+
+<pre>
+renuslhb2y8i0c16tr03kqn1p
+overall progress: 1 out of 1 tasks
+1/1: running   [==================================================&gt;]
+verify: Service converged
+</pre>
+
+<p>
+查看服务：
+</p>
+<pre class="brush:bash">
+# 查看服务列表
+docker service ls
+
+ID             NAME         MODE         REPLICAS   IMAGE           PORTS
+renuslhb2y8i   helloworld   replicated   1/1        alpine:latest
+
+# 查看服务所在NODE
+docker service ps helloworld
+ID             NAME           IMAGE           NODE            DESIRED STATE   CURRENT STATE           ERROR     PORTS
+j2cerfrndt10   helloworld.1   alpine:latest   swarm-manager   Running         Running 7 minutes ago
+
+# 查看服务的详细信息
+docker service inspect --pretty renuslhb2y8i
+docker service inspect --pretty helloworld # 易于阅读格式输出
+docker service inspect helloworld          # Json格式输出
+
+ID:             renuslhb2y8i0c16tr03kqn1p
+Name:           helloworld
+Service Mode:   Replicated
+ Replicas:      1
+Placement:
+UpdateConfig:
+ Parallelism:   1
+ On failure:    pause
+ Monitoring Period: 5s
+ Max failure ratio: 0
+ Update order:      stop-first
+RollbackConfig:
+ Parallelism:   1
+ On failure:    pause
+ Monitoring Period: 5s
+ Max failure ratio: 0
+ Rollback order:    stop-first
+ContainerSpec:
+ Image:         alpine:latest@sha256:51b67269f354137895d43f3b3d810bfacd3945438e94dc5ac55fdac340352f48
+ Args:          ping docker.com
+ Init:          false
+Resources:
+Endpoint Mode:  vip
+</pre>
+
+<ul>
+<li>
+docker容器操作
+<pre class="brush:bash">
+# 在对应NODE节点，用docker ps查看服务信息
+docker ps
+CONTAINER ID   IMAGE           COMMAND             CREATED         STATUS         PORTS     NAMES
+356dc496222f   alpine:latest   "ping docker.com"   8 minutes ago   Up 8 minutes             helloworld.1.j2cerfrndt104opoip82ml7ww
+# 进入容器、查看状态、查看日志
+docker exec -it 356dc496222f /bin/sh
+docker attach 356dc496222f
+docker stats 356dc496222f
+docker logs 356dc496222f
+docker logs --since="2024-01-11" --tail=10 helloworld.1.j2cerfrndt104opoip82ml7ww
+</pre>
+
+</ul>
+
+<h3 id="toc_0.1.1">service scale</h3>
+
+<pre class="brush:bash">
+docker service scale helloworld=2
+</pre>
+
+<pre>
+helloworld scaled to 2
+overall progress: 2 out of 2 tasks
+1/2: running   [==================================================&gt;]
+2/2: running   [==================================================&gt;]
+verify: Service converged
+
+docker service ls
+ID             NAME         MODE         REPLICAS   IMAGE           PORTS
+renuslhb2y8i   helloworld   replicated   2/2        alpine:latest
+
+docker service ps helloworld
+ID             NAME           IMAGE           NODE            DESIRED STATE   CURRENT STATE                ERROR     PORTS
+j2cerfrndt10   helloworld.1   alpine:latest   swarm-manager   Running         Running 25 minutes ago
+yzkwbznot2ld   helloworld.2   alpine:latest   swarm-node1     Running         Running about a minute ago
+</pre>
+
+<h3 id="toc_0.1.2">service rm</h3>
+
+<pre class="brush:bash">
+docker service rm helloworld
+</pre>
+
+<h3 id="toc_0.1.3">service update</h3>
+
+<ul>
+<li>
+部署redis服务
+<pre class="brush:bash">
+docker service create --replicas 3 --name myredis --update-delay 10s redis:6.0-alpine
+
+# --replicas 3，部署服务的数量
+# --update-delay 10s，以10秒的更新延迟配置swarm，时间格式支持h、m、s，如：5m10s表示5分钟10秒
+# --update-parllelism，更新时并行数量，默认一次只更新1个
+# --name myredis，服务名称myredis
+# redis:6.0-alpine，指定redis images版本
+</pre>
+
+</ul>
+
+<pre>
+overall progress: 3 out of 3 tasks
+1/3: running   [==================================================&gt;]
+2/3: running   [==================================================&gt;]
+3/3: running   [==================================================&gt;]
+verify: Service converged
+
+docker service ls
+ID             NAME      MODE         REPLICAS   IMAGE              PORTS
+rvch2nxjqygi   myredis   replicated   3/3        redis:6.0-alpine
+
+docker service ps myredis
+ID             NAME        IMAGE              NODE            DESIRED STATE   CURRENT STATE           ERROR     PORTS
+geok9gvw9rnf   myredis.1   redis:6.0-alpine   swarm-node1     Running         Running 2 minutes ago
+iy7aly9fwsko   myredis.2   redis:6.0-alpine   swarm-node2     Running         Running 2 minutes ago
+wwqtmfnq51gm   myredis.3   redis:6.0-alpine   swarm-manager   Running         Running 2 minutes ago
+
+docker service inspect --pretty myredis
+
+ID:             rvch2nxjqygim9ecpvtwotdzs
+Name:           myredis
+Service Mode:   Replicated
+ Replicas:      3
+Placement:
+UpdateConfig:
+ Parallelism:   1
+ Delay:         10s
+ On failure:    pause
+ Monitoring Period: 5s
+ Max failure ratio: 0
+ Update order:      stop-first
+RollbackConfig:
+ Parallelism:   1
+ On failure:    pause
+ Monitoring Period: 5s
+ Max failure ratio: 0
+ Rollback order:    stop-first
+ContainerSpec:
+ Image:         redis:6.0-alpine@sha256:3f62df0d21946090646f7eba8d8762139444f69e3cec5e345188ad2ecb62827f
+ Init:          false
+Resources:
+Endpoint Mode:  vip
+</pre>
+
+<ul>
+<li>
+滚动更新redis版本
+
+</ul>
+
+<pre class="brush:bash">
+docker service update --image redis:6.0.20-alpine myredis
+</pre>
+
+<pre>
+myredis
+overall progress: 3 out of 3 tasks
+1/3: running   [==================================================&gt;]
+2/3: running   [==================================================&gt;]
+3/3: running   [==================================================&gt;]
+verify: Service converged
+
+更新调度过程：
+1.停止第一个任务。
+2.为停止的任务安排更新。
+3.启动更新任务的容器。
+4.根据更新任务返回状态：
+	a.任务返回RUNNING，等待指定的延迟期，然后开始下一个任务。
+	b.任务返回FAILED，暂停更新。
+
+docker service ls
+ID             NAME      MODE         REPLICAS   IMAGE                 PORTS
+rvch2nxjqygi   myredis   replicated   3/3        redis:6.0.20-alpine
+
+docker service ps myredis
+ID             NAME            IMAGE                 NODE            DESIRED STATE   CURRENT STATE            ERROR     PORTS
+p8ar47czvamy   myredis.1       redis:6.0.20-alpine   swarm-node1     Running         Running 2 minutes ago
+geok9gvw9rnf    \_ myredis.1   redis:6.0-alpine      swarm-node1     Shutdown        Shutdown 2 minutes ago
+0cpobbgygqio   myredis.2       redis:6.0.20-alpine   swarm-node2     Running         Running 2 minutes ago
+iy7aly9fwsko    \_ myredis.2   redis:6.0-alpine      swarm-node2     Shutdown        Shutdown 2 minutes ago
+md0byaxu9pic   myredis.3       redis:6.0.20-alpine   swarm-manager   Running         Running 2 minutes ago
+wwqtmfnq51gm    \_ myredis.3   redis:6.0-alpine      swarm-manager   Shutdown        Shutdown 2 minutes ago
+</pre>
+
+<h2 id="toc_0.2">swarm集群维护</h2>
+
+<h3 id="toc_0.2.1">manager高可用</h3>
+
+<p>
+将swarm-node1、node2升有为manager，Manager status变成了Reachable。
+当leader故障时，通过选取可以产生一个新的leader。
+</p>
+
+<pre>
+docker node promote NODE [NODE...]
+docker node update --role manager swarm-node2
+Promote one or more nodes to manager in the swarm
+
+docker node demote NODE [NODE...]
+docker node update --role workerr swarm-node2
+Demote one or more nodes from manager in the swarm
+</pre>
+
+<pre class="brush:bash">
+docker node promote swarm-node1 swarm-node2 # 升级
+docker node demote swarm-node1              # 降级  
+</pre>
+<pre>
+docker node ls
+ID                            HOSTNAME        STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+tonr5adn7buqjfqdx1kasmywy *   swarm-manager   Ready     Active         Leader           24.0.7
+w4kwyvrmrazlto391br2q6iee     swarm-node1     Ready     Active         Reachable        24.0.7
+2wwwkgepq5nz46tgiksbngwzo     swarm-node2     Ready     Active         Reachable        24.0.7
+</pre>
+
+<h3 id="toc_0.2.2">节点维护DRAIN</h3>
+
+<p>
+维护节点时，需要将节点可用性设置为<code>DRAIN</code>状态，Master会阻止此类节点接收新任务、停止节点上的任务，在具有<code>ACTIVE</code>状态的节点启动任务。
+</p>
+
+<ul>
+<li>
+查看node和service现状
+<pre>
+docker node ls
+ID                            HOSTNAME        STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+tonr5adn7buqjfqdx1kasmywy *   swarm-manager   Ready     Active         Leader           24.0.7
+w4kwyvrmrazlto391br2q6iee     swarm-node1     Ready     Active                          24.0.7
+2wwwkgepq5nz46tgiksbngwzo     swarm-node2     Ready     Active                          24.0.7
+
+docker service ps myredis
+ID             NAME            IMAGE                 NODE            DESIRED STATE   CURRENT STATE             ERROR     PORTS
+p8ar47czvamy   myredis.1       redis:6.0.20-alpine   swarm-node1     Running         Running 38 minutes ago
+geok9gvw9rnf    \_ myredis.1   redis:6.0-alpine      swarm-node1     Shutdown        Shutdown 38 minutes ago
+0cpobbgygqio   myredis.2       redis:6.0.20-alpine   swarm-node2     Running         Running 39 minutes ago
+iy7aly9fwsko    \_ myredis.2   redis:6.0-alpine      swarm-node2     Shutdown        Shutdown 39 minutes ago
+md0byaxu9pic   myredis.3       redis:6.0.20-alpine   swarm-manager   Running         Running 38 minutes ago
+wwqtmfnq51gm    \_ myredis.3   redis:6.0-alpine      swarm-manager   Shutdown        Shutdown 38 minutes ago
+</pre>
+
+<li>
+将node2可用性设置为drain，再次查看状态
+<pre class="brush:bash">
+docker node update --availability drain swarm-node2
+docker node ls
+docker service ps myredis
+</pre>
+<pre>
+ID                            HOSTNAME        STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+tonr5adn7buqjfqdx1kasmywy *   swarm-manager   Ready     Active         Leader           24.0.7
+w4kwyvrmrazlto391br2q6iee     swarm-node1     Ready     Active                          24.0.7
+2wwwkgepq5nz46tgiksbngwzo     swarm-node2     Ready     Drain                           24.0.7
+
+ID             NAME            IMAGE                 NODE            DESIRED STATE   CURRENT STATE             ERROR     PORTS
+p8ar47czvamy   myredis.1       redis:6.0.20-alpine   swarm-node1     Running         Running 42 minutes ago
+geok9gvw9rnf    \_ myredis.1   redis:6.0-alpine      swarm-node1     Shutdown        Shutdown 42 minutes ago
+1d7kebxldb29   myredis.2       redis:6.0.20-alpine   swarm-manager   Running         Running 46 seconds ago
+0cpobbgygqio    \_ myredis.2   redis:6.0.20-alpine   swarm-node2     Shutdown        Shutdown 46 seconds ago
+iy7aly9fwsko    \_ myredis.2   redis:6.0-alpine      swarm-node2     Shutdown        Shutdown 42 minutes ago
+md0byaxu9pic   myredis.3       redis:6.0.20-alpine   swarm-manager   Running         Running 42 minutes ago
+wwqtmfnq51gm    \_ myredis.3   redis:6.0-alpine      swarm-manager   Shutdown        Shutdown 42 minutes ago
+</pre>
+
+<li>
+启动节点可用性
+<pre class="brush:bash">
+docker node update --availability active swarm-node2
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

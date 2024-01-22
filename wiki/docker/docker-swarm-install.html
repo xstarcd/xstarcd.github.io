@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>安装swarm环境</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>安装swarm环境</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">docker-swarm主机计划</a>
+<li><a href="#toc_0.2">安装docker</a>
+<li><a href="#toc_0.3">安装docker-swarm</a>
+<ul>
+<li><a href="#toc_0.3.1">manager节点初始化swarm</a>
+<li><a href="#toc_0.3.2">将node添加到swarm集群</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<p>
+swarm manger、node安装、加入集群，以及集群维护。
+</p>
+
+<h2 id="toc_0.1">docker-swarm主机计划</h2>
+
+<table>
+<tr>
+<th>
+hostname
+</th>
+<th>
+IP
+</th>
+<th>
+comments
+</th>
+</tr>
+<tr>
+<td>
+swarm-manager
+</td>
+<td>
+192.168.31.40
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+swarm-node1
+</td>
+<td>
+192.168.31.41
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+swarm-node2
+</td>
+<td>
+192.168.31.42
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+</table>
+
+<h2 id="toc_0.2">安装docker</h2>
+
+<p>
+安装swarm之前，先在manager、node节点完成docker环境安装，见： <a href="Docker.html">Docker常用操作</a>
+</p>
+<ul>
+<li>
+IP地址、时区、hostname、sysctl、ulimit等系统基础设置检查。
+
+<li>
+安装docker。
+
+</ul>
+
+<h2 id="toc_0.3">安装docker-swarm</h2>
+
+<p>
+Docker Swarm 是 Docker 的集群管理工具。它将 Docker 主机池转变为单个虚拟 Docker 主机。 Docker Swarm 提供了标准的 Docker API，所有任何已经与 Docker 守护程序通信的工具都可以使用 Swarm 轻松地扩展到多个主机。
+</p>
+
+<p>
+swarm 集群由管理节点（manager）和工作节点（work node）构成。
+</p>
+<ul>
+<li>
+swarm mananger：负责整个集群的管理工作包括集群配置、服务管理等所有跟集群有关的工作。
+
+<li>
+work node：available node，主要负责运行相应的服务来执行任务（task）。
+
+</ul>
+
+<h3 id="toc_0.3.1">manager节点初始化swarm</h3>
+
+<p>
+在manager节点上执行docker swarm init命令进行初始化。
+</p>
+
+<pre class="brush:bash">
+# 初始化管理节点，记录输出的join --token信息，后面node节点用于加入集群
+sudo docker swarm init --advertise-addr 192.168.31.40
+</pre>
+<pre>
+Swarm initialized: current node (tonr5adn7buqjfqdx1kasmywy) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-0e77njbcxdi6r69gg4dsmp5su9okcqxia47gzogwcpfwkqexaa-20lhbjve4ajqz4472a3dmsjv4 192.168.31.40:2377
+
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+</pre>
+
+<pre class="brush:bash">
+# 查询join token信息：worker、manager节点
+docker swarm join-token worker
+docker swarm join-token manager
+
+docker info    # 查看集群当前状态，可以看到Node Address、Manager Addreses信息
+docker node ls # 查看节点状态
+</pre>
+
+<pre>
+docker node ls
+
+# 在把node添加到集群后，才会看到后面两个节点。
+# MANAGER STATUS列标识为leader的是管理节点，node1和node2此列为空是worker节点。
+
+ID                            HOSTNAME        STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+tonr5adn7buqjfqdx1kasmywy *   swarm-manager   Ready     Active         Leader           24.0.7
+w4kwyvrmrazlto391br2q6iee     swarm-node1     Ready     Active                          24.0.7
+2wwwkgepq5nz46tgiksbngwzo     swarm-node2     Ready     Active                          24.0.7
+</pre>
+
+<h3 id="toc_0.3.2">将node添加到swarm集群</h3>
+
+<p>
+在node节点执行docker swarm join-token命令加入集群(管理集群init完成时输出的参数)。
+</p>
+
+<p>
+如果忘记了命令参数，则可以在 manager 节点执行<code>docker swarm join-token worker</code>查看。
+</p>
+
+<pre class="brush:bash">
+sudo docker swarm join --token SWMTKN-1-0e77njbcxdi6r69gg4dsmp5su9okcqxia47gzogwcpfwkqexaa-20lhbjve4ajqz4472a3dmsjv4 192.168.31.40:2377
+</pre>
+
+<pre>
+This node joined a swarm as a worker.
+</pre>
+
+<p>
+添加后，在manager节点上运行<code>docker node ls</code>，就可以看到三个节点了。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

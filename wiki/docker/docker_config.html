@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>docker_config</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>docker_config</h1>
+
+<ul>
+<li>
+Store configuration data using Docker Configs: <a href="https://docs.docker.com/engine/swarm/configs/">https://docs.docker.com/engine/swarm/configs/</a>
+
+<li>
+使用Docker Configs存储配置信息:<a href="https://zhuanlan.zhihu.com/p/443404105">https://zhuanlan.zhihu.com/p/443404105</a>
+
+</ul>
+
+<p>
+在 Swarm 中添加一个 Config 时，Docker 通过 TLS 连接把 Config 发送给 Swarm Manager。这个 Config 经过加密后，存储在 Raft 日志中，而且整个 Raft 日志会被复制到其他 Manager 中，确保 Config 的高可用性。
+</p>
+
+<p>
+在新创建的或正在运行的服务添加 Config 时，Config 将作为文件安装到容器中，文件路径默认为 linux 容器中的 /&lt;config-name&gt;。
+</p>
+
+<p>
+可以在任何时候通过更新服务的方式授权其他的 Config 或移除已有的Config 访问权。
+</p>
+
+<p>
+如果节点是 Swarm Manager，或者正在运行服务任务已被授权访问这个 Config，那么这个节点才能访问这个配置。当容器任务停止运行时，共享给它的 Config 将从该容器的内存文件系统中卸载，并从节点的内存刷新。
+</p>
+
+<p>
+如果一个节点运行了一个带 Config 的任务容器，在它失去与 Swarm 的连接后，这个任务容器仍然可以访问其 Config，但只有在节点重新连接到 Swarm 时才能接收更新。
+</p>
+
+<p>
+正在运行的服务正在使用的 Config 不能删除。想要在不中断正在运行的服务的情况下删除配置可以参考 《Rotate a config》<a href="https://docs.docker.com/engine/swarm/configs/#example-rotate-a-config">https://docs.docker.com/engine/swarm/configs/#example-rotate-a-config</a>
+</p>
+
+<p>
+为了更容易地更新或回退 Config，可以考虑在 Config Name 中添加版本号或日期。
+</p>
+
+<p>
+如需更新 Stack ，可以更改 Compose file，然后重新运行 docker stack deploy -c &lt;new-compose-file&gt; &lt;stack-name&gt;。如果 Compose file 使用新的 Config ，那么 services 将开始使用这些配置。
+</p>
+
+<pre>
+Usage:  docker config COMMAND
+
+Manage Swarm configs
+
+Commands:
+  create      Create a config from a file or STDIN
+  inspect     Display detailed information on one or more configs
+  ls          List configs
+  rm          Remove one or more configs
+
+</pre>
+
+<pre>
+docker config create site.conf site.conf
+
+ docker service create \
+     --name nginx \
+     --secret site.key \
+     --secret site.crt \
+     --config source=site.conf,target=/etc/nginx/conf.d/site.conf,mode=0440 \
+     --publish published=3000,target=443 \
+     nginx:latest \
+     sh -c "exec nginx -g 'daemon off;'"
+
+服务不再使用，需要清除：
+ docker service rm nginx
+ docker secret rm site.crt site.key
+ docker config rm site.conf
+</pre>
+
+<p>
+config更新后：rotate a config
+</p>
+<pre>
+# 创建一个新配置
+docker config create site-v2.conf site.conf
+
+# update服务，用新配置替换老配置
+docker service update \
+  --config-rm site.conf \
+  --config-add source=site-v2.conf,target=/etc/nginx/conf.d/site.conf,mode=0440 \
+  nginx
+
+# 验证服务运行正常后，删除老配置
+docker config rm site.conf
+</pre>
+
+<p>
+在stack中使用config
+</p>
+<pre>
+version: 3.3
+services:
+  web:
+    image: 172.16.99.2:40305/masl:dev-yc-36
+    configs:
+      - source: tomcat-server
+      - target: /usr/local/apache-tomcat-8.5.50/conf/server.xml
+
+configs:
+  tomcat-server:
+    file: ./server.xml
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

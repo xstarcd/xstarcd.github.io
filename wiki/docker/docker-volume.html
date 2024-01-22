@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>docker持久化存储</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>docker持久化存储</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">mount参数</a>
+<li><a href="#toc_0.2">bind mount</a>
+<li><a href="#toc_0.3">named volume</a>
+<li><a href="#toc_0.4">容器间挂载</a>
+<li><a href="#toc_0.5">NFS Volume</a>
+<ul>
+<li><a href="#toc_0.5.1">安装NFS Server</a>
+<li><a href="#toc_0.5.2">Docker NFS volume</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+<a href="https://docs.docker.com/storage/">https://docs.docker.com/storage/</a>
+
+<li>
+添加绑定挂载、卷或内存文件系统 （--mount）:<a href="https://docs.docker.com/engine/reference/commandline/service_create/#differences-between---mount-and---volume">https://docs.docker.com/engine/reference/commandline/service_create/#differences-between---mount-and---volume</a>
+
+</ul>
+
+<p>
+Docker 支持三种不同类型的挂载，允许容器读取 从或写入文件或目录，或者 在内存文件系统上。这些类型是数据卷（通常简称为 作为卷）、绑定挂载、TMPF 和命名管道。
+</p>
+
+<ul>
+<li>
+volume mounts: 
+
+<ul>
+<li>
+先用docker volume create创建卷（如果不创建，swarm会自动创建）。
+
+<ul>
+<li>
+使用volume方式，任务启动时若卷不存在，docker会自动创建。
+
+<li>
+匿名卷：若没有为卷指定名称，为每个任务创建自己的匿名卷，不会在任务之间共享，任务结束时被删除。
+
+</ul>
+<li>
+将docker volume挂载到容器。 
+
+<li>
+cluster volumes应该可以跨节点使用，依赖网络或分布式存储服务。
+
+</ul>
+<li>
+bind mounts: 
+
+<ul>
+<li>
+需先在节点创建目录。
+
+<li>
+将主机文件目录挂载到容器。
+
+<li>
+bind挂载是完全不可移植的(开发、生产环境可能存在差异）。
+
+</ul>
+<li>
+可以使用节点TAG+deploy过滤器方式，用--constraint将服务部署到指定的节点，示例见Registry部署。
+
+</ul>
+
+<p>
+<img src=../img/docker/types-of-mounts-volume.webp width=600px>
+</p>
+
+<h2 id="toc_0.1">mount参数</h2>
+
+<p>
+<a href="https://docs.docker.com/storage/volumes/">https://docs.docker.com/storage/volumes/</a>
+</p>
+
+<ul>
+<li>
+如果 volume-opt 参数中包含逗号，则需要用双引号修饰此参数，并用单引号修饰整个 --mount 配置。
+
+<li>
+配置中若未注明readonly，默认允许文件读写权限。
+
+</ul>
+
+<p>
+docker run中使用mount
+</p>
+<pre>
+docker run -d \
+  --name devtest \
+  --mount source=myvol2,target=/app \
+  nginx:latest
+</pre>
+
+<p>
+docker service中使用mount
+</p>
+
+<pre>
+docker service create \
+ --mount 'type=volume,src=&lt;VOLUME-NAME&gt;,dst=&lt;CONTAINER-PATH&gt;,volume-driver=&lt;DRIVER&gt;,readonly,volume-opt=&lt;KEY0&gt;=&lt;VALUE0&gt;,volume-opt="&lt;KEY1&gt;=&lt;VALUE1&gt;"'
+ --name myservice \
+ &lt;IMAGE&gt;
+</pre>
+
+<pre>
+ docker service create \
+ --mount 'type=volume,src=&lt;VOLUME-NAME&gt;,dst=&lt;CONTAINER-PATH&gt;,\
+volume-driver=local,\
+volume-opt=type=nfs,\
+volume-opt=device=&lt;nfs-server&gt;:&lt;nfs-path&gt;,\
+"volume-opt=o=addr=&lt;nfs-address&gt;,vers=4,soft,timeo=180,bg,tcp,rw"'
+ --name myservice \
+ IMAGE
+</pre>
+
+<p>
+docker compose中使用mount:
+</p>
+
+<p>
+第一次使用时会自动创建volume，后续会使用之前创建的卷。
+</p>
+
+<p>
+由compose、stack自动创建的卷，卷名会加上ProjectName前缀，并会加上com.docker.stack.namespace、com.docker.compose.project、com.docker.compose.volume的labels。
+</p>
+
+<p>
+service、stack删除时，不会删除创建的卷，卷需要使用docker image rm单独来删除。
+</p>
+
+<pre>
+services:
+  frontend:
+    image: node:lts
+    volumes:
+      - myapp:/home/node/app
+volumes:
+  myapp:
+    #可用name来指定自定义卷名，可用于引用有特殊字符的卷。这个名称按原样使用，不受stack name的作用域限制。
+    #name: "my-app-data"
+    #可以从ENV传处名称，如：在.env文件中定义：DATABASE_VOLUME=my_volume_001，在compose中引用
+    name: ${DATABASE_VOLUME}
+</pre>
+
+<p>
+也可以先在外部创建卷，然后在compose中引用它：
+</p>
+<pre>
+services:
+  frontend:
+    image: node:lts
+    volumes:
+      - myapp:/home/node/app
+volumes:
+  myapp:
+    # 表示卷已存在，且由外部管理，Compose不会再创建，如果不存在会返回错误。
+    external: true
+    # 也可用name指定名部的实际名称，而compose中使用myapp来引用。
+    name: actual-name-of-volume
+</pre>
+
+<h2 id="toc_0.2">bind mount</h2>
+
+<p>
+bind模式是直接将本地目录挂载给容器。
+</p>
+
+<ul>
+<li>
+在各节点创建待绑定目录
+<pre class="brush:bash">
+mkdir /data/volumetest
+</pre>
+
+</ul>
+
+<ul>
+<li>
+使用bind模式挂载
+<pre class="brush:bash">
+docker service create --name volumetest \
+--mount type=bind,src=/data/volumetest,dst=/mnt/myvolume \
+--replicas 2 alpine ping 127.0.0.1
+
+# 测试完成删除服务
+docker service rm volumetest
+</pre>
+
+</ul>
+
+
+<p>
+在容器中mount了sdb1到myvolume，另外还有hostname等文件，都是挂载的/dev/sda2。
+</p>
+
+<p>
+在容器中向/mnt/myvolume写入内容，在对应node的/data/volumetest目录中可以看到。
+</p>
+<pre>
+mount|grep /dev/sd
+/dev/sdb1 on /mnt/myvolume type ext4 (rw,relatime)
+/dev/sda2 on /etc/resolv.conf type ext4 (rw,relatime)
+/dev/sda2 on /etc/hostname type ext4 (rw,relatime)
+/dev/sda2 on /etc/hosts type ext4 (rw,relatime)
+</pre>
+
+<p>
+查看容器docker inspect中mount相关配置：
+</p>
+<pre>
+            "Mounts": [
+                {
+                    "Type": "bind",
+                    "Source": "/data/volumetest",
+                    "Target": "/mnt/myvolume"
+                }
+            ],
+
+        "Mounts": [
+            {
+                "Type": "bind",
+                "Source": "/data/volumetest",
+                "Destination": "/mnt/myvolume",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            }
+        ],
+</pre>
+
+<h2 id="toc_0.3">named volume</h2>
+
+<ul>
+<li>
+volume create创建卷
+
+</ul>
+
+<p>
+docker volume create: <a href="https://docs.docker.com/engine/reference/commandline/volume_create/">https://docs.docker.com/engine/reference/commandline/volume_create/</a>
+</p>
+
+<p>
+docker service create: <a href="https://docs.docker.com/engine/reference/commandline/service_create/#differences-between---mount-and---volume">https://docs.docker.com/engine/reference/commandline/service_create/#differences-between---mount-and---volume</a>
+</p>
+
+<pre>
+docker volume create --help
+Usage:  docker volume create [OPTIONS] [VOLUME]
+
+Create a volume
+
+Options:
+      --availability string       Cluster Volume availability ("active", "pause", "drain") (default "active")
+  -d, --driver string             Specify volume driver name (default "local")
+      --group string              Cluster Volume group (cluster volumes)
+      --label list                Set metadata for a volume
+      --limit-bytes bytes         Minimum size of the Cluster Volume in bytes
+  -o, --opt map                   Set driver specific options (default map[])
+      --required-bytes bytes      Maximum size of the Cluster Volume in bytes
+      --scope string              Cluster Volume access scope ("single", "multi") (default "single")
+      --secret map                Cluster Volume secrets (default map[])
+      --sharing string            Cluster Volume access sharing ("none", "readonly", "onewriter", "all") (default "none")
+      --topology-preferred list   A topology that the Cluster Volume would be preferred in
+      --topology-required list    A topology that the Cluster Volume must be accessible from
+      --type string               Cluster Volume access type ("mount", "block") (default "block")1
+</pre>
+
+<ul>
+<li>
+创建的卷是local本地，集群其他节点不可见，需要在每个节点各自创建、相互独立。
+<pre class="brush:bash">
+docker volume create --name myvolume
+</pre>
+
+</ul>
+
+<pre>
+docker volume ls
+DRIVER    VOLUME NAME
+local     cf8d1d07673741dc53da5947947b26c33e972140497078bbca876e60e4a67c24
+local     myvolume
+
+docker volume inspect myvolume
+[
+    {
+        "CreatedAt": "2024-01-16T09:23:14+08:00",
+        "Driver": "local",
+        "Labels": null,
+        "Mountpoint": "/var/lib/docker/volumes/myvolume/_data",
+        "Name": "myvolume",
+        "Options": null,
+        "Scope": "local"
+    }
+]
+</pre>
+
+<ul>
+<li>
+在服务中使用卷
+<pre class="brush:bash">
+docker service create --name volumetest \
+--mount type=volume,src=myvolume,dst=/mnt/myvolume \
+--replicas 2 alpine ping 127.0.0.1
+
+# 测试完成删除服务
+docker service rm volumetest
+</pre>
+
+</ul>
+
+<p>
+在容器中可以看到mount了myvolume，另外还有hostname等文件，都是挂载的/dev/sda2。
+</p>
+
+<p>
+在容器中，向/mnt/myvolume目录写入文件，在对应节点主机的/var/lib/docker/volumes/myvolume/_data目录可以看到i(其他节点看不到，相互是独立的)。
+</p>
+<pre>
+mount|grep sda2
+/dev/sda2 on /mnt/myvolume type ext4 (rw,relatime)
+/dev/sda2 on /etc/resolv.conf type ext4 (rw,relatime)
+/dev/sda2 on /etc/hostname type ext4 (rw,relatime)
+/dev/sda2 on /etc/hosts type ext4 (rw,relatime)
+</pre>
+
+<p>
+在容器inspect中，hostname文件是是用属性指定，myvolume是有mount配置项。
+</p>
+<pre>
+        "ResolvConfPath": "/var/lib/docker/containers/3d1.../resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/3d1.../hostname",
+        "HostsPath": "/var/lib/docker/containers/3d1.../hosts",
+        "LogPath": "/var/lib/docker/containers/3d1.../3d1...-json.log",
+
+            "Mounts": [
+                {
+                    "Type": "volume",
+                    "Source": "myvolume",
+                    "Target": "/mnt/myvolume"
+                }
+            ],
+
+
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "myvolume",
+                "Source": "/var/lib/docker/volumes/myvolume/_data",
+                "Destination": "/mnt/myvolume",
+                "Driver": "local",
+                "Mode": "z",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+</pre>
+
+<ul>
+<li>
+清理无用volume
+<pre class="brush:bash">
+docker volume ls                          # 列出所有的数据卷
+docker volume ls --filter dangling=true   # 过滤不在使用的数据卷
+
+docker volume rm &lt;VOLUME_NAME&gt; # 删除卷，若卷正在被容器使用则不能删除
+docker volume prune            # 批量删除无用数据卷
+</pre>
+
+</ul>
+
+<h2 id="toc_0.4">容器间挂载</h2>
+
+<pre class="brush:bash">
+# 启动一个名为container1容器，此容器包含两个数据卷/var/volume1和/var/volume2，这两个目录是在容器里的，运行容器时会自动创建
+docker run -d --name container1 -v /var/volume1 -v /var/volume2 alpine ping 127.0.0.1
+
+# 创建container2容器，挂载container1容器中的数据卷
+docker run -d --rm --volumes-from container1 --name container2 alpine ping 127.0.0.1
+
+# 利用容器间挂载备份数据
+docker run -d --rm --volumes-from container1 -v /data/backup:/backup alpine tar cvf /backup/backup1.tar /var/volume1
+# 恢复数据 
+docker run -d --rm --volumes-from container1 -v /data/backup:/backup alpine tar xvf /backup/backup.tar -C /
+</pre>
+
+<h2 id="toc_0.5">NFS Volume</h2>
+
+<h3 id="toc_0.5.1">安装NFS Server</h3>
+
+<p>
+在Ubuntu主机上安装NFS服务端、创建共享目录、设置NFS共享。
+</p>
+
+<ul>
+<li>
+安装nfs server
+<pre class="brush:bash">
+sudo apt install nfs-kernel-server nfs-common rpcbind
+</pre>
+
+</ul>
+
+<ul>
+<li>
+配置NFS固定端口
+
+</ul>
+
+<p>
+较老版本的协议需要其它动态指定端口的 RPC 服务。幸运的是通过第 4 版的NFS，只需要端口 2049 （用于 NFS）和 111 （用于 portmapper），这样对于防火墙很容易处理。
+</p>
+
+<p>
+<a href="https://ubuntu.com/server/docs/service-nfs">https://ubuntu.com/server/docs/service-nfs</a>
+或
+man nfs.conf查看配置说明。
+</p>
+
+<p>
+如果需要设置，可在/etc/nfs.conf参与在如下位置添加：
+</p>
+<pre>
+[lockd]
+port=32768
+
+[mountd]
+port=32769
+
+[statd]
+port=32770
+</pre>
+
+<ul>
+<li>
+重启使配置生效
+<pre class="brush:bash">
+systemctl restart nfs-server.service rpc-statd rpcbind
+# 查看当前在使用的端口
+rpcinfo -p
+</pre>
+
+</ul>
+
+<ul>
+<li>
+创建一个给registry服务使用的共享目录
+<pre class="brush:bash">
+sudo mkdir -p /data/registry
+</pre>
+
+</ul>
+
+<ul>
+<li>
+修改NFS共享配置文件:/etc/exports
+<pre class="brush:bash">
+# 共享目录 客户端1(选项) 客户端2(选项)
+/data/registry 192.168.31.0/24(rw,sync,no_root_squash,no_subtree_check)
+</pre>
+
+</ul>
+
+<ul>
+<li>
+客户端: 可以是单台主机(主机名或IP地址)、网段、通配符网段或主机、网组(@netgroupname)，*表示不限制。
+
+<li>
+rw | ro: 权限，rw可读写，ro只读
+
+<li>
+hide | nohide: 如果被挂载的目录下的其他目录也是挂载的，此选项将使它们可见
+
+<li>
+sync | async：sync资料同步写入内存和硬盘
+
+<li>
+subtree_check | no_subtree_check: 如果共享/us/bin之类的子目录时，强制NFS检查父目录权限
+
+<li>
+all_squash | no_all_squash: 共享文件UID和GID映射为anonymous，适合公用目录
+
+<li>
+root_squash | no_root_squash：no_root_squash 选项会确保在 NFS 客户端上使用根用户（UID 为 0）时，其权限不被映射到远程 NFS 服务器上的一个非特权用户。启用后NFS会将UID或者GID为0的访问用户映射为anonymous
+
+</ul>
+
+<ul>
+<li>
+刷新共享配置
+
+</ul>
+
+<pre class="brush:bash">
+# 重新加载共享配置
+exportfs -rv
+
+# 查看主机共享目录
+showmount -e 192.168.31.40
+</pre>
+
+<ul>
+<li>
+NFS Client
+<pre>
+sudo apt install nfs-common
+
+sudo mkdir /opt/example
+sudo mount example.hostname.com:/srv /opt/example
+
+mkdir -p /data/registry
+#mount.nfs 192.168.31.40:/data/registry /data/registry
+mount 192.168.31.40:/data/registry /data/registry
+umount /data/registry
+
+#/etc/fstab
+example.hostname.com:/srv /opt/example nfs rsize=8192,wsize=8192,timeo=14,intr
+</pre>
+
+</ul>
+
+<h3 id="toc_0.5.2">Docker NFS volume</h3>
+
+<ul>
+<li>
+Docker NFS volume 创建与使用: <a href="https://developer.aliyun.com/article/1113505">https://developer.aliyun.com/article/1113505</a>
+
+<li>
+Docker容器使用NFS: <a href="https://cloud-atlas.readthedocs.io/zh-cn/latest/docker/storage/docker_container_nfs.html">https://cloud-atlas.readthedocs.io/zh-cn/latest/docker/storage/docker_container_nfs.html</a>
+
+</ul>
+
+<p>
+方法一：在容器内部安装 nfs-utils ，就如同常规到NFS客户端一样，在容器内部直接通过rpcbind方式挂载NFS共享输出，这种方式需要每个容器独立运行rpcbind服务，并且要使用 Docker systemd进程管理器 ，复杂且消耗较多资源。不过，优点是完全在容器内部控制，符合传统SA运维方式。
+</p>
+
+<p>
+方法二：Host主机上创建NFS类型的Docker Volume，然后将docker volume映射到容器内部，这样容器就可以直接使用Docker共享卷，这种方式最为简洁优雅。
+</p>
+
+<p>
+方法三：使用Docker volume plugin，例如 ContainX/docker-volume-netshare 可以直接将NFS共享卷作为容器卷挂载(就不需要在host主机上去执行挂载NFS命令了)
+</p>
+
+<ul>
+<li>
+创建NFS Volume：
+
+</ul>
+
+<p>
+<font color=#ff0000>需要在swarm集群的每个节点分别创建，否则docker在创建容器里，会自动创建一个本地的Volume。</font>
+</p>
+
+<pre class="brush:bash">
+docker volume create \
+--driver local \
+--opt type=nfs \
+--opt o="addr=192.168.31.40,rw,nolock,soft" \
+--opt device=:/data/registry \
+registry
+</pre>
+
+<pre>
+docker volume ls
+
+DRIVER    VOLUME NAME
+local     registry
+
+docker volume inspect registry
+[
+    {
+        "CreatedAt": "2024-01-16T16:19:48+08:00",
+        "Driver": "local",
+        "Labels": null,
+        "Mountpoint": "/var/lib/docker/volumes/registry/_data",
+        "Name": "registry",
+        "Options": {
+            "device": ":/data/registry",
+            "o": "addr=192.168.31.40,rw,nolock,soft",
+            "type": "nfs"
+        },
+        "Scope": "local"
+    }
+]
+
+ls /var/lib/docker/volumes/registry/_data，目录为空，在没有设备使用时NFS并没有挂载。
+</pre>
+
+<ul>
+<li>
+安装NFS client
+
+</ul>
+
+<pre class="brush:bash">
+sudo apt install nfs-common
+# yum中包名：nfs-utils
+</pre>
+
+<ul>
+<li>
+用volume模式挂载NFS到容器
+
+</ul>
+
+<p>
+<strong>创建service之前，再次检查各node节点，是否都已经创建好registry volume。</strong>
+</p>
+
+<pre class="brush:bash">
+docker service create --name volumetest \
+--mount type=volume,src=registry,dst=/var/lib/registry \
+--replicas 2 alpine ping 127.0.0.1
+</pre>
+
+<ul>
+<li>
+查看task、service状态和节点
+<pre>
+docker service ls
+ID             NAME                MODE         REPLICAS   IMAGE            PORTS
+5x7qz2qw90g6   Registry_registry   replicated   1/1        registry:2.8.3   *:5000-&gt;5000/tcp
+5a53ypdxbmfe   volumetest          replicated   2/2        alpine:latest
+
+docker service ps volumetest
+ID             NAME           IMAGE           NODE          DESIRED STATE   CURRENT STATE           ERROR     PORTS
+i9mf5alpeb00   volumetest.1   alpine:latest   swarm-node2   Running         Running 2 minutes ago
+mwp63rhmbimq   volumetest.2   alpine:latest   swarm-node1   Running         Running 2 minutes ago
+</pre>
+
+</ul>
+
+<ul>
+<li>
+在node查看容器状态
+<pre>
+docker ps
+CONTAINER ID   IMAGE           COMMAND            CREATED         STATUS         PORTS     NAMES
+f548af26ae12   alpine:latest   "ping 127.0.0.1"   2 minutes ago   Up 2 minutes             volumetest.2.mwp63rhmbimqc3hw3kwr2jy7n
+
+docker inspect f548af26ae12查看mount信息：
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "registry",
+                "Source": "/var/lib/docker/volumes/registry/_data",
+                "Destination": "/var/lib/registry",
+                "Driver": "local",
+                "Mode": "z",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+
+服务启动后，node上对应目录已挂载NFS共享内容：
+ls /var/lib/docker/volumes/registry/_data
+auth  certs  config.yml  docker  Registry-docker-compose.yml  Registry-docker-stack.yml
+</pre>
+
+</ul>
+
+<ul>
+<li>
+进入容器查看共享文件
+<pre>
+docker exec -it f548af26ae12 sh
+
+mount |grep regi
+
+:/data/registry on /var/lib/registry type nfs (rw,relatime,vers=3,rsize=524288,wsize=524288,namlen=255,soft,nolock,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=192.168.31.40,mountvers=3,mountproto=tcp,local_lock=all,addr=192.168.31.40)
+
+# 可以看到是挂载的192.168.31.40的共享目录，如果是本地卷则会是:
+# /dev/sda2 on /var/lib/registry type ext4 (rw,relatime)
+
+进入目录尝试读写删都正常：
+cd /var/lib/registry
+touch test &amp;&amp; ls test &amp;&amp; rm test
+</pre>
+
+</ul>
+
+<p>
+后面调整registry的tasck配置使用共享volume，就可以在多节点上运行。见：<a href="docker_registry.html">搭建Docker Registry私有仓库</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
