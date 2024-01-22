@@ -27,6 +27,7 @@
 <li><a href="#toc_0.2">swarm集群维护</a>
 <ul>
 <li><a href="#toc_0.2.1">manager高可用</a>
+<li><a href="#toc_0.2.2">节点维护DRAIN</a>
 </ul>
 </ul>
 </ul>
@@ -284,6 +285,63 @@ tonr5adn7buqjfqdx1kasmywy *   swarm-manager   Ready     Active         Leader   
 w4kwyvrmrazlto391br2q6iee     swarm-node1     Ready     Active         Reachable        24.0.7
 2wwwkgepq5nz46tgiksbngwzo     swarm-node2     Ready     Active         Reachable        24.0.7
 </pre>
+
+<h3 id="toc_0.2.2">节点维护DRAIN</h3>
+
+<p>
+维护节点时，需要将节点可用性设置为<code>DRAIN</code>状态，Master会阻止此类节点接收新任务、停止节点上的任务，在具有<code>ACTIVE</code>状态的节点启动任务。
+</p>
+
+<ul>
+<li>
+查看node和service现状
+<pre>
+docker node ls
+ID                            HOSTNAME        STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+tonr5adn7buqjfqdx1kasmywy *   swarm-manager   Ready     Active         Leader           24.0.7
+w4kwyvrmrazlto391br2q6iee     swarm-node1     Ready     Active                          24.0.7
+2wwwkgepq5nz46tgiksbngwzo     swarm-node2     Ready     Active                          24.0.7
+
+docker service ps myredis
+ID             NAME            IMAGE                 NODE            DESIRED STATE   CURRENT STATE             ERROR     PORTS
+p8ar47czvamy   myredis.1       redis:6.0.20-alpine   swarm-node1     Running         Running 38 minutes ago
+geok9gvw9rnf    \_ myredis.1   redis:6.0-alpine      swarm-node1     Shutdown        Shutdown 38 minutes ago
+0cpobbgygqio   myredis.2       redis:6.0.20-alpine   swarm-node2     Running         Running 39 minutes ago
+iy7aly9fwsko    \_ myredis.2   redis:6.0-alpine      swarm-node2     Shutdown        Shutdown 39 minutes ago
+md0byaxu9pic   myredis.3       redis:6.0.20-alpine   swarm-manager   Running         Running 38 minutes ago
+wwqtmfnq51gm    \_ myredis.3   redis:6.0-alpine      swarm-manager   Shutdown        Shutdown 38 minutes ago
+</pre>
+
+<li>
+将node2可用性设置为drain，再次查看状态
+<pre class="brush:bash">
+docker node update --availability drain swarm-node2
+docker node ls
+docker service ps myredis
+</pre>
+<pre>
+ID                            HOSTNAME        STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+tonr5adn7buqjfqdx1kasmywy *   swarm-manager   Ready     Active         Leader           24.0.7
+w4kwyvrmrazlto391br2q6iee     swarm-node1     Ready     Active                          24.0.7
+2wwwkgepq5nz46tgiksbngwzo     swarm-node2     Ready     Drain                           24.0.7
+
+ID             NAME            IMAGE                 NODE            DESIRED STATE   CURRENT STATE             ERROR     PORTS
+p8ar47czvamy   myredis.1       redis:6.0.20-alpine   swarm-node1     Running         Running 42 minutes ago
+geok9gvw9rnf    \_ myredis.1   redis:6.0-alpine      swarm-node1     Shutdown        Shutdown 42 minutes ago
+1d7kebxldb29   myredis.2       redis:6.0.20-alpine   swarm-manager   Running         Running 46 seconds ago
+0cpobbgygqio    \_ myredis.2   redis:6.0.20-alpine   swarm-node2     Shutdown        Shutdown 46 seconds ago
+iy7aly9fwsko    \_ myredis.2   redis:6.0-alpine      swarm-node2     Shutdown        Shutdown 42 minutes ago
+md0byaxu9pic   myredis.3       redis:6.0.20-alpine   swarm-manager   Running         Running 42 minutes ago
+wwqtmfnq51gm    \_ myredis.3   redis:6.0-alpine      swarm-manager   Shutdown        Shutdown 42 minutes ago
+</pre>
+
+<li>
+启动节点可用性
+<pre class="brush:bash">
+docker node update --availability active swarm-node2
+</pre>
+
+</ul>
 
 </div>
 <div id="footer">
