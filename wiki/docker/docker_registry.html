@@ -18,23 +18,31 @@
 <h1>docker registry搭建私有仓库</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">公有镜像仓库</a>
-<li><a href="#toc_0.2">搭建Harbor</a>
-<li><a href="#toc_0.3">搭建Registry</a>
-<li><a href="#toc_0.4">私有仓库操作</a>
-<li><a href="#toc_0.5">HTTPS自签证书</a>
-<li><a href="#toc_0.6">client设置</a>
-<li><a href="#toc_0.7">docker login</a>
-<li><a href="#toc_0.8">查询私有仓库镜像</a>
-<li><a href="#toc_0.9">管理私有仓库镜像</a>
-<li><a href="#toc_0.10">用swarm部署Registry</a>
-<li><a href="#toc_0.11">compose方式部署Registry</a>
-<li><a href="#toc_0.12">stack方式部署Registry</a>
-<li><a href="#toc_0.13">可在多节点运行的registry</a>
+<li><a href="#toc_1">公有镜像仓库</a>
+<li><a href="#toc_2">搭建Harbor镜像仓库</a>
+<li><a href="#toc_3">搭建Registry镜像仓库</a>
 <ul>
-<li><a href="#toc_0.13.1">NFS Volume环境准备</a>
-<li><a href="#toc_0.13.2">registry stack配置</a>
-<li><a href="#toc_0.13.3">部署Registry</a>
+<li><a href="#toc_3.1">用docker运行registry</a>
+<li><a href="#toc_3.2">添加HTTPS自签证书</a>
+</ul>
+<li><a href="#toc_4">私有仓库操作</a>
+<ul>
+<li><a href="#toc_4.1">client设置</a>
+<li><a href="#toc_4.2">docker login</a>
+<li><a href="#toc_4.3">docker pull/push</a>
+<li><a href="#toc_4.4">查询私有仓库镜像</a>
+<li><a href="#toc_4.5">管理镜像</a>
+</ul>
+<li><a href="#toc_5">将Registry部署到Swarm</a>
+<ul>
+<li><a href="#toc_5.1">create service方式</a>
+<li><a href="#toc_5.2">compose方式</a>
+<li><a href="#toc_5.3">stack方式</a>
+<li><a href="#toc_5.4">stack+NFS共享</a>
+<ul>
+<li><a href="#toc_5.4.1">准备NFS Volume服务</a>
+<li><a href="#toc_5.4.2">registry stack配置</a>
+<li><a href="#toc_5.4.3">Stack部署Registry</a>
 </ul>
 </ul>
 </ul>
@@ -74,7 +82,7 @@ Docker Registry v2 配置文件详解: <a href="https://cloud.tencent.com/develo
 
 </ul>
 
-<h2 id="toc_0.1">公有镜像仓库</h2>
+<h1 id="toc_1">公有镜像仓库</h1>
 
 <p>
 仓库（Repository）是集中存放镜像的地方。
@@ -97,7 +105,7 @@ docker pull ubuntu:22.04
 docker push &lt;Local IMAGE ID&gt; xstar/ubuntu:2204v1
 </pre>
 
-<h2 id="toc_0.2">搭建Harbor</h2>
+<h1 id="toc_2">搭建Harbor镜像仓库</h1>
 
 <p>
 Harbor: 由VMware公司开源的企业级的Docker Registry管理项目，它包括权限管理(RBAC)、LDAP、日志审核、管理界面、自我注册、镜像复制和中文支持等功能。
@@ -219,7 +227,8 @@ chown 10000:10000 /data/harbor/harborData/trivy-adapter/trivy/java-db/*
 
 </ul>
 
-<h2 id="toc_0.3">搭建Registry</h2>
+
+<h1 id="toc_3">搭建Registry镜像仓库</h1>
 
 <p>
 docker-registry是官方提供的工具，可以用于构建私有的镜像仓库。
@@ -228,6 +237,8 @@ docker-registry是官方提供的工具，可以用于构建私有的镜像仓�
 <p>
 可以通过获取官方registry镜像来运行。默认情况下，仓库会被创建在容器的/var/lib/registry目录下。可以通过-v参数来将镜像文件存放在本地的指定路径。
 </p>
+
+<h2 id="toc_3.1">用docker运行registry</h2>
 
 <ul>
 <li>
@@ -276,83 +287,7 @@ registry:2.8.3
 
 </ul>
 
-<h2 id="toc_0.4">私有仓库操作</h2>
-
-<pre class="brush:bash">
-# 镜像推送到私有仓库
-
-# 将镜像标记为私有仓库镜像
-# docker tag SOURCE_IMAGE[:TAG] TARGET_IMAGE[:TAG]
-# docker tag SOURCE_IMAGE[:TAG] [REGISTRY_HOST[:REGISTRY_PORT]/]TAGGET_IMAGE[:TAG]
-docker tag xstar/ubuntu:22.04v1 192.168.31.40:5000/xstar/ubuntu:22.04v1
-
-docker images
-#REPOSITORY                    TAG             IMAGE ID       CREATED        SIZE
-#127.0.0.1:5000/xstar/ubuntu   22.04v1         4641f2e373d7   2 hours ago    138MB
-#xstar/ubuntu                  22.04v1         4641f2e373d7   2 hours ago    138MB
-
-# 上传标记的镜像
-docker push 192.168.31.40:5000/xstar/ubuntu:22.04v1
-
-# 用curl查看仓库中的镜像
-curl -XGET http://192.168.31.40:5000/v2/_catalog
-# {"repositories":["xstar/ubuntu"]}
-
-# 删除本地镜像，测试从仓库下载
-docker image rm 192.168.31.40:5000/xstar/ubuntu:22.04v1
-docker pull 192.168.31.40:5000/xstar/ubuntu:22.04v1
-</pre>
-
-<ul>
-<li>
-在要访问这个Registry的所有主机上，将私有镜像配置到docker:/etc/docker/daemon.json。
-
-<ul>
-<li>
-修改后重启docker生效:<code>sudo systemctl restart docker</code>。
-
-<li>
-insecure-registries启动不安全的Registry后，Docker的处理步骤：
-
-<ul>
-<li>
-首先，尝试使用HTTPS。
-
-<ul>
-<li>
-如果HTTPS可用但证书无效，忽略证书验证。
-
-<li>
-如果HTTPS不可用，退回使用HTTP。
-
-</ul>
-</ul>
-</ul>
-</ul>
-
-<pre class="brush:bash">
-{
-  "registry-mirrors": [
-    "https://dockerproxy.com",
-    "https://hub-mirror.c.163.com",
-    "https://mirror.baidubce.com",
-    "https://ccr.ccs.tencentyun.com"
-  ],
-  "dns": [ "114.114.114.114","61.139.2.69" ],
-  "insecure-registries": [ "192.168.31.40:5000" ]
-}
-</pre>
-
-<ul>
-<li>
-在内网其他节点下载(先将私有镜像设置添加到各个节点的daemon.json中，并重启docker生效)
-<pre class="brush:bash">
-docker pull 192.168.31.40:5000/xstar/ubuntu:22.04v1
-</pre>
-
-</ul>
-
-<h2 id="toc_0.5">HTTPS自签证书</h2>
+<h2 id="toc_3.2">添加HTTPS自签证书</h2>
 
 <ul>
 <li>
@@ -437,7 +372,9 @@ registry:2.8.3
 
 </ul>
 
-<h2 id="toc_0.6">client设置</h2>
+<h1 id="toc_4">私有仓库操作</h1>
+
+<h2 id="toc_4.1">client设置</h2>
 
 <ul>
 <li>
@@ -461,7 +398,47 @@ systemctl restart docker
 
 </ul>
 
-<h2 id="toc_0.7">docker login</h2>
+<ul>
+<li>
+在要访问这个Registry的所有主机上，将私有镜像配置到docker:/etc/docker/daemon.json。
+
+<ul>
+<li>
+修改后重启docker生效:<code>sudo systemctl restart docker</code>(重启docker所有容器都会重启，应该尽可能用redload)。
+
+<li>
+insecure-registries启动不安全的Registry后，Docker的处理步骤：
+
+<ul>
+<li>
+首先，尝试使用HTTPS。
+
+<ul>
+<li>
+如果HTTPS可用但证书无效，忽略证书验证。
+
+<li>
+如果HTTPS不可用，退回使用HTTP。
+
+</ul>
+</ul>
+</ul>
+</ul>
+
+<pre class="brush:bash">
+{
+  "registry-mirrors": [
+    "https://dockerproxy.com",
+    "https://hub-mirror.c.163.com",
+    "https://mirror.baidubce.com",
+    "https://ccr.ccs.tencentyun.com"
+  ],
+  "dns": [ "114.114.114.114","61.139.2.69" ],
+  "insecure-registries": [ "192.168.31.40:5000","192.168.31.40" ]
+}
+</pre>
+
+<h2 id="toc_4.2">docker login</h2>
 
 <p>
 不登录直接push镜像的话会失败，提示no basic auth credentials的错误。
@@ -480,7 +457,50 @@ https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 Login Succeeded
 </pre>
 
-<h2 id="toc_0.8">查询私有仓库镜像</h2>
+<h2 id="toc_4.3">docker pull/push</h2>
+
+<ul>
+<li>
+在内网其他节点测试pull(先将私有镜像设置添加到各个节点的daemon.json中，并relad docker生效)
+<pre class="brush:bash">
+docker pull 192.168.31.40:5000/xstar/ubuntu:22.04v1
+</pre>
+
+</ul>
+
+<ul>
+<li>
+push image到私有仓库
+<pre class="brush:bash">
+# 镜像推送到私有仓库
+
+# 将镜像标记为私有仓库镜像
+# docker tag SOURCE_IMAGE[:TAG] TARGET_IMAGE[:TAG]
+# docker tag SOURCE_IMAGE[:TAG] [REGISTRY_HOST[:REGISTRY_PORT]/]TAGGET_IMAGE[:TAG]
+# docker tag xstar/ubuntu:22.04v1 192.168.31.40:5000/xstar/ubuntu:22.04v1
+docker tag xstar/ubuntu:22.04v1 192.168.31.40/xstar/ubuntu:22.04v1
+
+docker images
+#REPOSITORY                    TAG             IMAGE ID       CREATED        SIZE
+#127.0.0.1:5000/xstar/ubuntu   22.04v1         4641f2e373d7   2 hours ago    138MB
+#xstar/ubuntu                  22.04v1         4641f2e373d7   2 hours ago    138MB
+
+# 上传标记的镜像
+#docker push 192.168.31.40:5000/xstar/ubuntu:22.04v1
+docker push 192.168.31.40/xstar/ubuntu:22.04v1
+
+# 用curl查看仓库中的镜像
+curl -XGET http://192.168.31.40:5000/v2/_catalog
+# {"repositories":["xstar/ubuntu"]}
+
+# 删除本地镜像，测试从仓库下载
+docker image rm 192.168.31.40:5000/xstar/ubuntu:22.04v1
+docker pull 192.168.31.40:5000/xstar/ubuntu:22.04v1
+</pre>
+
+</ul>
+
+<h2 id="toc_4.4">查询私有仓库镜像</h2>
 
 <p>
 目前无法用docker search/images/image ls对私有仓库镜像进行查询，可以通过curl调用API列出仓库内所有的镜像。
@@ -565,7 +585,7 @@ list_private_images.py https://192.168.31.40:5000 myuser mypassword
 #https://192.168.31.40:5000/xstar/ubuntu:22.04v1
 </pre>
 
-<h2 id="toc_0.9">管理私有仓库镜像</h2>
+<h2 id="toc_4.5">管理镜像</h2>
 
 <ul>
 <li>
@@ -619,7 +639,6 @@ https://192.168.31.40:5000/v2/xstar/ubuntu/manifests/22.04v1
 
 </ul>
 
-
 <ul>
 <li>
 删除私有库中镜像
@@ -668,7 +687,9 @@ registry garbage-collect /etc/docker/registry/config.yml
 </ul>
 </ul>
 
-<h2 id="toc_0.10">用swarm部署Registry</h2>
+<h1 id="toc_5">将Registry部署到Swarm</h1>
+
+<h2 id="toc_5.1">create service方式</h2>
 
 <p>
 如果使用分布式存储（如：Amazon S3），则可使用完全扩展的多节点Registry服务。
@@ -749,7 +770,7 @@ docker service create \
 </ul>
 </ul>
 
-<h2 id="toc_0.11">compose方式部署Registry</h2>
+<h2 id="toc_5.2">compose方式</h2>
 
 <p>
 <strong>Compose模式不支持external secret，且只能运行在当前节点，建议使用Stack模式。</strong>
@@ -812,7 +833,7 @@ To deploy your application across the swarm, use `docker stack deploy`.
 Creating registry_registry_1 ... done
 </pre>
 
-<h2 id="toc_0.12">stack方式部署Registry</h2>
+<h2 id="toc_5.3">stack方式</h2>
 
 <ul>
 <li>
@@ -878,9 +899,17 @@ curl -k -u 'myuser:mypassword' -XGET https://192.168.31.40:5000/v2/xstar/ubuntu/
 {"name":"xstar/ubuntu","tags":["22.04v1"]}
 </pre>
 
-<h2 id="toc_0.13">可在多节点运行的registry</h2>
+<h2 id="toc_5.4">stack+NFS共享</h2>
 
-<h3 id="toc_0.13.1">NFS Volume环境准备</h3>
+<p>
+由于依赖节点上的本地数据存储，Registry只能运行在一个指定的节点，无法故障切换、或者负载均衡。
+</p>
+
+<p>
+考虑使用NFS作为基本的网络存储，实现Registry在swarm集群中多节点运行和切换。
+</p>
+
+<h3 id="toc_5.4.1">准备NFS Volume服务</h3>
 
 <ol>
 <li>
@@ -910,7 +939,7 @@ NFS Server部署、配置，设置NFS registry目录共享。
 </ol>
 </ol>
 
-<h3 id="toc_0.13.2">registry stack配置</h3>
+<h3 id="toc_5.4.2">registry stack配置</h3>
 
 <ul>
 <li>
@@ -982,7 +1011,7 @@ docker node inspect -f '{{.Spec.Labels}}' swarm-manager swarm-node1 swarm-node2
 
 </ul>
 
-<h3 id="toc_0.13.3">部署Registry</h3>
+<h3 id="toc_5.4.3">Stack部署Registry</h3>
 
 <p>
 docker stack启动Registry
