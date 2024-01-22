@@ -40,6 +40,9 @@
 <a href="docker_registry.html">Docker Registry &amp; Harbor</a>
 
 <li>
+<a href="Portainer.html">Portainer</a>
+
+<li>
 <a href="Dockerfile.html">Dockerfile</a>
 
 <li>
@@ -79,14 +82,14 @@ compose
 <li class="done4">
 swarm/node/service/stack
 
-<li class="done2">
+<li class="done4">
 Dockerfile
 
 <ul>
 <li class="done4">
 build初步体验
 
-<li class="done0">
+<li class="done4">
 Dockerfile细化学的操作和实践，体会与应用的结合变化。
 
 </ul>
@@ -98,7 +101,7 @@ Dockerfile细化学的操作和实践，体会与应用的结合变化。
 <li class="done4">
 harbor
 
-<li class="done0">
+<li class="done4">
 portainer.io
 
 </ul>
@@ -127,13 +130,13 @@ Python:python3+Flask?
 
 <ul>
 <li class="done0">
+Prometheus
+
+<li class="done0">
 ELK
 
 <li class="done0">
 Grafana
-
-<li class="done0">
-Prometheus
 
 <li class="done0">
 Zabbix
@@ -237,7 +240,7 @@ Docker环境部署Prometheus实践:<a href="https://zhuanlan.zhihu.com/p/2681757
 
 <ul>
 <li>
-Harbor: 由VMware公司开源的企业级的Docker Registry管理项目，它包括权限管理(RBAC)、LDAP、日志审核、管理界面、自我注册、镜像复制和中文支持等功能。
+Harbor
 
 <ul>
 <li>
@@ -246,27 +249,16 @@ Harbor: 由VMware公司开源的企业级的Docker Registry管理项目，它包
 <li>
 <a href="https://github.com/goharbor/harbor/">https://github.com/goharbor/harbor/</a>
 
-<li>
-<a href="https://zhuanlan.zhihu.com/p/143779176">https://zhuanlan.zhihu.com/p/143779176</a>
-
 </ul>
 <li>
-trivyDB漏洞库:
+Portainer.io
 
 <ul>
 <li>
-<a href="https://github.com/aquasecurity/trivy-db">https://github.com/aquasecurity/trivy-db</a>
+<a href="https://www.portainer.io/">https://www.portainer.io/</a>
 
 <li>
-<a href="https://blog.csdn.net/weixin_47055136/article/details/132423901">https://blog.csdn.net/weixin_47055136/article/details/132423901</a>
-
-</ul>
-<li>
-portainer.io: Docker可视化工具:提供状态显示面板、应用模板快速部署、容器镜像网络数据卷的基本操作（包括上传下载镜像，创建容器等操作）、事件日志显示、容器控制台操作、Swarm集群和服务等集中管理和操作、登录用户管理和控制等功能。功能十分全面，基本能满足中小型单位对容器管理的全部需求。
-
-<ul>
-<li>
-<a href="https://zhuanlan.zhihu.com/p/403285855">https://zhuanlan.zhihu.com/p/403285855</a>
+<a href="https://docs.portainer.io/">https://docs.portainer.io/</a>
 
 </ul>
 </ul>
@@ -313,32 +305,6 @@ YAML入门教程: <a href="https://www.runoob.com/w3cnote/yaml-intro.html">https
 
 <li>
 YAML在线格式化: <a href="https://verytoolz.com/yaml-formatter.html">https://verytoolz.com/yaml-formatter.html</a>
-
-</ul>
-<li>
-VirtualBox:
-
-<ul>
-<li>
-VirtualBox虚拟机后台运行:<a href="https://blog.csdn.net/Chiyunyinlong/article/details/101561016">https://blog.csdn.net/Chiyunyinlong/article/details/101561016</a>
-
-<li>
-VirtualBox虚拟机后台运行(VBoxManage命令方式):<a href="https://www.jianshu.com/p/a4c9ec791948">https://www.jianshu.com/p/a4c9ec791948</a>
-<pre class="brush:bash">
-# 查看虚拟机列表
-VBoxManage list vms
-
-# 启动虚拟机，headless模式
-VBoxManage startvm &lt;uuid&gt;|&lt;name&gt; [--type gui|sdl|headless]
-
-# 虚拟机状态控制
-VBoxManage controlvm &lt;uuid&gt;|&lt;name&gt; pause|resume|reset|poweroff|savestate|
-
-# 共享目录设定
-vboxmanage sharedfolder add centos --name *share* --hostpath *~/share*
-# 登录后，用mount挂载目录
-mount -t vboxsf share /mnt/
-</pre>
 
 </ul>
 </ul>

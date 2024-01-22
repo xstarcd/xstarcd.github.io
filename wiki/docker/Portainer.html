@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Portainer</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Portainer</h1>
+
+<p>
+portainer.io: Docker可视化工具:提供状态显示面板、应用模板快速部署、容器镜像网络数据卷的基本操作（包括上传下载镜像，创建容器等操作）、事件日志显示、容器控制台操作、Swarm集群和服务等集中管理和操作、登录用户管理和控制等功能。功能十分全面，基本能满足中小型单位对容器管理的全部需求。
+</p>
+<ul>
+<li>
+<a href="https://www.portainer.io/">https://www.portainer.io/</a>
+
+<li>
+<a href="https://docs.portainer.io/">https://docs.portainer.io/</a>
+
+<li>
+<a href="https://zhuanlan.zhihu.com/p/403285855">https://zhuanlan.zhihu.com/p/403285855</a>
+
+</ul>
+
+<p>
+单节点docker中直接运行：
+</p>
+<pre>
+docker run -d -p 8000:8000 -p 9443:9443 --name portainer --restart=always \
+-v /var/run/docker.sock:/var/run/docker.sock \
+-v portainer_data:/data \
+portainer/portainer-ce:latest
+</pre>
+
+<p>
+部署到SWARM：
+</p>
+<pre>
+# 创建volume
+docker volume create \
+--driver local \
+--opt type=local \
+--opt device=/data/portainer_data \
+portainer_data
+
+# 下载stack文件，部署portainer
+curl -L https://downloads.portainer.io/ce2-19/portainer-agent-stack.yml -o portainer-agent-stack.yml
+docker stack deploy -c portainer-agent-stack.yml portainer
+
+# 首次访问设置admin密码
+访问https://192.168.31.40:9443 ，进入init页面，设置管理员密码。
+portainer12345
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

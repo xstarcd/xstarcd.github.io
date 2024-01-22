@@ -45,8 +45,9 @@
 <li><a href="#toc_0.4.2.3">docker-compose.yml</a>
 <li><a href="#toc_0.4.2.4">部署nignx</a>
 </ul>
-<li><a href="#toc_0.4.3">Dockerfile</a>
 </ul>
+<li><a href="#toc_0.5">Dockerfile</a>
+<li><a href="#toc_0.6">VirtualBox</a>
 </ul>
 </ul>
 </div>
@@ -718,7 +719,33 @@ docker-compose stop|start
 docker-compose rm
 </pre>
 
-<h3 id="toc_0.4.3"><a href="Dockerfile.html">Dockerfile</a></h3>
+<h2 id="toc_0.5"><a href="Dockerfile.html">Dockerfile</a></h2>
+
+<h2 id="toc_0.6">VirtualBox</h2>
+
+<ul>
+<li>
+VirtualBox虚拟机后台运行:<a href="https://blog.csdn.net/Chiyunyinlong/article/details/101561016">https://blog.csdn.net/Chiyunyinlong/article/details/101561016</a>
+
+<li>
+VirtualBox虚拟机后台运行(VBoxManage命令方式):<a href="https://www.jianshu.com/p/a4c9ec791948">https://www.jianshu.com/p/a4c9ec791948</a>
+<pre class="brush:bash">
+# 查看虚拟机列表
+VBoxManage list vms
+
+# 启动虚拟机，headless模式
+VBoxManage startvm &lt;uuid&gt;|&lt;name&gt; [--type gui|sdl|headless]
+
+# 虚拟机状态控制
+VBoxManage controlvm &lt;uuid&gt;|&lt;name&gt; pause|resume|reset|poweroff|savestate|
+
+# 共享目录设定
+vboxmanage sharedfolder add centos --name *share* --hostpath *~/share*
+# 登录后，用mount挂载目录
+mount -t vboxsf share /mnt/
+</pre>
+
+</ul>
 
 </div>
 <div id="footer">

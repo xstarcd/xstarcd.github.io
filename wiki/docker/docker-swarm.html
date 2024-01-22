@@ -98,9 +98,6 @@ Docker Swarm 入门一篇文章就够了:<a href="https://www.jianshu.com/p/9eb9
 
 </ul>
 <li>
-部署 docker 官方 registry 私有镜像仓库和镜像加速仓库: <a href="https://www.ioiox.com/archives/127.html">https://www.ioiox.com/archives/127.html</a>
-
-<li>
 Docker 国内镜像:<a href="https://zhuanlan.zhihu.com/p/347643668">https://zhuanlan.zhihu.com/p/347643668</a>
 
 </ul>
@@ -1239,7 +1236,7 @@ volume mounts:
 
 <ul>
 <li>
-先用docker volume create创建卷（如果是local卷，需要在每个节点创建，向bind应该没啥差别）。
+先用docker volume create创建卷（如果不创建，swarm会自动创建）。
 
 <ul>
 <li>
@@ -1261,7 +1258,7 @@ bind mounts:
 
 <ul>
 <li>
-需先在节点创建目录(每个节点)。
+需先在节点创建目录。
 
 <li>
 将主机文件目录挂载到容器。
