@@ -72,6 +72,13 @@ nc -zv localhost 1-65535
 nc -v -z -w 1 192.168.0.236 1231-1233
 </pre>
 
+<li>
+端口转发
+<pre>
+mkdir /tmp/fifo
+cat /tmp/fifo  | nc -l 8000 | nc 127.0.0.1 33210 &gt; /tmp/fifo
+</pre>
+
 </ul>
 
 </div>

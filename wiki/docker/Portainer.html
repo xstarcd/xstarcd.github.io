@@ -46,20 +46,24 @@ portainer/portainer-ce:latest
 部署到SWARM：
 </p>
 <pre>
-# 创建volume
-docker volume create \
---driver local \
---opt type=local \
---opt device=/data/portainer_data \
-portainer_data
-
-# 下载stack文件，部署portainer
+# 下载stack文件
 curl -L https://downloads.portainer.io/ce2-19/portainer-agent-stack.yml -o portainer-agent-stack.yml
+
+# 节点增加label
+docker node update --label-add portainer=true swarm-manager
+docker node inspect -f '{{.Spec.Labels}}' swarm-manager
+# map[portainer:true registry:true]
+
+# yml中增加节点约束、修改存储绑定位置
+constraints: [node.role == manager, node.labels.portainer==true]
+
+# 运行portainer
 docker stack deploy -c portainer-agent-stack.yml portainer
 
 # 首次访问设置admin密码
 访问https://192.168.31.40:9443 ，进入init页面，设置管理员密码。
-portainer12345
+
+
 </pre>
 
 </div>
