@@ -1,3 +1,4 @@
+http://xstarcd.github.io/wiki/Agile/index.html
 http://xstarcd.github.io/wiki/Bike/index.html
 http://xstarcd.github.io/wiki/Bike/AVID_JUCIY_ELIXIR_brake_introduce.html
 http://xstarcd.github.io/wiki/Bike/Backstroke_swimming.html
@@ -100,6 +101,21 @@ http://xstarcd.github.io/wiki/Cloud/zookeeper_log_snapshot.html
 http://xstarcd.github.io/wiki/Cloud/zookeeper_python_client.html
 http://xstarcd.github.io/wiki/cygwin/index.html
 http://xstarcd.github.io/wiki/cygwin/KeepassX_SecureCRT.html
+http://xstarcd.github.io/wiki/docker/index.html
+http://xstarcd.github.io/wiki/docker/create service.html
+http://xstarcd.github.io/wiki/docker/Docker.html
+http://xstarcd.github.io/wiki/docker/docker_config.html
+http://xstarcd.github.io/wiki/docker/docker_registry.html
+http://xstarcd.github.io/wiki/docker/Dockerfile.html
+http://xstarcd.github.io/wiki/docker/docker-stack.html
+http://xstarcd.github.io/wiki/docker/docker-swarm.html
+http://xstarcd.github.io/wiki/docker/docker-swarm-install.html
+http://xstarcd.github.io/wiki/docker/docker-volume.html
+http://xstarcd.github.io/wiki/docker/k3s_agent_help.html
+http://xstarcd.github.io/wiki/docker/k3s_server_help.html
+http://xstarcd.github.io/wiki/docker/k3s_study.html
+http://xstarcd.github.io/wiki/docker/Portainer.html
+http://xstarcd.github.io/wiki/docker/swarm-netork.html
 http://xstarcd.github.io/wiki/English/index.html
 http://xstarcd.github.io/wiki/English/IT_words.html
 http://xstarcd.github.io/wiki/English/numbers.html
@@ -429,6 +445,8 @@ http://xstarcd.github.io/wiki/sysadmin/svn_dump_move.html
 http://xstarcd.github.io/wiki/sysadmin/SVN_hook_log.html
 http://xstarcd.github.io/wiki/sysadmin/unity3d-WebGL.html
 http://xstarcd.github.io/wiki/sysadmin/Varnish.html
+http://xstarcd.github.io/wiki/Ubuntu/index.html
+http://xstarcd.github.io/wiki/Ubuntu/systemd.html
 http://xstarcd.github.io/wiki/vim/index.html
 http://xstarcd.github.io/wiki/vim/BestofVimTips.html
 http://xstarcd.github.io/wiki/vim/disqus.html

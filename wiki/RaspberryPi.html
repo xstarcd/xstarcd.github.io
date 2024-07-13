@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="styles/style.css" />
+    <title>Raspberry Pi</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Raspberry Pi</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">VPN概要</a>
+<li><a href="#toc_0.2">环境准备</a>
+<ul>
+<li><a href="#toc_0.2.1">路由器配置</a>
+<li><a href="#toc_0.2.2">动态域名</a>
+</ul>
+<li><a href="#toc_0.3">使用PiVPN安装Wireguard</a>
+<li><a href="#toc_0.4">不能联网问题</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+如何在 Raspberry Pi 上启用SSH:<a href="https://raspberrypi.club/293.html">https://raspberrypi.club/293.html</a>
+
+<li>
+OpenVPN: <a href="https://github.com/LCTT/TranslateProject/blob/master/published/201405/Building%20A%20Raspberry%20Pi%20VPN%20Part%20One--How%20And%20Why%20To%20Build%20A%20Server.md">https://github.com/LCTT/TranslateProject/blob/master/published/201405/Building%20A%20Raspberry%20Pi%20VPN%20Part%20One--How%20And%20Why%20To%20Build%20A%20Server.md</a>
+
+<li>
+Pi VPN: <a href="https://techclass.rohm.com.cn/knowledge/tech-info/how-tos/raspberry/how-to-use-a-raspberry-pi-as-a-vpn-server">https://techclass.rohm.com.cn/knowledge/tech-info/how-tos/raspberry/how-to-use-a-raspberry-pi-as-a-vpn-server</a>
+
+</ul>
+
+<h2 id="toc_0.1">VPN概要</h2>
+
+<ul>
+<li>
+什么是VPN？为什么需要VPN？
+
+</ul>
+
+<p>
+VPN指的是虚拟专用网络。它是一种安全、加密的互联网连接，可以将您连接到其他区域的私人网络。
+</p>
+
+<p>
+大多数无线网络使用加密功能，但通常只适用于没有连接到网络的人。您网络上的每个人都可以看到您发送和接收的所有流量。其中一些可能是敏感的，例如密码或财务信息。
+</p>
+
+<p>
+这意味着VPN在您旅行的时候会非常有用，因为这种情况下几乎不可能知道其他人的无线网络配置状况，或者还有谁在网络上。
+</p>
+
+<p>
+通过加密您的所有流量并将其发送到其他地方，您本地网络上的任何其他人都无法看到您发送的内容或发送位置。
+</p>
+
+<ul>
+<li>
+搭建VPN vs 租用VPN
+
+</ul>
+
+<p>
+在本地网络上的VPN服务器的最大优势在于这是您所连接的地方，也就是说您可以访问文件服务器、媒体中心，甚至可以在打印机上打印文档。
+</p>
+
+<p>
+另一个优势在于安全性。尽管存在一些常见的误解，但是使用VPN并不能完全消除恶意行为者对您进行监视的风险，它只是将其转移到了另一个网络中。如果该网络是您的家或者办公室，那么就有机会对那里发生的事情有一定的了解和控制。
+</p>
+
+<p>
+当您开始使用一项服务时，对它真正了解了多少呢？使用可靠的服务可以降低这种风险，但请确保先做好功课，以避免遭受不良行为者的入侵。
+</p>
+
+<p>
+另一方面，如果您想要使用VPN的原因中包含进行一些无法追溯到您个人的绝密活动，那么在您的家庭网络上托管VPN服务器将会是一个糟糕的主意。这种情况下应该选择其他人常用的商用服务。
+</p>
+
+<p>
+Raspberry Pi VPN服务器不会提供万无一失的可靠性。偶尔会出现因为断电或SD卡损坏而脱机的情况。
+</p>
+
+<p>
+如果您身处地球的另一端，而需要VPN来访问某些东西，当这种脱机情况出现将会很麻烦。如果没有人回家进行重启，那就更糟糕了。
+</p>
+
+<p>
+值得注意的一点是，您还可以在云上安装自己的VPN服务器。这是一种兼具两者优点的中间选项。
+</p>
+
+<ul>
+<li>
+选择VPN软件
+
+</ul>
+
+<p>
+VPN软件有两部分：客户端和服务器。
+</p>
+
+<p>
+客户端可以安装在手机、笔记本电脑或者其他您随身携带的设备上。它通常只连接到一台服务器。
+</p>
+
+<p>
+服务器位于您要连接的网络上，可以接受多个客户端的连接。
+</p>
+
+<p>
+我们的Raspberry Pi基于ARM架构运行Linux，因此所选择的服务器软件需要支持这一点。
+</p>
+
+<p>
+您的客户端很有可能会不同：可能是Windows、Mac或者Android设备。所以，我们希望它也可以在这些设备上运行。
+</p>
+
+<p>
+对于本项目，我们将使用一个名为PiVPN的脚本，该脚本可以使在Raspberry Pi上搭建VPN服务器变得非常简单。
+</p>
+
+<p>
+PiVPN实际提供了两种满足这些需求的选项：建立完善并且被广泛支持的OpenVPN，以及版本更新并且具有出色性能的Wireguard。
+</p>
+
+<h2 id="toc_0.2">环境准备</h2>
+
+<h3 id="toc_0.2.1">路由器配置</h3>
+
+<ul>
+<li>
+配置您的VPN路由器
+
+</ul>
+
+<p>
+在我们安装Wireguard之前，需要告诉您的路由器在VPN流量到达时该将其发送到哪里。
+</p>
+
+<ul>
+<li>
+保留IP地址
+
+</ul>
+
+<p>
+您的Raspberry Pi VPN服务器应该被分配一个保留IP地址，以便能够始终在本地网络上的同一地址找到它。
+</p>
+
+<p>
+如果尚未配置，您可以在路由器的仪表板中进行配置。确切的步骤因路由器而异，但通常只是一些登陆和DHCP设置这样的简单配置。
+</p>
+
+<p>
+如果您遇到困难，请使用搜索引擎查找您设备的手册。
+</p>
+
+<ul>
+<li>
+端口转发
+
+</ul>
+
+<p>
+现在您需要在路由器上设置端口转发，以将到达特定端口的UDP流量发送到您刚刚为VPN服务器保留的IP地址。
+</p>
+
+<p>
+同样，具体步骤因路由器而异，因此您可能需要查找设备手册。
+</p>
+
+<p>
+您的路由器可能允许您选择打开一系列端口，并为它们分配不同的内部和外部编号。您只需要打开一个端口，它可以有相同的内部和外部编号。
+</p>
+
+<p>
+默认情况下，Wireguard使用端口51820，但如果您愿意，也可以配置另一个端口。只是小心不要分配一个已经被使用的端口。选择UDP作为协议。
+</p>
+
+<h3 id="toc_0.2.2">动态域名</h3>
+
+<ul>
+<li>
+使用No-IP配置动态DNS
+
+</ul>
+
+<p>
+如果您的公共IP地址是静态的（即一直保持不变），那么您可以跳过这一步。
+</p>
+
+<p>
+如果您通过常规住宅或小型企业计划连接互联网，那么您的互联网供应商很可能正在为您分配一个动态IP地址，也就是说IP地址会定期更改。当您尝试从互联网连接本地网络时，之前的IP地址已经不存在了，所以这个IP地址不是很有用。
+</p>
+
+<p>
+如果您有一个动态IP地址（或者您不知道它是静态还是动态的），您可以配置动态DNS或DDNS，它会在每次您的公共IP地址发生更改时为其更新一个自定义主机名。
+</p>
+
+<ul>
+<li>
+从No-IP获取免费账户
+
+</ul>
+
+<p>
+<a href="https://www.noip.com/">https://www.noip.com/</a>
+</p>
+
+<p>
+我们将需要有人在他们的域上托管我们的主机名。有许多服务供应商提供该项服务。如果使用了正确的DNS主机，您甚至有可能在自己的域上设置一个。
+</p>
+
+<p>
+在本教程中，我们将使用No-IP，它可以让您免费设置主机名。
+</p>
+
+<p>
+打开 <a href="https://www.noip.com/">https://www.noip.com/</a> 输入主机名，然后点击注册。
+</p>
+
+<p>
+完成免费注册过程并确认您的电子邮件地址。
+</p>
+
+<p>
+现在进入“My Account（我的账户）”并配置一个用户名。记下您的用户名和密码，我们很快就会用到它。
+</p>
+
+<ul>
+<li>
+安装Ddclient
+
+</ul>
+
+<pre class="brush:bash">
+# 在终端中，输入以下命令来更新您的操作系统：
+sudo apt update &amp;&amp; sudo apt upgrade -y
+
+# 现在安装ddclient
+sudo apt install ddclient -y
+
+# 然后编辑ddclient配置文件。
+sudo nano /etc/ddclient.conf
+</pre>
+
+<p>
+将配置编辑为如下所示，替换为您的用户名、密码和主机名。
+</p>
+<pre>
+use=web
+ssl=yes
+
+protocol=noip
+login=&lt;USERNAME&gt;
+password=&lt;PASSWORD&gt;
+&lt;YOUR_HOSTNAME&gt;
+</pre>
+
+<p>
+现在使用以下命令运行ddclient：
+</p>
+<pre>
+sudo ddclient -daemon 10m
+</pre>
+
+<h2 id="toc_0.3">使用PiVPN安装Wireguard</h2>
+
+<p>
+<a href="https://www.pivpn.io/">https://www.pivpn.io/</a>
+</p>
+
+
+<pre>
+Raspberry Pi V
+----------------------
+2: eth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:32:e8:bf brd ff:ff:ff:ff:ff:ff
+    inet 192.168.200.10/24 brd 192.168.200.255 scope global dynamic noprefixroute eth0
+       valid_lft 4283sec preferred_lft 3383sec
+    inet 192.168.1.167/24 brd 192.168.1.255 scope global dynamic eth0
+       valid_lft 85968sec preferred_lft 85968sec
+    inet6 fe80::e56b:3a75:4328:bda8/64 scope link
+       valid_lft forever preferred_lft forever
+
+</pre>
+
+
+<pre>
+https://www.noip.com/
+
+
+hostname: longbercd.ddns.net
+</pre>
+
+<pre>
+Wireguard
+port: 51820
+
+# create client profiles
+pivpn add
+pivpn help
+</pre>
+
+<pre>
+ pivpn -a
+Enter a Name for the Client: xstar
+::: Client Keys generated
+::: Client config generated
+::: Updated server config
+::: WireGuard reloaded
+======================================================================
+::: Done! xstar.conf successfully created!
+::: xstar.conf was copied to /home/yuanxing/configs for easytransfer.
+::: Please use this profile only on one device and create additional
+::: profiles for other devices. You can also use pivpn -qr
+::: to generate a QR Code you can scan with the mobile app.
+======================================================================
+
+pivpn -l
+::: Clients Summary :::
+Client      Public key                                        Creation date
+</pre>
+
+<h2 id="toc_0.4">不能联网问题</h2>
+
+<p>
+下面是一个示例配置:
+</p>
+<ul>
+<li>
+其中路由器位于10.0.1.1 (正常网络)，10.0.0.x是新的WireGuard网络，服务器配置为10.0.0.1，客户端配置为10.0.0.2。
+
+<li>
+使用的端口是51820。
+
+<li>
+默认的网络接口是eth0。
+
+<li>
+所有通信量都是通过WireGuard路由的，但它并不停留在WireGuard子网中。
+
+<li>
+客户端可以访问服务器的本地网络(10.0.1.x)和一般internet。
+
+<li>
+不要忘记将51820端口从路由器转发到服务器，并在服务器上启用ipv4转发(# sysctl -w net.ipv4.ip_forward=1)。
+
+</ul>
+
+<ul>
+<li>
+在服务器上启用ipv4转发(# sysctl -w net.ipv4.ip_forward=1)。
+
+<li>
+服务器配置:
+<pre class="brush:bash">
+[Interface]
+Address = 10.0.0.1/24
+PrivateKey = YOUR_SEVER_PRIVATE_KEY
+ListenPort = 51820
+PreUp = iptables --table nat --append POSTROUTING --jump MASQUERADE --out-interface eth0
+PreDown = iptables --table nat --delete POSTROUTING --jump MASQUERADE --out-interface eth0
+
+[Peer]
+PublicKey = YOUR_CLIENT_PUBLIC_KEY
+AllowedIPs = 10.0.0.2/32
+</pre>
+
+</ul>
+
+<ul>
+<li>
+客户端配置：
+<pre class="brush:bash">
+[Interface]
+Address = 10.0.0.2/24
+DNS = 10.0.1.1
+PrivateKey = YOUR_CLIENT_PRIVATE_KEY
+ListenPort = 51820
+
+[Peer]
+PublicKey = YOUR_SERVER_PUBLIC_KEY
+AllowedIPs = 0.0.0.0/0, ::/0
+Endpoint = YOUR.DYNAMIC_DNS.COM:51820
+</pre>
+
+</ul>
+
+<pre class="brush:bash">
+# 防火墙主要设置 wg0 的转发功能和 SNAT 功能以方便和家庭内网 192.168.0.0/24 段通信。
+iptables -t filter -A FORWARD -i wg0 -j ACCEPT
+iptables -t filter -A FORWARD -o wg0 -j ACCEPT
+# 动态 SNAT
+iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o br-lan -j MASQUERADE
+</pre>
+
+<p>
+Wireguard 使用笔记:
+<a href="https://gobomb.github.io/post/wireguard-notes/">https://gobomb.github.io/post/wireguard-notes/</a>
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="scripts/vimwiki.js"></script>
+</body>
+</html>
+

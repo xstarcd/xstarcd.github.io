@@ -44,6 +44,7 @@
 <li><a href="#toc_1.6">SSH Agent on Cygwin</a>
 <li><a href="#toc_1.7">Windows Terminal</a>
 <li><a href="#toc_1.8">conEmu</a>
+<li><a href="#toc_1.9">脚本添加ssh主机名自动完成</a>
 </ul>
 </ul>
 </div>
@@ -87,7 +88,8 @@ apt-cyg --help
 cygcheck --help
 # 修改软件源
 #apt-cyg --mirror http://mirrors.163.com/cygwin
-apt-cyg --mirror http://mirrors.aliyun.com/cygwin
+#apt-cyg --mirror http://mirrors.aliyun.com/cygwin
+apt-cyg --mirror https://mirrors.kernel.org/sourceware/cygwin/
 
 # ftp://mirror.mcs.anl.gov/pub/cygwin
 # http://mirrors.163.com/cygwin
@@ -868,6 +870,32 @@ ConEmu是一款优秀的开源终端，项目地址<a href="https://conemu.githu
 全面支持Unicode，支持ANSI X3.64标准和xterm256色；
 附带字符界面的文本管理器Far Manager及其插件；
 能运行在Windows 2000及以上版本的Windows系统，开箱即用。
+</pre>
+
+<h2 id="toc_1.9">脚本添加ssh主机名自动完成</h2>
+
+<ul>
+<li>
+/etc/bash_completion.d/ssh
+<pre class="brush:bash">
+_ssh() 
+{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts=$(grep '^Host' ~/.ssh/config ~/.ssh/config.d/* 2&gt;/dev/null | grep -v '[?*]' | cut -d ' ' -f 2-)
+
+    COMPREPLY=( $(compgen -W "$opts" -- ${cur}) )
+    return 0
+}
+complete -F _ssh ssh
+</pre>
+
+</ul>
+
+<pre>
+. /etc/bash_completion.d/ssh
 </pre>
 
 </div>
