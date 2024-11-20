@@ -24,30 +24,36 @@
 <li><a href="#toc_0.1.2">安装Docker</a>
 <li><a href="#toc_0.1.3">设置Docker Hub镜像代理</a>
 </ul>
-<li><a href="#toc_0.2">Docker常用命令</a>
+<li><a href="#toc_0.2">常用镜像</a>
 <ul>
-<li><a href="#toc_0.2.1">基本命令</a>
-<li><a href="#toc_0.2.2">docker help</a>
+<li><a href="#toc_0.2.1">常用镜像名称</a>
 </ul>
-<li><a href="#toc_0.3">容器连接</a>
+<li><a href="#toc_0.3">Docker常用命令</a>
 <ul>
-<li><a href="#toc_0.3.1">网络端口映射</a>
-<li><a href="#toc_0.3.2">容器互联</a>
-<li><a href="#toc_0.3.3">配置容器DNS</a>
+<li><a href="#toc_0.3.1">基本命令</a>
+<li><a href="#toc_0.3.2">docker help</a>
 </ul>
-<li><a href="#toc_0.4">docker compose</a>
+<li><a href="#toc_0.4">自建CentOS7.9镜像</a>
+<li><a href="#toc_0.5">容器网络连接</a>
 <ul>
-<li><a href="#toc_0.4.1">compose常用命令</a>
-<li><a href="#toc_0.4.2">示例:compose部署Nginx</a>
+<li><a href="#toc_0.5.1">host网络</a>
+<li><a href="#toc_0.5.2">网络端口映射</a>
+<li><a href="#toc_0.5.3">容器互联</a>
+<li><a href="#toc_0.5.4">配置容器DNS</a>
+</ul>
+<li><a href="#toc_0.6">docker compose</a>
 <ul>
-<li><a href="#toc_0.4.2.1">创建nginx工作目录</a>
-<li><a href="#toc_0.4.2.2">生成nginx配置文件</a>
-<li><a href="#toc_0.4.2.3">docker-compose.yml</a>
-<li><a href="#toc_0.4.2.4">部署nignx</a>
+<li><a href="#toc_0.6.1">compose常用命令</a>
+<li><a href="#toc_0.6.2">示例:compose部署Nginx</a>
+<ul>
+<li><a href="#toc_0.6.2.1">创建nginx工作目录</a>
+<li><a href="#toc_0.6.2.2">生成nginx配置文件</a>
+<li><a href="#toc_0.6.2.3">docker-compose.yml</a>
+<li><a href="#toc_0.6.2.4">部署nignx</a>
 </ul>
 </ul>
-<li><a href="#toc_0.5">Dockerfile</a>
-<li><a href="#toc_0.6">VirtualBox</a>
+<li><a href="#toc_0.7">Dockerfile</a>
+<li><a href="#toc_0.8">VirtualBox</a>
 </ul>
 </ul>
 </div>
@@ -103,13 +109,13 @@ sudo apt-get install ca-certificates curl gnupg lsb-release
 
 # 添加Docker官方版本库的GPG密钥
 sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-#curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker-aliyun.gpg
+#curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
 # 设置docker源
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
-| sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
+# echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+# https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+# | sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
 
 # 设置为aliyun docker源
 #sudo add-apt-repository "deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
@@ -185,15 +191,30 @@ systemctl cat docker | grep '\-\-registry\-mirror'
 <pre class="brush:bash">
 {
   "registry-mirrors": [
-    "https://dockerproxy.com",
     "https://hub-mirror.c.163.com",
     "https://mirror.baidubce.com",
-    "https://ccr.ccs.tencentyun.com"
+    "https://ccr.ccs.tencentyun.com",
+    "https://docker.mirrors.ustc.edu.cn"
   ]
 }
 </pre>
+<pre>
+    "https://dockerhub.azk8s.cn",
+    "https://dockerproxy.com",
+</pre>
 
 <ul>
+<li>
+开启docker远程访问：
+
+<ul>
+<li>
+/usr/lib/systemd/system/docker.service文件ExecStart行尾增加：-H tcp:0.0.0.0:2375
+
+<li>
+<code>ExecStart=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock -H tcp://0.0.0.0:2375</code>
+
+</ul>
 <li>
 重新加载配置，查看docker info中mirrors信息:
 <pre class="brush:bash">
@@ -202,12 +223,42 @@ sudo systemctl restart docker
 
 # 查看mirror配置是否已有Registry Mirrors项：
 docker info
+
+# 远程查看docker info
+curl http://192.168.31.175:2375/version
 </pre>
 
 </ul>
 </ul>
 
+<h2 id="toc_0.2">常用镜像</h2>
+
+<h3 id="toc_0.2.1">常用镜像名称</h3>
+
+<p>
+进入 <a href="https://hub.docker.com">https://hub.docker.com</a> 查询镜像。
+</p>
+
 <ul>
+<li>
+centos:
+<pre>
+Recent Tags:
+centos7.9.2009 centos7 7.9.2009 lastest
+centos8.4.2105 centos8 centos6.10 centos6
+8.4.2105
+</pre>
+
+<li>
+ubuntu:
+<pre>
+Supported tags and respective Dockerfile links
+20.04, focal-20241011, focal
+22.04, jammy-20240911.1, jammy
+24.04, noble-20241011, noble, latest
+24.10, oracular-20241009, oracular, rolling
+</pre>
+
 <li>
 k8s.gcr.io 镜像
 
@@ -222,9 +273,10 @@ docker pull k8s.gcr.io/xxx
 docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/xxx
 </pre>
 
-<h2 id="toc_0.2">Docker常用命令</h2>
 
-<h3 id="toc_0.2.1">基本命令</h3>
+<h2 id="toc_0.3">Docker常用命令</h2>
+
+<h3 id="toc_0.3.1">基本命令</h3>
 
 <pre class="brush:bash">
 # 以 ubuntu 22.04 镜像创建一个新容器，然后在容器里执行 bin/echo "Hello world"，--rm 运行后自动删除
@@ -254,7 +306,7 @@ docker cp mynginx:/etc/nginx/nginx.conf /data/nginx/ # 从容器复制配置文�
 docker stop testubuntu # 停止容器
 </pre>
 
-<h3 id="toc_0.2.2">docker help</h3>
+<h3 id="toc_0.3.2">docker help</h3>
 
 <p>
 应习惯用<code>docker --help</code>、<code>docker ps --help</code>方式查看各级功能的帮助信息。
@@ -352,10 +404,194 @@ Run 'docker COMMAND --help' for more information on a command.
 For more help on how to use Docker, head to https://docs.docker.com/go/guides/
 </pre>
 
+<h2 id="toc_0.4">自建CentOS7.9镜像</h2>
 
-<h2 id="toc_0.3">容器连接</h2>
+<p>
+试了各种配置方式docker pull都没能成功，我手上也没有现成的http_proxy。
+</p>
 
-<h3 id="toc_0.3.1">网络端口映射</h3>
+<p>
+我只是需要一个centos7.9的镜像来做环境测试。
+</p>
+
+<p>
+github CentOS 7.9.2009 images <a href="https://github.com/CentOS/sig-cloud-instance-images">https://github.com/CentOS/sig-cloud-instance-images</a> 
+</p>
+
+<p>
+下载了CentOS 7.9.2009 images的Dockerfile和tar文件，用docker build创建一个，2分钟就能搞定：
+</p>
+
+<ul>
+<li>
+下载的文件：
+<pre>
+centos7.9/
+├── Dockerfile
+└── centos-7-x86_64-docker.tar.xz
+</pre>
+
+</ul>
+
+<ul>
+<li>
+Dockerfile内容
+<pre>
+FROM scratch
+ADD centos-7-x86_64-docker.tar.xz /
+
+LABEL \
+    org.label-schema.schema-version="1.0" \
+    org.label-schema.name="CentOS Base Image" \
+    org.label-schema.vendor="CentOS" \
+    org.label-schema.license="GPLv2" \
+    org.label-schema.build-date="20201113" \
+    org.opencontainers.image.title="CentOS Base Image" \
+    org.opencontainers.image.vendor="CentOS" \
+    org.opencontainers.image.licenses="GPL-2.0-only" \
+    org.opencontainers.image.created="2020-11-13 00:00:00+00:00"
+
+CMD ["/bin/bash"]
+</pre>
+
+</ul>
+
+<ul>
+<li>
+开始docker build
+<pre>
+cd centos7.9
+docker build -t xstar/centos:7.9.2009 .
+
+[+] Building 0.2s (5/5) FINISHED                                                                                           docker:default
+ =&gt; [internal] load build definition from Dockerfile                                                                                 0.0s
+ =&gt; =&gt; transferring dockerfile: 555B                                                                                                 0.0s
+ =&gt; [internal] load .dockerignore                                                                                                    0.0s
+ =&gt; =&gt; transferring context: 2B                                                                                                      0.0s
+ =&gt; [internal] load build context                                                                                                    0.0s
+ =&gt; =&gt; transferring context: 53B                                                                                                     0.0s
+ =&gt; CACHED [1/1] ADD centos-7-x86_64-docker.tar.xz /                                                                                 0.0s
+ =&gt; exporting to image                                                                                                               0.0s
+ =&gt; =&gt; exporting layers                                                                                                              0.0s
+ =&gt; =&gt; writing image sha256:03c49951766302603da48d7d1ddef9de2b318ef195e6fba2a3c03c2579b83099                                         0.0s
+ =&gt; =&gt; naming to docker.io/xstar/centos:7.9.2009                                                                                     0.0s
+</pre>
+
+</ul>
+
+<ul>
+<li>
+查看本地镜像
+<pre>
+docker images
+
+docker images
+REPOSITORY     TAG        IMAGE ID       CREATED          SIZE
+xstar/centos   7.9.2009   03c499517663   11 minutes ago   204MB
+</pre>
+
+</ul>
+
+<ul>
+<li>
+运行镜像测试
+<pre class="brush:bash">
+# 以 centos7.9 镜像创建一个新容器，然后在容器里执行 bin/echo "Hello world"，--rm 运行后自动删除
+docker run --rm xstar/centos:7.9.2009 /bin/echo "Hello world";cat /proc/version
+</pre>
+<pre>
+Hello world
+Linux version 6.8.0-47-generic (buildd@lcy02-amd64-023) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.2.0-23ubuntu4) 13.2.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #47-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep 27 21:40:26 UTC 2024
+</pre>
+
+</ul>
+
+<pre class="brush:bash">
+# 交互运行容器，-i:允许标准stdin交互，-t: tty终端
+docker run --rm -it xstar/centos:7.9.2009 /bin/bash
+</pre>
+
+<pre class="brush:bash">
+# 后台运行容器
+docker run --rm -d --name centosbase xstar/centos:7.9.2009 /bin/sh -c "while true; do echo hello world; sleep 1; done"
+
+# 查看容顺的标准输出stdout
+docker logs centosbase
+
+# 停止容器
+docker stop centosbase
+</pre>
+
+<pre class="brush:bash">
+# 查看容器、关闭容器
+docker ps -a # 查看运行的容器，-a：查看所有(默认只显示运行中的容器)
+
+# 输出：
+# CONTAINER ID: 容器 ID。
+# IMAGE: 使用的镜像。
+# COMMAND: 启动容器时运行的命令
+# CREATED: 容器的创建时间
+# STATUS: 容器状态有7种：created（已创建） restarting:重启中,running 或 Up:运行中,removing:迁移中,paused:暂停,exited:停止,dead:死亡
+# PORTS: 容器的端口信息和使用的连接类型（tcp\udp）。
+# NAMES: 容器名称，自动分配或指定
+
+docker run -d --name centosbase xstar/centos:7.9.2009 /bin/sh -c "while true; do sleep 10; done"
+
+docker exec -it centosbase /bin/bash # 进入容器shell环境
+docker attach centosbase  # 附着到容器标准stdin/stdout控制台，若中止控制台在运行的命令，容器会关闭
+docker cp centos:/etc/resolv.conf ./ # 从容器复制配置文件到本地
+docker stop centosbase # 停止容器
+</pre>
+
+<h2 id="toc_0.5">容器网络连接</h2>
+
+<ul>
+<li>
+Docker容器网络配置全攻略：桥接、Host、container 一网打尽！:<a href="https://blog.csdn.net/weixin_53269650/article/details/136344317">https://blog.csdn.net/weixin_53269650/article/details/136344317</a>
+
+<li>
+Docker网络(veth、网桥、host、container、none): <a href="https://blog.csdn.net/m0_45406092/article/details/118281804">https://blog.csdn.net/m0_45406092/article/details/118281804</a>
+
+</ul>
+
+<p>
+Docker容器运行的时候有host、bridge、none、container几种网络可供配置:
+</p>
+
+<ul>
+<li>
+默认是bridge，即桥接网络，以桥接模式连接到宿主机；
+
+<li>
+host是宿主网络，即与宿主机共用网络；
+
+<li>
+none则表示无网络，容器将无法联网。
+
+<li>
+container 模式：新创建的容器和已经存在的一个容器共享一个Network Namespace，而不是和宿主机共享。
+
+</ul>
+
+<h3 id="toc_0.5.1">host网络</h3>
+
+<p>
+当容器使用host网络时，容器与宿主共用网络，这样就能在容器中访问宿主机网络，那么容器的localhost就是宿主机的localhost。
+</p>
+
+<p>
+容器内部的服务可以使用宿主机的网络地址和端口，无需进行NAT转换，网络性能较好。
+</p>
+
+<p>
+该模式下容器的网络隔离性较差，需要谨慎使用。
+</p>
+
+<pre class="brush:bash">
+docker run -d --name nginx --network host nginx
+</pre>
+
+<h3 id="toc_0.5.2">网络端口映射</h3>
 
 <pre class="brush:bash">
 docker run -d -P training/webapp python app.py
@@ -369,7 +605,7 @@ docker run -d -p 127.0.0.1:5001:5000 training/webapp python app.py
 # docker port &lt;容器名|容器ID&gt; # 快速查看绑定端口情况
 </pre>
 
-<h3 id="toc_0.3.2">容器互联</h3>
+<h3 id="toc_0.5.3">容器互联</h3>
 
 <p>
 端口映射并不是唯一把 docker 连接到另一个容器的方法。
@@ -451,7 +687,7 @@ ping test2
 如果你有多个容器之间需要互相连接，推荐使用 Docker Compose。
 </p>
 
-<h3 id="toc_0.3.3">配置容器DNS</h3>
+<h3 id="toc_0.5.4">配置容器DNS</h3>
 
 <p>
 如果在容器启动时没有指定 --dns 和 --dns-search，Docker 会默认用宿主主机上的 /etc/resolv.conf 来配置容器的 DNS。
@@ -500,7 +736,7 @@ docker run -it --rm ubuntu cat etc/resolv.conf
 </pre>
 
 
-<h2 id="toc_0.4">docker compose</h2>
+<h2 id="toc_0.6">docker compose</h2>
 
 <ul>
 <li>
@@ -537,7 +773,7 @@ apt install docker-compose
 
 </ul>
 
-<h3 id="toc_0.4.1">compose常用命令</h3>
+<h3 id="toc_0.6.1">compose常用命令</h3>
 
 <ul>
 <li>
@@ -578,7 +814,7 @@ docker-compose rm -s [service] # 停止、并删除所有或指定服务
 # -v:删除工程中指定服务的容器
 </pre>
 
-<h3 id="toc_0.4.2">示例:compose部署Nginx</h3>
+<h3 id="toc_0.6.2">示例:compose部署Nginx</h3>
 
 <ul>
 <li>
@@ -589,7 +825,7 @@ Use secrets with a WordPress &amp; MySQL service: <a href="https://docs.docker.c
 
 </ul>
 
-<h4 id="toc_0.4.2.1">创建nginx工作目录</h4>
+<h4 id="toc_0.6.2.1">创建nginx工作目录</h4>
 
 <pre class="brush:bash">
 mkdir -p /data/nginx \
@@ -615,7 +851,7 @@ mkdir -p /data/nginx \
 └── www
 </pre>
 
-<h4 id="toc_0.4.2.2">生成nginx配置文件</h4>
+<h4 id="toc_0.6.2.2">生成nginx配置文件</h4>
 
 <pre class="brush:bash">
 # 拉取image
@@ -652,7 +888,7 @@ docker stop mynginx
 docker rm mynginx
 </pre>
 
-<h4 id="toc_0.4.2.3">docker-compose.yml</h4>
+<h4 id="toc_0.6.2.3">docker-compose.yml</h4>
 
 <pre class="brush:bash">
 # docker-compose.yml
@@ -685,7 +921,7 @@ services:
 #  data:
 </pre>
 
-<h4 id="toc_0.4.2.4">部署nignx</h4>
+<h4 id="toc_0.6.2.4">部署nignx</h4>
 
 
 <pre class="brush:bash">
@@ -719,9 +955,9 @@ docker-compose stop|start
 docker-compose rm
 </pre>
 
-<h2 id="toc_0.5"><a href="Dockerfile.html">Dockerfile</a></h2>
+<h2 id="toc_0.7"><a href="Dockerfile.html">Dockerfile</a></h2>
 
-<h2 id="toc_0.6">VirtualBox</h2>
+<h2 id="toc_0.8">VirtualBox</h2>
 
 <ul>
 <li>

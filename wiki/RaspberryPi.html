@@ -18,14 +18,16 @@
 <h1>Raspberry Pi</h1>
 <div class="toc">
 <ul>
-<li><a href="#toc_0.1">VPN概要</a>
-<li><a href="#toc_0.2">环境准备</a>
+<li><a href="#toc_0.1">显示无信号</a>
+<li><a href="#toc_0.2">树莓派的指示灯含义</a>
+<li><a href="#toc_0.3">VPN概要</a>
+<li><a href="#toc_0.4">环境准备</a>
 <ul>
-<li><a href="#toc_0.2.1">路由器配置</a>
-<li><a href="#toc_0.2.2">动态域名</a>
+<li><a href="#toc_0.4.1">路由器配置</a>
+<li><a href="#toc_0.4.2">动态域名</a>
 </ul>
-<li><a href="#toc_0.3">使用PiVPN安装Wireguard</a>
-<li><a href="#toc_0.4">不能联网问题</a>
+<li><a href="#toc_0.5">使用PiVPN安装Wireguard</a>
+<li><a href="#toc_0.6">不能联网问题</a>
 </ul>
 </ul>
 </div>
@@ -40,9 +42,83 @@ OpenVPN: <a href="https://github.com/LCTT/TranslateProject/blob/master/published
 <li>
 Pi VPN: <a href="https://techclass.rohm.com.cn/knowledge/tech-info/how-tos/raspberry/how-to-use-a-raspberry-pi-as-a-vpn-server">https://techclass.rohm.com.cn/knowledge/tech-info/how-tos/raspberry/how-to-use-a-raspberry-pi-as-a-vpn-server</a>
 
+<li>
+树莓派文档：<a href="https://pidoc.cn/">https://pidoc.cn/</a>
+
+<li>
+树莓派2、3 介绍及点亮led灯:<a href="https://blog.csdn.net/bbs2003/article/details/55098408/">https://blog.csdn.net/bbs2003/article/details/55098408/</a>
+
+<li>
+树莓派新手入门：<a href="http://www.gdwrobot.com/courses/outline/newcomer/start.html">http://www.gdwrobot.com/courses/outline/newcomer/start.html</a>
+
 </ul>
 
-<h2 id="toc_0.1">VPN概要</h2>
+<h2 id="toc_0.1">显示无信号</h2>
+
+<ul>
+<li>
+树莓派连接电视显示器或电脑显示器，显示无信号: <a href="https://blog.csdn.net/m0_46336364/article/details/113406300">https://blog.csdn.net/m0_46336364/article/details/113406300</a>
+
+<li>
+设置启用树莓派的HDMI显示：<a href="https://blog.csdn.net/u010058695/article/details/100706383">https://blog.csdn.net/u010058695/article/details/100706383</a>
+
+<li>
+树莓派config.txt 中hdmi部分设置：<a href="https://blog.irsk.cn/?p=294">https://blog.irsk.cn/?p=294</a>
+
+</ul>
+
+<p>
+hdmi_mode:
+</p>
+<pre>
+</pre>
+
+<h2 id="toc_0.2">树莓派的指示灯含义</h2>
+
+<p>
+树莓派有两个状态指示灯，分别是红色的PWR灯(电源指示)和绿色的ACT灯(运行状态)。
+</p>
+
+<ul>
+<li>
+红色PWR灯
+
+<ul>
+<li>
+PWR灯正常状态为红灯常亮。
+
+<li>
+若PWR灯闪烁则表示电源电压不正常。
+
+</ul>
+</ul>
+
+<ul>
+<li>
+绿色ACT灯
+
+<ul>
+<li>
+ACT灯一般无规律闪烁，表示SD卡正在活动（类似电脑的硬盘灯）。
+
+</ul>
+</ul>
+
+<ul>
+<li>
+常见的几种情况
+
+<ul>
+<li>
+没有插SD卡。表现为：红灯常亮，绿灯不亮。
+
+<li>
+SD卡被破坏。表现为：红灯常亮，绿灯有规律闪烁。
+
+</ul>
+</ul>
+
+<h2 id="toc_0.3">VPN概要</h2>
 
 <ul>
 <li>
@@ -134,9 +210,9 @@ VPN软件有两部分：客户端和服务器。
 PiVPN实际提供了两种满足这些需求的选项：建立完善并且被广泛支持的OpenVPN，以及版本更新并且具有出色性能的Wireguard。
 </p>
 
-<h2 id="toc_0.2">环境准备</h2>
+<h2 id="toc_0.4">环境准备</h2>
 
-<h3 id="toc_0.2.1">路由器配置</h3>
+<h3 id="toc_0.4.1">路由器配置</h3>
 
 <ul>
 <li>
@@ -188,7 +264,7 @@ PiVPN实际提供了两种满足这些需求的选项：建立完善并且被广
 默认情况下，Wireguard使用端口51820，但如果您愿意，也可以配置另一个端口。只是小心不要分配一个已经被使用的端口。选择UDP作为协议。
 </p>
 
-<h3 id="toc_0.2.2">动态域名</h3>
+<h3 id="toc_0.4.2">动态域名</h3>
 
 <ul>
 <li>
@@ -275,7 +351,7 @@ password=&lt;PASSWORD&gt;
 sudo ddclient -daemon 10m
 </pre>
 
-<h2 id="toc_0.3">使用PiVPN安装Wireguard</h2>
+<h2 id="toc_0.5">使用PiVPN安装Wireguard</h2>
 
 <p>
 <a href="https://www.pivpn.io/">https://www.pivpn.io/</a>
@@ -333,7 +409,7 @@ pivpn -l
 Client      Public key                                        Creation date
 </pre>
 
-<h2 id="toc_0.4">不能联网问题</h2>
+<h2 id="toc_0.6">不能联网问题</h2>
 
 <p>
 下面是一个示例配置:
@@ -406,10 +482,20 @@ iptables -t filter -A FORWARD -o wg0 -j ACCEPT
 iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o br-lan -j MASQUERADE
 </pre>
 
-<p>
-Wireguard 使用笔记:
-<a href="https://gobomb.github.io/post/wireguard-notes/">https://gobomb.github.io/post/wireguard-notes/</a>
-</p>
+<ul>
+<li>
+Wireguard 使用笔记: <a href="https://gobomb.github.io/post/wireguard-notes/">https://gobomb.github.io/post/wireguard-notes/</a>
+
+<li>
+组网神器WireGuard安装与配置教程（超详细）: <a href="https://blog.csdn.net/qq_20042935/article/details/127089626">https://blog.csdn.net/qq_20042935/article/details/127089626</a>
+
+<li>
+wireguard安装与配置:<a href="https://cloud.tencent.com/developer/article/1832768">https://cloud.tencent.com/developer/article/1832768</a>
+
+<li>
+查询自己的公网IP地址：<code>curl zx2c4.com/ip</code>
+
+</ul>
 
 </div>
 <div id="footer">

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Prometheus_deploy_study_2024</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Prometheus_deploy_study_2024</h1>
+
+<ul>
+<li>
+2024-11-08
+
+</ul>
+
+<ul>
+<li>
+部署说明：
+
+<ul>
+<li>
+Prometheus+Grafana普罗米修斯，搭建和使用:<a href="https://blog.csdn.net/qq_31725371/article/details/114697770">https://blog.csdn.net/qq_31725371/article/details/114697770</a>
+
+<li>
+docker-Prometheus数据持久化存储（二）:<a href="https://www.cnblogs.com/zongxiang/p/12981592.html">https://www.cnblogs.com/zongxiang/p/12981592.html</a>
+
+</ul>
+</ul>
+
+
+<pre>
+docuer pull docker.m.daocloud.io/prom/prometheus
+
+docker pull prom/prometheus
+docker pull grafana/grafana
+
+docker pull prom/mysqld-exporter
+docker pull influxdb
+
+docker pull mysql:5.7
+docker pull mysql:5.6
+
+docker run --name prometheus -d -p 127.0.0.1:9090:9090 prom/prometheus
+docker run -d --name=grafana -p 3000:3000 grafana/grafana
+</pre>
+
+<pre>
+docker images
+REPOSITORY                         TAG        IMAGE ID       CREATED         SIZE
+prom/prometheus                    main       7c27b9dec78d   21 hours ago    292MB
+prom/prometheus                    latest     899b369f202e   44 hours ago    290MB
+influxdb                           latest     903cf06eba30   2 weeks ago     403MB
+grafana/grafana                    latest     761b48cb57a0   2 weeks ago     485MB
+nginx                              1.27.2     3b25b682ea82   5 weeks ago     192MB
+prom/mysqld-exporter               latest     16ae2f4625ba   11 months ago   18.6MB
+mysql                              5.6        dd3b2a5dcb48   2 years ago     303MB
+</pre>
+
+<ul>
+<li>
+<a href="https://prometheus.io/download/#node_exporter">https://prometheus.io/download/#node_exporter</a>
+
+</ul>
+
+
+<ul>
+<li>
+<a href="https://grafana.com/docs/grafana/latest/setup-grafana/installation/docker/">https://grafana.com/docs/grafana/latest/setup-grafana/installation/docker/</a>
+<pre>
+
+# Use Docker volumes (recommended)
+
+# create a persistent volume for your data
+docker volume create grafana-storage
+
+# verify that the volume was created correctly
+# you should see some JSON output
+docker volume inspect grafana-storage
+
+# start grafana
+docker run -d -p 3000:3000 --name=grafana \
+  --volume grafana-storage:/var/lib/grafana \
+  grafana/grafana-enterprise
+
+
+# Use bind mounts
+
+# create a directory for your data
+mkdir data
+
+# start grafana with your user id and using the data directory
+docker run -d -p 3000:3000 --name=grafana \
+  --user "$(id -u)" \
+  --volume "$PWD/data:/var/lib/grafana" \
+  grafana/grafana-enterprise
+
+
+# Use environment variables to configure Grafana
+
+# enable debug logs
+docker run -d -p 3000:3000 --name=grafana \
+  -e "GF_LOG_LEVEL=debug" \
+  grafana/grafana-enterprise
+
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

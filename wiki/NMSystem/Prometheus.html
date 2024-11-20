@@ -22,7 +22,48 @@
 </ul>
 </ul>
 </div>
- 
+
+<ul>
+<li>
+<a href="deploy_study_2024.html">deploy_study_2024</a>
+
+<li>
+Zabbix: <a href="https://www.zabbix.com/documentation/6.4/zh/manual/installation/containers">https://www.zabbix.com/documentation/6.4/zh/manual/installation/containers</a>
+
+<ul>
+<li>
+<a href="https://github.com/zabbix/zabbix-docker">https://github.com/zabbix/zabbix-docker</a>
+
+<li>
+docker compose方式部署Zabbix 7.0 LTS: <a href="https://blog.csdn.net/islandstar/article/details/140105767">https://blog.csdn.net/islandstar/article/details/140105767</a>
+
+<li>
+Zabbix在Docker中的应用和监控:<a href="https://www.cnblogs.com/evescn/p/12374756.html">https://www.cnblogs.com/evescn/p/12374756.html</a>
+<pre>
+Zabbix server 5.0 (tags: alpine-5.0-latest, ubuntu-5.0-latest, ol-5.0-latest)
+Zabbix server 5.0.* (tags: alpine-5.0.*, ubuntu-5.0.*, ol-5.0.*)
+Zabbix server 6.0 (tags: alpine-6.0-latest, ubuntu-6.0-latest, ol-6.0-latest)
+Zabbix server 6.0.* (tags: alpine-6.0.*, ubuntu-6.0.*, ol-6.0.*)
+Zabbix server 6.4 (tags: alpine-6.4-latest, ubuntu-6.4-latest, ol-6.4-latest)
+Zabbix server 6.4.* (tags: alpine-6.4.*, ubuntu-6.4.*, ol-6.4.*)
+Zabbix server 7.0 (tags: alpine-7.0-latest, ubuntu-7.0-latest, ol-7.0-latest, alpine-latest, ubuntu-latest, ol-latest, latest)
+Zabbix server 7.0.* (tags: alpine-7.0.*, ubuntu-7.0.*, ol-7.0.*)
+Zabbix server 7.2 (tags: alpine-trunk, ubuntu-trunk, ol-trunk)
+
+docker pull zabbix/zabbix-server-mysql:alpine-6.4-latest
+zabbix/zabbix-web-nginx-mysql
+
+docker run --name some-zabbix-server-mysql 
+-e DB_SERVER_HOST="some-mysql-server" \
+-e MYSQL_USER="some-user" \
+-e MYSQL_PASSWORD="some-password" \
+--init -d \
+zabbix/zabbix-server-mysql:alpine-6.4-latest
+</pre>
+
+</ul>
+</ul>
+
 <ul>
 <li>
 Prometheus

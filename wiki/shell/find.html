@@ -58,6 +58,16 @@ find ./ -type f -name "*.sh" -print0|xargs chmod 755
 find / -size +200M
 </pre>
 
+<li>
+查看文件mine-type
+<pre class="brush:bash">
+file --mime-type file1.pdf
+
+find . -maxdepth 1 -type f -exec file --mime-type {} +
+
+find . -maxdepth 1 -type f -exec file --mime-type {} + | grep 'image/png$'
+</pre>
+
 </ul>
 
 </div>

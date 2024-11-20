@@ -45,6 +45,7 @@
 <li><a href="#toc_1.3.5">自己撸吧</a>
 </ul>
 <li><a href="#toc_1.4">JSON.awk</a>
+<li><a href="#toc_1.5">解析/proc/net/tcp</a>
 </ul>
 </ul>
 </div>
@@ -845,6 +846,77 @@ curl -s 'https://api.github.com/users/lambda' | jsawk -a 'return this.name'
 
 # grep
 grep -Po '"text":.*?[^\\]",' tweets.json
+</pre>
+
+
+
+
+<h2 id="toc_1.5">解析/proc/net/tcp</h2>
+
+<ul>
+<li>
+容器里没有 ps 怎么办？
+
+<ul>
+<li>
+<a href="https://nolebase.ayaka.io/笔记/🧱%20基础设施/容器里没有%20ps%20怎么办？.html">https://nolebase.ayaka.io/笔记/🧱%20基础设施/容器里没有%20ps%20怎么办？.html</a>
+
+</ul>
+</ul>
+
+<pre class="brush:bash">
+awk 'function hextodec(str,ret,n,i,k,c){
+    ret = 0
+    n = length(str)
+    for (i = 1; i &lt;= n; i++) {
+        c = tolower(substr(str, i, 1))
+        k = index("123456789abcdef", c)
+        ret = ret * 16 + k
+    }
+    return ret
+}
+function getIP(str,ret){
+    ret=hextodec(substr(str,index(str,":")-2,2)); 
+    for (i=5; i&gt;0; i-=2) {
+        ret = ret"."hextodec(substr(str,i,2))
+    }
+    ret = ret":"hextodec(substr(str,index(str,":")+1,4))
+    return ret
+} 
+NR &gt; 1 {{if(NR==2)print "Local - Remote";local=getIP($2);remote=getIP($3)}{print local" - "remote}}' /proc/net/tcp
+</pre>
+
+<pre class="brush:bash">
+grep -v "rem_address" /proc/net/tcp  | awk 'function hextodec(str,ret,n,i,k,c){
+    ret = 0
+    n = length(str)
+    for (i = 1; i &lt;= n; i++) {
+        c = tolower(substr(str, i, 1))
+        k = index("123456789abcdef", c)
+        ret = ret * 16 + k
+    }
+    return ret
+} {x=hextodec(substr($2,index($2,":")-2,2)); for (i=5; i&gt;0; i-=2) x = x"."hextodec(substr($2,i,2))}{print x":"hextodec(substr($2,index($2,":")+1,4))}'
+</pre>
+
+<pre>
+cat /proc/net/tcp
+  sl  local_address rem_address   st tx_queue rx_queue tr tm-&gt;when retrnsmt   uid  timeout inode
+  sl  local_address rem_address   st tx_queue rx_queue tr tm-&gt;when retrnsmt   uid  timeout inode                                                     
+   0: 00000000:22B8 00000000:0000 0A 00000000:00000000 00:00000000 00000000  1000        0 6217263 1 0000000000000000 100 0 0 10 0                   
+   1: 0100007F:998E 0100007F:22B8 06 00000000:00000000 03:000014B4 00000000     0        0 0 3 0000000000000000                                      
+   2: 0100007F:A198 0100007F:22B8 01 00000000:00000000 02:000002BB 00000000     0 
+...
+   8: 0100007F:22B8 0100007F:981E 01 00000000:00000000 00:00000000 00000000  1000        0 6248667 3 0000000000000000 20 4 3 10 -1
+...
+8:
+0100007F:22B8 本地地址,IP:Port,小端序存储
+0100007F:97B6 远端地址
+01
+00000000:00000000
+00:00000000
+00000000
+...
 </pre>
 
 </div>

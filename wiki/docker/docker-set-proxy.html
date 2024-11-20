@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>docker-set-proxy</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>docker-set-proxy</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Linux使用代理</a>
+<li><a href="#toc_0.2">docker proxy设置</a>
+<ul>
+<li><a href="#toc_0.2.1">dockerd/docker pull代理</a>
+<li><a href="#toc_0.2.2">container代理</a>
+<li><a href="#toc_0.2.3">docker build代理</a>
+</ul>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">Linux使用代理</h2>
+
+<p>
+socks5适用于本地能解析目标主机但速度慢的情况，而socks5h则用于本地无法解析目标主机时，由代理服务器进行解析。
+</p>
+
+<ul>
+<li>
+~/.bashrc
+<pre class="brush:bash">
+# set proxy
+function setproxy() {
+  export http_proxy=socks5://127.0.0.1:1080
+  export https_proxy=socks5://127.0.0.1:1080
+  export ftp_proxy=socks5://127.0.0.1:1080
+  export no_proxy=127.0.0.1,localhost,.local,10.10.0.0/8,172.16.0.0/12,192.168.0.0/16
+  env|grep proxy
+}
+# unset proxy
+function unsetproxy() {
+  unset http_proxy https_proxy ftp_proxy no_proxy
+  env|grep proxy
+}
+</pre>
+
+</ul>
+
+<pre class="brush:bash">
+# curl使用代理
+curl -x socks5h://127.0.0.1:1080 www.baidu.com
+</pre>
+
+<h2 id="toc_0.2">docker proxy设置</h2>
+
+<ul>
+<li>
+如何优雅的给 Docker 配置网络代理: <a href="https://www.cnblogs.com/Chary/p/18096678">https://www.cnblogs.com/Chary/p/18096678</a>
+
+<li>
+如何配置docker通过代理服务器拉取镜像: <a href="https://www.cnblogs.com/abc1069/p/17496240.html">https://www.cnblogs.com/abc1069/p/17496240.html</a>
+
+</ul>
+
+<p>
+docker search因index.docker.io无法访问，需要配置代理才能使用。
+</p>
+
+<pre>
+docker search centos
+Error response from daemon: Get "https://index.docker.io/v1/search?q=centos&amp;n=25": dial tcp 108.160.166.9:443: connect: connection timed out
+</pre>
+<pre>
+     Just put this content (change IP and port if needed) into ~/.docker/config.json (notice that the protocol is socks5h)
+
+    {
+        "proxies":
+        {
+            "default":
+            {
+                "httpProxy": "socks5h://172.17.0.1:3128",
+                // or "httpProxy": "socks5h://localhost:3128", with --network=host
+                "httpsProxy": "socks5h://172.17.0.1:3128",
+                "noProxy": ""
+            }
+        }
+    }
+
+</pre>
+
+
+<h3 id="toc_0.2.1">dockerd/docker pull代理</h3>
+
+<p>
+docker pull时，是由守护进程dockerd来执行，需要配置到dockerd中，在systemd或daemon.json中配置。
+</p>
+
+<ul>
+<li>
+需要systemctl daemon-reload、systemctl restart docker生效
+
+</ul>
+ 
+<ul>
+<li>
+方式一：/lib/systemd/system/docker.service
+
+<ul>
+<li>
+systemd也会从/etc/systemd/system/docker.service.d和/lib/systemd/system/docker.service.d文件夹下读取配置
+
+<li>
+/etc/systemd/system/docker.service.d/http-proxy.conf
+
+<li>
+无根rootness模式下运行docker配置位置有所不同。
+<pre>
+[Service]
+#Environment="HTTP_PROXY=http://&lt;user&gt;:&lt;password&gt;@&lt;domain&gt;:&lt;port&gt;"
+#Environment="HTTPS_PROXY=http://&lt;user&gt;:&lt;password&gt;@&lt;domain&gt;:&lt;port&gt;"
+Environment="HTTP_PROXY=http://proxy.example.com:80"
+Environment="HTTPS_PROXY=https://proxy.example.com:443"
+# 多个 NO_PROXY 变量的值用逗号分隔，而且可以使用通配符（*），极端情况下，如果 NO_PROXY=*，那么所有请求都将不通过代理服务器。
+# 如果使用了国内镜像源可以配置镜像服务器不使用代理
+# Environmeng="NO_PROXY=&lt;registry.domain&gt;"
+Environment="NO_PROXY=your-registry.com,10.10.10.10,*.example.com"
+</pre>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+方式二：通过/etc/docker/daemon.json配置代理(优先级高于systemd)。需要Docker Engine 23.0 及更高版本
+<pre>
+{
+  "registry-mirrors": ["..."],
+  "proxies": {
+    "http-proxy": "http://&lt;user&gt;:&lt;password&gt;@&lt;domain&gt;:&lt;port&gt;",
+    "https-proxy": "http://&lt;user&gt;:&lt;password&gt;@&lt;domain&gt;:&lt;port&gt;",
+    "no-proxy": "&lt;registry.domain&gt;"
+  }
+}
+</pre>
+
+</ul>
+
+<pre>
+
+{
+  "registry-mirrors": [
+    "https://docker.13140521.xyz"
+  ],
+  "proxies": {
+    "http-proxy": "socks5h://192.168.31.103:2222",
+    "https-proxy": "socks5h://192.168.31.103:2222",
+    "no-proxy": "*.13140521.xyz,127.0.0.1,localhost,.local,10.10.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  }
+}
+
+</pre>
+
+<ul>
+<li>
+检查参数生效：
+<pre>
+sudo systemctl show --property=Environment docker
+docker info | grep -i proxy
+</pre>
+
+</ul>
+
+<h3 id="toc_0.2.2">container代理</h3>
+
+<p>
+在容器运行阶段，如果需要代理上网，需要配置~/.docker/config.json或运行时通过-e注入http_proxy环境变量，需要docker 17.07以上版本。
+</p>
+
+<ul>
+<li>
+方式一：通过命令行参数配置代理
+<pre>
+docker run --env HTTP_PROXY="http://&lt;user&gt;:&lt;password&gt;@&lt;domain&gt;:&lt;port&gt;" &lt;some-image&gt;
+
+docker run \
+    --env HTTP_PROXY="http://&lt;user&gt;:&lt;password&gt;@&lt;domain&gt;:&lt;port&gt;" \
+    --rm alpine sh -c 'env | grep -i  _PROXY'
+ 
+# 输出
+HTTP_PROXY=http://&lt;user&gt;:&lt;password&gt;@&lt;domain&gt;:&lt;port&gt;
+</pre>
+
+</ul>
+
+<ul>
+<li>
+方式二：通过~/.docker/config.json配置
+<pre>
+{
+  "auths": {
+    "..."
+  },
+  "proxies": {
+    # 通用配置，会对当前客户端连接的所有Docker服务生效
+    "default": {
+      "httpProxy": "http://proxy.example.com:3128",
+      "httpsProxy": "https://proxy.example.com:3129",
+      "noProxy": "*.test.example.com,.example.org,127.0.0.0/8"
+    },
+    # 如果只对某个Docker服务时配置代理，则需要通过 docker-host: proxy-settings的方式在下面配置 
+    "tcp://docker-daemon1.example.com": {
+      "noProxy": "*.internal.example.net"
+    }
+  }
+}
+</pre>
+
+</ul>
+
+<pre>
+docker run --rm alpine sh -c 'env | grep -i  _PROXY'
+
+# 输出
+HTTPS_PROXY=https://proxy.example.com:3129
+no_proxy=*.test.example.com,.example.org,127.0.0.0/8
+NO_PROXY=*.test.example.com,.example.org,127.0.0.0/8
+https_proxy=https://proxy.example.com:3129
+http_proxy=http://proxy.example.com:3128
+HTTP_PROXY=http://proxy.example.com:3128
+</pre>
+
+
+<h3 id="toc_0.2.3">docker build代理</h3>
+
+<p>
+用--build-arg参数注入http_proxy。
+</p>
+
+<ul>
+<li>
+通过命令行配置代理
+<pre>
+docker build --build-arg HTTP_PROXY="http://proxy.example.com:3128"
+
+docker build --build-arg HTTP_PROXY="http://another-proxy.example.com:3128" \
+  --no-cache \
+  --progress=plain \
+  - &lt;&lt;EOF
+FROM alpine
+RUN env | grep -i _PROXY
+EOF
+# 输出
+# ...
+#5 [2/2] RUN env | grep -i _PROXY
+#5 0.393 HTTPS_PROXY=https://proxy.example.com:3129
+#5 0.393 no_proxy=*.test.example.com,.example.org,127.0.0.0/8
+#5 0.393 NO_PROXY=*.test.example.com,.example.org,127.0.0.0/8
+#5 0.393 https_proxy=https://proxy.example.com:3129
+#5 0.393 http_proxy=http://another-proxy.example.com:3128
+#5 0.393 HTTP_PROXY=http://another-proxy.example.com:3128
+#5 DONE 0.6s
+# ...
+</pre>
+
+</ul>
+
+<ul>
+<li>
+通过~/.docker/config.json的方式配置代理在构建过程中依然有效。
+<pre>
+docker build \
+  --no-cache \
+  --progress=plain \
+  - &lt;&lt;EOF
+FROM alpine
+RUN env | grep -i _PROXY
+EOF
+# 输出
+# ...
+#5 [2/2] RUN env | grep -i _PROXY
+#5 0.382 HTTPS_PROXY=https://proxy.example.com:3129
+#5 0.382 no_proxy=*.test.example.com,.example.org,127.0.0.0/8
+#5 0.382 NO_PROXY=*.test.example.com,.example.org,127.0.0.0/8
+#5 0.382 https_proxy=https://proxy.example.com:3129
+#5 0.382 http_proxy=http://proxy.example.com:3128
+#5 0.382 HTTP_PROXY=http://proxy.example.com:3128
+#5 DONE 0.6s
+# ...
+</pre>
+
+</ul>
+
+<p>
+不要在Dockerfile中使用ENV指令配置构建过程中使用到的代理配置，镜像创建的容器可能访问不到代理、产生难以理解的网络错误，或者引起代理敏感信息泄漏。
+</p>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

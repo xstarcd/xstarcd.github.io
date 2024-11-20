@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>docker-mysql</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>docker-mysql</h1>
+
+<pre class="brush:bash">
+#  --restart always \
+#  --restart unless-stopped \
+#  -e TZ=Asia/Shanghai \
+#  --network zj-net \
+
+docker run --name mysql-5.6 -t \
+  -p 23306:3306 \
+  --restart unless-stopped \
+  -v /etc/timezone:/etc/timezone:ro \
+	-v /etc/localtime:/etc/localtime:ro \
+  -v /data/docker/mysql-5.6/conf/mysql.conf.d:/etc/mysql/mysql.conf.d \
+  -v /data/docker/mysql-5.6/data:/var/lib/mysql \
+  -v /data/docker/mysql-5.6/logs:/logs \
+  -e MYSQL_ROOT_PASSWORD="root_pwd" \
+  -e MYSQL_DATABASE="zj" \
+  -e MYSQL_USER="zj" \
+  -e MYSQL_PASSWORD="zj_pwd" \
+  -d mysql:5.6 \
+  --character-set-server=utf8
+</pre>
+
+<pre>
+/data/docker/mysql-5.6/conf/
+├── conf.d
+│   ├── docker.cnf
+│   ├── mysql.cnf
+│   └── mysqldump.cnf
+├── my.cnf -&gt; /etc/alternatives/my.cnf
+├── my.cnf.fallback
+├── mysql.cnf
+└── mysql.conf.d
+    ├── my.cnf         # 自定义配置文件
+    └── mysqld.cnf.def # 原有配置文件，扩展名修改后不再生效
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

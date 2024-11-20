@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Zabbix</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Zabbix</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Zabbix版本及下载</a>
+<li><a href="#toc_0.2">docker相关</a>
+<li><a href="#toc_0.3">直接docker run</a>
+<li><a href="#toc_0.4">安装zabbix-agent</a>
+<li><a href="#toc_0.5">docker-compose方式</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">Zabbix版本及下载</h2>
+
+<ul>
+<li>
+Zabbix: <a href="https://www.zabbix.com/documentation/6.4/zh/manual/installation/containers">https://www.zabbix.com/documentation/6.4/zh/manual/installation/containers</a>
+
+<ul>
+<li>
+<a href="https://github.com/zabbix/zabbix-docker">https://github.com/zabbix/zabbix-docker</a>
+
+<li>
+docker compose方式部署Zabbix 7.0 LTS: <a href="https://blog.csdn.net/islandstar/article/details/140105767">https://blog.csdn.net/islandstar/article/details/140105767</a>
+
+<li>
+Zabbix在Docker中的应用和监控:<a href="https://www.cnblogs.com/evescn/p/12374756.html">https://www.cnblogs.com/evescn/p/12374756.html</a>
+
+<li>
+Zabbix6.0容器化部署(Docker-Composed):<a href="https://blog.csdn.net/Canz245630/article/details/138708050">https://blog.csdn.net/Canz245630/article/details/138708050</a>
+
+<li>
+模板库：<a href="https://git.zabbix.com/projects/ZBX/repos/zabbix/browse/templates">https://git.zabbix.com/projects/ZBX/repos/zabbix/browse/templates</a>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+zabbix-server：Agent 向其报告可用性、系统完整性信息和统计信息的核心组件，Port:10051。
+
+<li>
+zabbix-agent: 部署在被监控目标上，用于主动监控本地资源和应用程序，并将收集的数据发送给 Zabbix server，Port:10050。
+
+<li>
+zabbix-web：提供zabbix监控的UI界面服务（端口：80、443）
+
+<li>
+zabbix-db：提供zabbix服务存储的数据库服务（端口：5432、3306）
+
+<li>
+zabbix-snmptraps（可选）：提供snmp管理监控的服务（端口：162）
+
+<li>
+Zabbix-Web-Service 在Zabbix5.4版中首次出现，基于Go编写。主要作用是定期发送巡检报告到指定邮件账户。
+
+<li>
+zabbix-proxy
+
+<li>
+zabbix-java-gateway
+
+</ul>
+
+<ul>
+<li>
+Zabbix 组件运行模式
+
+</ul>
+
+<p>
+<img src=../img/zabbix/zabbix.png width=1000px>
+</p>
+
+<pre>
+Zabbix server 5.0 (tags: alpine-5.0-latest, ubuntu-5.0-latest, ol-5.0-latest)
+Zabbix server 5.0.* (tags: alpine-5.0.*, ubuntu-5.0.*, ol-5.0.*)
+Zabbix server 6.0 (tags: alpine-6.0-latest, ubuntu-6.0-latest, ol-6.0-latest)
+Zabbix server 6.0.* (tags: alpine-6.0.*, ubuntu-6.0.*, ol-6.0.*)
+Zabbix server 6.4 (tags: alpine-6.4-latest, ubuntu-6.4-latest, ol-6.4-latest)
+Zabbix server 6.4.* (tags: alpine-6.4.*, ubuntu-6.4.*, ol-6.4.*)
+Zabbix server 7.0 (tags: alpine-7.0-latest, ubuntu-7.0-latest, ol-7.0-latest, alpine-latest, ubuntu-latest, ol-latest, latest)
+Zabbix server 7.0.* (tags: alpine-7.0.*, ubuntu-7.0.*, ol-7.0.*)
+Zabbix server 7.2 (tags: alpine-trunk, ubuntu-trunk, ol-trunk)
+</pre>
+
+<pre>
+ZABBIX_AGENT_IMAGE=zabbix/zabbix-agent
+ZABBIX_AGENT2_IMAGE=zabbix/zabbix-agent2
+ZABBIX_JAVA_GATEWAY_IMAGE=zabbix/zabbix-java-gateway
+ZABBIX_SNMPTRAPS_IMAGE=zabbix/zabbix-snmptraps
+ZABBIX_WEB_SERVICE_IMAGE=zabbix/zabbix-web-service
+
+docker pull zabbix/zabbix-server-mysql:alpine-7.0-latest
+docker pull zabbix/zabbix-web-nginx-mysql:alpine-7.0-latest
+docker pull zabbix/zabbix-web-service:alpine-7.0-latest
+docker pull zabbix/zabbix-snmptraps:alpine-7.0-latest
+
+docker run --name some-zabbix-server-mysql 
+-e DB_SERVER_HOST="some-mysql-server" \
+-e MYSQL_USER="some-user" \
+-e MYSQL_PASSWORD="some-password" \
+--init -d \
+zabbix/zabbix-server-mysql:alpine-6.4-latest
+</pre>
+
+<h2 id="toc_0.2">docker相关</h2>
+
+<ul>
+<li>
+Docker容器的重启策略
+
+</ul>
+
+<table>
+<tr>
+<td>
+no
+</td>
+<td>
+默认策略，在容器退出时不重启容器
+</td>
+</tr>
+<tr>
+<td>
+on-failure
+</td>
+<td>
+在容器非正常退出时（退出状态非0），才会重启容器
+</td>
+</tr>
+<tr>
+<td>
+on-failure:3
+</td>
+<td>
+指定启动的次数，在容器非正常退出时重启容器，最多重启3次
+</td>
+</tr>
+<tr>
+<td>
+always
+</td>
+<td>
+在容器退出时总是重启容器
+</td>
+</tr>
+<tr>
+<td>
+unless-stopped
+</td>
+<td>
+在容器退出时总是重启容器，但是不考虑在Docker守护进程启动时就已经停止了的容器
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+docker run容器的退出状态码
+
+<ul>
+<li>
+0，表示正常退出
+
+<li>
+非0，表示异常退出（退出状态码采用chroot标准）
+
+<ul>
+<li>
+125，Docker守护进程本身的错误
+
+<li>
+126，容器启动后，要执行的默认命令无法调用
+
+<li>
+127，容器启动后，要执行的默认命令不存在
+
+<li>
+其他命令状态码，容器启动后正常执行命令，退出命令时该命令的返回状态码作为容器的退出状态码
+
+</ul>
+</ul>
+</ul>
+
+<ul>
+<li>
+docker-compose版本：需要下载升级版本
+<pre>
+docker-compose version
+
+docker-compose version 1.29.2, build unknown
+docker-py version: 5.0.3
+CPython version: 3.12.3
+OpenSSL version: OpenSSL 3.0.13 30 Jan 2024
+</pre>
+
+<ul>
+<li>
+<a href="https://github.com/docker/compose/releases">https://github.com/docker/compose/releases</a>
+
+<li>
+2024-11-11: v2.30.3
+
+</ul>
+</ul>
+
+<pre>
+# 一直下载失败
+#curl -L https://github.com/docker/compose/releases/download/1.25.4/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+
+pip3 download docker-compose
+</pre>
+
+<p>
+在Ubuntu 24.04上用apt安装python3-pip，运行时提示与系统组件可能有冲突，之后用apt remove，并把python3也remove了，之后重启系统网络就无法工作，网卡一直为down状态，systemd-networkd-wait-online.service报timeout。
+</p>
+
+<p>
+最终只能从github上直接下载新版本，解压到/usr/local/bin目录下就可以使用(6xMB的包，已经打包为执行文件。，自带了python支持)。
+</p>
+
+<h2 id="toc_0.3">直接docker run</h2>
+
+<p>
+<a href="https://www.zabbix.com/documentation/6.4/zh/manual/installation/containers">https://www.zabbix.com/documentation/6.4/zh/manual/installation/containers</a>
+</p>
+
+<ul>
+<li>
+创建专用于 Zabbix 组件容器的网络：
+<pre class="brush:bash">
+docker network create --subnet 172.20.0.0/16 --ip-range 172.20.240.0/20 zabbix-net
+</pre>
+
+</ul>
+
+
+<ul>
+<li>
+新建 MySQL 服务器实例：
+<pre class="brush:bash">
+# https://mysql.net.cn/doc/refman/8.0/en/docker-mysql-getting-started.html
+#
+# docker run --name mysql-server -e MYSQL_ROOT_PASSWORD=debug -d mysql:8.0
+# 
+# docker run --name=mysql80new \
+#   --mount type=bind,src=/path-on-host-machine/my.cnf,dst=/etc/my.cnf \
+#   --mount type=bind,src=/path-on-host-machine/datadir,dst=/var/lib/mysql \
+#   -d mysql/mysql-server:8.0
+
+# 本地创建一个与mysql容器相同ID用户，方便看目录权限
+groupadd --gid 999 mysql
+useradd -c "docker mysql" --gid 999 --uid 999 --shell /bin/bash -m mysql
+
+# 建立mysql数据目录
+mkdir -p /data/docker/zabbix/data_mysql
+
+#  --restart always \
+#  --restart unless-stopped \
+#  -e TZ=Asia/Shanghai \
+
+docker run --name mysql8.0-zabbix -t \
+  -p 23306:3306 \
+  --restart unless-stopped \
+  --network zabbix-net \
+  -v /etc/timezone:/etc/timezone:ro \
+	-v /etc/localtime:/etc/localtime:ro \
+  -v /data/docker/zabbix/data_mysql:/var/lib/mysql \
+  -e MYSQL_ROOT_PASSWORD=debug \
+  -e MYSQL_DATABASE="zabbix" \
+  -e MYSQL_USER="zabbix" \
+  -e MYSQL_PASSWORD="zabbix_pwd" \
+  -e MYSQL_ROOT_PASSWORD="root_pwd" \
+  -d mysql:8.0 \
+  --character-set-server=utf8 --collation-server=utf8_bin \
+  --default-authentication-plugin=mysql_native_password
+
+# 进入mysql主机，查看mysql中的用户和DB
+docker exec -it mysql-server /bin/bash
+mysql -uroot -p
+
+# docker信息格式化输出
+docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}"
+</pre>
+
+</ul>
+
+<ul>
+<li>
+启动 Zabbix server 实例，并将其关联到已创建的 MySQL server 实例
+<pre class="brush:bash">
+# -e ZBX_JAVAGATEWAY="zabbix-java-gateway" \
+# -e TZ=Asia/Shanghai \
+docker run --name zabbix-server-mysql -t \
+  --restart unless-stopped \
+  --network zabbix-net \
+  -v /etc/timezone:/etc/timezone:ro \
+	-v /etc/localtime:/etc/localtime:ro \
+  -e DB_SERVER_HOST="mysql8.0-zabbix" \
+  -e MYSQL_DATABASE="zabbix" \
+  -e MYSQL_USER="zabbix" \
+  -e MYSQL_PASSWORD="zabbix_pwd" \
+  -e MYSQL_ROOT_PASSWORD="root_pwd" \
+  -p 20051:10051 \
+  -d zabbix/zabbix-server-mysql:alpine-7.0-latest
+</pre>
+
+</ul>
+
+<p>
+初次运行zabbix-server，会自动从create.sql.gz(4.1MB,160万行)中导入初始化数据到mysql中，需要几分钟时间，这期间访问zabbix-web会提示没有可选配置。导入完成后才会启动服务进程，以及网络端口侦听，这时再去启动zabbix-web容器。
+</p>
+
+<p>
+进入zabbix-server容器，可以看到初始化的进程：
+</p>
+<pre>
+PID   USER     TIME  COMMAND
+    1 zabbix    0:00 {docker-entrypoi} /bin/bash /usr/bin/docker-entrypoint.sh /usr/sbin/zabbix_serve
+   22 zabbix    0:00 gzip -cd /usr/share/doc/zabbix-server-mysql/create.sql.gz
+   23 zabbix    0:07 mysql --silent --skip-column-names --default-character-set=utf8mb4 -h mysql-serv
+   24 zabbix    0:00 /bin/bash
+   44 zabbix    0:00 ps aux
+</pre>
+
+<ul>
+<li>
+启动 Zabbix Web 界面，并将其关联到已创建的 MySQL server 和 Zabbix server 实例
+<pre class="brush:bash">
+# -e TZ=Asia/Shanghai \
+docker run --name zabbix-web-nginx-mysql -t \
+  --restart unless-stopped \
+  --network zabbix-net \
+  -v /etc/timezone:/etc/timezone:ro \
+	-v /etc/localtime:/etc/localtime:ro \
+  -e ZBX_SERVER_HOST="zabbix-server-mysql" \
+  -e DB_SERVER_HOST="mysql8.0-zabbix" \
+  -e MYSQL_DATABASE="zabbix" \
+  -e MYSQL_USER="zabbix" \
+  -e MYSQL_PASSWORD="zabbix_pwd" \
+  -e MYSQL_ROOT_PASSWORD="root_pwd" \
+  -p 28080:8080 \
+  -d zabbix/zabbix-web-nginx-mysql:alpine-7.0-latest
+
+# 默认用户名是Admin，密码zabbix。
+</pre>
+
+</ul>
+
+
+<h2 id="toc_0.4">安装zabbix-agent</h2>
+
+<p>
+在被监控主机安装zabbix-agent。
+</p>
+
+<ul>
+<li>
+Ubuntu 24.04
+<pre class="brush:bash">
+# Install Zabbix repository
+wget https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_latest+ubuntu24.04_all.deb
+dpkg -i zabbix-release_latest+ubuntu24.04_all.deb
+apt-get update
+
+# Install Zabbix agent
+apt install zabbix-agent
+
+# Start Zabbix agent process
+# Start Zabbix agent process and make it start at system boot.
+systemctl restart zabbix-agent
+systemctl enable zabbix-agent
+</pre>
+
+</ul>
+
+<ul>
+<li>
+CentOS7
+<pre class="brush:bash">
+# Install Zabbix repository
+rpm -Uvh https://repo.zabbix.com/zabbix/7.0/rhel/7/x86_64/zabbix-release-latest.el7.noarch.rpm
+yum clean all
+
+# Install Zabbix agent
+yum install zabbix-agent
+
+# Start Zabbix agent process
+# Start Zabbix agent process and make it start at system boot.
+systemctl restart zabbix-agent
+systemctl enable zabbix-agent
+</pre>
+
+</ul>
+
+<ul>
+<li>
+agent配置文件：
+<pre>
+/etc/zabbix/
+├── zabbix_agentd.conf
+└── zabbix_agentd.d
+</pre>
+
+</ul>
+
+<ul>
+<li>
+需要修改项：
+<pre class="brush:bash">
+# 改为zabbix-server IP地址或网段，否则采集时会拒绝连接
+# Server=127.0.0.1
+Server=172.16.238.0/24,172.16.239.0/24,172.20.240.0/24
+
+# ListenPort=10050，agent的侦听端口，改成你规划的端口
+ListenPort=20050
+
+# 主动上报的地址、端口，配置成docker容器对外映射的端口
+# ServerActive=127.0.0.1
+ServerActive=127.0.0.1:20051
+
+# 主动上报时的主机名，与zabbix中添加的主机名称保持一致
+# Hostname=Zabbix server
+Hostname=tubuntu-3-2
+
+# 以root身份运行，便于采集特定指标，不一定需要-待定
+# 需要修改zabbix-agent.service，以root用户启动
+# https://www.zabbix.com/documentation/5.0/zh/manual/appendix/install/run_agent_as_root
+AllowRoot=1
+</pre>
+
+</ul>
+
+<h2 id="toc_0.5">docker-compose方式</h2>
+
+<p>
+从 <a href="https://github.com/zabbix/zabbix-docker">https://github.com/zabbix/zabbix-docker</a> 下载docker-compose配置，根据需要项调整。
+</p>
+
+<pre>
+docker-compose/
+├── .env                                                        # 环境参数，指定数据目录、运行版本信息
+├── .env.def                                                    # 备份默认配置
+├── compose.yaml -&gt; docker-compose_v3_alpine_mysql_latest.yaml  # ln到主文件
+├── compose_databases.yaml                                      # 数据库配置
+├── compose_zabbix_components.yaml                              # zabbix组件定义文件
+├── docker-compose_v3_alpine_mysql_latest.yaml                  # 主compose文件
+└── env_vars                                                    # 容器环境参数、密码配置
+    ├── .MYSQL_PASSWORD
+    ├── .MYSQL_ROOT_PASSWORD
+    ├── .MYSQL_ROOT_USER
+    ├── .MYSQL_USER
+    ├── .POSTGRES_PASSWORD
+    ├── .POSTGRES_USER
+    ├── .env_agent
+    ├── .env_db_mysql
+    ├── .env_db_mysql_proxy
+    ├── .env_db_pgsql
+    ├── .env_java
+    ├── .env_prx
+    ├── .env_prx_mysql
+    ├── .env_prx_sqlite3
+    ├── .env_snmptraps
+    ├── .env_srv
+    ├── .env_web
+    ├── .env_web_service
+    ├── chrome_dp.json
+    └── mysql_init
+        └── init_proxy_db.sql
+</pre>
+
+<pre>
+docker-compose up -d
+
+[+] Running 7/7
+ ✔ Network docker-compose_database                    Creat...                                   0.1s
+ ✔ Network docker-compose_backend                     Create...                                  0.1s
+ ✔ Network docker-compose_frontend                    Creat...                                   0.2s
+ ✔ Network docker-compose_tools_frontend              Created                                    0.2s
+
+ ✔ Container docker-compose-mysql-server-1            Started                                    0.7s
+ ✔ Container docker-compose-zabbix-web-nginx-mysql-1  Started                                    1.9s
+ ✔ Container docker-compose-zabbix-server-1           Started                                    2.5s
+
+docker-compose ps
+NAME                                      IMAGE                                             COMMAND                  SERVICE                  CREATED          STATUS                    PORTS
+docker-compose-mysql-server-1             mysql:8.0                                         "docker-entrypoint.s…"   mysql-server             37 seconds ago   Up 36 seconds
+docker-compose-zabbix-server-1            zabbix/zabbix-server-mysql:alpine-7.0-latest      "/usr/bin/docker-ent…"   zabbix-server            36 seconds ago   Up 35 seconds             0.0.0.0:20051-&gt;10051/tcp
+docker-compose-zabbix-web-nginx-mysql-1   zabbix/zabbix-web-nginx-mysql:alpine-7.0-latest   "docker-entrypoint.sh"   zabbix-web-nginx-mysql   36 seconds ago   Up 35 seconds (healthy)   0.0.0.0:20080-&gt;8080/tcp, 0.0.0.0:20443-&gt;8443/tcp
+
+docker-compose images
+CONTAINER                                 REPOSITORY                      TAG                 IMAGE ID            SIZE
+docker-compose-mysql-server-1             mysql                           8.0                 9f4b39935f20        590MB
+docker-compose-zabbix-server-1            zabbix/zabbix-server-mysql      alpine-7.0-latest   aa80bfaed00e        138MB
+docker-compose-zabbix-web-nginx-mysql-1   zabbix/zabbix-web-nginx-mysql   alpine-7.0-latest   7e5d8d917c40        300MB
+</pre>
+
+<ul>
+<li>
+zabbix自动发现规则批量监控主机的TCP监听端口:<a href="https://blog.csdn.net/qq_31725371/article/details/97838266">https://blog.csdn.net/qq_31725371/article/details/97838266</a>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

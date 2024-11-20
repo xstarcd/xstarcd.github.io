@@ -32,9 +32,33 @@
 </p>
 
 <pre class="brush:bash">
+# 系统更新检查
+yum check-update
+yum update
+
+# 更新内核
+yum update kernel
+
+# 安装常用工具
 yum install net-tools 
 yum install vim-minimal vim-common vim-enhanced vim-filesystem
 </pre>
+
+<ul>
+<li>
+添加用户sudo权限
+
+</ul>
+
+<pre class="brush:bash">
+# 方式一：将用户添加到 wheel 用户组
+usermod -aG wheel &lt;username&gt;
+
+# 方式二：将用户添加到 sudoers 文件:
+# /etc/sudoers
+# /etc/sudoers.d/
+</pre>
+
 
 <h2 id="toc_0.2">SELINUX/iptables</h2>
 

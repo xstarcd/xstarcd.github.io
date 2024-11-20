@@ -1,3 +1,5 @@
+$.ajaxSetup({ cache: true });
+
 var kwiki = {
     getCSS: function(url) {
         var tag = '<link rel="stylesheet" href="' + url + '" />';

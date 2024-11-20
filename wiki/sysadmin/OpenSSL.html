@@ -25,52 +25,96 @@
 </ul>
 </ul>
 </div>
+
 <h1 id="toc_1">OpenSSL</h1>
 
 <h2 id="toc_1.1">私钥及证书</h2>
 
 <ul>
 <li>
-生成普通私钥 <code>openssl genrsa -out privatekey.key (1024)</code>
+生成密钥
+<pre class="brush:bash">
+# 生成私钥
+openssl genrsa -out private.key 1024 # 生成1024位普通私钥,-----BEGIN PRIVATE KEY-----
+openssl genrsa -des3 -out private.key 1024 # 生成一个1024位的密钥，用DES加密密钥 -----BEGIN ENCRYPTED PRIVATE KEY-----
 
-<li>
-生成带加密口令的密钥 <code>openssl genrsa -des3 -out privatekey.key (1024)</code>
+# 加密算法
+#     - des encrypt the generated key with DES in cbc mode
+#     - des3 encrypt the generated key with DES in ede cbc mode (168 bit key)
+#     - aes128, -aes192, -aes256 encrypt PEM output with cbc aes
 
-<li>
-加密算法
+# 去除密钥的口令
+openssl rsa -in private.key
+
+# 通过私钥生成公钥 
+openssl rsa -in private.key -inform pem -pubout -out pubkey.key
+
+# 查看密钥信息
+openssl rsa -noout -text -in privkey.key
+
+# 得到DH:生成和管理Diffie-Hellman参数,Generating DH parameters, 1024 bit long safe prime
+openssl dhparam -out dh1024.pem 1024
+</pre>
+
+</ul>
 
 <ul>
 <li>
-des encrypt the generated key with DES in cbc mode
-
-<li>
-des3 encrypt the generated key with DES in ede cbc mode (168 bit key)
-
-<li>
-aes128, -aes192, -aes256 encrypt PEM output with cbc aes
-
-</ul>
-<li>
-去除密钥的口令 <code>openssl rsa -in privatekey.key</code>
-
-<li>
-通过私钥生成证书 <code>openssl req -new -x509 -key privatekey.key -out cacert.crt (-days 1095)</code>
-
-<li>
-通过私钥生成公钥 <code>openssl rsq -in privatekey.key -pubout -out pubkey.key</code>
-
-<li>
-得到DH <code>openssl dhparam -out dh1024.pem (1024)</code>
-
-<li>
-显示模式
-<pre>
-    openssl x509 -in privekey.crt -noout -text -modulus
-    openssl rsa -in privatekey-passwd.key -noout -text -modulus
+证书申请
+<pre class="brush:bash">
+# 生成证书请求cert.csr，用这个文件去数字证书颁发机构（即CA）申请一个数字证书，CA会给你一个证书文件cacert.pem。
+openssl req -new -key private.key -out cert.csr
 </pre>
 
+</ul>
+
+<pre>
+Country Name (2 letter code) [AU]:CN
+State or Province Name (full name) [Some-State]:Sichuan
+Locality Name (eg, city) []:Chengdu
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:Kugua Yu Le
+Organizational Unit Name (eg, section) []:Kugua
+Common Name (e.g. server FQDN or YOUR name) []:*.kugua.com
+Email Address []:admin@kugua.com
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+</pre>
+
+<pre class="brush: bash">
+# 如果是自己做测试，生成自签证书cacert.pem，有效期10年
+openssl req -new -x509 -key privkey.pem -out cacert.pem -days 3650
+</pre>
+
+<ul>
 <li>
-申请证书 <code>openssl ca -in privatekey-passwd.crt -out privatekey-passwd.csr -cert privatekey-passwd.crt -keyfile privatekey-passwd.key</code>
+证书格式
+
+<ul>
+<li>
+pkcs1格式的证书，一般是C使用的(标准RSA秘钥对标准规范,未加密)
+
+<li>
+pkcs8格式的证书，一般是Java使用的（加密后的秘钥对）
+
+<li>
+pkcs12格式的证书，一般是IOS使用的，后缀为.pfx
+
+<li>
+这三种证书可以相关转换。
+
+</ul>
+</ul>
+
+<ul>
+<li>
+显示模式
+<pre class="brush:bash">
+    openssl x509 -in private.crt -noout -text -modulus
+    openssl rsa -in privatekey-passwd.key -noout -text -modulus
+</pre>
 
 </ul>
 
@@ -186,7 +230,7 @@ done
 
 <h2 id="toc_1.3">产生随机密语</h2>
 <pre>
-openssl rand 15 -base64
+openssl rand -base64 15
 wGcwstkb8Er0g6w1+Dm+
 </pre>
 <p>

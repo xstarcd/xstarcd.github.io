@@ -222,6 +222,7 @@ alias l='ls -CF'                              #
 alias ssh="ssh -S none"
 
 # 将常用Windows命令输出转换为utf8，解决Windows自有命令显示乱码问题
+# 安装iconv工具: apt-cyg install libiconv
 _runiconv () { _cmd=$1;shift;$_cmd $* 2&gt;&amp;1|iconv -f gbk -t utf8; }
 alias ping='_runiconv ping'
 alias ifconfig='_runiconv ipconfig'
@@ -783,6 +784,32 @@ eval `keychain --eval --agents ssh id_dsa`
 <h2 id="toc_1.7">Windows Terminal</h2>
 
 <ul>
+<li>
+Windows Terminal热键及设置：<a href="https://cloud.tencent.com/developer/article/1746621">https://cloud.tencent.com/developer/article/1746621</a>
+
+<li>
+<a href="https://learn.microsoft.com/zh-cn/windows/terminal/">https://learn.microsoft.com/zh-cn/windows/terminal/</a>
+<pre>
+Ctrl + Shift + T/N：新建标签/窗口
+
+Windows Terminal拆分窗格：
+Alt + Shift + D：复制并拆分(按最长边)
+Alt + Shift + +：左右拆分
+Alt + Shift + -：上下拆分
+Alt + Shift + 上下左右：调整窗格大小
+Alt + 上下左右：切换窗格
+Alt + Shift + W：关闭当前窗格
+
+搜索：Ctrl + Shift + F
+滚屏：Ctrl + Shift + 上下
+缩放：Ctrl + +/-，Ctrl + 鼠标滚轮
+
+复制：Ctrl + Shift + C
+粘贴：Ctrl + Shift + V
+
+设置：Ctrl + ,
+</pre>
+
 <li>
 在 Windows Terminal 中使用 Cygwin 命令行或 Git Bash:<a href="https://leo3418.github.io/zh/2020/05/24/cygwin-git-bash-in-wt.html">https://leo3418.github.io/zh/2020/05/24/cygwin-git-bash-in-wt.html</a>
 

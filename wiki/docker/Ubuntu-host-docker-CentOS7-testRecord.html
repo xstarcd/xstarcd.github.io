@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>Ubuntu-host-docker-CentOS7-testRecord</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>Ubuntu-host-docker-CentOS7-testRecord</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">Ubuntu安装Docker</a>
+<ul>
+<li><a href="#toc_0.1.1">安装Docker</a>
+</ul>
+<li><a href="#toc_0.2">自建CentOS7.9镜像</a>
+<li><a href="#toc_0.3">CentOS容器内安装环境</a>
+<ul>
+<li><a href="#toc_0.3.1">基础系统</a>
+<li><a href="#toc_0.3.2">用容器生成镜像</a>
+</ul>
+<li><a href="#toc_0.4">容器中安装业务运行环境</a>
+<ul>
+<li><a href="#toc_0.4.1">挂载宿主目录</a>
+<li><a href="#toc_0.4.2">安装gcc</a>
+<li><a href="#toc_0.4.3">Hiredis</a>
+</ul>
+<li><a href="#toc_0.5">安装第三方库</a>
+<ul>
+<li><a href="#toc_0.5.1">mysql-client</a>
+<li><a href="#toc_0.5.2">lua</a>
+<li><a href="#toc_0.5.3">tinyxml</a>
+<li><a href="#toc_0.5.4">openssl</a>
+<li><a href="#toc_0.5.5">libevent</a>
+<li><a href="#toc_0.5.6">其它第三方库</a>
+</ul>
+<li><a href="#toc_0.6">安装中心服务库</a>
+<li><a href="#toc_0.7">安装FastCGI支持(Only Center)</a>
+<li><a href="#toc_0.8">安装gcc 4.9.4</a>
+<ul>
+<li><a href="#toc_0.8.1">安装游戏服务支包</a>
+</ul>
+<li><a href="#toc_0.9">chroot运行服务</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+2024-10-27
+
+</ul>
+
+<h2 id="toc_0.1">Ubuntu安装Docker</h2>
+
+<ul>
+<li>
+主机系统：Ubuntu 24.04 Server
+
+<li>
+基础设置
+<pre class="brush:bash">
+# timedatectl list-timezones # 列出可用时区
+# 设置时区为中国时区
+sudo timedatectl set-timezone Asia/Shanghai
+
+# 查看时间及时区
+# timedatectl status
+# systemctl status systemd-timesyncd
+</pre>
+
+</ul>
+
+<ul>
+<li>
+安装必备包、设置ubuntu国内源
+<pre class="brush:bash">
+# 安装必备的软件包以允许apt通过 HTTPS 使用存储库（repository）
+sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get install ca-certificates curl gnupg lsb-release
+
+# 添加Docker官方版本库的GPG密钥
+sudo mkdir -p /etc/apt/keyrings
+#curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+# 设置docker源
+# echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+# https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+# | sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
+
+# 设置为aliyun docker源
+#sudo add-apt-repository "deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+https://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable" \
+| sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
+</pre>
+
+</ul>
+
+<pre>
+dirmngr - GNU privacy guard - network certificate management service
+
+遇到docker宿主机dirmngr进程CPU占用一直在99.7%问题，原因待核实：
+root        1934 99.7  0.8 248068 16780 ?        Rsl  Oct26 1737:51 dirmngr --homedir /tmp/apt-key-gpghome.n8aiXjw6RP --daemon
+
+kill无效，只能kill -9，reboot后无该进程，可能是之前做系统配置、添加国内源操作时产生的。
+</pre>
+
+
+<h3 id="toc_0.1.1">安装Docker</h3>
+
+<ul>
+<li>
+更新apt包索引，安装最新版本的Docker Engine、containerd 和 Docker Compose：
+<pre class="brush:bash">
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# 查看docker版本、运行状态
+docker info
+docker version
+#Docker version 24.0.7, build afdd53b
+
+systemctl status docker
+sudo systemctl enable|start|stop docker
+
+# 验证运行
+sudo docker run hello-world
+</pre>
+
+</ul>
+
+<ul>
+<li>
+卸载docker
+<pre class="brush:bash">
+sudo apt-get remove docker docker-engine docker-ce docker.io
+</pre>
+
+</ul>
+
+<h2 id="toc_0.2">自建CentOS7.9镜像</h2>
+
+<p>
+试了各种配置方式docker pull都没能成功，我手上也没有现成的http_proxy。
+</p>
+
+<p>
+我只是需要一个centos7.9的镜像来做环境测试。
+</p>
+
+<p>
+github CentOS 7.9.2009 images <a href="https://github.com/CentOS/sig-cloud-instance-images">https://github.com/CentOS/sig-cloud-instance-images</a> 
+</p>
+
+<p>
+下载了CentOS 7.9.2009 images的Dockerfile和tar文件，用docker build创建一个，2分钟就能搞定：
+</p>
+
+<ul>
+<li>
+下载的文件：
+<pre>
+centos7.9/
+├── Dockerfile
+└── centos-7-x86_64-docker.tar.xz
+</pre>
+
+</ul>
+
+<ul>
+<li>
+Dockerfile内容
+<pre>
+FROM scratch
+ADD centos-7-x86_64-docker.tar.xz /
+
+LABEL \
+    org.label-schema.schema-version="1.0" \
+    org.label-schema.name="CentOS Base Image" \
+    org.label-schema.vendor="CentOS" \
+    org.label-schema.license="GPLv2" \
+    org.label-schema.build-date="20201113" \
+    org.opencontainers.image.title="CentOS Base Image" \
+    org.opencontainers.image.vendor="CentOS" \
+    org.opencontainers.image.licenses="GPL-2.0-only" \
+    org.opencontainers.image.created="2020-11-13 00:00:00+00:00"
+
+CMD ["/bin/bash"]
+</pre>
+
+</ul>
+
+<ul>
+<li>
+开始docker build
+<pre>
+cd centos7.9
+docker build -t xstar/centos:7.9.2009 .
+
+[+] Building 0.2s (5/5) FINISHED                                                              docker:default
+ =&gt; [internal] load build definition from Dockerfile                                                    0.0s
+ =&gt; =&gt; transferring dockerfile: 555B                                                                    0.0s
+ =&gt; [internal] load .dockerignore                                                                       0.0s
+ =&gt; =&gt; transferring context: 2B                                                                         0.0s
+ =&gt; [internal] load build context                                                                       0.0s
+ =&gt; =&gt; transferring context: 53B                                                                        0.0s
+ =&gt; CACHED [1/1] ADD centos-7-x86_64-docker.tar.xz /                                                    0.0s
+ =&gt; exporting to image                                                                                  0.0s
+ =&gt; =&gt; exporting layers                                                                                 0.0s
+ =&gt; =&gt; writing image sha256:03c49951766302603da48d7d1ddef9de2b318ef195e6fba2a3c03c2579b83099            0.0s
+ =&gt; =&gt; naming to docker.io/xstar/centos:7.9.2009                                                        0.0s
+</pre>
+
+</ul>
+
+<ul>
+<li>
+build自己的镜像
+<pre class="brush:bash">
+FROM centos
+RUN yum install epel-release -y &amp;&amp; \
+    yum install -y gcc gcc-c++ make gd-devel libxml2-devel \
+    libcurl-devel libjpeg-devel libpng-devel openssl-devel \
+    libmcrypt-devel libxslt-devel libtidy-devel autoconf \
+    iproute net-tools telnet wget curl &amp;&amp; \
+    yum clean all &amp;&amp; \
+    rm -rf /var/cache/yum/*
+</pre>
+
+</ul>
+
+<pre class="brush:bash">
+#
+# MAINTAINER        XStar &lt;154725@qq.com&gt;
+# DOCKER-VERSION    27.3.1, build ce12230
+#
+# Dockerizing CentOS7: Dockerfile for building CentOS images
+#
+
+# 构建Docker镜像必须要有一个基础镜像，即父镜像(可从官网pull也可自己制作)
+FROM       xstar/centos:7.9.2009
+# 指定维护者信息
+MAINTAINER XStar &lt;154725@qq.com&gt;
+
+# 设置时区环境变量（ENV环境变量在Dockerfile中可以写多个）
+# 这些指定的环境变量，后续可以被RUN指令使用，容器运行起来之后，也可以在容器中获取这些环境变量
+ENV TZ "Asia/Shanghai"
+ENV TERM xterm
+
+# ADD：添加/拷贝文件到container里面，还有一个拷贝命令是COPY
+# 两者的区别如下：
+# 前者比后者多两个功能；
+#     1. 可直接将url对应的文件直接复制到container里面；
+#     2. 如果复制的是tar压缩包文件，用ADD拷贝结束后会自动帮我们解压；
+COPY CentOS-Base-Aliyun.repo /etc/yum.repos.d/CentOS-Base.repo
+
+# RUN 后面是要执行的命令，每执行一条指令就是一层，所以Dockerfile采用的是分层的技术
+RUN yum install -y curl wget tar bzip2 unzip vim-enhanced passwd sudo yum-utils hostname net-tools rsync man &amp;&amp; \
+    yum install -y gcc gcc-c++ git make automake cmake patch logrotate python-devel libpng-devel libjpeg-devel &amp;&amp; \
+    yum install -y --enablerepo=epel pwgen python-pip &amp;&amp; \
+    yum clean all
+
+RUN pip install supervisor  # 安装进程管理工具
+ADD supervisord.conf /etc/supervisord.conf  # 添加进程管理工具的主配置文件到指定目录下，一般是/etc目录
+
+RUN mkdir -p /etc/supervisor.conf.d &amp;&amp; \    # 为进程管理工具新建一个目录，用来存放启动其他服务的配置文件
+    mkdir -p /var/log/supervisor            # 新建进程管理日志目录
+
+EXPOSE 22   # Docker服务器开放的端口，供容器外部连接使用(在启动容器时做端口映射)
+
+# 如果有多条ENTRYPOINT语句，那么只有最后一条生效
+# ENTRYPOINT指的是container每次启动的时候需要执行的命令
+ENTRYPOINT ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
+</pre>
+
+<pre class="brush:bash">
+#
+# MAINTAINER        Nick,Y.Peng &lt;nickyp@dockerstu.com&gt;
+# DOCKER-VERSION    1.6.2
+#
+# Dockerizing CentOS7: Dockerfile for building CentOS images
+#
+
+# 构建Docker镜像必须要有一个基础镜像，即父镜像(可从官网pull也可自己制作)
+FROM       centos:centos7.1.1503
+# 指定维护者信息
+MAINTAINER Nick,Y.Peng &lt;nickyp@dockerstu.com&gt;
+
+# 设置时区环境变量（ENV环境变量在Dockerfile中可以写多个）
+# 这些指定的环境变量，后续可以被RUN指令使用，容器运行起来之后，也可以在容器中获取这些环境变量
+ENV TZ "Asia/Shanghai"
+ENV TERM xterm
+
+# ADD：添加/拷贝文件到container里面，还有一个拷贝命令是COPY
+# 两者的区别如下：
+# 前者比后者多两个功能；
+#     1. 可直接将url对应的文件直接复制到container里面；
+#     2. 如果复制的是tar压缩包文件，用ADD拷贝结束后会自动帮我们解压；
+ADD aliyun-mirror.repo /etc/yum.repos.d/CentOS-Base.repo
+ADD aliyun-epel.repo /etc/yum.repos.d/epel.repo
+
+# RUN 后面是要执行的命令，每执行一条指令就是一层，所以Dockerfile采用的是分层的技术
+RUN yum install -y curl wget tar bzip2 unzip vim-enhanced passwd sudo yum-utils hostname net-tools rsync man &amp;&amp; \
+    yum install -y gcc gcc-c++ git make automake cmake patch logrotate python-devel libpng-devel libjpeg-devel &amp;&amp; \
+    yum install -y --enablerepo=epel pwgen python-pip &amp;&amp; \
+    yum clean all
+
+RUN pip install supervisor  # 安装进程管理工具
+ADD supervisord.conf /etc/supervisord.conf  # 添加进程管理工具的主配置文件到指定目录下，一般是/etc目录
+
+RUN mkdir -p /etc/supervisor.conf.d &amp;&amp; \    # 为进程管理工具新建一个目录，用来存放启动其他服务的配置文件
+    mkdir -p /var/log/supervisor            # 新建进程管理日志目录
+
+EXPOSE 22   # Docker服务器开放的端口，供容器外部连接使用(在启动容器时做端口映射)
+
+# 如果有多条ENTRYPOINT语句，那么只有最后一条生效
+# ENTRYPOINT指的是container每次启动的时候需要执行的命令
+ENTRYPOINT ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
+</pre>
+
+<ul>
+<li>
+查看本地镜像
+<pre>
+docker images
+
+REPOSITORY     TAG        IMAGE ID       CREATED          SIZE
+xstar/centos   7.9.2009   03c499517663   11 minutes ago   204MB
+</pre>
+
+</ul>
+
+<ul>
+<li>
+运行镜像测试
+<pre class="brush:bash">
+# 以 centos7.9 镜像创建一个新容器，然后在容器里执行 bin/echo "Hello world"，--rm 运行后自动删除
+docker run --rm xstar/centos:7.9.2009 /bin/echo "Hello world";cat /proc/version
+</pre>
+<pre>
+Hello world
+Linux version 6.8.0-47-generic (buildd@lcy02-amd64-023) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.2.0-23ubuntu4) 13.2.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #47-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep 27 21:40:26 UTC 2024
+</pre>
+
+</ul>
+
+<pre class="brush:bash">
+# 交互运行容器，-i:允许标准stdin交互，-t: tty终端
+docker run --rm -it xstar/centos:7.9.2009 /bin/bash
+</pre>
+
+<pre class="brush:bash">
+# 后台运行容器
+docker run --rm -d --name centosbase xstar/centos:7.9.2009 /bin/sh -c "while true; do echo hello world; sleep 1; done"
+
+docker exec -it centosbase /bin/bash # 进入容器shell环境
+docker attach centosbase  # 附着到容器标准stdin/stdout控制台，若中止控制台在运行的命令，容器会关闭
+docker cp centos:/etc/resolv.conf ./ # 从容器复制配置文件到本地
+
+# 查看容顺的标准输出stdout
+docker logs centosbase
+
+# 停止容器
+docker stop centosbase
+</pre>
+
+<h2 id="toc_0.3">CentOS容器内安装环境</h2>
+
+<h3 id="toc_0.3.1">基础系统</h3>
+
+<ul>
+<li>
+运行一个安装环境容器
+<pre class="brush:bash">
+docker run -d --name centosbase xstar/centos:7.9.2009 \
+/bin/sh -c "while true; do echo hello world; sleep 10; done"
+</pre>
+
+</ul>
+
+<pre class="brush:bash">
+# 设置国内源
+curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-7.repo
+yum makecache
+
+# 系统更新
+yum check-update &amp;&amp; yum update
+
+# 设置时区
+# 应该在Dockerfile或run进用ENV参数传入: -e TZ=Asia/Shanghai
+# Failed to create bus connection错误是因为没有权限访问host的/run/dbus/system_bus_socket，可在docker run时用-v挂载进容器
+# -v /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:ro
+# timedatectl set-timezone Asia/Shanghai
+</pre>
+
+<pre class="brush:bash">
+# 在docker容器中添加同样的用户，宿主机、容器用户ID保持一致，以便文件权限设置。
+
+groupadd --gid 2000 hcty
+useradd -c "game master" --gid 2000 --uid 2000 --shell /bin/bash -m hcty
+</pre>
+
+<ul>
+<li>
+常用软件安装
+<pre class="brush:bash">
+yum makecache
+yum -y install screen curl vim gzip bzip2 unzip rsync openssh-clients \
+yum-utils telnet traceroute bind-utils man man-pages tree wget \
+net-tools vim-minimal
+
+# 设置screen，控制台会话保持工具
+cat &gt; ~/.screenrc &lt;&lt;EOF
+startup_message off
+defscrollback 1024
+caption always "%-w%{= BW}%50&gt;%n %t%{-}%+w%&lt;"
+vbell off
+EOF
+</pre>
+
+</ul>
+
+<h3 id="toc_0.3.2">用容器生成镜像</h3>
+
+<pre>
+docker commit: Create a new image from a container's changes
+
+docker save:   Save one or more images to a tar archive (streamed to STDOUT by default)，会保存该镜像的所有历史记录。
+docker load:   Load an image from a tar archive or STDIN。用于载入镜像包为image，不能重命包镜像。
+
+docker export: Export a container's filesystem as a tar archive，不会保留commit历史记录。
+docker import: Import the contents from a tarball to create a filesystem image，用来载入容器包为image，可以重命名镜像。
+
+</pre>
+
+<ul>
+<li>
+保存容器并导出
+<pre class="brush:bash">
+# /var/cache/yum/中有大量缓存，需要先清理
+yum clean all
+rm -rf /var/cache/yum/*
+
+# 1.将容器保存成镜像
+# docker commit -m "comment" -a "Auther" &lt;容器id/name&gt; &lt;镜像名&gt;:&lt;tag&gt; 
+docker commit -m "Upgrade &amp; Install soft" -a "XStar" centosbase xstar/centos:7.9.2009-env
+
+# 查看镜像
+docker images
+
+#REPOSITORY     TAG            IMAGE ID       CREATED          SIZE
+#xstar/centos   7.9.2009-env   216fe37307d3   31 seconds ago   947MB
+#xstar/centos   7.9.2009       03c499517663   13 hours ago     204MB
+
+# 2.将镜像保存为.tar文件
+# docker save -o &lt;tar包名&gt;.tar &lt;镜像名&gt;:&lt;tag&gt; 
+# 导出镜像
+# docker save -o centos7.9.2009-env.tar xstar/centos:7.9.2009-env
+docker save xstar/centos:7.9.2009-env | gzip &gt; centos7.9.2009-env.tar.gz
+docker save xstar/centos:7.9.2009-env | gzip &gt; centos7.9.2009-env-cleaned.tar.gz
+
+# -rw-r--r-- 1 root root 299M Oct 27 13:42 centos7.9.2009-env.tar.gz
+# -rw-r--r-- 1 root root 151M Oct 27 14:06 centos7.9.2009-env-cleaned.tar.gz
+
+# export方式，导出文件要小一点
+docker export centosbase | gzip &gt; centos7.9.2009-env-export-cleaned.tar.gz
+
+# -rw-r--r-- 1 root root  99M Oct 27 13:59 centos7.9.2009-env-export-cleaned.tar.gz
+# -rw-r--r-- 1 root root 247M Oct 27 13:44 centos7.9.2009-env-export.tar.gz
+</pre>
+
+</ul>
+
+<ul>
+<li>
+导入
+<pre class="brush:bash">
+# 从tar包导入镜像
+# docker load -i &lt;tar包名&gt;.tar
+# docker load -i centos7.9.2009-env.tar
+zcat centos7.9.2009-env.tar.gz | docker load -
+
+# 从export tar包导入镜像
+zcat centos7.9.2009-env-export-cleaned.tar.gz | docker import - xstar/centos:7.9.2009-env-import
+
+# 查看镜像
+docker images
+
+# REPOSITORY     TAG                   IMAGE ID       CREATED              SIZE
+# xstar/centos   7.9.2009-env          a62ea8158284   About a minute ago   439MB
+# xstar/centos   7.9.2009-env-import   89f1c7ea7d7f   2 minutes ago        289MB
+# xstar/centos   7.9.2009              03c499517663   14 hours ago         204MB
+
+docker image inspect xstar/centos:7.9.2009
+docker image history xstar/centos:7.9.2009  
+
+# 可以看到几个镜像的Layers不一样。
+
+# 通过镜像起动容器
+# docker run -itd -p &lt;本地端口&gt;:&lt;容器端口&gt; &lt;镜像名&gt;:&lt;tag&gt;
+docker run -it --name centosbase-env xstar/centos:7.9.2009-env /bin/bash
+</pre>
+
+</ul>
+
+<h2 id="toc_0.4">容器中安装业务运行环境</h2>
+
+<h3 id="toc_0.4.1">挂载宿主目录</h3>
+
+<pre>
+--volume(-v)
+参数--volume（或简写为-v）只能创建bind mount。
+
+命令格式：[[HOST-DIR:]CONTAINER-DIR[:OPTIONS]]]
+如果指定HOST-DIR则必须是绝对路径，如果路径不存在则会自动创建
+OPTIONS:rw为读写，ro为只读
+docker run --name $CONTAINER_NAME -it \
+-v $PWD/$CONTAINER_NAME/app:/app:rw \
+-v $PWD/$CONTAINER_NAME/data:/data:ro \
+avocado-cloud:latest /bin/bash
+
+--mount
+参数--mount默认情况下用来挂载volume，但也可以用来创建bind mount和tmpfs。
+如果不指定type选项，则默认为挂载volume，volume是一种更为灵活的数据管理方式，volume可以通过docker volume命令集被管理。
+
+挂载volume命令格式：    [type=volume,]source=my-volume,destination=/path/in/container[,...]
+创建bind mount命令格式：type=bind,source=/path/on/host,destination=/path/in/container[,...]
+如果创建bind mount并指定source则必须是绝对路径，且路径必须已经存在
+
+docker run --name $CONTAINER_NAME -it \
+--mount type=bind,source=$PWD/$CONTAINER_NAME/app,destination=/app \
+--mount source=${CONTAINER_NAME}-data,destination=/data,readonly \
+avocado-cloud:latest /bin/bash
+</pre>
+
+<table>
+<tr>
+<th>
+对比项
+</th>
+<th>
+bind mount
+</th>
+<th>
+volume
+</th>
+</tr>
+<tr>
+<td>
+Source位置
+</td>
+<td>
+用户指定
+</td>
+<td>
+/var/lib/docker/volumes/
+</td>
+</tr>
+<tr>
+<td>
+Source为空
+</td>
+<td>
+覆盖dest为空
+</td>
+<td>
+保留dest内容
+</td>
+</tr>
+<tr>
+<td>
+Source非空
+</td>
+<td>
+覆盖dest内容
+</td>
+<td>
+覆盖dest内容
+</td>
+</tr>
+<tr>
+<td>
+Source种类
+</td>
+<td>
+文件或目录
+</td>
+<td>
+只能是目录
+</td>
+</tr>
+<tr>
+<td>
+可移植性
+</td>
+<td>
+一般（自行维护）
+</td>
+<td>
+强（docker托管）
+</td>
+</tr>
+<tr>
+<td>
+宿主直接访问
+</td>
+<td>
+容易（仅需chown）
+</td>
+<td>
+受限（需登陆root用户）*
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+运行一个挂载本地目录的容器
+<pre class="brush:bash">
+# mount挂载
+# --mount type=bind,source=/data,target=/data \
+# volume挂载
+# -v /data:/data \
+# 挂载sock文件
+# -v /var/run/mysqld/mysqld.sock:/var/lib/mysql/mysql.sock \
+
+# 启动容器
+# -itd交互、后台方式运行，指定容器名称和容器内部主机名
+# 
+name=centosbase \
+&amp;&amp; docker run -itd \
+-e TZ=Asia/Shanghai \
+--name $name --hostname $name \
+-v /data:/data \
+--network host \
+xstar/centos:7.9.2009-env \
+/bin/bash
+
+# 进入主机shell
+docker exec -it centosbase /bin/bash
+
+# 附着到容器标准stdin/stdout控制台
+# ctrl+D或exit: 中止控制台进程(pid=1)，容器stop
+# ctrl+P+Q：退出容器，不中止
+# 容器被stop，用docker start centosbase启动
+docker attach centosbase
+</pre>
+
+</ul>
+
+<h3 id="toc_0.4.2">安装gcc</h3>
+
+<pre class="brush:bash">
+yum -y install gcc automake autoconf libtool make
+</pre>
+
+<h3 id="toc_0.4.3">Hiredis</h3>
+
+<p>
+Hiredis是一个Redis的C客户端库函数，基本实现了Redis的协议的最小集。
+</p>
+
+
+<p>
+发行版本：<a href="https://github.com/redis/hiredis/releases">https://github.com/redis/hiredis/releases</a>
+</p>
+
+<ul>
+<li>
+编译安装
+<pre class="brush:bash">
+cd /usr/local/src \
+&amp;&amp; tar zxvf /data/soft/hiredis-0.13.3.tar.gz \
+&amp;&amp; cd hiredis-0.13.3 \
+&amp;&amp; make \
+&amp;&amp; make install
+</pre>
+
+</ul>
+
+
+<ul>
+<li>
+添加环境参数
+<pre class="brush:bash">
+grep 'LD_LIBRARY_PATH.*/usr/local/lib' /etc/profile \
+|| echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib' &gt;&gt; /etc/profile
+grep 'LD_LIBRARY_PATH.*/usr/local/lib' /etc/profile
+source /etc/profile
+
+grep '/usr/local/lib' /etc/ld.so.conf \
+|| echo '/usr/local/lib' &gt;&gt; /etc/ld.so.conf;cat /etc/ld.so.conf
+grep '/usr/local/lib' /etc/ld.so.conf
+ldconfig
+</pre>
+
+</ul>
+
+<h2 id="toc_0.5">安装第三方库</h2>
+
+<h3 id="toc_0.5.1">mysql-client</h3>
+
+<ul>
+<li>
+添加mysql repo
+<pre class="brush:bash">
+# wget http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm
+
+yum localinstall /data/soft/mysql-community-release-el7-5.noarch.rpm
+
+# 验证源添加成功，查看支持的MySQL版本
+yum repolist enabled | grep mysql
+
+# 安装mysql-client
+yum install mysql-community-client
+
+# mysql-community-common-5.6.51-2.el7.x86_64.rpm
+# mysql-community-devel-5.6.51-2.el7.x86_64.rpm
+# mysql-community-libs-5.6.51-2.el7.x86_64.rpm
+</pre>
+
+</ul>
+
+<h3 id="toc_0.5.2">lua</h3>
+
+<pre class="brush:bash">
+yum install readline-devel -y
+
+cd /usr/local/src \
+&amp;&amp; tar zxvf /data/soft/lua-5.2.4.tar.gz \
+&amp;&amp; cd lua-5.2.4 \
+&amp;&amp; make linux \
+&amp;&amp; make install
+</pre>
+
+<h3 id="toc_0.5.3">tinyxml</h3>
+
+<pre class="brush:bash">
+yum -y update gcc
+yum -y install gcc+ gcc-c++
+
+cd /usr/local/src \
+&amp;&amp; unzip /data/soft/tinyxml_2_6_2.zip \
+&amp;&amp; cd tinyxml
+</pre>
+
+<p>
+MakeFile修改：
+</p>
+<pre class="brush:bash">
+# 修改1
+OUTPUT := xmltest
+改为：
+OUTPUT := libtinyxml.a
+
+# 修改2
+SRCS := tinyxml.cpp tinyxmlparser.cpp xmltest.cpp tinyxmlerror.cpp tinystr.cpp
+删除：xmltest.cpp
+
+#修改3
+注释行：xmltest.o: tinyxml.h tinystr.h
+
+# 修改4，注意与原来的行保持一致的TAB缩进，否则编译会报错
+${LD} -o $@ ${LDFLAGS} ${OBJS} ${LIBS} ${EXTRA_LIBS}
+修改为：
+${AR} $@ ${LDFLAGS} ${OBJS} ${LIBS} ${EXTRA_LIBS}
+</pre>
+
+<pre class="brush:bash">
+make \
+&amp;&amp; cp libtinyxml.a /usr/lib \
+&amp;&amp; cp ./tinyxml.h /usr/local/include/ \
+&amp;&amp; cp ./tinystr.h /usr/local/include/ \
+&amp;&amp; ll /usr/local/include/tiny*
+</pre>
+
+<h3 id="toc_0.5.4">openssl</h3>
+
+<pre class="brush:bash">
+cd /usr/local/src \
+&amp;&amp; rm -rf openssl-1.0.2d \
+&amp;&amp; tar -zxvf /data/soft/openssl-1.0.2d.tar.gz \
+&amp;&amp; cd openssl-1.0.2d \
+&amp;&amp; ./config --prefix=/usr/local --openssldir=/usr/local/openssl no-shared \
+&amp;&amp; make \
+&amp;&amp; make install_sw \
+&amp;&amp; ln -s /usr/local/lib64/libssl.a /usr/local/lib/libssl.a \
+&amp;&amp; ln -s /usr/local/lib64/libcrypto.a  /usr/local/lib/libcrypto.a \
+&amp;&amp; echo Done.
+</pre>
+
+<h3 id="toc_0.5.5">libevent</h3>
+
+<pre class="brush:bash">
+cd /usr/local/src \
+&amp;&amp; tar -zxvf /data/soft/libevent-2.0.22-stable.tar.gz \
+&amp;&amp; cd libevent-2.0.22-stable \
+&amp;&amp; ./configure \
+&amp;&amp; make \
+&amp;&amp; make install \
+&amp;&amp; echo Done.
+</pre>
+
+<h3 id="toc_0.5.6">其它第三方库</h3>
+
+<pre class="brush:bash">
+yum -y install libuuid-devel libcurl-devel boost-devel mysql-devel
+# yum -y --skip-broken install mysql-devel
+</pre>
+
+<h2 id="toc_0.6">安装中心服务库</h2>
+
+<h2 id="toc_0.7">安装FastCGI支持(Only Center)</h2>
+
+<ul>
+<li>
+安装fastcgi进程管理器spawn-cgi
+<pre class="brush:bash">
+# wget http://www.lighttpd.net/download/spawn-fcgi-1.6.3.tar.bz2
+cd /usr/local/src \
+&amp;&amp; tar zxvf /data/soft/sdk/spawn-fcgi-1.6.3.tar.gz \
+&amp;&amp; cd  spawn-fcgi-1.6.3 \
+&amp;&amp; ./configure \
+&amp;&amp; make \
+&amp;&amp; make install \
+&amp;&amp; echo Done.
+</pre>
+
+</ul>
+
+<ul>
+<li>
+安装fcgi
+<pre class="brush:bash">
+#wget http://down1.chinaunix.net/distfiles/fcgi-2.4.0.tar.gz
+cd /usr/local/src \
+&amp;&amp; tar zxvf /data/soft/sdk/fcgi-2.4.0.tar.gz \
+&amp;&amp; cd fcgi-2.4.0 \
+&amp;&amp; sed -i.bak 's/^#include "fcgio.h"/#include "fcgio.h"\n#include &lt;stdio.h&gt;/g' libfcgi/fcgio.cpp \
+&amp;&amp; ./configure \
+&amp;&amp; make \
+&amp;&amp; make install \
+&amp;&amp; echo Done.
+</pre>
+
+</ul>
+
+<ul>
+<li>
+添加ldd配置
+<pre class="brush:bash">
+grep '/usr/local/lib' /etc/ld.so.conf \
+|| echo '/usr/local/lib' &gt;&gt; /etc/ld.so.conf;cat /etc/ld.so.conf
+ldconfig
+</pre>
+
+</ul>
+
+<ul>
+<li>
+libpython2.7 so文件软链接
+<pre class="brush:bash">
+# 检查python版本，需要python 2.7
+python -V | grep 'Pyhton 2.7.5' 
+
+# 查看libpython2.7.so所在位置，发现外了.1.0后缀：
+# find / -name "libpython2.7.so*" 2&gt;/dev/null
+# /usr/lib64/libpython2.7.so.1.0
+
+# 增加so软链接
+[ ! -f /usr/lib64/libpython2.7.so ] \
+&amp;&amp; cd "/usr/lib64/" &amp;&amp; ln -sf libpython2.7.so.1.0 libpython2.7.so \
+&amp;&amp; cd -
+ll /usr/lib64/libpython2.7.so* 
+</pre>
+
+</ul>
+
+<h2 id="toc_0.8">安装gcc 4.9.4</h2>
+
+<ul>
+<li>
+先安装yum中自带的gcc(如果已安装，不用重新安装)
+<pre class="brush:bash">
+yum install -y gcc gcc-c++
+</pre>
+
+</ul>
+
+<ul>
+<li>
+安装gmp
+<pre class="brush:bash">
+# m4.x86_64 : The GNU macro processor
+yum install -y m4
+
+# 使用阿里云的gun镜像下载
+# wget https://mirrors.aliyun.com/gnu/gmp/gmp-6.1.1.tar.bz2
+
+cd /usr/local/src \
+&amp;&amp; tar -xvjf /data/soft/gcc-4.9.4/gmp-6.1.1.tar.bz2 \
+&amp;&amp; cd gmp-6.1.1 \
+&amp;&amp; ./configure --prefix=/usr/local/ &amp;&amp; make &amp;&amp; make install \
+&amp;&amp; echo Done.
+</pre>
+
+</ul>
+
+<ul>
+<li>
+安装mpfr
+<pre class="brush:bash">
+# wget https://mirrors.aliyun.com/gnu/mpfr/mpfr-3.1.5.tar.gz
+
+cd /usr/local/src \
+&amp;&amp; tar -zxvf /data/soft/gcc-4.9.4/mpfr-3.1.5.tar.gz \
+&amp;&amp; cd mpfr-3.1.5 \
+&amp;&amp; ./configure --prefix=/usr/local/ --with-gmp=/usr/local/ &amp;&amp; make &amp;&amp; make install \
+&amp;&amp; echo Done.
+</pre>
+
+</ul>
+
+<ul>
+<li>
+安装mpc
+<pre class="brush:bash">
+# wget https://mirrors.aliyun.com/gnu/mpc/mpc-1.0.3.tar.gz
+
+cd /usr/local/src \
+&amp;&amp; tar -zxvf /data/soft/gcc-4.9.4/mpc-1.0.3.tar.gz \
+&amp;&amp; cd mpc-1.0.3 \
+&amp;&amp; ./configure --prefix=/usr/local/ --with-gmp=/usr/local/ --with-mpfr=/usr/local/ \
+&amp;&amp; make &amp;&amp; make install \
+&amp;&amp; echo Done.
+</pre>
+
+</ul>
+
+<ul>
+<li>
+编译安装gcc:约需要1个小时
+<pre class="brush:bash">
+# wget https://mirrors.aliyun.com/gnu/gcc/gcc-4.9.4/gcc-4.9.4.tar.gz
+
+cd /usr/local/src \
+&amp;&amp; tar jxvf /data/soft/gcc-4.9.4/gcc-4.9.4.tar.bz2 \
+&amp;&amp; echo "tar Done."
+
+cd /usr/local/src/gcc-4.9.4 \
+&amp;&amp; ./configure --prefix=/usr/local/gcc-4.9.4 \
+    --enable-threads=posix \
+    --disable-checking --disable-multilib \
+    --enable-languages=c,c++ \
+    --with-gmp=/usr/local \
+    --with-mpfr=/usr/local \
+    --with-mpc=/usr/local \
+&amp;&amp; make -j3 \
+&amp;&amp; make install \
+&amp;&amp; echo Done.
+</pre>
+
+</ul>
+
+<ul>
+<li>
+卸载原有gcc，启用4.9.4
+<pre class="brush:bash">
+yum -y remove gcc gcc-c++
+
+ln -s /usr/local/gcc-4.9.4/bin/c++ /usr/bin/c++
+ln -s /usr/local/gcc-4.9.4/bin/g++ /usr/bin/g++
+ln -s /usr/local/gcc-4.9.4/bin/gcc /usr/bin/gcc
+</pre>
+
+</ul>
+
+
+<ul>
+<li>
+更新libstdc++.so版本、设置LD_LIBRARY_PATH环境变量，避免运行时GLIBCXX_3.4.20' not found错误
+<pre class="brush:bash">
+cd /usr/lib64 \
+&amp;&amp; cp /usr/local/gcc-4.9.4/lib64/libstdc++.so.6.0.20 . \
+&amp;&amp; ln -sfT libstdc++.so.6.0.20 libstdc++.so.6 \
+&amp;&amp; ls -la /usr/local/gcc-4.9.4/lib64/libstdc++.so* \
+ldconfig
+
+grep 'LD_LIBRARY_PATH.*/usr/local/gcc-4.9.4/lib64' /etc/profile \
+|| echo -e 'export LD_LIBRARY_PATH=/usr/local/gcc-4.9.4/lib64:$LD_LIBRARY_PATH' &gt;&gt; /etc/profile
+
+source /etc/profile
+
+# 再用ldd检查报错是否仍然存在，还缺哪些库
+# ldd login
+</pre>
+
+</ul>
+
+<h3 id="toc_0.8.1">安装游戏服务支包</h3>
+
+<ul>
+<li>
+增加libpython so文件链接
+<pre class="brush:bash">
+[ ! -f /usr/lib64/libpython2.7.so ] \
+&amp;&amp; cd "/usr/lib64/" &amp;&amp; ln -sf libpython2.7.so.1.0 libpython2.7.so \
+&amp;&amp; cd -
+ll /usr/lib64/libpython2.7.so* 
+</pre>
+
+</ul>
+
+<ul>
+<li>
+安装Lua 5.2.1 &amp; luasocket(gamesrv需要，版本不同)
+<pre class="brush:bash">
+# lua
+cd /usr/local/src \
+&amp;&amp; tar zxvf /data/soft/lua-5.2.1.tar.gz \
+&amp;&amp; cd lua-5.2.1 \
+&amp;&amp; make clean \
+&amp;&amp; make linux \
+&amp;&amp; make install \
+&amp;&amp; echo Done.
+
+# loasocket
+cd /usr/local/src \
+&amp;&amp; tar zxvf /data/soft/luasocket-v3.0-rc1.tar.gz \
+&amp;&amp; cd luasocket-v3.0-rc1 \
+&amp;&amp; make clean \
+&amp;&amp; make \
+&amp;&amp; make install \
+&amp;&amp; echo Done.
+</pre>
+
+</ul>
+
+<ul>
+<li>
+加入cjson.so库：解决"module 'cjson' not found"问题
+<pre class="brush:bash">
+cp /data/soft/cjson.so /usr/local/lib/lua/5.2/ \
+&amp;&amp; ll /usr/local/lib/lua/5.2/cjson*
+</pre>
+
+</ul>
+
+<h2 id="toc_0.9">chroot运行服务</h2>
+
+<ul>
+<li>
+将调试好的docker容器做基本清理后，export、放到/data/rootfs目录下。
+
+</ul>
+
+<ul>
+<li>
+挂载特殊目录：
+<pre class="brush:bash">
+# 挂载命令
+mount -t proc proc /data/rootfs/proc
+mount -t sysfs sys /data/rootfs/sys
+mount -o bind /dev /data/rootfs/dev
+
+mkdir -p /data/rootfs/data/{server,center,game,log}
+mount -o bind /data/server /data/rootfs/data/server
+mount -o bind /data/center /data/rootfs/data/center
+mount -o bind /data/game /data/rootfs/data/game
+mount -o bind /data/log /data/rootfs/data/log
+</pre>
+<pre>
+mount|grep rootfs
+
+proc on /data/rootfs/proc type proc (rw,relatime)
+sys on /data/rootfs/sys type sysfs (rw,relatime)
+udev on /data/rootfs/dev type devtmpfs (rw,nosuid,relatime,size=971520k,nr_inodes=242880,mode=755,inode64)
+/dev/sda2 on /data/rootfs/data/server type ext4 (rw,relatime)
+/dev/sda2 on /data/rootfs/data/center type ext4 (rw,relatime)
+/dev/sda2 on /data/rootfs/data/game type ext4 (rw,relatime)
+/dev/sda2 on /data/rootfs/data/log type ext4 (rw,relatime)
+</pre>
+
+</ul>
+
+<ul>
+<li>
+切换到chroot状态
+<pre class="brush:bash">
+chroot /data/rootfs 
+
+ls /dev
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

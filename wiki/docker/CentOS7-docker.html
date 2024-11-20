@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>CentOS7-docker</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>CentOS7-docker</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">doker安装（Centos7）</a>
+</ul>
+</ul>
+</div>
+
+<ul>
+<li>
+在CentOS系统中轻松安装和配置Docker指南:<a href="https://blog.csdn.net/weixin_53269650/article/details/135989258">https://blog.csdn.net/weixin_53269650/article/details/135989258</a>
+
+<li>
+Centos7系统 Docker 安装和使用教程（超详细附带常用的容器部署代码）: <a href="https://blog.csdn.net/qq_58141314/article/details/131020932">https://blog.csdn.net/qq_58141314/article/details/131020932</a>
+
+<li>
+Docker 官方安装文档：<a href="https://docs.docker.com/install/linux/docker-ce/centos/">https://docs.docker.com/install/linux/docker-ce/centos/</a>
+
+</ul>
+
+<h2 id="toc_0.1">doker安装（Centos7）</h2>
+
+<ul>
+<li>
+卸载系统之前可能安装的 docker（防止冲突）
+
+</ul>
+<p>
+卸载系统之前可能安装的 docker（防止版本不一致，发生冲突）
+</p>
+
+<pre>
+sudo yum remove docker \
+    docker-client \
+    docker-client-latest \
+    docker-common \
+    docker-latest \
+    docker-latest-logrotate \
+    docker-logrotate \
+    docker-engine
+</pre>
+
+<ul>
+<li>
+安装 Docker-CE 基本环境必须的依赖
+
+</ul>
+
+<pre>
+sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+</pre>
+
+<ul>
+<li>
+设置 docker repo 的 yum 位置
+
+</ul>
+
+<pre>
+sudo yum-config-manager --add-repo \ 
+https://download.docker.com/linux/centos/docker-ce.repo 
+
+sudo yum-config-manager --add-repo \
+http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+</pre>
+
+<ul>
+<li>
+安装 docker，以及 docker-cli
+
+</ul>
+
+<pre>
+sudo yum install docker-ce docker-ce-cli containerd.io
+</pre>
+
+<p>
+这样就安装好docker和基本环境了，接下来就可以启动docker了
+</p>
+
+<ul>
+<li>
+启动 docker
+
+</ul>
+
+<pre>
+#启动docker
+sudo systemctl start docker
+
+#查看docker服务状态 running 就是启动成功
+sudo systemctl status docker
+</pre>
+
+<ul>
+<li>
+设置 docker 开机自启
+
+</ul>
+
+<pre>
+sudo systemctl enable docker
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
