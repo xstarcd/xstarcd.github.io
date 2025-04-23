@@ -22,9 +22,17 @@
 历史备份包清理
 <pre class="brush:bash">
 # 查找更新时间在30天以前的文件、并删除这些文件
-find /bak -maxdepth 1 -type f -atime +30 -exec rm -rf {} \;
+find /bak -maxdepth 1 -type f -mtime +30 -exec rm -rf {} \;
 # 查找更新时间在30天以前、文件名不包含01.gz字符串的文件，并删除这些文件
-find /bak -maxdepth 1 -type f -atime +30 \( ! -name "*01.gz*" \) -exec rm -rf {} \;
+find /bak -maxdepth 1 -type f -mtime +30 \( ! -name "*01.gz*" \) -exec rm -rf {} \;
+# 查找在2天内更新的文件
+find /data/bak/dbbak/ -maxdepth 1 -type f \( -name "*.gz" -o -name "*.gz.md5" \) -mtime -2
+</pre>
+<pre>
+find -mtime:文件修改时间
+mtime  5 : 修改时间属于5天前那一天
+mtime -5 ：修改时间在5天之内
+mtime +5 ：修改时间在5天之前
 </pre>
 
 <li>

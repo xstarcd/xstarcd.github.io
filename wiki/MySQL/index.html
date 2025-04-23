@@ -28,6 +28,7 @@
 <li><a href="#toc_2.6">MySQLslowlog</a>
 <li><a href="#toc_2.7">Other</a>
 <li><a href="#toc_2.8">读写分离</a>
+<li><a href="#toc_2.9">mysql时间类型</a>
 </ul>
 </ul>
 </div>
@@ -365,6 +366,54 @@ end;
 
 </ul>
 
+<pre class="brush:sql">
+DELIMITER $$ 
+CREATE PROCEDURE cursordemo(INOUT average_goals FLOAT)
+BEGIN
+DECLARE done INT DEFAULT FALSE;
+DECLARE matches int DEFAULT(0);
+DECLARE goals int DEFAULT(0);
+DECLARE half_time_goals INT;
+
+DECLARE team_cursor CURSOR FOR SELECT HTHG FROM epl.football WHERE (FTR = "H");    
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+OPEN team_cursor;
+  teams_loop: LOOP
+    FETCH team_cursor INTO half_time_goals;
+    IF done THEN LEAVE teams_loop;
+    END IF;
+    SET goals = goals + half_time_goals;
+    SET matches = matches + 1;
+  END LOOP teams_loop;
+  SET average_goals = goals / matches;
+CLOSE team_cursor;
+
+END
+
+$$ DELIMITER;
+</pre>
+
+<ul>
+<li>
+检查表是否存在
+<pre class="brush:bash">
+DELIMITER //
+CREATE PROCEDURE check_table_exists(IN dbName VARCHAR(255), IN tblName VARCHAR(255))
+BEGIN
+  DECLARE tableCount INT;
+  SELECT COUNT(*) INTO tableCount FROM information_schema.tables WHERE table_schema = dbName AND table_name = tblName;
+  IF tableCount &gt; 0 THEN
+    SELECT 'Table exists';
+  ELSE
+    SELECT 'Table does not exist';
+  END IF;
+END//
+DELIMITER ;
+</pre>
+
+</ul>
+
 <h2 id="toc_2.8">读写分离</h2>
 
 <ul>
@@ -402,6 +451,9 @@ MyCAT：是社区爱好者在阿里cobar基础上进行二次开发，解决了c
 
 </ul>
 </ul>
+
+
+<h2 id="toc_2.9"><a href="mysql_datetime.html">mysql时间类型</a></h2>
 
 </div>
 <div id="footer">

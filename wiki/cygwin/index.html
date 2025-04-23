@@ -680,20 +680,78 @@ echo Agent pid 4536;
 <pre class="brush:bash">
 # Add to ~/.bash_profile
 # start_stop_ssh_agent
+# Add to ~/.bash_profile
+# start_stop_ssh_agent
 SSH_ENV=$HOME/.ssh/ssh-agent-env
 function stop_ssh_agent {
-    if [ $(ps -ef|grep mintty$|wc -l) -lt 2 -a -n "$SSH_AGENT_PID" ];then
-        ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent$ &gt; /dev/null &amp;&amp; kill $SSH_AGENT_PID
+    local bash_proccess_num
+    bash_proccess_num=$(ps ef|grep /usr/bin/bash|grep -v grep|wc -l)
+    echo "bash process number=$bash_proccess_num"
+    if [ "$bash_proccess_num" -lt 3 ];then
+      echo "Stop all ssh-agent process."
+      ps ef|grep '/usr/bin/ssh-agent'|grep -v grep|awk '{print $1}'|xargs -r kill
+    else
+      echo "keep ssh-agent process."
     fi
+    read test
 }
 function start_ssh_agent {
     if [ -f "${SSH_ENV}" ]; then
          . ${SSH_ENV} &gt; /dev/null
-         ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent$ &gt; /dev/null &amp;&amp; return 0
+         ps ef|grep '/usr/bin/ssh-agent'|grep -v grep &gt;/dev/null
+         if [ "$?" = "0" ];then
+           echo "ssh-agent(pid:$SSH_AGENT_PID) is running."
+           return 0
+         fi
     fi
     echo "Initialising new SSH agent..."
-    /usr/bin/ssh-agent -s | sed 's/^echo/#echo/' &gt; ${SSH_ENV} \
-    &amp;&amp; echo succeeded \
+    #$TMPDIR/ssh‐XXXXXXXXXX/agent.&lt;ppid&gt;
+    /usr/bin/ssh-agent -s -a /tmp/ssh-agent.sock | sed 's/^echo/#echo/' &gt; ${SSH_ENV} \
+    &amp;&amp; echo "start ssh-agent succeeded." \
+    &amp;&amp; chmod 600 ${SSH_ENV} \
+    &amp;&amp; . ${SSH_ENV} &gt; /dev/null
+    #&amp;&amp; /usr/bin/ssh-add \
+}
+start_ssh_agent
+#trap "[ \$(ps -ef|grep mintty\$|wc -l) -lt 2 ] &amp;&amp; kill $SSH_AGENT_PID" 0
+#trap "stop_ssh_agent" 0
+</pre>
+
+</ol>
+
+<ul>
+<li>
+MAC OS版本
+<pre class="brush:bash">
+# Add to ~/.bash_profile
+# start_stop_ssh_agent
+SSH_ENV="$HOME/.ssh/ssh-agent-env"
+SSH_SOCK="/tmp/ssh-agent-$(id -un).sock"
+function stop_ssh_agent {
+    local bash_proccess_num
+    bash_proccess_num=$(ps ef|grep /usr/bin/bash|grep -v grep|wc -l)
+    echo "bash process number=$bash_proccess_num"
+    if [ "$bash_proccess_num" -lt 3 ];then
+      echo "Stop all ssh-agent process."
+      ps ef|grep '/usr/bin/ssh-agent'|grep -v grep|awk '{print $1}'|xargs -r kill
+      read prompt
+    else
+      echo "keep ssh-agent process."
+    fi
+}
+function start_ssh_agent {
+    if [ -f "$SSH_ENV" ]; then
+         . $SSH_ENV &gt; /dev/null
+         ps ef|grep "$SSH_AGENT_PID .* /usr/bin/ssh-agent" &gt;/dev/null
+         if [ "$?" = "0" ];then
+           echo "ssh-agent(pid:$SSH_AGENT_PID) is running."
+           return 0
+         fi
+    fi
+    echo "Initialising new SSH agent..."
+    #$TMPDIR/ssh‐XXXXXXXXXX/agent.&lt;ppid&gt;
+    rm -f "$SSH_SOCK"
+    /usr/bin/ssh-agent -s -t 3600 -a "$SSH_SOCK" | sed 's/^echo/#echo/' &gt; $SSH_ENV \
     &amp;&amp; chmod 600 ${SSH_ENV} \
     &amp;&amp; . ${SSH_ENV} &gt; /dev/null
     #&amp;&amp; /usr/bin/ssh-add \
@@ -703,34 +761,7 @@ start_ssh_agent
 trap "stop_ssh_agent" 0
 </pre>
 
-<li>
-MAC OS版本
-<pre class="brush:bash">
-# start_stop_ssh_agent
-SSH_ENV=$HOME/.ssh/ssh-agent-env
-function stop_ssh_agent {
-    U=$(whoami)
-    if [ $(ps aux|grep "$U.*-bash\$"|grep -v grep|wc -l) -lt 3 -a -n "$SSH_AGENT_PID" ];then
-        ps aux | grep ${SSH_AGENT_PID} | grep ssh-agent &gt; /dev/null &amp;&amp; kill $SSH_AGENT_PID
-    fi
-}
-function start_ssh_agent {
-    if [ -f "${SSH_ENV}" ]; then
-         . ${SSH_ENV} &gt; /dev/null
-         ps aux | grep ${SSH_AGENT_PID} | grep ssh-agent &gt; /dev/null &amp;&amp; return 0
-    fi
-    echo "Initialising new SSH agent..."
-    /usr/bin/ssh-agent -s | sed 's/^echo/#echo/' &gt; ${SSH_ENV} \
-    &amp;&amp; echo succeeded \
-    &amp;&amp; chmod 600 ${SSH_ENV} \
-    &amp;&amp; . ${SSH_ENV} &gt; /dev/null
-    #&amp;&amp; /usr/bin/ssh-add \
-}
-start_ssh_agent
-trap "stop_ssh_agent" 0
-</pre>
-
-</ol>
+</ul>
 
 
 <ul>

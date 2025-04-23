@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>mysql时间类型</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>mysql时间类型</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">DATETIME 和 TIMESTAMP 的时区行为</a>
+<li><a href="#toc_0.2">日期转时间戳</a>
+<li><a href="#toc_0.3">使用datetime测试</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">DATETIME 和 TIMESTAMP 的时区行为</h2>
+
+<table>
+<tr>
+<th>
+特性
+</th>
+<th>
+DATETIME
+</th>
+<th>
+TIMESTAMP
+</th>
+</tr>
+<tr>
+<td>
+存储方式
+</td>
+<td>
+存储字面值（无时区转换）
+</td>
+<td>
+存储 UTC 时间（自动转换时区）
+</td>
+</tr>
+<tr>
+<td>
+时区敏感
+</td>
+<td>
+不受时区影响
+</td>
+<td>
+受时区影响
+</td>
+</tr>
+<tr>
+<td>
+存储范围
+</td>
+<td>
+1000-01-01 00:00:00 到 9999-12-31 23:59:59
+</td>
+<td>
+1970-01-01 00:00:01 UTC 到 2038-01-19 03:14:07 UTC
+</td>
+</tr>
+<tr>
+<td>
+存储空间
+</td>
+<td>
+8 字节
+</td>
+<td>
+4 字节
+</td>
+</tr>
+<tr>
+<td>
+自动更新
+</td>
+<td>
+不支持 ON UPDATE
+</td>
+<td>
+支持 ON UPDATE CURRENT_TIMESTAMP
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+MySQL 服务器时区
+
+</ul>
+
+<pre>
+-- 查看当前时区
+SELECT @@global.time_zone, @@session.time_zone;
+
+-- 设置全局时区（需重启生效）
+SET GLOBAL time_zone = '+08:00';
+
+-- 设置会话时区（仅当前连接有效）
+SET time_zone = 'UTC';
+</pre>
+
+<ul>
+<li>
+应用层时区
+
+</ul>
+
+<p>
+确保应用服务器与 MySQL 时区一致。例如在连接字符串中指定时区：
+</p>
+<pre>
+# JDBC 连接示例（Java）
+jdbc:mysql://localhost:3306/db?serverTimezone=Asia/Shanghai
+</pre>
+
+<ul>
+<li>
+写入数据
+<pre>
+DATETIME：直接存储字面值，不转换时区。
+TIMESTAMP：将输入时间转换为 UTC 存储。
+
+-- 写入示例（假设会话时区为 UTC+8）
+INSERT INTO table (datetime_col, timestamp_col)
+VALUES ('2023-10-01 12:00:00', '2023-10-01 12:00:00');
+
+-- 实际存储：
+- datetime_col: 2023-10-01 12:00:00（原样存储）
+- timestamp_col: 2023-10-01 04:00:00 UTC（自动转换）
+</pre>
+
+</ul>
+
+<ul>
+<li>
+读取数据
+<pre>
+DATETIME：返回字面值，不转换时区。
+TIMESTAMP：根据当前会话时区转换后返回。
+
+-- 假设会话时区为 UTC+8
+SELECT datetime_col, timestamp_col FROM table;
+
+-- 结果：
+- datetime_col: 2023-10-01 12:00:00
+- timestamp_col: 2023-10-01 12:00:00（UTC+8 时间）
+</pre>
+
+</ul>
+
+<ul>
+<li>
+时区转换函数
+<pre>
+-- 将 `datetime_col` 从 UTC 转换为东八区时间
+SELECT CONVERT_TZ(datetime_col, '+00:00', '+08:00') FROM table;
+</pre>
+
+</ul>
+
+
+<h2 id="toc_0.2">日期转时间戳</h2>
+
+<pre class="brush:bash">
+-- 取时间
+select curdate(),curtime(),now(),sysdate(),current_timestamp();
+
+| curdate()  | curtime() | sysdate()           | current_timestamp(),now() |
+|------------|-----------|---------------------|---------------------------|
+| 2024-12-16 | 17:27:04  | 2024-12-16 17:27:04 | 2024-12-16 17:27:04       |
+
+| 特性         | CURDATE()      | CURRENT_TIMESTAMP(),NOW() | SYSDATE()            |
+|--------------|----------------|---------------------------|----------------------|
+| 返回值       | 日期（无时间） | 日期+时间                 | 日期+时间            |
+| 动态性       | 动态获取       | 查询开始时固定            | 每次调用动态获取     |
+| 时区依赖     | MySQL 会话时区 | MySQL 会话时区            | 操作系统时区         |
+| 适用场景     | 仅需日期的操作 | 事务一致性记录            | 实时时间戳需求       |
+| 性能         | 低             | 中                        | 较高（频繁系统调用） |
+| 主从复制风险 | 无             | 无                        | 有（时间戳不一致）   |
+
+-- 在同一查询中多次调用
+SELECT 
+    CURDATE(),                  -- 固定为当前日期（2023-10-01）
+    CURRENT_TIMESTAMP(),        -- 固定为查询开始时间（2023-10-01 14:30:45）
+    SYSDATE(),                  -- 实时时间（可能为 2023-10-01 14:30:46）
+    SLEEP(2),                   -- 等待2秒
+    CURDATE(),                  -- 仍为 2023-10-01
+    CURRENT_TIMESTAMP(),        -- 仍为 14:30:45
+    SYSDATE();                  -- 更新为 14:30:47
+
+
+select UNIX_TIMESTAMP(),UTC_TIMESTAMP(),current_timestamp();
+
+| UNIX_TIMESTAMP() | UTC_TIMESTAMP()     | current_timestamp() |
+|------------------|---------------------|---------------------|
+| 1738560402       | 2025-02-03 05:26:42 | 2025-02-03 14:26:42 |
+| 时间戳           | UTC时间串           | 本地时间串          |
+
+
+-- 设置时间变量
+SET @MyDateStr='2024-12-05 00:00:00';
+SET @MyDateTS=UNIX_TIMESTAMP(@MyDateStr);
+SELECT @myDateStr;
+SELECT @MyDateTS;
+-- 2024-12-05 00:00:00
+-- 1733328000
+
+-- 转十位
+SELECT UNIX_TIMESTAMP(@MyDateStr);
+-- 1733328000
+
+-- 取当前时间，带毫秒
+SELECT CURRENT_TIMESTAMP(3);
+-- 2024-12-05 09:58:39.558
+
+-- 毫秒时间转毫秒时间戳，并去掉结果中的.分隔
+SELECT REPLACE(UNIX_TIMESTAMP(CURRENT_TIMESTAMP(3)), '.' , '' );
+-- 1733363964043
+
+- 时间戳转日期：
+SELECT FROM_UNIXTIME(@MyDateTS);
+-- 2024-12-05 00:00:00
+</pre>
+
+<h2 id="toc_0.3">使用datetime测试</h2>
+
+<pre class="bursh:bash">
+SELECT @@global.time_zone, @@session.time_zone;
++--------------------+---------------------+
+| @@global.time_zone | @@session.time_zone |
++--------------------+---------------------+
+| +08:00             | +08:00              |
++--------------------+---------------------+
+
+CREATE TABLE `test` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `dt` datetime,
+  `tz` varchar(10) DEFAULT "+8:00",
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
++-------+-------------+------+-----+---------+----------------+
+| Field | Type        | Null | Key | Default | Extra          |
++-------+-------------+------+-----+---------+----------------+
+| id    | int(11)     | NO   | PRI | NULL    | auto_increment |
+| dt    | datetime    | YES  |     | NULL    |                |
+| tz    | varchar(10) | YES  |     | +8:00   |                |
++-------+-------------+------+-----+---------+----------------+
+
+
+insert into test (dt,tz) values 
+("2025-02-03 00:00:00","+9:00"),
+("2025-02-03 00:00:00","+8:00");
+
+select * from test;
++----+---------------------+-------+
+| id | dt                  | tz    |
++----+---------------------+-------+
+|  1 | 2025-02-03 00:00:00 | +9:00 |
+|  2 | 2025-02-03 00:00:00 | +8:00 |
++----+---------------------+-------+
+
+set time_zone="+8:00";
+select dt,tz,CONVERT_TZ(dt,'+8:00',tz) as dtLocal,
+UNIX_TIMESTAMP(CONVERT_TZ(dt,'+8:00',tz)) as dtTS from test;
++---------------------+-------+---------------------+------------+
+| dt                  | tz    | dtLocal             | dtTS       |
++---------------------+-------+---------------------+------------+
+| 2025-02-03 00:00:00 | +9:00 | 2025-02-03 01:00:00 | 1738512000 |
+| 2025-02-03 00:00:00 | +8:00 | 2025-02-03 00:00:00 | 1738508400 |
++---------------------+-------+---------------------+------------+
+
+set time_zone="+9:00";
+select dt,tz,CONVERT_TZ(dt,'+8:00',tz) as dtLocal,
+UNIX_TIMESTAMP(CONVERT_TZ(dt,'+8:00',tz)) as dtTS from test;
++---------------------+-------+---------------------+------------+
+| dt                  | tz    | dtLocal             | dtTS       |
++---------------------+-------+---------------------+------------+
+| 2025-02-03 00:00:00 | +9:00 | 2025-02-03 01:00:00 | 1738512000 |
+| 2025-02-03 00:00:00 | +8:00 | 2025-02-03 00:00:00 | 1738508400 |
++---------------------+-------+---------------------+------------+
+
+不同会话time_zone，输出结果一致。
+</pre>
+
+
+<ul>
+<li>
+CONVERT_TZ转换应用
+<pre>
+-- 三条记录存入同一时间、不同时区的时间字串和时区信息
+update xySrvList sl set openTime='2025-02-03 07:00:00',timezone="+7:00" where srvCode in ('yn-yn_s1');
+update xySrvList sl set openTime='2025-02-03 08:00:00',timezone="+8:00" where srvCode in ('HF-hf_s1');
+update xySrvList sl set openTime='2025-02-03 09:00:00',timezone="+9:00" where srvCode in ('jp-s1');
+
+-- 转换出来对应相同的UTC时间串和TIMESTAMP
+select srvCode,timezone,openTime,
+CONVERT_TZ(sl.openTime,sl.timezone,'+0:00') as openTimeUTC,
+CONVERT_TZ(sl.openTime,sl.timezone,@@session.time_zone) as openTimeCST,
+UNIX_TIMESTAMP(CONVERT_TZ(sl.openTime,sl.timezone,@@session.time_zone)) as openTimeTS,
+FROM_UNIXTIME(UNIX_TIMESTAMP(CONVERT_TZ(sl.openTime,sl.timezone,@@session.time_zone))) as openTimeTS2CST
+from xySrvList sl where srvCode in ('yn-yn_s1','HF-hf_s1','jp-s1') order by timezone asc;
++----------+----------+---------------------+---------------------+---------------------+------------+---------------------+
+| srvCode  | timezone | openTime            | openTimeUTC         | openTimeCST         | openTimeTS | openTimeTS2CST      |
++----------+----------+---------------------+---------------------+---------------------+------------+---------------------+
+| yn-yn_s1 | +7:00    | 2025-02-03 07:00:00 | 2025-02-03 00:00:00 | 2025-02-03 08:00:00 | 1738540800 | 2025-02-03 08:00:00 |
+| HF-hf_s1 | +8:00    | 2025-02-03 08:00:00 | 2025-02-03 00:00:00 | 2025-02-03 08:00:00 | 1738540800 | 2025-02-03 08:00:00 |
+| jp-s1    | +9:00    | 2025-02-03 09:00:00 | 2025-02-03 00:00:00 | 2025-02-03 08:00:00 | 1738540800 | 2025-02-03 08:00:00 |
++----------+----------+---------------------+---------------------+---------------------+------------+---------------------+
+
+SELECT @@global.time_zone, @@session.time_zone;
++--------------------+---------------------+
+| @@global.time_zone | @@session.time_zone |
++--------------------+---------------------+
+| +08:00             | +08:00              |
++--------------------+---------------------+
+SET @dstr="2025-02-03 00:00:00";
+SET @dtz='+1:00';
+select @dstr,@dtz,CONVERT_TZ(@dstr,@dtz,'+0:00') as dUTC,
+CONVERT_TZ(@dstr,@dtz,@@session.time_zone) as dCST,
+UNIX_TIMESTAMP(CONVERT_TZ(@dstr,@dtz,@@session.time_zone)) as dTS,
+FROM_UNIXTIME(UNIX_TIMESTAMP(CONVERT_TZ(@dstr,@dtz,@@session.time_zone))) as dTS2CST;
++---------------------+-------+---------------------+---------------------+------------+---------------------+
+| @dstr               | @dtz  | dUTC                | dCST                | dTS        | dTS2CST             |
++---------------------+-------+---------------------+---------------------+------------+---------------------+
+| 2025-02-03 00:00:00 | +1:00 | 2025-02-02 23:00:00 | 2025-02-03 07:00:00 | 1738537200 | 2025-02-03 07:00:00 |
++---------------------+-------+---------------------+---------------------+------------+---------------------+
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+

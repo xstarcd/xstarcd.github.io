@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="styles/style.css" />
+    <title>socket学习</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>socket学习</h1>
+
+<ul>
+<li>
+Socket编程TCP/UDP&amp;&amp;序列化和反序列化理解应用层: 
+
+<ul>
+<li>
+<a href="https://blog.csdn.net/m0_74722801/article/details/143894745">https://blog.csdn.net/m0_74722801/article/details/143894745</a>
+
+<li>
+<a href="https://cloud.tencent.com/developer/article/2468691">https://cloud.tencent.com/developer/article/2468691</a>
+
+</ul>
+<li>
+网络】自定义协议 | 序列化和反序列化 | 以tcpServer为例: <a href="https://blog.csdn.net/muxuen/article/details/132158717">https://blog.csdn.net/muxuen/article/details/132158717</a>
+
+<li>
+OpenResty的核心和精髓：cosocket:<a href="https://www.cnblogs.com/liekkas01/p/12757576.html">https://www.cnblogs.com/liekkas01/p/12757576.html</a>
+
+<li>
+openresty socket:
+<pre>
+location /test {
+     resolver 114.114.114.114;
+      content_by_lua_block {
+         local sock = ngx.socket.tcp()
+         local ok, err = sock:connect("www.baidu.com", 80)
+         if not ok then
+             ngx.say("failed to connect to baidu: ", err)
+             return
+         end
+          local req_data = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\n\r\n"
+         local bytes, err = sock:send(req_data)
+         if err then
+             ngx.say("failed to send to baidu: ", err)
+             return
+         end
+          local data, err, partial = sock:receive()
+         if err then
+             ngx.say("failed to recieve to baidu: ", err)
+             return
+         end
+          sock:close()
+         ngx.say("successfully talk to baidu! response first line: ", data)
+     }
+}
+</pre>
+
+</ul>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="scripts/vimwiki.js"></script>
+</body>
+</html>
+

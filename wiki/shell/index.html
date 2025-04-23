@@ -23,6 +23,9 @@ shell博大精深，很多用过的东西慢慢就模糊了，以后一点点收
 
 <ul>
 <li>
+时区查询：<a href="https://www.iana.org/time-zones">https://www.iana.org/time-zones</a>
+
+<li>
 <a href="Setup_bash_custom_prompt_PS1.html">设置bash提示PS1</a>
 
 <li>
@@ -152,6 +155,37 @@ tcpdump: tcpdump 是一个运行在命令行下的嗅探工具。
 
 <li>
 John the Ripper: 一个快速的密码破解工具，用于在已知密文的情况下尝试破解出明文的破解密码软件，支持目前大多数的加密算法，如DES、MD4、MD5等。官网：<a href="http://www.openwall.com/john/">http://www.openwall.com/john/</a>
+
+</ul>
+
+<ul>
+<li>
+svn忽略配置: <a href="https://www.cnblogs.com/amnesia999/p/18458375">https://www.cnblogs.com/amnesia999/p/18458375</a>
+<pre class="brush:bash">
+# 忽略所有以 .o 结尾的文件
+svn propset svn:ignore "*.o" .
+
+# 忽略tmp目录
+svn propset svn:ignore tmp .
+
+# 从文件读取忽略清单
+svn propset svn:ignore -F svnignore.txt .
+
+# svnignore.txt
+tmp
+obj
+bin
+*.o
+*.lib
+*.la
+~*
+
+# 查看当前目录的属性配置
+svn proplist . -v
+
+# 删除当前目录的忽略设置
+svn propdel svn:ignore .
+</pre>
 
 </ul>
 

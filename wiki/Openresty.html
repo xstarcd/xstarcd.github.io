@@ -16,8 +16,35 @@
 <div id="main">
 
 <h1>Openresty</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">lua-mysql</a>
+<li><a href="#toc_0.2">OPM</a>
+<li><a href="#toc_0.3">Lua</a>
+<li><a href="#toc_0.4">前端</a>
+<li><a href="#toc_0.5">lua-resty-template</a>
+<li><a href="#toc_0.6">ajax请求</a>
+<ul>
+<li><a href="#toc_0.6.1">完整示例：提交表单并处理 JSON 响应</a>
+</ul>
+<li><a href="#toc_0.7">js字符串拼接</a>
+<ul>
+<li><a href="#toc_0.7.1">时间</a>
+</ul>
+<li><a href="#toc_0.8">javascript中的时区</a>
+<li><a href="#toc_0.9">ngx调用接口</a>
+<li><a href="#toc_0.10">VScode换行符设置</a>
+</ul>
+</ul>
+</div>
 
 <ul>
+<li>
+OpenResty：特权进程和定时任务: <a href="https://www.cnblogs.com/liekkas01/p/12764577.html">https://www.cnblogs.com/liekkas01/p/12764577.html</a>
+
+<li>
+OpenResty：worker间通信:<a href="https://www.cnblogs.com/liekkas01/p/12748757.html">https://www.cnblogs.com/liekkas01/p/12748757.html</a>
+
 <li>
 OpenResty 最佳实践: <a href="https://moonbingbing.gitbooks.io/openresty-best-practices/content/">https://moonbingbing.gitbooks.io/openresty-best-practices/content/</a>
 
@@ -39,6 +66,1012 @@ cosocket 支持 TCP、UDP 和 Unix Domain Socket
 ngx_lua_API 指令详解（二）ngx.re.match/find/gmatch/sub/gsub指令集合:<a href="https://www.cnblogs.com/tinywan/p/6831377.html">https://www.cnblogs.com/tinywan/p/6831377.html</a>
 
 </ul>
+
+<h2 id="toc_0.1">lua-mysql</h2>
+
+<ul>
+<li>
+<a href="https://github.com/openresty/lua-resty-mysql">https://github.com/openresty/lua-resty-mysql</a>
+
+<li>
+<a href="https://github.com/openresty/lua-nginx-module#ngxquote_sql_str">https://github.com/openresty/lua-nginx-module#ngxquote_sql_str</a>
+
+<li>
+OpenResty使用Lua大全（五）OpenResty中使用MySQL:<a href="https://blog.csdn.net/A_art_xiang/article/details/136583757">https://blog.csdn.net/A_art_xiang/article/details/136583757</a>
+
+<li>
+Sqlstate详解:<a href="https://blog.csdn.net/cangyingaoyou/article/details/7402243">https://blog.csdn.net/cangyingaoyou/article/details/7402243</a>
+
+<li>
+Openresty Lua实现mysql连接池:<a href="https://www.jianshu.com/p/62f677485c3d">https://www.jianshu.com/p/62f677485c3d</a>
+
+<li>
+OpenResty 中的几种防止 SQL 注入的方法:<a href="https://www.zhangbj.com/p/540.html">https://www.zhangbj.com/p/540.html</a>
+
+<ul>
+<li>
+<a href="https://moonbingbing.gitbooks.io/openresty-best-practices/content/postgres/sql_inject.html">https://moonbingbing.gitbooks.io/openresty-best-practices/content/postgres/sql_inject.html</a>
+
+<li>
+<a href="https://www.cnblogs.com/xiao-xue-di/p/12972689.html">https://www.cnblogs.com/xiao-xue-di/p/12972689.html</a>
+<pre>
+ngx.quote_sql_str
+按照MySQL规则。传入nil会报错。
+
+ndk.set_var.set_quote_sql_str
+调用Nginx中的C模板完成对MySQL的语句转换。传入nil会报错。
+
+ndk.set_var.set_quote_pgsql_str
+调用Nginx中的C模板完成对PostgreSQL的语句转换。传入nil会报错。
+
+pgmoon:escape_literal(val)
+pgmoon是PostgreSQL的Lua客户端连接池，该方法完成对SQL的语句转换。传入nil会报错。
+
+ndk.set_var 跳转调用，其实是 HttpSetMiscModule 这个模块提供的函数，是一个 C 模块实现的函数，ndk.set_var.set_quote_sql_str() 是用于 MySQL 格式的 SQL 语句字符转义，而 set_quote_pgsql_str 是用于 PostgreSQL 格式的 SQL 语句字符转义。
+
+ngx.quote_sql_str 是一个 ngx_lua 模块中实现的函数，也是用于 MySQL 格式的 SQL 语句字符转义。
+</pre>
+
+</ul>
+</ul>
+
+<pre class="brush:bash">
+function _M.val_escape(val)
+    if val then
+        -- 防止SQL注入，OpenResty自带
+        return ndk.set_var.set_quote_mysql_str(val)
+    else
+        return "null"
+    end
+end
+</pre>
+
+
+<pre class="brush:bash">
+function _M.val_escape(val)
+    local type = type(val)
+    if "string" == type then
+        return "'" .. tostring((val:gsub("'", "''"))) .. "'"
+    elseif "number" == type then
+        return tostring(val)
+    elseif "boolean" == val then
+        return val and "TRUE" or "FALSE"
+    else
+        return "null"
+    end
+end
+</pre>
+
+
+<h2 id="toc_0.2">OPM</h2>
+
+<p>
+OPM（OpenResty Package Manager）是 OpenResty 官方提供的包管理工具，可以用来从中心 OPM 包服务器上面安装社区贡献的第三方模块。专门用于安装和管理 OpenResty 的 Lua 模块。
+</p>
+
+<p>
+它是官方推荐使用的工具，因为它确保了模块与 OpenResty 的兼容性，并优化了性能，在你安装好 OpenResty 之后，就可以直接使用。
+</p>
+
+<pre>
+# openresty-opm.noarch : OpenResty Package Manager
+# openresty-doc.noarch : OpenResty documentation tool, restydoc
+
+yum install openresty-opm openresty-resty openresty-doc
+
+opm list
+opm install bungle/lua-resty-template
+</pre>
+
+<ul>
+<li>
+<a href="https://openresty.org/cn/components.html">https://openresty.org/cn/components.html</a>
+
+<li>
+<a href="https://opm.openresty.org/">https://opm.openresty.org/</a>
+
+</ul>
+
+<pre>
+openresty/lua-resty-websocket                     Lua WebSocket implementation for the ngx_lua module
+openresty/lua-resty-mysql                         Lua MySQL client driver for ngx_lua based on the cosocket API
+openresty/lua-resty-redis                         Lua redis client driver for the ngx_lua based on the cosocket API
+
+bungle/lua-resty-template                         Templating Engine (HTML) for Lua and OpenResty
+https://github.com/bungle/lua-resty-template
+
+bungle/lua-resty-session                          Session Library for OpenResty - Flexible and Secure
+https://github.com/bungle/lua-resty-session
+
+agentzh/lua-resty-http                            Lua HTTP client cosocket driver for OpenResty/ngx_lua
+
+bungle/lua-resty-validation                       Validation Library (Input Validation and Filtering) for Lua and OpenResty
+
+https://github.com/pronan/lua-resty-mvc
+</pre>
+
+<h2 id="toc_0.3">Lua</h2>
+
+<ul>
+<li>
+<a href="https://www.runoob.com/lua/lua-tutorial.html">https://www.runoob.com/lua/lua-tutorial.html</a>
+
+</ul>
+
+<h2 id="toc_0.4">前端</h2>
+
+<ul>
+<li>
+bootstrap
+
+<ul>
+<li>
+<a href="https://www.runoob.com/bootstrap4/bootstrap4-tutorial.html">https://www.runoob.com/bootstrap4/bootstrap4-tutorial.html</a>
+
+<li>
+dropdown菜单:<a href="https://getbootstrap.net/docs/components/dropdowns/">https://getbootstrap.net/docs/components/dropdowns/</a>
+
+</ul>
+<li>
+layUI
+
+<ul>
+<li>
+<a href="https://layui.dev/">https://layui.dev/</a>
+
+<li>
+LayUI使用ajax发送请求:<a href="https://www.shenmazong.com/blog/1814859201068871680">https://www.shenmazong.com/blog/1814859201068871680</a>
+
+<li>
+LayUI实现四级联动:<a href="https://www.shenmazong.com/blog/1819527097317535744">https://www.shenmazong.com/blog/1819527097317535744</a>
+
+<li>
+layuiAdmin 纯静态 UI 主题:<a href="https://dev.layuion.com/themes/layuiadmin/">https://dev.layuion.com/themes/layuiadmin/</a>
+
+<ul>
+<li>
+<a href="https://demo.layuion.com/layuiAdmin/layuiAdmin-v2.5.3/iframe/views/">https://demo.layuion.com/layuiAdmin/layuiAdmin-v2.5.3/iframe/views/</a>
+
+</ul>
+</ul>
+<li>
+EasyUI
+
+<ul>
+<li>
+<a href="https://www.runoob.com/jeasyui/jqueryeasyui-tutorial.html">https://www.runoob.com/jeasyui/jqueryeasyui-tutorial.html</a>
+
+</ul>
+<li>
+Vue3
+
+<ul>
+<li>
+<a href="https://www.runoob.com/vue3/vue3-tutorial.html">https://www.runoob.com/vue3/vue3-tutorial.html</a>
+
+<li>
+<a href="https://cn.vuejs.org/">https://cn.vuejs.org/</a>
+
+<li>
+<a href="https://cdn.jsdelivr.net/npm/vue/">https://cdn.jsdelivr.net/npm/vue/</a>
+
+<li>
+<a href="https://github.com/vuejs/petite-vue">https://github.com/vuejs/petite-vue</a>
+
+</ul>
+<li>
+Element Plus:基于 Vue 3，面向设计师和开发者的组件库
+
+<ul>
+<li>
+<a href="https://element-plus.org/zh-CN/">https://element-plus.org/zh-CN/</a>
+
+<li>
+<a href="https://element.eleme.cn/#/zh-CN">https://element.eleme.cn/#/zh-CN</a>
+
+<li>
+Vue3与Element Plus结合使用的超详细教程：从入门到精通:<a href="https://blog.csdn.net/zhouzongxin94/article/details/144205804">https://blog.csdn.net/zhouzongxin94/article/details/144205804</a>
+
+</ul>
+<li>
+Jquery
+
+<ul>
+<li>
+<a href="https://www.runoob.com/jquery/jquery-tutorial.html">https://www.runoob.com/jquery/jquery-tutorial.html</a>
+
+</ul>
+</ul>
+
+<h2 id="toc_0.5">lua-resty-template</h2>
+
+<ul>
+<li>
+<a href="https://github.com/bungle/lua-resty-template">https://github.com/bungle/lua-resty-template</a>
+
+</ul>
+
+<ul>
+<li>
+Template Syntax
+
+</ul>
+
+<table>
+<tr>
+<th>
+标签
+</th>
+<th>
+用途
+</th>
+<th>
+范例
+</th>
+<th>
+说明
+</th>
+</tr>
+<tr>
+<td>
+<code>{{expression}}</code>
+</td>
+<td>
+写入结果，html转义
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+<code>{*expression*}</code>
+</td>
+<td>
+写入结果
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+<code>{% lua code %}</code>
+</td>
+<td>
+执行lua代码
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+<code>{(template)}</code>
+</td>
+<td rowspan="2">
+包含模板文件
+</td>
+<td>
+<code>{(file.html, { message = "Hello, World" } )}</code>
+</td>
+<td>
+文件名不能包含,号
+</td>
+</tr>
+<tr>
+<td>
+<code>{(template, context)}</code>
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+传入指定的新context
+</td>
+</tr>
+<tr>
+<td>
+<code>{[expression]}</code>
+</td>
+<td>
+用表达式包含文件
+</td>
+<td>
+<code>{["file,with,comma"]}</code>
+</td>
+<td>
+文件名有,时也可用此方式替代
+</td>
+</tr>
+<tr>
+<td>
+<code>{-block-}...{-block-}</code>
+</td>
+<td>
+块引用-为存储的块表
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+<code>{-verbatim-}...{-verbatim-}</code>
+</td>
+<td rowspan="2">
+内部不做处理原样输出
+</td>
+<td>
+&nbsp;
+</td>
+<td rowspan="2">
+内部预定义块
+</td>
+</tr>
+<tr>
+<td>
+<code>{-raw-}...{-raw-}</code>
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+<code>{# comments #}</code>
+</td>
+<td>
+注释，不执行和输出
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+<code>\</code>
+</td>
+<td>
+用\排除处理模板标签
+</td>
+<td>
+<code>\{{message}}</code>
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+<code>\\</code>
+</td>
+<td>
+对\转义
+</td>
+<td>
+<code>\\{{message}}</code>
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+<tr>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+<td>
+&nbsp;
+</td>
+</tr>
+</table>
+
+<ul>
+<li>
+复杂键值输出
+<pre>
+local ctx = {["foo:bar"] = "foobar"}
+
+希望输出ctx["foo:bar"]的值"foobar"时，{*["foo:bar"]*} 将不能工作，需要使用： 
+
+{*context["foo:bar"]*}
+
+</pre>
+
+</ul>
+
+<ul>
+<li>
+Escaped HTML characters
+<pre>
+&amp; : &amp;amp;
+&lt; : &amp;lt;
+&gt; : &amp;gt;
+" : &amp;quot;
+' : &amp;#39;
+/ : &amp;#47;
+
+nil,ngx.null转换为空字符串。
+</pre>
+
+</ul>
+
+
+<h2 id="toc_0.6">ajax请求</h2>
+
+<ul>
+<li>
+基础 AJAX 请求处理 JSON 数据
+<pre>
+$.ajax({
+    url: "/api/data",
+    method: "GET", // 或 "POST"
+    dataType: "json", // 明确期望返回 JSON 格式
+    success: function(response) {
+        // 成功回调，response 已是解析后的 JSON 对象
+        console.log("请求成功:", response);
+        // 示例：更新页面内容
+        $("#result").html(`用户名：${response.username}, 年龄：${response.age}`);
+    },
+    error: function(xhr, status, error) {
+        // 失败回调（网络错误、HTTP 状态码非 2xx 等）
+        console.error("请求失败:", status, error);
+        alert("请求失败，请稍后重试！");
+    }
+});
+</pre>
+
+</ul>
+
+<ul>
+<li>
+使用 $.getJSON 简化请求
+<pre>
+$.getJSON("/api/data")
+    .done(function(response) {
+        console.log("成功:", response);
+    })
+    .fail(function(xhr, status, error) {
+        console.error("失败:", status, error);
+    });
+</pre>
+
+</ul>
+
+
+<ul>
+<li>
+处理动态生成的 JSON 数据
+
+</ul>
+
+<p>
+后端返回数据
+</p>
+<pre>
+{
+    "status": "success",
+    "data": {
+        "user": {
+            "id": 1,
+            "name": "Alice",
+            "email": "alice@example.com"
+        },
+        "items": ["apple", "banana"]
+    }
+}
+</pre>
+
+<p>
+提取嵌套数据
+</p>
+<pre>
+$.ajax({
+    url: "/api/user",
+    dataType: "json",
+    success: function(response) {
+        if (response.status === "success") {
+            const user = response.data.user;
+            const items = response.data.items;
+            
+            // 更新 DOM
+            $("#user-name").text(user.name);
+            $("#user-email").text(user.email);
+            
+            // 动态生成列表
+            const listHtml = items.map(item =&gt; `&lt;li&gt;${item}&lt;/li&gt;`).join("");
+            $("#item-list").html(listHtml);
+        } else {
+            console.error("后端业务逻辑错误:", response.message);
+        }
+    }
+});
+</pre>
+
+<h3 id="toc_0.6.1">完整示例：提交表单并处理 JSON 响应</h3>
+
+
+<ul>
+<li>
+html
+<pre class="brush:html">
+&lt;form id="login-form"&gt;
+    &lt;input type="text" name="username" placeholder="用户名"&gt;
+    &lt;input type="password" name="password" placeholder="密码"&gt;
+    &lt;button type="submit"&gt;登录&lt;/button&gt;
+&lt;/form&gt;
+&lt;div id="message"&gt;&lt;/div&gt;
+</pre>
+
+</ul>
+
+<ul>
+<li>
+jQuery 代码，使用 Promise 链式调用（现代写法）
+<pre class="brush:js">
+$("#login-form").submit(function(event) {
+    event.preventDefault(); // 阻止表单默认提交
+
+    const formData = {
+        username: $("input[name='username']").val(),
+        password: $("input[name='password']").val()
+    };
+
+    $.ajax({
+        url: "/api/login",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(formData),
+        dataType: "json"
+    })
+    .done(function(response) {
+        if (response.success) {
+            $("#message").html(`欢迎，${response.user.name}！`);
+            // 跳转到主页
+            window.location.href = "/dashboard";
+        } else {
+            $("#message").html(`登录失败：${response.error}`);
+        }
+    })
+    .fail(function(xhr) {
+        const errorMsg = xhr.responseJSON?.error || "网络请求失败";
+        $("#message").html(`错误：${errorMsg}`);
+    });
+});
+</pre>
+
+</ul>
+
+<ul>
+<li>
+关键注意事项
+
+</ul>
+
+<ul>
+<li>
+设置 dataType: "json"
+
+</ul>
+<p>
+明确告知 jQuery 将响应解析为 JSON，避免手动调用 JSON.parse。
+</p>
+
+<ul>
+<li>
+跨域请求（CORS）
+
+</ul>
+<p>
+如果请求跨域，确保后端设置了正确的 CORS 头（如 Access-Control-Allow-Origin）。
+</p>
+
+<ul>
+<li>
+安全性
+
+</ul>
+<p>
+对动态插入到 DOM 中的 JSON 数据做 XSS 转义（如使用 .text() 而非 .html()）。
+</p>
+
+<p>
+敏感数据（如密码）避免明文传输，使用 HTTPS。
+</p>
+
+<ul>
+<li>
+调试工具
+
+</ul>
+<p>
+使用浏览器开发者工具（Network 面板）检查请求和响应内容。
+</p>
+
+<h2 id="toc_0.7">js字符串拼接</h2>
+
+<ul>
+<li>
+使用 + 运算符拼接，适用于少量字符串拼接，简单直观。
+<pre class="brush:js">
+const name = "Alice";
+const age = 25;
+
+// 直接拼接
+const str1 = "姓名：" + name + ", 年龄：" + age;
+
+// 换行拼接（注意末尾加号）
+const html = '&lt;div class="box"&gt;' +
+               '&lt;p&gt;' + name + '&lt;/p&gt;' +
+               '&lt;p&gt;' + age + '&lt;/p&gt;' +
+             '&lt;/div&gt;';
+</pre>
+
+</ul>
+
+<ul>
+<li>
+使用数组 push + join,适用于大量字符串拼接（性能更优）。
+<pre class="brush:js">
+const parts = [];
+parts.push('&lt;ul&gt;');
+for (let i = 0; i &lt; 5; i++) {
+  parts.push('&lt;li&gt;Item ', i, '&lt;/li&gt;'); // 可接受多个参数
+}
+parts.push('&lt;/ul&gt;');
+
+const html = parts.join(''); // 输出: &lt;ul&gt;&lt;li&gt;Item 0&lt;/li&gt;...&lt;/ul&gt;
+</pre>
+
+</ul>
+
+<ul>
+<li>
+使用模板字符串（ES6）,适用于复杂字符串（多行、变量嵌入），推荐优先使用。
+<pre class="brush:js">
+const user = { name: "Bob", age: 30 };
+
+// 多行字符串 + 变量嵌入
+const html = `
+  &lt;div class="profile"&gt;
+    &lt;h2&gt;${user.name}&lt;/h2&gt;
+    &lt;p&gt;年龄：${user.age}&lt;/p&gt;
+  &lt;/div&gt;
+`;
+
+// 表达式计算
+const message = `当前时间：${new Date().toLocaleTimeString()}`;
+</pre>
+
+</ul>
+
+<ul>
+<li>
+使用 <code>\(.fn.text()</code> 或 <code>\).fn.html()</code> 避免拼接，若直接操作 DOM，可减少手动拼接。
+<pre class="brush:js">
+// 动态生成内容
+$('#container').html(`
+  &lt;p&gt;用户名：${name}&lt;/p&gt;
+  &lt;p&gt;注册时间：${new Date().toDateString()}&lt;/p&gt;
+`);
+</pre>
+
+</ul>
+
+<ul>
+<li>
+特殊场景处理：拼接 URL 参数，转义html字符
+<pre class="brush:js">
+const params = {
+  keyword: "jQuery",
+  page: 2
+};
+
+// 使用 URLSearchParams
+const query = new URLSearchParams(params).toString(); // "keyword=jQuery&amp;page=2"
+
+// 防止 XSS 攻击，使用 text() 方法或手动转义：
+const userInput = '&lt;script&gt;alert("xss")&lt;/script&gt;';
+const safeText = $('&lt;div&gt;').text(userInput).html(); // 转义为 &amp;lt;script&amp;gt;...
+</pre>
+
+</ul>
+
+<ul>
+<li>
+完整示例：动态生成列表
+<pre class="brush:js">
+const data = ["Apple", "Banana", "Orange"];
+
+// 使用模板字符串
+const html = `
+  &lt;ul class="list"&gt;
+    ${data.map(item =&gt; `&lt;li&gt;${item}&lt;/li&gt;`).join('')}
+  &lt;/ul&gt;
+`;
+
+// 插入到 DOM
+$('#output').html(html);
+</pre>
+
+</ul>
+
+<h3 id="toc_0.7.1">时间</h3>
+
+<pre>
+Date.parse("2023-10-01T12:00:00Z");        // UTC 时间
+Date.parse("2023-10-01T12:00:00+08:00");   // 东八区时间
+
+// 假设本地时区是东八区（UTC+8）
+Date.parse("2023-10-01T12:00:00");
+// 等价于解析为 "2023-10-01T12:00:00+08:00"
+
+使用 Date.UTC() 构造 UTC 时间戳
+// 将年月日等参数按 UTC 解析
+const year = 2023, month = 9, day = 1; // 月份从 0 开始（0=1月）
+const timestampUTC = Date.UTC(year, month, day, 12, 0, 0);
+
+// 假设原始时间字符串是本地时区，需转为 UTC
+const localTime = "2023-10-01T12:00:00";
+const date = new Date(localTime);
+const timestampUTC = date.getTime() - date.getTimezoneOffset() * 60 * 1000;
+
+ISO 8601 格式（YYYY-MM-DDTHH:mm:ssZ）
+</pre>
+
+
+<h2 id="toc_0.8">javascript中的时区</h2>
+
+<pre>
+// 假设本地时区为 UTC+8（东八区）
+
+// 带时区信息（UTC）
+const utcTime = Date.parse("2023-10-01T12:00:00Z");
+console.log(utcTime); // 1696161600000（UTC 时间戳）
+
+// 无时区信息（按本地时区解析）
+const localTime = Date.parse("2023-10-01T12:00:00");
+console.log(localTime); // 1696132800000（比 UTC 时间戳少 8 小时）
+
+// 带东八区时区信息（结果与 UTC 解析不同）
+const cstTime = Date.parse("2023-10-01T12:00:00+08:00");
+console.log(cstTime === localTime); // true（因为本地时区就是东八区）
+
+Date.parse() 的时区行为由输入字符串的时区标识决定。
+
+若需精确控制时区，请始终在字符串中包含时区信息（如 Z 或 +HH:mm）。
+
+对于复杂时区操作，建议使用专门的日期库（如 moment-timezone）。
+</pre>
+
+<h2 id="toc_0.9">ngx调用接口</h2>
+
+<ul>
+<li>
+ngx.location.capture 方式只能是 nginx 自身的子查询，需要借助 proxy_pass 发出 HTTP 连接信号
+
+<li>
+resty.http
+
+<ul>
+<li>
+<a href="https://github.com/ledgetech/lua-resty-http">https://github.com/ledgetech/lua-resty-http</a>
+
+<li>
+<a href="https://github.com/agentzh/lua-resty-http">https://github.com/agentzh/lua-resty-http</a>
+
+</ul>
+</ul>
+
+<ul>
+<li>
+<a href="https://www.w3cschool.cn/openresty1/openresty-发起http新请求.html">https://www.w3cschool.cn/openresty1/openresty-发起http新请求.html</a>
+
+</ul>
+
+<p>
+模拟一个接口场景，一个公共服务专门用来对外提供加了“盐” md5 计算，业务系统调用这个公共服务完成业务逻辑，用来判断请求本身是否合法。
+</p>
+
+<ul>
+<li>
+ngx.location.capture
+<pre class="brush:bash">
+http {
+  upstream md5_server{
+    server 127.0.0.1:81;  # 上游访问地址清单(可以按需配置不同的权重规则)
+    keepalive 20;         # 上游访问长连接，是否开启长连接，对整体性能影响比较大
+  }
+
+  server {
+    listen  80;
+
+    location /test {
+      content_by_lua_block {
+        ngx.req.read_body()
+        local args, err = ngx.req.get_uri_args()
+
+        -- 接口访问通过ngx.location.capture的子查询方式发起
+        local res = ngx.location.capture('/spe_md5',
+          {
+			  		method = ngx.HTTP_POST,
+			  		body = args.data
+          }
+        )
+
+        if 200 ~= res.status then
+          ngx.exit(res.status)
+        end
+
+        if args.key == res.body then
+          ngx.say("valid request")
+        else
+          ngx.say("invalid request")
+        end
+      }
+    }
+
+    location /spe_md5 {
+      # 由于ngx.location.capture方式只能是 nginx 自身的子查询，需要借助 proxy_pass 发出 HTTP 连接信号
+      proxy_pass http://md5_server;
+      #For HTTP, the proxy_http_version directive should be set to “1.1” and the “Connection” 
+      #header field should be cleared.（from:http://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive)
+      proxy_http_version 1.1;
+      proxy_set_header Connection "";
+    }
+  }
+
+  server {
+  listen  81;   # 公共 API 输出服务
+
+  location /spe_md5 {
+    content_by_lua_block {
+    ngx.req.read_body()
+    local data = ngx.req.get_body_data()
+    ngx.print(ngx.md5(data .. "*&amp;^%$#$^&amp;kjtrKUYG"))
+    }
+  }
+  }
+}
+</pre>
+
+</ul>
+
+
+<ul>
+<li>
+利用 cosocket
+
+</ul>
+
+<pre class="brush:bash">
+http {
+  server {
+    listen  80;
+
+    location /test {
+      content_by_lua_block {
+        ngx.req.read_body()
+        local args, err = ngx.req.get_uri_args()
+
+        local http = require "resty.http"   -- 引用 resty.http 库资源
+        local httpc = http.new()
+        local res, err = httpc:request_uri( -- request_uri 函数完成了连接池、HTTP 请求等一系列动作
+          "http://127.0.0.1:81/spe_md5",
+            {
+            method = "POST",
+            body = args.data,
+            }
+        )
+
+        if 200 ~= res.status then
+          ngx.exit(res.status)
+        end
+
+        if args.key == res.body then
+          ngx.say("valid request")
+        else
+          ngx.say("invalid request")
+        end
+      }
+    }
+  }
+
+  server {
+    listen  81;
+
+    location /spe_md5 {
+      content_by_lua_block {
+        ngx.req.read_body()
+        local data = ngx.req.get_body_data()
+        ngx.print(ngx.md5(data .. "*&amp;^%$#$^&amp;kjtrKUYG"))
+      }
+    }
+  }
+}
+</pre>
+
+<ul>
+<li>
+Single-shot request
+<pre class="brush:bash">
+local httpc = require("resty.http").new()
+
+-- Single-shot requests use the `request_uri` interface.
+local res, err = httpc:request_uri("http://example.com/helloworld", {
+    method = "POST",
+    body = "a=1&amp;b=2",
+    headers = {
+        ["Content-Type"] = "application/x-www-form-urlencoded",
+    },
+})
+if not res then
+    ngx.log(ngx.ERR, "request failed: ", err)
+    return
+end
+
+-- At this point, the entire request / response is complete and the connection
+-- will be closed or back on the connection pool.
+
+-- The `res` table contains the expeected `status`, `headers` and `body` fields.
+local status = res.status
+local length = res.headers["Content-Length"]
+local body   = res.body
+
+</pre>
+
+</ul>
+
+<h2 id="toc_0.10">VScode换行符设置</h2>
+
+<p>
+windows默认是回车换行符，即：<code>\r\n</code>
+</p>
+
+<p>
+linux默认是换行符，即：<code>\n</code>
+</p>
+
+<p>
+同时在两种操作系统里编辑，经常会造成文件里含有<code>\r</code>，导致在linux会显示<code>^M</code>，也就是回车符
+</p>
+
+<p>
+可以对vscode的默认换行符进行设置：
+</p>
+
+<p>
+打开VSCode菜单文件-&gt;首选项-&gt;设置：
+</p>
+
+<p>
+在搜索框里输入eol
+</p>
+
+<p>
+将默认行尾字符修改为<code>\n</code>
+</p>
 
 </div>
 <div id="footer">
