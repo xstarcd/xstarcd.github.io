@@ -22,18 +22,19 @@
 <li><a href="#toc_0.2">OPM</a>
 <li><a href="#toc_0.3">Lua</a>
 <li><a href="#toc_0.4">前端</a>
-<li><a href="#toc_0.5">lua-resty-template</a>
-<li><a href="#toc_0.6">ajax请求</a>
+<li><a href="#toc_0.5">layui模板</a>
+<li><a href="#toc_0.6">lua-resty-template</a>
+<li><a href="#toc_0.7">ajax请求</a>
 <ul>
-<li><a href="#toc_0.6.1">完整示例：提交表单并处理 JSON 响应</a>
+<li><a href="#toc_0.7.1">完整示例：提交表单并处理 JSON 响应</a>
 </ul>
-<li><a href="#toc_0.7">js字符串拼接</a>
+<li><a href="#toc_0.8">js字符串拼接</a>
 <ul>
-<li><a href="#toc_0.7.1">时间</a>
+<li><a href="#toc_0.8.1">时间</a>
 </ul>
-<li><a href="#toc_0.8">javascript中的时区</a>
-<li><a href="#toc_0.9">ngx调用接口</a>
-<li><a href="#toc_0.10">VScode换行符设置</a>
+<li><a href="#toc_0.9">javascript中的时区</a>
+<li><a href="#toc_0.10">ngx调用接口</a>
+<li><a href="#toc_0.11">VScode换行符设置</a>
 </ul>
 </ul>
 </div>
@@ -64,6 +65,9 @@ cosocket 支持 TCP、UDP 和 Unix Domain Socket
 </ul>
 <li>
 ngx_lua_API 指令详解（二）ngx.re.match/find/gmatch/sub/gsub指令集合:<a href="https://www.cnblogs.com/tinywan/p/6831377.html">https://www.cnblogs.com/tinywan/p/6831377.html</a>
+
+<li>
+resty 命令行工具演示:<a href="https://blog.openresty.com.cn/cn/resty-cmd/">https://blog.openresty.com.cn/cn/resty-cmd/</a>
 
 </ul>
 
@@ -283,7 +287,122 @@ Jquery
 </ul>
 </ul>
 
-<h2 id="toc_0.5">lua-resty-template</h2>
+<h2 id="toc_0.5">layui模板</h2>
+
+<ul>
+<li>
+<a href="https://layui.dev/docs/2/laytpl/">https://layui.dev/docs/2/laytpl/</a>
+
+</ul>
+
+<ul>
+<li>
+模板
+<pre class="brush:bash">
+&lt;p&gt;转义输出：{{= d.desc }}&lt;/p&gt;
+&lt;p&gt;原文输出：{{- d.desc }}&lt;/p&gt;
+{{# 注释标签 - 仅在模板中显示，不在视图中输出 }}
+&lt;p&gt;{{! 忽略标签，可显示原始标签：
+{{ let a = 0; }} {{= escape }} {{- source }} {{# comments }} {{! ignore !}}
+!}}&lt;/p&gt;
+{{# 标签空主体测试 }}
+{{}} {{  }} {{   }} {{= }} {{=}} {{= }}
+&lt;p&gt;
+  条件语句：
+  {{= d.list.length ? d.title : '' }}
+  {{ if(d.title){}} - #AAAA{{='A'}}{{ } }}
+&lt;/p&gt;
+&lt;p&gt;循环语句：&lt;/p&gt;
+&lt;ul&gt;
+{{ d.list.forEach(function(item) { }}
+  &lt;li&gt;
+    &lt;span&gt;{{= item.title }}&lt;/span&gt;
+    &lt;span&gt;{{= item.name }}&lt;/span&gt;
+  &lt;/li&gt;
+{{ }); }}
+&lt;/ul&gt;
+{{ if (d.list.length === 0) { }}
+  无数据
+{{} }}
+</pre>
+
+</ul>
+
+<ul>
+<li>
+数据
+<pre class="brush:bash">
+{
+  "title": "Layui 常用组件",
+  "desc": "&lt;a style=\"color:blue;\"&gt;一段带 HTML 的内容&lt;/a&gt;",
+  "list": [
+    {
+      "title": "弹层",
+      "name": "layer"
+    },
+    {
+      "title": "表单",
+      "name": "form"
+    },
+    {
+      "title": "表格",
+      "name": "table"
+    },
+    {
+      "title": "日期选择器",
+      "name": "laydate"
+    },
+    {
+      "title": "标签页",
+      "name": "tabs"
+    }
+  ]
+}
+</pre>
+
+</ul>
+
+<ul>
+<li>
+输出
+<pre class="brush:html">
+&lt;p&gt;转义输出：&amp;#60;a style=&amp;#34;color:blue;&amp;#34;&amp;#62;一段带 HTML 的内容&amp;#60;/a&amp;#62;&lt;/p&gt;
+&lt;p&gt;原文输出：&lt;a style="color:blue;"&gt;一段带 HTML 的内容&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;忽略标签，可显示原始标签：
+{{ let a = 0; }} {{= escape }} {{- source }} {{# comments }} {{! ignore
+!}}&lt;/p&gt;   
+&lt;p&gt;
+  条件语句：
+  Layui 常用组件 - #AAAAA
+&lt;/p&gt;
+&lt;p&gt;循环语句：&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;span&gt;弹层&lt;/span&gt;
+    &lt;span&gt;layer&lt;/span&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;span&gt;表单&lt;/span&gt;
+    &lt;span&gt;form&lt;/span&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;span&gt;表格&lt;/span&gt;
+    &lt;span&gt;table&lt;/span&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;span&gt;日期选择器&lt;/span&gt;
+    &lt;span&gt;laydate&lt;/span&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;span&gt;标签页&lt;/span&gt;
+    &lt;span&gt;tabs&lt;/span&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+</pre>
+
+</ul>
+
+<h2 id="toc_0.6">lua-resty-template</h2>
 
 <ul>
 <li>
@@ -518,7 +637,7 @@ nil,ngx.null转换为空字符串。
 </ul>
 
 
-<h2 id="toc_0.6">ajax请求</h2>
+<h2 id="toc_0.7">ajax请求</h2>
 
 <ul>
 <li>
@@ -609,7 +728,7 @@ $.ajax({
 });
 </pre>
 
-<h3 id="toc_0.6.1">完整示例：提交表单并处理 JSON 响应</h3>
+<h3 id="toc_0.7.1">完整示例：提交表单并处理 JSON 响应</h3>
 
 
 <ul>
@@ -709,7 +828,7 @@ $("#login-form").submit(function(event) {
 使用浏览器开发者工具（Network 面板）检查请求和响应内容。
 </p>
 
-<h2 id="toc_0.7">js字符串拼接</h2>
+<h2 id="toc_0.8">js字符串拼接</h2>
 
 <ul>
 <li>
@@ -817,7 +936,7 @@ $('#output').html(html);
 
 </ul>
 
-<h3 id="toc_0.7.1">时间</h3>
+<h3 id="toc_0.8.1">时间</h3>
 
 <pre>
 Date.parse("2023-10-01T12:00:00Z");        // UTC 时间
@@ -841,7 +960,7 @@ ISO 8601 格式（YYYY-MM-DDTHH:mm:ssZ）
 </pre>
 
 
-<h2 id="toc_0.8">javascript中的时区</h2>
+<h2 id="toc_0.9">javascript中的时区</h2>
 
 <pre>
 // 假设本地时区为 UTC+8（东八区）
@@ -865,7 +984,7 @@ Date.parse() 的时区行为由输入字符串的时区标识决定。
 对于复杂时区操作，建议使用专门的日期库（如 moment-timezone）。
 </pre>
 
-<h2 id="toc_0.9">ngx调用接口</h2>
+<h2 id="toc_0.10">ngx调用接口</h2>
 
 <ul>
 <li>
@@ -1043,7 +1162,7 @@ local body   = res.body
 
 </ul>
 
-<h2 id="toc_0.10">VScode换行符设置</h2>
+<h2 id="toc_0.11">VScode换行符设置</h2>
 
 <p>
 windows默认是回车换行符，即：<code>\r\n</code>
@@ -1071,6 +1190,10 @@ linux默认是换行符，即：<code>\n</code>
 
 <p>
 将默认行尾字符修改为<code>\n</code>
+</p>
+
+<p>
+vim中修改: <code>:set fileformat=unix</code>
 </p>
 
 </div>

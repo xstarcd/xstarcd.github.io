@@ -45,6 +45,10 @@
 <li><a href="#toc_1.7">Windows Terminal</a>
 <li><a href="#toc_1.8">conEmu</a>
 <li><a href="#toc_1.9">脚本添加ssh主机名自动完成</a>
+<ul>
+<li><a href="#toc_1.9.1">在etc中添加</a>
+<li><a href="#toc_1.9.2">在~/.bashrc中添加</a>
+</ul>
 </ul>
 </ul>
 </div>
@@ -127,7 +131,7 @@ cygwin 2.0.0中改用sha512sum替代md5校验，执行报<code>cygwin64 MD5 sum 
 
 <h3 id="toc_1.1.2">安装常用工具</h3>
 <pre class="brush: bash">
-# apt-cyg install man cygwin-doc
+# apt-cyg install mandoc cygwin-doc
 apt-cyg install vim screen tmux wget subversion openssh pwgen gzip bzip3 curl rsync bash-completion \
  lftp nc tree p7zip connect-proxy util-linux bind-utils inetutils
 </pre>
@@ -680,8 +684,6 @@ echo Agent pid 4536;
 <pre class="brush:bash">
 # Add to ~/.bash_profile
 # start_stop_ssh_agent
-# Add to ~/.bash_profile
-# start_stop_ssh_agent
 SSH_ENV=$HOME/.ssh/ssh-agent-env
 function stop_ssh_agent {
     local bash_proccess_num
@@ -932,6 +934,8 @@ ConEmu是一款优秀的开源终端，项目地址<a href="https://conemu.githu
 
 <h2 id="toc_1.9">脚本添加ssh主机名自动完成</h2>
 
+<h3 id="toc_1.9.1">在etc中添加</h3>
+
 <ul>
 <li>
 /etc/bash_completion.d/ssh
@@ -947,13 +951,72 @@ _ssh()
     COMPREPLY=( $(compgen -W "$opts" -- ${cur}) )
     return 0
 }
-complete -F _ssh ssh
+complete -F _ssh ssh scp sftp rsync
 </pre>
 
 </ul>
 
 <pre>
 . /etc/bash_completion.d/ssh
+</pre>
+
+<h3 id="toc_1.9.2">在~/.bashrc中添加</h3>
+
+<pre class="brush:bash">
+# SSH/SCP主机名自动补全
+# ----------------------------------------------------------------------------
+_complete_ssh_hosts() {
+  local cur prev config_hosts known_hosts
+  local ssh_hosts_ts ssh_config_ts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  ssh_config=$(readlink -f "$HOME/.ssh/config")
+  ssh_hosts_file="$HOME/.ssh/ssh_hosts"
+  # 判断config更新
+  if [ -f "$ssh_hosts_file" ];then
+    ssh_hosts_ts=$(stat -c %Y "$ssh_hosts_file")
+    ssh_config_ts=$(stat -c %Y "$ssh_config")
+    if [ $ssh_config_ts -gt $ssh_hosts_ts ];then
+      ssh_hosts=
+      rm -f "$ssh_hosts_file"
+    fi
+  fi
+  # 更新ssh_hosts
+  if [ -z "$ssh_hosts" ];then 
+    if [ -f "$ssh_hosts_file" ];then
+      ssh_hosts=$(cat "$ssh_hosts_file")
+    else
+      if [[ -f "$ssh_config" ]]; then
+        config_hosts=$(grep -i '^Host' "$ssh_config" | grep -v '[*?]' | cut -d ' ' -f 2-)
+      else
+        config_hosts=""
+      fi
+      if [[ -f "$HOME/.ssh/known_hosts" ]]; then
+        known_hosts=$(cut -d ' ' -f 1 "$HOME/.ssh/known_hosts" | cut -d ',' -f 1 | sed -e 's/\[\(.*\)\]:.*/\1/')
+      else
+        known_hosts=""
+      fi
+      ssh_hosts="${config_hosts} ${known_hosts}"
+      export ssh_hosts="$ssh_hosts"
+      echo "$ssh_hosts" &gt; "$ssh_hosts_file"
+    fi
+ fi
+ 
+ # 如果当前词以@开头，补全用户名后的主机名
+ if [[ ${cur} == *@* ]]; then
+   local userhost=${cur%%@*}
+   local curhost=${cur#*@}
+   COMPREPLY=( $(compgen -W "${ssh_hosts}" -P "${userhost}@" -- "${curhost}") )
+ else
+   COMPREPLY=( $(compgen -W "${ssh_hosts}" -- "${cur}") )
+ fi
+ return 0
+}
+
+# 为ssh和scp命令注册补全函数
+complete -F _complete_ssh_hosts ssh scp sftp rsync
+# ----------------------------------------------------------------------------
 </pre>
 
 </div>
