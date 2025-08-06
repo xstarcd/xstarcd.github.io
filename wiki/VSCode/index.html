@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="Stylesheet" type="text/css" href="../styles/style.css" />
+    <title>VSCode</title>
+</head>
+<body>
+<div id="header">
+    <ul id="top-nav">
+    <li><a href="../index.html">首页</a></li>
+    <li><a href="index.html">分类首页</a></li>
+    </ul>
+</div>
+<div id="cse"></div>
+<div id="main">
+
+<h1>VSCode</h1>
+<div class="toc">
+<ul>
+<li><a href="#toc_0.1">VScode换行符设置</a>
+<li><a href="#toc_0.2">折叠</a>
+<li><a href="#toc_0.3">选择</a>
+<li><a href="#toc_0.4">插件</a>
+<li><a href="#toc_0.5">字体</a>
+</ul>
+</ul>
+</div>
+
+<h2 id="toc_0.1">VScode换行符设置</h2>
+
+<pre>
+windows默认是回车换行符，即：`\r\n`
+linux默认是换行符，即：`\n`
+同时在两种操作系统里编辑，经常会造成文件里含有`\r`，导致在linux会显示`^M`，也就是回车符
+可以对vscode的默认换行符进行设置：
+打开VSCode菜单文件-&gt;首选项-&gt;设置：
+在搜索框里输入eol
+将默认行尾字符修改为`\n`
+vim中修改: `:set fileformat=unix`
+</pre>
+
+<h2 id="toc_0.2">折叠</h2>
+
+<pre>
+折叠所有代码块：Ctrl+K+0
+展开所有代码块：Ctrl+K+J
+折叠当前代码块：Ctrl+Shift+[
+展开当前代码块：Ctrl+Shift+]
+</pre>
+
+<h2 id="toc_0.3">选择</h2>
+
+<pre>
+列辑辑: Crtl+Alt+Shift - Down/Right
+</pre>
+
+
+<h2 id="toc_0.4">插件</h2>
+
+<ul>
+<li>
+Markdown Preview Enhanced
+
+</ul>
+
+<h2 id="toc_0.5">字体</h2>
+
+<pre>
+"editor.fontFamily": "'Cascadia Mono', Consolas, 'Courier New', monospace"
+</pre>
+
+</div>
+<div id="footer">
+<p>
+&copy; 2012 - 2021 XStar
+&nbsp;|&nbsp;<a href="http://code.google.com/p/vimwiki/" title="vimwiki">Powerby:Vimwiki</a>
+&nbsp;|&nbsp;<a href="http://kwiki.github.io" title="丘迟">Style:丘迟</a>
+&nbsp;|&nbsp;<a href="../index.html">首页</a>
+&nbsp;|&nbsp;<a href="index.html">分类首页</a>
+&nbsp;|&nbsp;<a href="../SiteMap.html">站点地图</a>
+</p>
+</div>
+<script type="text/javascript">var vimwiki_rootpath="../";</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+<script type="text/javascript" src="../scripts/vimwiki.js"></script>
+</body>
+</html>
+
